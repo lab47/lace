@@ -23,7 +23,7 @@ func extractMethod(request Map) string {
 		case Symbol:
 			return m.ToString(false)
 		default:
-			panic(RT.NewError(fmt.Sprintf("method must be a string, keyword or symbol, got %s", m.GetType().ToString(false))))
+			panic(StubNewError(fmt.Sprintf("method must be a string, keyword or symbol, got %s", m.GetType().ToString(false))))
 		}
 	}
 	return "get"
@@ -33,7 +33,7 @@ func getOrPanic(m Map, k Object, errMsg string) Object {
 	if ok, v := m.Get(k); ok {
 		return v
 	}
-	panic(RT.NewError(errMsg))
+	panic(StubNewError(errMsg))
 }
 
 func mapToReq(request Map) *http.Request {
@@ -122,7 +122,7 @@ func mapToResp(response Map, w http.ResponseWriter) {
 					s = s.Rest()
 				}
 			default:
-				panic(RT.NewError("HTTP response header value must be a string or a seq of strings"))
+				panic(StubNewError("HTTP response header value must be a string or a seq of strings"))
 			}
 		}
 	}
@@ -134,9 +134,9 @@ func mapToResp(response Map, w http.ResponseWriter) {
 
 func sendRequest(request Map) Map {
 	req := mapToReq(request)
-	RT.GIL.Unlock()
+	//RT.GIL.Unlock()
 	resp, err := client.Do(req)
-	RT.GIL.Lock()
+	//RT.GIL.Lock()
 	PanicOnErr(err)
 	return respToMap(resp)
 }
@@ -148,19 +148,19 @@ func startServer(addr string, handler Callable) Object {
 		host = MakeString(addr[:i])
 		port = MakeString(addr[i+1:])
 	}
-	RT.GIL.Unlock()
-	defer RT.GIL.Lock()
+	//RT.GIL.Unlock()
+	//defer RT.GIL.Lock()
 	err := http.ListenAndServe(addr, http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		RT.GIL.Lock()
+		//RT.GIL.Lock()
 		defer func() {
-			RT.GIL.Unlock()
+			//RT.GIL.Unlock()
 			if r := recover(); r != nil {
 				w.WriteHeader(500)
 				io.WriteString(w, "Internal server error")
 				fmt.Fprintln(os.Stderr, r)
 			}
 		}()
-		response := handler.Call([]Object{reqToMap(host, port, req)})
+		response := handler.Call(GLOBAL_ENV, []Object{reqToMap(host, port, req)})
 		mapToResp(AssertMap(response, "HTTP response must be a map"), w)
 	}))
 	PanicOnErr(err)

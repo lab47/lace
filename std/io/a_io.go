@@ -20,7 +20,7 @@ func __close_(_env *Env, _args []Object) Object {
 		return _res
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -40,7 +40,7 @@ func __copy_(_env *Env, _args []Object) Object {
 		return MakeInt(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -56,7 +56,7 @@ func __pipe_(_env *Env, _args []Object) Object {
 		return _res
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }

@@ -41,7 +41,7 @@ func __add_(_env *Env, _args []Object) Object {
 		return MakeTime(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -61,7 +61,7 @@ func __add_date_(_env *Env, _args []Object) Object {
 		return MakeTime(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -79,7 +79,7 @@ func __format_(_env *Env, _args []Object) Object {
 		return MakeString(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -97,7 +97,7 @@ func __from_unix_(_env *Env, _args []Object) Object {
 		return MakeTime(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -114,7 +114,7 @@ func __hours_(_env *Env, _args []Object) Object {
 		return MakeDouble(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -131,7 +131,7 @@ func __minutes_(_env *Env, _args []Object) Object {
 		return MakeDouble(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -147,7 +147,7 @@ func __now_(_env *Env, _args []Object) Object {
 		return MakeTime(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -166,7 +166,7 @@ func __parse_(_env *Env, _args []Object) Object {
 		return MakeTime(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -185,7 +185,7 @@ func __parse_duration_(_env *Env, _args []Object) Object {
 		return MakeInt(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -203,7 +203,7 @@ func __round_(_env *Env, _args []Object) Object {
 		return MakeInt(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -220,7 +220,7 @@ func __seconds_(_env *Env, _args []Object) Object {
 		return MakeDouble(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -237,7 +237,7 @@ func __since_(_env *Env, _args []Object) Object {
 		return MakeInt(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -250,14 +250,12 @@ func __sleep_(_env *Env, _args []Object) Object {
 	switch {
 	case _c == 1:
 		d := ExtractInt(_args, 0)
-		 RT.GIL.Unlock()
-		time.Sleep(time.Duration(d))
-		RT.GIL.Lock()
+		 time.Sleep(time.Duration(d))
 		_res := NIL
 		return _res
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -274,7 +272,7 @@ func __string_(_env *Env, _args []Object) Object {
 		return MakeString(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -292,7 +290,7 @@ func __sub_(_env *Env, _args []Object) Object {
 		return MakeInt(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -310,7 +308,7 @@ func __truncate_(_env *Env, _args []Object) Object {
 		return MakeInt(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -327,7 +325,7 @@ func __unix_(_env *Env, _args []Object) Object {
 		return MakeInt(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -344,7 +342,7 @@ func __until_(_env *Env, _args []Object) Object {
 		return MakeInt(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }

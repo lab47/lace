@@ -6,8 +6,9 @@ package uuid
 import (
 	"crypto/rand"
 	"encoding/hex"
-	. "github.com/candid82/joker/core"
 	"io"
+
+	. "github.com/candid82/joker/core"
 )
 
 type UUID [16]byte
@@ -36,7 +37,7 @@ func new() string {
 	var uuid UUID
 	_, err := io.ReadFull(rander, uuid[:])
 	if err != nil {
-		panic(RT.NewError("Error generating UUID: " + err.Error()))
+		panic(StubNewError("Error generating UUID: " + err.Error()))
 	}
 	uuid[6] = (uuid[6] & 0x0f) | 0x40 // Version 4
 	uuid[8] = (uuid[8] & 0x3f) | 0x80 // Variant is 10

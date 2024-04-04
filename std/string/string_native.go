@@ -70,7 +70,7 @@ func splitOnStringOrRegex(s string, sep Object, n int) Object {
 	case *Regex:
 		return split(s, sep.R, n)
 	default:
-		panic(RT.NewArgTypeError(1, sep, "String or Regex"))
+		panic(StubNewArgTypeError(1, sep, "String or Regex"))
 	}
 }
 
@@ -107,10 +107,10 @@ func capitalize(s string) string {
 	return strings.ToUpper(string([]rune(s)[:1])) + strings.ToLower(string([]rune(s)[1:]))
 }
 
-func escape(s string, cmap Callable) string {
+func escape(env *Env, s string, cmap Callable) string {
 	var b bytes.Buffer
 	for _, r := range s {
-		if obj := cmap.Call([]Object{Char{Ch: r}}); !obj.Equals(NIL) {
+		if obj := cmap.Call(env, []Object{Char{Ch: r}}); !obj.Equals(NIL) {
 			b.WriteString(obj.ToString(false))
 		} else {
 			b.WriteRune(r)
@@ -130,7 +130,7 @@ func indexOf(s string, value Object, from int) Object {
 	case String:
 		res = strings.Index(s, value.S)
 	default:
-		panic(RT.NewArgTypeError(1, value, "String or Char"))
+		panic(StubNewArgTypeError(1, value, "String or Char"))
 	}
 	if res == -1 {
 		return NIL
@@ -149,7 +149,7 @@ func lastIndexOf(s string, value Object, from int) Object {
 	case String:
 		res = strings.LastIndex(s, value.S)
 	default:
-		panic(RT.NewArgTypeError(1, value, "String or Char"))
+		panic(StubNewArgTypeError(1, value, "String or Char"))
 	}
 	if res == -1 {
 		return NIL
@@ -164,7 +164,7 @@ func replace(s string, match Object, repl string) string {
 	case *Regex:
 		return match.R.ReplaceAllString(s, repl)
 	default:
-		panic(RT.NewArgTypeError(1, match, "String or Regex"))
+		panic(StubNewArgTypeError(1, match, "String or Regex"))
 	}
 }
 
@@ -179,7 +179,7 @@ func replaceFirst(s string, match Object, repl string) string {
 		}
 		return s[:m[0]] + repl + s[m[1]:]
 	default:
-		panic(RT.NewArgTypeError(1, match, "String or Regex"))
+		panic(StubNewArgTypeError(1, match, "String or Regex"))
 	}
 }
 

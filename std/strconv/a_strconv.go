@@ -21,7 +21,7 @@ func __atoi_(_env *Env, _args []Object) Object {
 		return MakeInt(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -38,7 +38,7 @@ func __iscan_backquote_(_env *Env, _args []Object) Object {
 		return MakeBoolean(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -55,7 +55,7 @@ func __format_bool_(_env *Env, _args []Object) Object {
 		return MakeString(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -75,7 +75,7 @@ func __format_double_(_env *Env, _args []Object) Object {
 		return MakeString(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -93,7 +93,7 @@ func __format_int_(_env *Env, _args []Object) Object {
 		return MakeString(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -110,7 +110,7 @@ func __isgraphic_(_env *Env, _args []Object) Object {
 		return MakeBoolean(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -127,7 +127,7 @@ func __itoa_(_env *Env, _args []Object) Object {
 		return MakeString(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -145,7 +145,7 @@ func __parse_bool_(_env *Env, _args []Object) Object {
 		return MakeBoolean(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -163,7 +163,7 @@ func __parse_double_(_env *Env, _args []Object) Object {
 		return MakeDouble(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -184,7 +184,7 @@ func __parse_int_(_env *Env, _args []Object) Object {
 		return MakeInt(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -201,7 +201,7 @@ func __isprintable_(_env *Env, _args []Object) Object {
 		return MakeBoolean(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -218,7 +218,7 @@ func __quote_(_env *Env, _args []Object) Object {
 		return MakeString(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -235,7 +235,7 @@ func __quote_char_(_env *Env, _args []Object) Object {
 		return MakeString(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -252,7 +252,7 @@ func __quote_char_to_ascii_(_env *Env, _args []Object) Object {
 		return MakeString(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -269,7 +269,7 @@ func __quote_char_to_graphic_(_env *Env, _args []Object) Object {
 		return MakeString(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -286,7 +286,7 @@ func __quote_to_ascii_(_env *Env, _args []Object) Object {
 		return MakeString(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -303,7 +303,7 @@ func __quote_to_graphic_(_env *Env, _args []Object) Object {
 		return MakeString(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -321,7 +321,7 @@ func __unquote_(_env *Env, _args []Object) Object {
 		return MakeString(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }

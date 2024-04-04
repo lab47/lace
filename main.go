@@ -164,7 +164,7 @@ func processReplCommand(env *Env, reader *Reader, phase Phase, parseContext *Par
 		return false
 	}
 
-	res := Eval(expr, nil)
+	res := Eval(env, expr, nil)
 	replContext.PushValue(res)
 	PrintObject(env, res, Stdout)
 	fmt.Fprintln(Stdout, "")
@@ -689,7 +689,6 @@ func main() {
 
 	saveForRepl = saveForRepl && (exitToRepl || errorToRepl) // don't bother saving stuff if no repl
 
-	RT.GIL.Lock()
 	SetupGlobalEnvCoreData()
 
 	env.ReferCoreToUser()

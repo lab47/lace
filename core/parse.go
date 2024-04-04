@@ -11,7 +11,7 @@ import (
 
 type (
 	Expr interface {
-		Eval(env *LocalEnv) Object
+		Eval(genv *Env, env *LocalEnv) Object
 		InferType() *Type
 		Pos() Position
 		Dump(includePosition bool) Map
@@ -126,7 +126,7 @@ type (
 		msg string
 	}
 	Callable interface {
-		Call(args []Object) Object
+		Call(env *Env, args []Object) Object
 	}
 	Binding struct {
 		name   Symbol
@@ -1230,9 +1230,9 @@ func macroexpand1(env *Env, seq Seq, ctx *ParseContext) Object {
 			Position: GetPosition(seq),
 			macro:    vr.Value.(Callable),
 			args:     ToSlice(seq.Rest().Cons(ctx.localBindings.ToMap()).Cons(seq)),
-			name:     varCallableString(env, vr),
+			name:     varCallableString(vr),
 		}
-		return fixInfo(Eval(expr, nil), seq.GetInfo())
+		return fixInfo(Eval(env, expr, nil), seq.GetInfo())
 	} else {
 		return seq
 	}
@@ -1358,7 +1358,7 @@ func setMacroMeta(vr *Var) {
 	}
 }
 
-func parseSetMacro(obj Object, ctx *ParseContext) Expr {
+func parseSetMacro(env *Env, obj Object, ctx *ParseContext) Expr {
 	expr := Parse(Second(obj.(Seq)), ctx)
 	switch expr := expr.(type) {
 	case *LiteralExpr:
@@ -1367,7 +1367,7 @@ func parseSetMacro(obj Object, ctx *ParseContext) Expr {
 			res := &SetMacroExpr{
 				vr: vr,
 			}
-			res.Eval(nil)
+			res.Eval(env, nil)
 			return res
 		}
 	}
@@ -1547,7 +1547,7 @@ func parseList(env *Env, obj Object, ctx *ParseContext) Expr {
 		// Vars' isMacro has to be properly set during parse stage
 		// for linter mode to correctly handle arguments count.
 		case STR.setMacro_:
-			return parseSetMacro(obj, ctx)
+			return parseSetMacro(env, obj, ctx)
 
 		case STR.def:
 			return parseDef(obj, ctx, false)
@@ -1648,7 +1648,7 @@ func parseList(env *Env, obj Object, ctx *ParseContext) Expr {
 							c.vr.Value.Equals(inNs.Value) ||
 							c.vr.Value.Equals(createNs.Value)) &&
 							areAllLiteralExprs(res.args) {
-							Eval(res, nil)
+							Eval(env, res, nil)
 						}
 					}
 				case Callable:

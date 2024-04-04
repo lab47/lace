@@ -72,14 +72,14 @@ func toObject(v interface{}, keywordize bool) Object {
 		}
 		return res
 	default:
-		panic(RT.NewError(fmt.Sprintf("Unknown json value: %v", v)))
+		panic(StubNewError(fmt.Sprintf("Unknown json value: %v", v)))
 	}
 }
 
 func readString(s string, opts Map) Object {
 	var v interface{}
 	if err := json.Unmarshal([]byte(s), &v); err != nil {
-		panic(RT.NewError("Invalid json: " + err.Error()))
+		panic(StubNewError("Invalid json: " + err.Error()))
 	}
 	var keywordize bool
 	if opts != nil {
@@ -93,7 +93,7 @@ func readString(s string, opts Map) Object {
 func writeString(obj Object) String {
 	res, err := json.Marshal(fromObject(obj))
 	if err != nil {
-		panic(RT.NewError("Cannot encode value to json: " + err.Error()))
+		panic(StubNewError("Cannot encode value to json: " + err.Error()))
 	}
 	return String{S: string(res)}
 }

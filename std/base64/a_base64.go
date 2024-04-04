@@ -19,7 +19,7 @@ func __decode_string_(_env *Env, _args []Object) Object {
 		return MakeString(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -36,7 +36,7 @@ func __encode_string_(_env *Env, _args []Object) Object {
 		return MakeString(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }

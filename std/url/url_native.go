@@ -9,7 +9,7 @@ import (
 func pathUnescape(s string) string {
 	res, err := url.PathUnescape(s)
 	if err != nil {
-		panic(RT.NewError("Error unescaping string: " + err.Error()))
+		panic(StubNewError("Error unescaping string: " + err.Error()))
 	}
 	return res
 }
@@ -17,7 +17,7 @@ func pathUnescape(s string) string {
 func queryUnescape(s string) string {
 	res, err := url.QueryUnescape(s)
 	if err != nil {
-		panic(RT.NewError("Error unescaping string: " + err.Error()))
+		panic(StubNewError("Error unescaping string: " + err.Error()))
 	}
 	return res
 }

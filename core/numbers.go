@@ -329,7 +329,7 @@ func (ops RatioOps) Multiply(x, y Number) Number {
 
 func panicOnZero(ops Ops, n Number) {
 	if ops.IsZero(n) {
-		panic(RT.NewError("Division by zero"))
+		panic(StubNewError("Division by zero"))
 	}
 }
 
@@ -366,7 +366,7 @@ func (ops BigFloatOps) Divide(x, y Number) Number {
 
 func (ops RatioOps) Divide(x, y Number) Number {
 	if y.Ratio().Num().Int64() == 0 {
-		panic(RT.NewError("Division by zero"))
+		panic(StubNewError("Division by zero"))
 	}
 	r := big.Rat{}
 	r.Quo(x.Ratio(), y.Ratio())

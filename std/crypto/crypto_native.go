@@ -24,7 +24,7 @@ func hmacSum(algorithm, message, key string) string {
 	case ":sha512":
 		h = sha512.New
 	default:
-		panic(RT.NewError("Unsupported algorithm " + algorithm +
+		panic(StubNewError("Unsupported algorithm " + algorithm +
 			". Supported algorithms are: :sha1, :sha224, :sha256, :sha384, :sha512"))
 	}
 	mac := hmac.New(h, []byte(key))

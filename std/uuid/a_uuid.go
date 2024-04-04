@@ -18,7 +18,7 @@ func __new_(_env *Env, _args []Object) Object {
 		return MakeString(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }

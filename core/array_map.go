@@ -277,9 +277,11 @@ func (m *ArrayMap) Seq() Seq {
 	return &ArrayMapSeq{m: m, index: 0}
 }
 
-func (m *ArrayMap) Call(args []Object) Object {
-	return callMap(m, args)
+func (m *ArrayMap) Call(env *Env, args []Object) Object {
+	return callMap(env, m, args)
 }
+
+var _ Callable = (*ArrayMap)(nil)
 
 func (m *ArrayMap) Empty() Collection {
 	return EmptyArrayMap()

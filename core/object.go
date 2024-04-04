@@ -64,7 +64,7 @@ type (
 		WithMeta(Map) Object
 	}
 	Ref interface {
-		AlterMeta(fn *Fn, args []Object) Map
+		AlterMeta(env *Env, fn *Fn, args []Object) Map
 		ResetMeta(m Map) Map
 	}
 	MetaHolder struct {
@@ -386,9 +386,9 @@ func MakeKeyword(nsname string) Keyword {
 	}
 }
 
-func PanicArity(n int) {
-	name := RT.currentExpr.(Traceable).Name()
-	panic(RT.NewError(fmt.Sprintf("Wrong number of args (%d) passed to %s", n, name)))
+func PanicArity(env *Env, n int) {
+	name := env.RT.currentExpr.(Traceable).Name()
+	panic(env.RT.NewError(fmt.Sprintf("Wrong number of args (%d) passed to %s", n, name)))
 }
 
 func rangeString(min, max int) string {
@@ -407,20 +407,20 @@ func rangeString(min, max int) string {
 	return "between " + strconv.Itoa(min) + " and " + strconv.Itoa(max) + ", inclusive"
 }
 
-func PanicArityMinMax(n, min, max int) {
-	name := RT.currentExpr.(Traceable).Name()
-	panic(RT.NewError(fmt.Sprintf("Wrong number of args (%d) passed to %s; expects %s", n, name, rangeString(min, max))))
+func PanicArityMinMax(env *Env, n, min, max int) {
+	name := env.RT.currentExpr.(Traceable).Name()
+	panic(env.RT.NewError(fmt.Sprintf("Wrong number of args (%d) passed to %s; expects %s", n, name, rangeString(min, max))))
 }
 
-func CheckArity(args []Object, min int, max int) {
+func CheckArity(env *Env, args []Object, min int, max int) {
 	n := len(args)
 	if n < min || n > max {
-		PanicArityMinMax(n, min, max)
+		PanicArityMinMax(env, n, min, max)
 	}
 }
 
-func getMap(k Object, args []Object) Object {
-	CheckArity(args, 1, 2)
+func getMap(env *Env, k Object, args []Object) Object {
+	CheckArity(env, args, 1, 2)
 	switch m := args[0].(type) {
 	case Map:
 		ok, v := m.Get(k)
@@ -515,8 +515,8 @@ func (a *Atom) ResetMeta(newMeta Map) Map {
 	return a.meta
 }
 
-func (a *Atom) AlterMeta(fn *Fn, args []Object) Map {
-	return AlterMeta(&a.MetaHolder, fn, args)
+func (a *Atom) AlterMeta(env *Env, fn *Fn, args []Object) Map {
+	return AlterMeta(env, &a.MetaHolder, fn, args)
 }
 
 func (a *Atom) Deref() Object {
@@ -547,15 +547,15 @@ func (d *Delay) WithInfo(info *ObjectInfo) Object {
 	return d
 }
 
-func (d *Delay) Force() Object {
+func (d *Delay) Force(env *Env) Object {
 	if d.value == nil {
-		d.value = d.fn.Call([]Object{})
+		d.value = d.fn.Call(env, []Object{})
 	}
 	return d.value
 }
 
-func (d *Delay) Deref() Object {
-	return d.Force()
+func (d *Delay) Deref(env *Env) Object {
+	return d.Force(env)
 }
 
 func (d *Delay) IsRealized() bool {
@@ -673,15 +673,15 @@ func (fn *Fn) Hash() uint32 {
 	return HashPtr(uintptr(unsafe.Pointer(fn)))
 }
 
-func (fn *Fn) Call(args []Object) Object {
+func (fn *Fn) Call(env *Env, args []Object) Object {
 	min := math.MaxInt32
 	max := -1
 	for _, arity := range fn.fnExpr.arities {
 		a := len(arity.args)
 		if a == len(args) {
-			RT.pushFrame()
-			defer RT.popFrame()
-			return evalLoop(arity.body, fn.env.addFrame(args))
+			env.RT.pushFrame()
+			defer env.RT.popFrame()
+			return evalLoop(env, arity.body, fn.env.addFrame(args))
 		}
 		if min > a {
 			min = a
@@ -704,7 +704,7 @@ func (fn *Fn) Call(args []Object) Object {
 				max -= 2
 			}
 		}
-		PanicArityMinMax(c, min, max)
+		PanicArityMinMax(env, c, min, max)
 	}
 	var restArgs Object = NIL
 	if len(v.args)-1 < len(args) {
@@ -715,18 +715,18 @@ func (fn *Fn) Call(args []Object) Object {
 		vargs[i] = args[i]
 	}
 	vargs[len(vargs)-1] = restArgs
-	RT.pushFrame()
-	defer RT.popFrame()
-	return evalLoop(v.body, fn.env.addFrame(vargs))
+	env.RT.pushFrame()
+	defer env.RT.popFrame()
+	return evalLoop(env, v.body, fn.env.addFrame(vargs))
 }
 
-func compare(c Callable, a, b Object) int {
-	switch r := c.Call([]Object{a, b}).(type) {
+func compare(env *Env, c Callable, a, b Object) int {
+	switch r := c.Call(env, []Object{a, b}).(type) {
 	case Boolean:
 		if r.B {
 			return -1
 		}
-		if AssertBoolean(c.Call([]Object{b, a}), "").B {
+		if AssertBoolean(c.Call(env, []Object{b, a}), "").B {
 			return 1
 		}
 		return 0
@@ -735,16 +735,19 @@ func compare(c Callable, a, b Object) int {
 	}
 }
 
-func (fn *Fn) Compare(a, b Object) int {
-	return compare(fn, a, b)
+func (fn *Fn) Compare(env *Env, a, b Object) int {
+	return compare(env, fn, a, b)
 }
 
-func (p Proc) Call(args []Object) Object {
-	return p.Fn(GLOBAL_ENV, args)
+func (p Proc) Call(env *Env, args []Object) Object {
+	return p.Fn(env, args)
 }
 
-func (p Proc) Compare(a, b Object) int {
-	return compare(p, a, b)
+var _ Callable = (*Fn)(nil)
+var _ Callable = Proc{}
+
+func (p Proc) Compare(env *Env, a, b Object) int {
+	return compare(env, p, a, b)
 }
 
 func (p Proc) ToString(escape bool) string {
@@ -787,13 +790,13 @@ func (m MetaHolder) GetMeta() Map {
 	return m.meta
 }
 
-func AlterMeta(m *MetaHolder, fn *Fn, args []Object) Map {
+func AlterMeta(env *Env, m *MetaHolder, fn *Fn, args []Object) Map {
 	meta := m.meta
 	if meta == nil {
 		meta = NIL
 	}
 	fargs := append([]Object{meta}, args...)
-	m.meta = AssertMap(fn.Call(fargs), "")
+	m.meta = AssertMap(fn.Call(env, fargs), "")
 	return m.meta
 }
 
@@ -827,8 +830,8 @@ func (v *Var) ResetMeta(newMeta Map) Map {
 	return v.meta
 }
 
-func (v *Var) AlterMeta(fn *Fn, args []Object) Map {
-	return AlterMeta(&v.MetaHolder, fn, args)
+func (v *Var) AlterMeta(env *Env, fn *Fn, args []Object) Map {
+	return AlterMeta(env, &v.MetaHolder, fn, args)
 }
 
 func (v *Var) GetType() *Type {
@@ -846,12 +849,14 @@ func (v *Var) Resolve() Object {
 	return v.Value
 }
 
-func (v *Var) Call(args []Object) Object {
+func (v *Var) Call(env *Env, args []Object) Object {
 	vl := v.Resolve()
 	return AssertCallable(
 		vl,
-		"Var "+v.ToString(false)+" resolves to "+vl.ToString(false)+", which is not a Fn").Call(args)
+		"Var "+v.ToString(false)+" resolves to "+vl.ToString(false)+", which is not a Fn").Call(env, args)
 }
+
+var _ Callable = (*Var)(nil)
 
 func (v *Var) Deref() Object {
 	return v.Resolve()
@@ -1239,9 +1244,11 @@ func (k Keyword) Compare(other Object) int {
 	return strings.Compare(k.ToString(false), k2.ToString(false))
 }
 
-func (k Keyword) Call(args []Object) Object {
-	return getMap(k, args)
+func (k Keyword) Call(env *Env, args []Object) Object {
+	return getMap(env, k, args)
 }
+
+var _ Callable = Keyword{}
 
 func MakeRegex(r *regexp.Regexp) *Regex {
 	return &Regex{R: r}
@@ -1315,9 +1322,11 @@ func (s Symbol) Compare(other Object) int {
 	return strings.Compare(s.ToString(false), s2.ToString(false))
 }
 
-func (s Symbol) Call(args []Object) Object {
-	return getMap(s, args)
+func (s Symbol) Call(env *Env, args []Object) Object {
+	return getMap(env, s, args)
 }
+
+var _ Callable = Symbol{}
 
 func (s String) ToString(escape bool) string {
 	if escape {
@@ -1375,7 +1384,7 @@ func (s String) Seq() Seq {
 
 func (s String) Nth(i int) Object {
 	if i < 0 {
-		panic(RT.NewError(fmt.Sprintf("Negative index: %d", i)))
+		panic(StubNewError(fmt.Sprintf("Negative index: %d", i)))
 	}
 	j, r := 0, 't'
 	for j, r = range s.S {
@@ -1383,7 +1392,7 @@ func (s String) Nth(i int) Object {
 			return Char{Ch: r}
 		}
 	}
-	panic(RT.NewError(fmt.Sprintf("Index %d exceeds string's length %d", i, j+1)))
+	panic(StubNewError(fmt.Sprintf("Index %d exceeds string's length %d", i, j+1)))
 }
 
 func (s String) TryNth(i int, d Object) Object {

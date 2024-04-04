@@ -22,7 +22,7 @@ func __isblank_(_env *Env, _args []Object) Object {
 		return MakeBoolean(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -39,7 +39,7 @@ func __capitalize_(_env *Env, _args []Object) Object {
 		return MakeString(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -57,7 +57,7 @@ func __isends_with_(_env *Env, _args []Object) Object {
 		return MakeBoolean(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -71,11 +71,11 @@ func __escape_(_env *Env, _args []Object) Object {
 	case _c == 2:
 		s := ExtractString(_args, 0)
 		cmap := ExtractCallable(_args, 1)
-		_res := escape(s, cmap)
+		_res := escape(_env, s, cmap)
 		return MakeString(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -93,7 +93,7 @@ func __isincludes_(_env *Env, _args []Object) Object {
 		return MakeBoolean(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -118,7 +118,7 @@ func __index_of_(_env *Env, _args []Object) Object {
 		return _res
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -141,7 +141,7 @@ func __join_(_env *Env, _args []Object) Object {
 		return MakeString(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -166,7 +166,7 @@ func __last_index_of_(_env *Env, _args []Object) Object {
 		return _res
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -183,7 +183,7 @@ func __lower_case_(_env *Env, _args []Object) Object {
 		return MakeString(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -202,7 +202,7 @@ func __pad_left_(_env *Env, _args []Object) Object {
 		return MakeString(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -221,7 +221,7 @@ func __pad_right_(_env *Env, _args []Object) Object {
 		return MakeString(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -238,7 +238,7 @@ func __re_quote_(_env *Env, _args []Object) Object {
 		return MakeRegex(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -257,7 +257,7 @@ func __replace_(_env *Env, _args []Object) Object {
 		return MakeString(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -276,7 +276,7 @@ func __replace_first_(_env *Env, _args []Object) Object {
 		return MakeString(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -293,7 +293,7 @@ func __reverse_(_env *Env, _args []Object) Object {
 		return MakeString(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -318,7 +318,7 @@ func __split_(_env *Env, _args []Object) Object {
 		return _res
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -335,7 +335,7 @@ func __split_lines_(_env *Env, _args []Object) Object {
 		return _res
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -353,7 +353,7 @@ func __isstarts_with_(_env *Env, _args []Object) Object {
 		return MakeBoolean(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -370,7 +370,7 @@ func __trim_(_env *Env, _args []Object) Object {
 		return MakeString(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -387,7 +387,7 @@ func __trim_left_(_env *Env, _args []Object) Object {
 		return MakeString(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -404,7 +404,7 @@ func __trim_newline_(_env *Env, _args []Object) Object {
 		return MakeString(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -421,7 +421,7 @@ func __trim_right_(_env *Env, _args []Object) Object {
 		return MakeString(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -438,7 +438,7 @@ func __triml_(_env *Env, _args []Object) Object {
 		return MakeString(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -455,7 +455,7 @@ func __trimr_(_env *Env, _args []Object) Object {
 		return MakeString(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -472,7 +472,7 @@ func __upper_case_(_env *Env, _args []Object) Object {
 		return MakeString(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }

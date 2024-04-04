@@ -1,3 +1,4 @@
+//go:build !plan9
 // +build !plan9
 
 package os
@@ -31,9 +32,7 @@ func sh(dir string, stdin io.Reader, stdout io.Writer, stderr io.Writer, name st
 	err := cmd.Start()
 	PanicOnErr(err)
 
-	RT.GIL.Unlock()
 	err = cmd.Wait()
-	RT.GIL.Lock()
 
 	res := EmptyArrayMap()
 	res.Add(MakeKeyword("success"), Boolean{B: err == nil})

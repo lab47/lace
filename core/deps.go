@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-func externalHttpSourceToPath(lib string, url string) (path string) {
+func externalHttpSourceToPath(env *Env, lib string, url string) (path string) {
 	home, _ := os.LookupEnv("HOME")
 	localBase := filepath.Join(home, ".jokerd", "deps", strings.SplitN(url, "//", 2)[1])
 	libBase := filepath.Join(strings.Split(lib, ".")...) + ".joke"
@@ -30,7 +30,7 @@ func externalHttpSourceToPath(lib string, url string) (path string) {
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			panic(RT.NewError(fmt.Sprintf("Unable to retrieve: %s\nServer response: %d", url, resp.StatusCode)))
+			panic(env.RT.NewError(fmt.Sprintf("Unable to retrieve: %s\nServer response: %d", url, resp.StatusCode)))
 		}
 
 		out, err := os.Create(libPath)
@@ -44,10 +44,10 @@ func externalHttpSourceToPath(lib string, url string) (path string) {
 	return libPath
 }
 
-func externalSourceToPath(lib string, url string) (path string) {
+func externalSourceToPath(env *Env, lib string, url string) (path string) {
 	httpPath, _ := regexp.MatchString("http://|https://", url)
 	if httpPath {
-		return externalHttpSourceToPath(lib, url)
+		return externalHttpSourceToPath(env, lib, url)
 	} else {
 		return filepath.Join(append([]string{url}, strings.Split(lib, ".")...)...) + ".joke"
 	}

@@ -22,7 +22,7 @@ func __abs_(_env *Env, _args []Object) Object {
 		return MakeString(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -39,7 +39,7 @@ func __isabs_(_env *Env, _args []Object) Object {
 		return MakeBoolean(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -56,7 +56,7 @@ func __base_(_env *Env, _args []Object) Object {
 		return MakeString(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -73,7 +73,7 @@ func __clean_(_env *Env, _args []Object) Object {
 		return MakeString(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -90,7 +90,7 @@ func __dir_(_env *Env, _args []Object) Object {
 		return MakeString(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -108,7 +108,7 @@ func __eval_symlinks_(_env *Env, _args []Object) Object {
 		return MakeString(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -125,7 +125,7 @@ func __ext_(_env *Env, _args []Object) Object {
 		return MakeString(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -142,7 +142,7 @@ func __file_seq_(_env *Env, _args []Object) Object {
 		return _res
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -159,7 +159,7 @@ func __from_slash_(_env *Env, _args []Object) Object {
 		return MakeString(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -177,7 +177,7 @@ func __glob_(_env *Env, _args []Object) Object {
 		return MakeStringVector(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -189,13 +189,13 @@ func __join_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case true:
-		CheckArity(_args, 0, 999)
+		CheckArity(_env, _args, 0, 999)
 		elems := ExtractStrings(_args, 0)
 		_res := filepath.Join(elems...)
 		return MakeString(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -214,7 +214,7 @@ func __ismatches_(_env *Env, _args []Object) Object {
 		return MakeBoolean(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -233,7 +233,7 @@ func __rel_(_env *Env, _args []Object) Object {
 		return MakeString(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -251,7 +251,7 @@ func __split_(_env *Env, _args []Object) Object {
 		return _res
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -268,7 +268,7 @@ func __split_list_(_env *Env, _args []Object) Object {
 		return MakeStringVector(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -285,7 +285,7 @@ func __to_slash_(_env *Env, _args []Object) Object {
 		return MakeString(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -302,7 +302,7 @@ func __volume_name_(_env *Env, _args []Object) Object {
 		return MakeString(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }

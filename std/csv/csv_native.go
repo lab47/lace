@@ -28,7 +28,7 @@ func csvSeqOpts(src Object, opts Map) Object {
 	case io.Reader:
 		rdr = src
 	default:
-		panic(RT.NewError("src must be a string or io.Reader"))
+		panic(StubNewError("src must be a string or io.Reader"))
 	}
 	csvReader := csv.NewReader(rdr)
 	csvReader.ReuseRecord = true

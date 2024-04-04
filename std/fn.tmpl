@@ -6,7 +6,7 @@ func __{goName}(_env *Env, _args []Object) Object {
 	switch {
 	{arities}
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }

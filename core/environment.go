@@ -32,6 +32,8 @@ type (
 		IN_NS_VAR     *Var
 		version       *Var
 		Features      Set
+
+		RT *Runtime
 	}
 )
 
@@ -59,8 +61,11 @@ func (env *Env) SetEnvArgs(newArgs []string) {
 	}
 }
 
-/* This runs after invariant initialization, which includes calling
-   NewEnv().  */
+/*
+This runs after invariant initialization, which includes calling
+
+	NewEnv().
+*/
 func (env *Env) SetClassPath(cp string) {
 	cpArray := filepath.SplitList(cp)
 	cpVec := EmptyVector()
@@ -73,8 +78,11 @@ func (env *Env) SetClassPath(cp string) {
 	env.classPath.Value = cpVec
 }
 
-/* This runs after invariant initialization, which includes calling
-   NewEnv().  */
+/*
+This runs after invariant initialization, which includes calling
+
+	NewEnv().
+*/
 func (env *Env) InitEnv(stdin io.Reader, stdout, stderr io.Writer, args []string) {
 	env.stdin.Value = MakeBufferedReader(stdin)
 	env.stdout.Value = MakeIOWriter(stdout)
@@ -92,14 +100,20 @@ func (env *Env) StdIO() (stdin, stdout, stderr Object) {
 	return env.stdin.Value, env.stdout.Value, env.stderr.Value
 }
 
-/* This runs after invariant initialization, which includes calling
-   NewEnv().  */
+/*
+This runs after invariant initialization, which includes calling
+
+	NewEnv().
+*/
 func (env *Env) SetMainFilename(filename string) {
 	env.MainFile.Value = MakeString(filename)
 }
 
-/* This runs after invariant initialization, which includes calling
-   NewEnv().  */
+/*
+This runs after invariant initialization, which includes calling
+
+	NewEnv().
+*/
 func (env *Env) SetFilename(obj Object) {
 	env.file.Value = obj
 }
@@ -118,7 +132,7 @@ func (env *Env) SetCurrentNamespace(ns *Namespace) {
 
 func (env *Env) EnsureNamespace(sym Symbol) *Namespace {
 	if sym.ns != nil {
-		panic(RT.NewError("Namespace's name cannot be qualified: " + sym.ToString(false)))
+		panic(env.RT.NewError("Namespace's name cannot be qualified: " + sym.ToString(false)))
 	}
 	if env.Namespaces[sym.name] == nil {
 		env.Namespaces[sym.name] = NewNamespace(sym)
@@ -179,7 +193,7 @@ func (env *Env) RemoveNamespace(s Symbol) *Namespace {
 		return nil
 	}
 	if s.Equals(SYMBOLS.joker_core) {
-		panic(RT.NewError("Cannot remove core namespace"))
+		panic(env.RT.NewError("Cannot remove core namespace"))
 	}
 	ns := env.Namespaces[s.name]
 	delete(env.Namespaces, s.name)

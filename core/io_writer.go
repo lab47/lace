@@ -46,6 +46,6 @@ func (iow *IOWriter) Close() error {
 	if c, ok := iow.Writer.(io.Closer); ok {
 		return c.Close()
 	} else {
-		return RT.NewError("Object is not closable: " + iow.ToString(false))
+		return StubNewError("Object is not closable: " + iow.ToString(false))
 	}
 }

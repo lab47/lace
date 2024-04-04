@@ -69,14 +69,14 @@ func toObject(v interface{}) Object {
 		}
 		return res
 	default:
-		panic(RT.NewError(fmt.Sprintf("Unknown yaml value: %v", v)))
+		panic(StubNewError(fmt.Sprintf("Unknown yaml value: %v", v)))
 	}
 }
 
 func readString(s string) Object {
 	var v interface{}
 	if err := yaml.Unmarshal([]byte(s), &v); err != nil {
-		panic(RT.NewError("Invalid yaml: " + err.Error()))
+		panic(StubNewError("Invalid yaml: " + err.Error()))
 	}
 	return toObject(v)
 }
@@ -84,7 +84,7 @@ func readString(s string) Object {
 func writeString(obj Object) String {
 	res, err := yaml.Marshal(fromObject(obj))
 	if err != nil {
-		panic(RT.NewError("Cannot encode value to yaml: " + err.Error()))
+		panic(StubNewError("Cannot encode value to yaml: " + err.Error()))
 	}
 	return String{S: string(res)}
 }

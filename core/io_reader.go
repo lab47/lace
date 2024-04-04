@@ -46,6 +46,6 @@ func (ior *IOReader) Close() error {
 	if c, ok := ior.Reader.(io.Closer); ok {
 		return c.Close()
 	} else {
-		return RT.NewError("Object is not closable: " + ior.ToString(false))
+		return StubNewError("Object is not closable: " + ior.ToString(false))
 	}
 }

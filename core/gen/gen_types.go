@@ -36,7 +36,7 @@ func Assert{{.Name}}(obj Object, msg string) {{.TypeName}} {
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "{{.ShowName}}", obj.GetType().ToString(false))
 		}
-		panic(RT.NewError(msg))
+		panic(StubNewError(msg))
 	}
 }
 `
@@ -47,7 +47,7 @@ func Ensure{{.Name}}(args []Object, index int) {{.TypeName}} {
 	case {{.TypeName}}:
 		return c
 	default:
-		panic(RT.NewArgTypeError(index, c, "{{.ShowName}}"))
+		panic(StubNewArgTypeError(index, c, "{{.ShowName}}"))
 	}
 }
 `

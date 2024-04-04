@@ -36,6 +36,8 @@ type (
 	LazySeq struct {
 		InfoHolder
 		MetaHolder
+
+		env *Env
 		fn  Callable
 		seq Seq
 	}
@@ -128,7 +130,7 @@ func (seq *LazySeq) Seq() Seq {
 
 func (seq *LazySeq) realize() {
 	if seq.seq == nil {
-		seq.seq = AssertSeqable(seq.fn.Call([]Object{}), "").Seq()
+		seq.seq = AssertSeqable(seq.fn.Call(seq.env, []Object{}), "").Seq()
 	}
 }
 
@@ -359,7 +361,7 @@ func SeqCount(seq Seq) int {
 
 func SeqNth(seq Seq, n int) Object {
 	if n < 0 {
-		panic(RT.NewError(fmt.Sprintf("Negative index: %d", n)))
+		panic(StubNewError(fmt.Sprintf("Negative index: %d", n)))
 	}
 	i := n
 	for !seq.IsEmpty() {
@@ -369,7 +371,7 @@ func SeqNth(seq Seq, n int) Object {
 		seq = seq.Rest()
 		i--
 	}
-	panic(RT.NewError(fmt.Sprintf("Index %d exceeds seq's length %d", n, (n - i))))
+	panic(StubNewError(fmt.Sprintf("Index %d exceeds seq's length %d", n, (n - i))))
 }
 
 func SeqTryNth(seq Seq, n int, d Object) Object {

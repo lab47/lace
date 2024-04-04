@@ -72,7 +72,7 @@ func execute(name string, opts Map) Object {
 			case String:
 				stdin = strings.NewReader(s.S)
 			default:
-				panic(RT.NewError("stdin option must be either an IOReader or a string, got " + stdinObj.GetType().ToString(false)))
+				panic(StubNewError("stdin option must be either an IOReader or a string, got " + stdinObj.GetType().ToString(false)))
 			}
 		}
 	}
@@ -84,7 +84,7 @@ func execute(name string, opts Map) Object {
 		case io.Writer:
 			stdout = s
 		default:
-			panic(RT.NewError("stdout option must be an IOWriter, got " + stdoutObj.GetType().ToString(false)))
+			panic(StubNewError("stdout option must be an IOWriter, got " + stdoutObj.GetType().ToString(false)))
 		}
 	}
 	if ok, stderrObj := opts.Get(MakeKeyword("stderr")); ok {
@@ -95,7 +95,7 @@ func execute(name string, opts Map) Object {
 		case io.Writer:
 			stderr = s
 		default:
-			panic(RT.NewError("stderr option must be an IOWriter, got " + stderrObj.GetType().ToString(false)))
+			panic(StubNewError("stderr option must be an IOWriter, got " + stderrObj.GetType().ToString(false)))
 		}
 	}
 	return sh(dir, stdin, stdout, stderr, name, args)
@@ -154,5 +154,5 @@ func exists(path string) bool {
 	if os.IsNotExist(err) {
 		return false
 	}
-	panic(RT.NewError(err.Error()))
+	panic(StubNewError(err.Error()))
 }

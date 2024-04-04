@@ -19,6 +19,7 @@ func NewEnv() *Env {
 		Features:   features,
 	}
 	res.CoreNamespace = res.EnsureNamespace(SYMBOLS.joker_core)
+	res.CoreNamespace.core = true
 	res.CoreNamespace.meta = MakeMeta(nil, "Core library of Joker.", "1.0")
 	res.NS_VAR = res.CoreNamespace.Intern(MakeSymbol("ns"))
 	res.IN_NS_VAR = res.CoreNamespace.Intern(MakeSymbol("in-ns"))

@@ -109,7 +109,7 @@ func (list *List) Peek() Object {
 
 func (list *List) Pop() Stack {
 	if list.count == 0 {
-		panic(RT.NewError("Can't pop empty list"))
+		panic(StubNewError("Can't pop empty list"))
 	}
 	return list.rest
 }

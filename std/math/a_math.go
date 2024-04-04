@@ -32,7 +32,7 @@ func __abs_(_env *Env, _args []Object) Object {
 		return MakeDouble(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -49,7 +49,7 @@ func __ceil_(_env *Env, _args []Object) Object {
 		return MakeDouble(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -67,7 +67,7 @@ func __copy_sign_(_env *Env, _args []Object) Object {
 		return MakeDouble(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -84,7 +84,7 @@ func __cos_(_env *Env, _args []Object) Object {
 		return MakeDouble(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -101,7 +101,7 @@ func __cube_root_(_env *Env, _args []Object) Object {
 		return MakeDouble(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -119,7 +119,7 @@ func __dim_(_env *Env, _args []Object) Object {
 		return MakeDouble(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -136,7 +136,7 @@ func __exp_(_env *Env, _args []Object) Object {
 		return MakeDouble(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -153,7 +153,7 @@ func __exp_2_(_env *Env, _args []Object) Object {
 		return MakeDouble(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -170,7 +170,7 @@ func __exp_minus_1_(_env *Env, _args []Object) Object {
 		return MakeDouble(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -187,7 +187,7 @@ func __floor_(_env *Env, _args []Object) Object {
 		return MakeDouble(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -205,7 +205,7 @@ func __hypot_(_env *Env, _args []Object) Object {
 		return MakeDouble(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -222,7 +222,7 @@ func __inf_(_env *Env, _args []Object) Object {
 		return MakeDouble(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -240,7 +240,7 @@ func __isinf_(_env *Env, _args []Object) Object {
 		return MakeBoolean(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -257,7 +257,7 @@ func __log_(_env *Env, _args []Object) Object {
 		return MakeDouble(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -274,7 +274,7 @@ func __log_10_(_env *Env, _args []Object) Object {
 		return MakeDouble(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -291,7 +291,7 @@ func __log_2_(_env *Env, _args []Object) Object {
 		return MakeDouble(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -308,7 +308,7 @@ func __log_binary_(_env *Env, _args []Object) Object {
 		return MakeDouble(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -325,7 +325,7 @@ func __log_plus_1_(_env *Env, _args []Object) Object {
 		return MakeDouble(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -342,7 +342,7 @@ func __modf_(_env *Env, _args []Object) Object {
 		return _res
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -358,7 +358,7 @@ func __nan_(_env *Env, _args []Object) Object {
 		return MakeDouble(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -375,7 +375,7 @@ func __isnan_(_env *Env, _args []Object) Object {
 		return MakeBoolean(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -393,7 +393,7 @@ func __next_after_(_env *Env, _args []Object) Object {
 		return MakeDouble(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -411,7 +411,7 @@ func __pow_(_env *Env, _args []Object) Object {
 		return MakeDouble(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -428,7 +428,7 @@ func __pow_10_(_env *Env, _args []Object) Object {
 		return MakeDouble(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -445,7 +445,7 @@ func __round_(_env *Env, _args []Object) Object {
 		return MakeDouble(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -462,7 +462,7 @@ func __round_to_even_(_env *Env, _args []Object) Object {
 		return MakeDouble(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -479,7 +479,7 @@ func __sign_bit_(_env *Env, _args []Object) Object {
 		return MakeBoolean(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -496,7 +496,7 @@ func __sin_(_env *Env, _args []Object) Object {
 		return MakeDouble(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -513,7 +513,7 @@ func __sqrt_(_env *Env, _args []Object) Object {
 		return MakeDouble(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -530,7 +530,7 @@ func __trunc_(_env *Env, _args []Object) Object {
 		return MakeDouble(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }

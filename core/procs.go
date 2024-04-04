@@ -135,7 +135,7 @@ var procMeta = func(env *Env, args []Object) Object {
 }
 
 var procWithMeta = func(env *Env, args []Object) Object {
-	CheckArity(args, 2, 2)
+	CheckArity(env, args, 2, 2)
 	m := EnsureMeta(args, 0)
 	if args[1].Equals(NIL) {
 		return args[0]
@@ -303,9 +303,9 @@ var procUnsignedBitShiftRight = func(env *Env, args []Object) Object {
 }
 
 var procExInfo = func(env *Env, args []Object) Object {
-	CheckArity(args, 2, 3)
+	CheckArity(env, args, 2, 3)
 	res := &ExInfo{
-		rt: RT.clone(),
+		rt: env.RT.clone(),
 	}
 	res.Add(KEYWORDS.message, EnsureString(args, 0))
 	res.Add(KEYWORDS.data, EnsureMap(args, 1))
@@ -336,7 +336,7 @@ var procExMessage = func(env *Env, args []Object) Object {
 var procRegex = func(env *Env, args []Object) Object {
 	r, err := regexp.Compile(EnsureString(args, 0).S)
 	if err != nil {
-		panic(RT.NewError("Invalid regex: " + err.Error()))
+		panic(env.RT.NewError("Invalid regex: " + err.Error()))
 	}
 	return &Regex{R: r}
 }
@@ -402,10 +402,10 @@ var procSubs = func(env *Env, args []Object) Object {
 		end = EnsureInt(args, 2).I
 	}
 	if start < 0 || start > slen {
-		panic(RT.NewError(fmt.Sprintf("String index out of range: %d", start)))
+		panic(env.RT.NewError(fmt.Sprintf("String index out of range: %d", start)))
 	}
 	if end < 0 || end > slen {
-		panic(RT.NewError(fmt.Sprintf("String index out of range: %d", end)))
+		panic(env.RT.NewError(fmt.Sprintf("String index out of range: %d", end)))
 	}
 	return String{S: string([]rune(s)[start:end])}
 }
@@ -448,7 +448,7 @@ var procSwap = func(env *Env, args []Object) Object {
 	a := EnsureAtom(args, 0)
 	f := EnsureCallable(args, 1)
 	fargs := append([]Object{a.value}, args[2:]...)
-	a.value = f.Call(fargs)
+	a.value = f.Call(env, fargs)
 	return a.value
 }
 
@@ -457,7 +457,7 @@ var procSwapVals = func(env *Env, args []Object) Object {
 	f := EnsureCallable(args, 1)
 	fargs := append([]Object{a.value}, args[2:]...)
 	oldValue := a.value
-	a.value = f.Call(fargs)
+	a.value = f.Call(env, fargs)
 	return NewVectorFrom(oldValue, a.value)
 }
 
@@ -477,7 +477,7 @@ var procResetVals = func(env *Env, args []Object) Object {
 var procAlterMeta = func(env *Env, args []Object) Object {
 	r := EnsureRef(args, 0)
 	f := EnsureFn(args, 1)
-	return r.AlterMeta(f, args[2:])
+	return r.AlterMeta(env, f, args[2:])
 }
 
 var procResetMeta = func(env *Env, args []Object) Object {
@@ -525,19 +525,19 @@ var procList = func(env *Env, args []Object) Object {
 }
 
 var procCons = func(env *Env, args []Object) Object {
-	CheckArity(args, 2, 2)
+	CheckArity(env, args, 2, 2)
 	s := EnsureSeqable(args, 1).Seq()
 	return s.Cons(args[0])
 }
 
 var procFirst = func(env *Env, args []Object) Object {
-	CheckArity(args, 1, 1)
+	CheckArity(env, args, 1, 1)
 	s := EnsureSeqable(args, 0).Seq()
 	return s.First()
 }
 
 var procNext = func(env *Env, args []Object) Object {
-	CheckArity(args, 1, 1)
+	CheckArity(env, args, 1, 1)
 	s := EnsureSeqable(args, 0).Seq()
 	res := s.Rest()
 	if res.IsEmpty() {
@@ -547,7 +547,7 @@ var procNext = func(env *Env, args []Object) Object {
 }
 
 var procRest = func(env *Env, args []Object) Object {
-	CheckArity(args, 1, 1)
+	CheckArity(env, args, 1, 1)
 	s := EnsureSeqable(args, 0).Seq()
 	return s.Rest()
 }
@@ -559,12 +559,12 @@ var procConj = func(env *Env, args []Object) Object {
 	case Seq:
 		return c.Cons(args[1])
 	default:
-		panic(RT.NewError("conj's first argument must be a collection, got " + c.GetType().ToString(false)))
+		panic(env.RT.NewError("conj's first argument must be a collection, got " + c.GetType().ToString(false)))
 	}
 }
 
 var procSeq = func(env *Env, args []Object) Object {
-	CheckArity(args, 1, 1)
+	CheckArity(env, args, 1, 1)
 	s := EnsureSeqable(args, 0).Seq()
 	if s.IsEmpty() {
 		return NIL
@@ -573,7 +573,7 @@ var procSeq = func(env *Env, args []Object) Object {
 }
 
 var procIsInstance = func(env *Env, args []Object) Object {
-	CheckArity(args, 2, 2)
+	CheckArity(env, args, 2, 2)
 	t := EnsureType(args, 0)
 	return Boolean{B: IsInstance(t, args[1])}
 }
@@ -602,7 +602,7 @@ var procSubvec = func(env *Env, args []Object) Object {
 	start := EnsureInt(args, 1).I
 	end := EnsureInt(args, 2).I
 	if start > end {
-		panic(RT.NewError(fmt.Sprintf("subvec's start index (%d) is greater than end index (%d)", start, end)))
+		panic(env.RT.NewError(fmt.Sprintf("subvec's start index (%d) is greater than end index (%d)", start, end)))
 	}
 	subv := make([]Object, 0, end-start)
 	for i := start; i < end; i++ {
@@ -618,7 +618,7 @@ var procCast = func(env *Env, args []Object) Object {
 		args[1].GetType().reflectType == t.reflectType {
 		return args[1]
 	}
-	panic(RT.NewError("Cannot cast " + args[1].GetType().ToString(false) + " to " + t.ToString(false)))
+	panic(env.RT.NewError("Cannot cast " + args[1].GetType().ToString(false) + " to " + t.ToString(false)))
 }
 
 var procVec = func(env *Env, args []Object) Object {
@@ -627,7 +627,7 @@ var procVec = func(env *Env, args []Object) Object {
 
 var procHashMap = func(env *Env, args []Object) Object {
 	if len(args)%2 != 0 {
-		panic(RT.NewError("No value supplied for key " + args[len(args)-1].ToString(false)))
+		panic(env.RT.NewError("No value supplied for key " + args[len(args)-1].ToString(false)))
 	}
 	return NewHashMap(args...)
 }
@@ -703,7 +703,7 @@ var procApply = func(env *Env, args []Object) Object {
 	// Stacktrace is broken. Need to somehow know
 	// the name of the function passed ...
 	f := EnsureCallable(args, 0)
-	return f.Call(ToSlice(EnsureSeqable(args, 1).Seq()))
+	return f.Call(env, ToSlice(EnsureSeqable(args, 1).Seq()))
 }
 
 var procLazySeq = func(env *Env, args []Object) Object {
@@ -721,7 +721,7 @@ var procDelay = func(env *Env, args []Object) Object {
 var procForce = func(env *Env, args []Object) Object {
 	switch d := args[0].(type) {
 	case *Delay:
-		return d.Force()
+		return d.Force(env)
 	default:
 		return d
 	}
@@ -746,7 +746,7 @@ var procCompare = func(env *Env, args []Object) Object {
 	case Comparable:
 		return Int{I: k1.Compare(k2)}
 	}
-	panic(RT.NewError(fmt.Sprintf("%s (type: %s) is not a Comparable", k1.ToString(true), k1.GetType().ToString(false))))
+	panic(env.RT.NewError(fmt.Sprintf("%s (type: %s) is not a Comparable", k1.ToString(true), k1.GetType().ToString(false))))
 }
 
 var procInt = func(env *Env, args []Object) Object {
@@ -756,7 +756,7 @@ var procInt = func(env *Env, args []Object) Object {
 	case Number:
 		return obj.Int()
 	default:
-		panic(RT.NewError(fmt.Sprintf("Cannot cast %s (type: %s) to Int", obj.ToString(true), obj.GetType().ToString(false))))
+		panic(env.RT.NewError(fmt.Sprintf("Cannot cast %s (type: %s) to Int", obj.ToString(true), obj.GetType().ToString(false))))
 	}
 }
 
@@ -776,11 +776,11 @@ var procChar = func(env *Env, args []Object) Object {
 	case Number:
 		i := c.Int().I
 		if i < MIN_RUNE || i > MAX_RUNE {
-			panic(RT.NewError(fmt.Sprintf("Value out of range for char: %d", i)))
+			panic(env.RT.NewError(fmt.Sprintf("Value out of range for char: %d", i)))
 		}
 		return Char{Ch: rune(i)}
 	default:
-		panic(RT.NewError(fmt.Sprintf("Cannot cast %s (type: %s) to Char", c.ToString(true), c.GetType().ToString(false))))
+		panic(env.RT.NewError(fmt.Sprintf("Cannot cast %s (type: %s) to Char", c.ToString(true), c.GetType().ToString(false))))
 	}
 }
 
@@ -807,9 +807,9 @@ var procBigInt = func(env *Env, args []Object) Object {
 		if _, ok := bi.SetString(n.S, 10); ok {
 			return &BigInt{b: bi}
 		}
-		panic(RT.NewError("Invalid number format " + n.S))
+		panic(env.RT.NewError("Invalid number format " + n.S))
 	default:
-		panic(RT.NewError(fmt.Sprintf("Cannot cast %s (type: %s) to BigInt", n.ToString(true), n.GetType().ToString(false))))
+		panic(env.RT.NewError(fmt.Sprintf("Cannot cast %s (type: %s) to BigInt", n.ToString(true), n.GetType().ToString(false))))
 	}
 }
 
@@ -822,9 +822,9 @@ var procBigFloat = func(env *Env, args []Object) Object {
 		if _, ok := b.SetString(n.S); ok {
 			return &BigFloat{b: b}
 		}
-		panic(RT.NewError("Invalid number format " + n.S))
+		panic(env.RT.NewError("Invalid number format " + n.S))
 	default:
-		panic(RT.NewError(fmt.Sprintf("Cannot cast %s (type: %s) to BigFloat", n.ToString(true), n.GetType().ToString(false))))
+		panic(env.RT.NewError(fmt.Sprintf("Cannot cast %s (type: %s) to BigFloat", n.ToString(true), n.GetType().ToString(false))))
 	}
 }
 
@@ -847,7 +847,7 @@ var procNth = func(env *Env, args []Object) Object {
 			return SeqNth(coll.Seq(), n)
 		}
 	}
-	panic(RT.NewError("nth not supported on this type: " + args[0].GetType().ToString(false)))
+	panic(env.RT.NewError("nth not supported on this type: " + args[0].GetType().ToString(false)))
 }
 
 var procLt = func(env *Env, args []Object) Object {
@@ -935,7 +935,7 @@ var procContains = func(env *Env, args []Object) Object {
 		}
 		return Boolean{B: false}
 	}
-	panic(RT.NewError("contains? not supported on type " + args[0].GetType().ToString(false)))
+	panic(env.RT.NewError("contains? not supported on type " + args[0].GetType().ToString(false)))
 }
 
 var procGet = func(env *Env, args []Object) Object {
@@ -995,7 +995,7 @@ var procNamespace = func(env *Env, args []Object) Object {
 var procFindVar = func(env *Env, args []Object) Object {
 	sym := EnsureSymbol(args, 0)
 	if sym.ns == nil {
-		panic(RT.NewError("find-var argument must be namespace-qualified symbol"))
+		panic(env.RT.NewError("find-var argument must be namespace-qualified symbol"))
 	}
 	if v, ok := env.Resolve(sym); ok {
 		return v
@@ -1017,7 +1017,7 @@ var procSort = func(env *Env, args []Object) Object {
 var procEval = func(env *Env, args []Object) Object {
 	parseContext := &ParseContext{Env: env}
 	expr := Parse(args[0], parseContext)
-	return Eval(expr, nil)
+	return Eval(env, expr, nil)
 }
 
 var procType = func(env *Env, args []Object) Object {
@@ -1082,7 +1082,7 @@ var procRead = func(env *Env, args []Object) Object {
 }
 
 var procReadString = func(env *Env, args []Object) Object {
-	CheckArity(args, 1, 1)
+	CheckArity(env, args, 1, 1)
 	return readFromReader(env, strings.NewReader(EnsureString(args, 0).S))
 }
 
@@ -1104,7 +1104,7 @@ func readLine(r StringReader) (s string, e error) {
 }
 
 var procReadLine = func(env *Env, args []Object) Object {
-	CheckArity(args, 0, 0)
+	CheckArity(env, args, 0, 0)
 	f := AssertStringReader(env.stdin.Value, "")
 	line, err := readLine(f)
 	if err != nil {
@@ -1114,7 +1114,7 @@ var procReadLine = func(env *Env, args []Object) Object {
 }
 
 var procReaderReadLine = func(env *Env, args []Object) Object {
-	CheckArity(args, 1, 1)
+	CheckArity(env, args, 1, 1)
 	rdr := EnsureStringReader(args, 0)
 	line, err := readLine(rdr)
 	if err != nil {
@@ -1152,7 +1152,7 @@ func loadReader(env *Env, reader *Reader) (Object, error) {
 		if err != nil {
 			return nil, err
 		}
-		lastObj, err = TryEval(expr)
+		lastObj, err = TryEval(env, expr)
 		if err != nil {
 			return nil, err
 		}
@@ -1229,7 +1229,7 @@ var procNamespaceUnmap = func(env *Env, args []Object) Object {
 	ns := EnsureNamespace(args, 0)
 	sym := EnsureSymbol(args, 1)
 	if sym.ns != nil {
-		panic(RT.NewError("Can't unintern namespace-qualified symbol"))
+		panic(env.RT.NewError("Can't unintern namespace-qualified symbol"))
 	}
 	delete(ns.mappings, sym.name)
 	return NIL
@@ -1264,7 +1264,7 @@ var procNamespaceUnalias = func(env *Env, args []Object) Object {
 	ns := EnsureNamespace(args, 0)
 	sym := EnsureSymbol(args, 1)
 	if sym.ns != nil {
-		panic(RT.NewError("Alias can't be namespace-qualified"))
+		panic(env.RT.NewError("Alias can't be namespace-qualified"))
 	}
 	delete(ns.aliases, sym.name)
 	return NIL
@@ -1293,7 +1293,7 @@ var procNsResolve = func(env *Env, args []Object) Object {
 
 var procArrayMap = func(env *Env, args []Object) Object {
 	if len(args)%2 == 1 {
-		panic(RT.NewError("No value supplied for key " + args[len(args)-1].ToString(false)))
+		panic(env.RT.NewError("No value supplied for key " + args[len(args)-1].ToString(false)))
 	}
 	res := EmptyArrayMap()
 	for i := 0; i < len(args); i += 2 {
@@ -1317,7 +1317,7 @@ var procBufferedReader = func(env *Env, args []Object) Object {
 	case io.Reader:
 		return MakeBufferedReader(rdr)
 	default:
-		panic(RT.NewArgTypeError(0, args[0], "IOReader"))
+		panic(env.RT.NewArgTypeError(0, args[0], "IOReader"))
 	}
 }
 
@@ -1460,9 +1460,9 @@ func libExternalPath(env *Env, sym Symbol) (path string, ok bool) {
 	if sourceMap != nil {
 		ok, url := sourceMap.Get(MakeKeyword("url"))
 		if !ok {
-			panic(RT.NewError("Key :url not found in ns-sources for: " + sourceKey))
+			panic(env.RT.NewError("Key :url not found in ns-sources for: " + sourceKey))
 		} else {
-			return externalSourceToPath(sym.Name(), url.ToString(false)), true
+			return externalSourceToPath(env, sym.Name(), url.ToString(false)), true
 		}
 	}
 	return
@@ -1521,7 +1521,7 @@ var procParse = func(env *Env, args []Object) Object {
 }
 
 var procTypes = func(env *Env, args []Object) Object {
-	CheckArity(args, 0, 0)
+	CheckArity(env, args, 0, 0)
 	res := EmptyArrayMap()
 	for k, v := range TYPES {
 		res.Add(String{S: *k}, v)
@@ -1530,24 +1530,24 @@ var procTypes = func(env *Env, args []Object) Object {
 }
 
 var procCreateChan = func(env *Env, args []Object) Object {
-	CheckArity(args, 1, 1)
+	CheckArity(env, args, 1, 1)
 	n := EnsureInt(args, 0)
 	ch := make(chan FutureResult, n.I)
 	return MakeChannel(ch)
 }
 
 var procCloseChan = func(env *Env, args []Object) Object {
-	CheckArity(args, 1, 1)
+	CheckArity(env, args, 1, 1)
 	EnsureChannel(args, 0).Close()
 	return NIL
 }
 
 var procSend = func(env *Env, args []Object) (obj Object) {
-	CheckArity(args, 2, 2)
+	CheckArity(env, args, 2, 2)
 	ch := EnsureChannel(args, 0)
 	v := args[1]
 	if v.Equals(NIL) {
-		panic(RT.NewError("Can't put nil on channel"))
+		panic(env.RT.NewError("Can't put nil on channel"))
 	}
 	if ch.isClosed {
 		return MakeBoolean(false)
@@ -1555,22 +1555,22 @@ var procSend = func(env *Env, args []Object) (obj Object) {
 	obj = MakeBoolean(true)
 	defer func() {
 		if r := recover(); r != nil {
-			RT.GIL.Lock()
+			env.RT.GIL.Lock()
 			obj = MakeBoolean(false)
 		}
 	}()
-	RT.GIL.Unlock()
+	env.RT.GIL.Unlock()
 	ch.ch <- MakeFutureResult(v, nil)
-	RT.GIL.Lock()
+	env.RT.GIL.Lock()
 	return
 }
 
 var procReceive = func(env *Env, args []Object) Object {
-	CheckArity(args, 1, 1)
+	CheckArity(env, args, 1, 1)
 	ch := EnsureChannel(args, 0)
-	RT.GIL.Unlock()
+	env.RT.GIL.Unlock()
 	res, ok := <-ch.ch
-	RT.GIL.Lock()
+	env.RT.GIL.Lock()
 	if !ok {
 		return NIL
 	}
@@ -1581,7 +1581,7 @@ var procReceive = func(env *Env, args []Object) Object {
 }
 
 var procGo = func(env *Env, args []Object) Object {
-	CheckArity(args, 1, 1)
+	CheckArity(env, args, 1, 1)
 	f := EnsureCallable(args, 0)
 	ch := MakeChannel(make(chan FutureResult, 1))
 	go func() {
@@ -1593,15 +1593,15 @@ var procGo = func(env *Env, args []Object) Object {
 					ch.ch <- MakeFutureResult(NIL, r)
 					ch.Close()
 				default:
-					RT.GIL.Unlock()
+					env.RT.GIL.Unlock()
 					panic(r)
 				}
 			}
-			RT.GIL.Unlock()
+			env.RT.GIL.Unlock()
 		}()
 
-		RT.GIL.Lock()
-		res := f.Call([]Object{})
+		env.RT.GIL.Lock()
+		res := f.Call(env, []Object{})
 		ch.ch <- MakeFutureResult(res, nil)
 		ch.Close()
 	}()
@@ -1609,7 +1609,7 @@ var procGo = func(env *Env, args []Object) Object {
 }
 
 var procVerbosityLevel = func(env *Env, args []Object) Object {
-	CheckArity(args, 0, 0)
+	CheckArity(env, args, 0, 0)
 	return MakeInt(VerbosityLevel)
 }
 
@@ -1643,7 +1643,7 @@ func PackReader(env *Env, reader *Reader, filename string) ([]byte, error) {
 			return nil, err
 		}
 		p = expr.Pack(p, packEnv)
-		_, err = TryEval(expr)
+		_, err = TryEval(env, expr)
 		if err != nil {
 			fmt.Fprintln(Stderr, err)
 			return nil, err
@@ -1687,7 +1687,7 @@ func ProcessReader(env *Env, reader *Reader, filename string, phase Phase) error
 		if phase == PARSE {
 			continue
 		}
-		obj, err = TryEval(expr)
+		obj, err = TryEval(env, expr)
 		if err != nil {
 			fmt.Fprintln(Stderr, err)
 			return err
@@ -1720,7 +1720,7 @@ func ProcessReaderFromEval(env *Env, reader *Reader, filename string) {
 		PanicOnErr(err)
 		expr, err := TryParse(obj, parseContext)
 		PanicOnErr(err)
-		obj, err = TryEval(expr)
+		obj, err = TryEval(env, expr)
 		PanicOnErr(err)
 	}
 }
@@ -1737,7 +1737,7 @@ func processInEnv(env *Env, data []byte) error {
 	for len(p) > 0 {
 		var expr Expr
 		expr, p = UnpackExpr(env, p, header)
-		_, err := TryEval(expr)
+		_, err := TryEval(env, expr)
 		PanicOnErr(err)
 	}
 	if VerbosityLevel > 0 {
@@ -1767,7 +1767,7 @@ func setCoreNamespaces(env *Env) {
 var procIsNamespaceInitialized = func(env *Env, args []Object) Object {
 	sym := EnsureSymbol(args, 0)
 	if sym.ns != nil {
-		panic(RT.NewError("Can't ask for namespace info on namespace-qualified symbol"))
+		panic(env.RT.NewError("Can't ask for namespace info on namespace-qualified symbol"))
 	}
 	// First look for registered (e.g. std) libs
 	ns, found := env.Namespaces[sym.name]

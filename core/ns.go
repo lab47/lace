@@ -16,6 +16,7 @@ type (
 		isUsed         bool
 		isGloballyUsed bool
 		hash           uint32
+		core           bool
 	}
 )
 
@@ -54,8 +55,8 @@ func (ns *Namespace) ResetMeta(newMeta Map) Map {
 	return ns.meta
 }
 
-func (ns *Namespace) AlterMeta(fn *Fn, args []Object) Map {
-	return AlterMeta(&ns.MetaHolder, fn, args)
+func (ns *Namespace) AlterMeta(env *Env, fn *Fn, args []Object) Map {
+	return AlterMeta(env, &ns.MetaHolder, fn, args)
 }
 
 func (ns *Namespace) Hash() uint32 {
@@ -73,6 +74,10 @@ func (ns *Namespace) MaybeLazy(doc string) {
 	}
 }
 
+func (ns *Namespace) CoreP() bool {
+	return ns.core
+}
+
 const nsHashMask uint32 = 0x90569f6f
 
 func NewNamespace(sym Symbol) *Namespace {
@@ -86,7 +91,7 @@ func NewNamespace(sym Symbol) *Namespace {
 
 func (ns *Namespace) Refer(sym Symbol, vr *Var) *Var {
 	if sym.ns != nil {
-		panic(RT.NewError("Can't intern namespace-qualified symbol " + sym.ToString(false)))
+		panic(StubNewError("Can't intern namespace-qualified symbol " + sym.ToString(false)))
 	}
 	ns.mappings[sym.name] = vr
 	return vr
@@ -102,7 +107,7 @@ func (ns *Namespace) ReferAll(other *Namespace) {
 
 func (ns *Namespace) Intern(sym Symbol) *Var {
 	if sym.ns != nil {
-		panic(RT.NewError("Can't intern namespace-qualified symbol " + sym.ToString(false)))
+		panic(StubNewError("Can't intern namespace-qualified symbol " + sym.ToString(false)))
 	}
 	sym.meta = nil
 	existingVar, ok := ns.mappings[sym.name]
@@ -127,7 +132,7 @@ func (ns *Namespace) Intern(sym Symbol) *Var {
 			}
 			return newVar
 		}
-		panic(RT.NewErrorWithPos(fmt.Sprintf("WARNING: %s already refers to: %s in namespace %s",
+		panic(StubNewErrorWithPos(fmt.Sprintf("WARNING: %s already refers to: %s in namespace %s",
 			sym.ToString(false), existingVar.ToString(false), ns.ToString(false)), sym.GetInfo().Pos()))
 	}
 	if LINTER_MODE && existingVar.expr != nil && !existingVar.ns.Name.Equals(SYMBOLS.joker_core) {
@@ -147,7 +152,7 @@ func (ns *Namespace) InternVar(name string, val Object, meta *ArrayMap) *Var {
 
 func (ns *Namespace) AddAlias(alias Symbol, namespace *Namespace) {
 	if alias.ns != nil {
-		panic(RT.NewError("Alias can't be namespace-qualified"))
+		panic(StubNewError("Alias can't be namespace-qualified"))
 	}
 	existing := ns.aliases[alias.name]
 	if existing != nil && existing != namespace {
@@ -156,7 +161,7 @@ func (ns *Namespace) AddAlias(alias Symbol, namespace *Namespace) {
 			printParseError(GetPosition(alias), msg)
 			return
 		}
-		panic(RT.NewError(msg))
+		panic(StubNewError(msg))
 	}
 	ns.aliases[alias.name] = namespace
 }

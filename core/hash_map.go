@@ -829,9 +829,11 @@ func (m *HashMap) Without(key Object) Map {
 	return res
 }
 
-func (m *HashMap) Call(args []Object) Object {
-	return callMap(m, args)
+func (m *HashMap) Call(env *Env, args []Object) Object {
+	return callMap(env, m, args)
 }
+
+var _ Callable = (*HashMap)(nil)
 
 func NewHashMap(keyvals ...Object) *HashMap {
 	var res Associative = EmptyHashMap

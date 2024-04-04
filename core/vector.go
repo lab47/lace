@@ -52,7 +52,7 @@ func (v *Vector) tailoff() int {
 
 func (v *Vector) arrayFor(i int) []interface{} {
 	if i >= v.count || i < 0 {
-		panic(RT.NewError(fmt.Sprintf("Index %d is out of bounds [0..%d]", i, v.count-1)))
+		panic(StubNewError(fmt.Sprintf("Index %d is out of bounds [0..%d]", i, v.count-1)))
 	}
 	if i >= v.tailoff() {
 		return v.tail
@@ -323,7 +323,7 @@ func (v *Vector) popTail(level uint, node []interface{}) []interface{} {
 
 func (v *Vector) Pop() Stack {
 	if v.count == 0 {
-		panic(RT.NewError("Can't pop empty vector"))
+		panic(StubNewError("Can't pop empty vector"))
 	}
 	if v.count == 1 {
 		return EmptyVector().WithMeta(v.meta).(Stack)
@@ -380,7 +380,7 @@ func doAssoc(level uint, node []interface{}, i int, val Object) []interface{} {
 
 func (v *Vector) assocN(i int, val Object) *Vector {
 	if i < 0 || i > v.count {
-		panic(RT.NewError((fmt.Sprintf("Index %d is out of bounds [0..%d]", i, v.count))))
+		panic(StubNewError((fmt.Sprintf("Index %d is out of bounds [0..%d]", i, v.count))))
 	}
 	if i == v.count {
 		return v.Conjoin(val)
@@ -405,7 +405,7 @@ func assertInteger(obj Object) int {
 	case *BigInt:
 		i = obj.Int().I
 	default:
-		panic(RT.NewError("Key must be integer"))
+		panic(StubNewError("Key must be integer"))
 	}
 	return i
 }
@@ -419,11 +419,13 @@ func (v *Vector) Rseq() Seq {
 	return &VectorRSeq{vector: v, index: v.count - 1}
 }
 
-func (v *Vector) Call(args []Object) Object {
-	CheckArity(args, 1, 1)
+func (v *Vector) Call(env *Env, args []Object) Object {
+	CheckArity(env, args, 1, 1)
 	i := assertInteger(args[0])
 	return v.at(i)
 }
+
+var _ Callable = (*Vector)(nil)
 
 func EmptyVector() *Vector {
 	return &Vector{
@@ -455,10 +457,10 @@ func (v *Vector) Empty() Collection {
 	return EmptyVector()
 }
 
-func (v *Vector) kvreduce(c Callable, init Object) Object {
+func (v *Vector) kvreduce(env *Env, c Callable, init Object) Object {
 	res := init
 	for i := 0; i < v.Count(); i++ {
-		res = c.Call([]Object{res, Int{I: i}, v.Nth(i)})
+		res = c.Call(env, []Object{res, Int{I: i}, v.Nth(i)})
 	}
 	return res
 }

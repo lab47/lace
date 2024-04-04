@@ -19,7 +19,7 @@ func __args_(_env *Env, _args []Object) Object {
 		return _res
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -36,7 +36,7 @@ func __chdir_(_env *Env, _args []Object) Object {
 		return _res
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -55,7 +55,7 @@ func __close_(_env *Env, _args []Object) Object {
 		return _res
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -73,7 +73,7 @@ func __create_(_env *Env, _args []Object) Object {
 		return MakeFile(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -89,7 +89,7 @@ func __cwd_(_env *Env, _args []Object) Object {
 		return MakeString(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -105,7 +105,7 @@ func __env_(_env *Env, _args []Object) Object {
 		return _res
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -123,7 +123,7 @@ func __exec_(_env *Env, _args []Object) Object {
 		return _res
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -140,7 +140,7 @@ func __isexists_(_env *Env, _args []Object) Object {
 		return MakeBoolean(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -158,7 +158,7 @@ func __exit_(_env *Env, _args []Object) Object {
 		return _res
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -175,7 +175,7 @@ func __get_env_(_env *Env, _args []Object) Object {
 		return _res
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -192,7 +192,7 @@ func __ls_(_env *Env, _args []Object) Object {
 		return _res
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -210,7 +210,7 @@ func __mkdir_(_env *Env, _args []Object) Object {
 		return _res
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -228,7 +228,7 @@ func __open_(_env *Env, _args []Object) Object {
 		return MakeFile(_res)
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -247,7 +247,7 @@ func __remove_(_env *Env, _args []Object) Object {
 		return _res
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -266,7 +266,7 @@ func __remove_all_(_env *Env, _args []Object) Object {
 		return _res
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -284,7 +284,7 @@ func __set_env_(_env *Env, _args []Object) Object {
 		return _res
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -296,14 +296,14 @@ func __sh_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case true:
-		CheckArity(_args, 1, 999)
+		CheckArity(_env, _args, 1, 999)
 		name := ExtractString(_args, 0)
 		arguments := ExtractStrings(_args, 1)
 		_res := sh("", nil, nil, nil, name, arguments)
 		return _res
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -315,7 +315,7 @@ func __sh_from_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case true:
-		CheckArity(_args, 2, 999)
+		CheckArity(_env, _args, 2, 999)
 		dir := ExtractString(_args, 0)
 		name := ExtractString(_args, 1)
 		arguments := ExtractStrings(_args, 2)
@@ -323,7 +323,7 @@ func __sh_from_(_env *Env, _args []Object) Object {
 		return _res
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }
@@ -340,7 +340,7 @@ func __stat_(_env *Env, _args []Object) Object {
 		return _res
 
 	default:
-		PanicArity(_c)
+		PanicArity(_env, _c)
 	}
 	return NIL
 }

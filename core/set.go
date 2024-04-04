@@ -97,13 +97,15 @@ func (set *MapSet) Count() int {
 	return set.m.Count()
 }
 
-func (set *MapSet) Call(args []Object) Object {
-	CheckArity(args, 1, 1)
+func (set *MapSet) Call(env *Env, args []Object) Object {
+	CheckArity(env, args, 1, 1)
 	if ok, _ := set.Get(args[0]); ok {
 		return args[0]
 	}
 	return NIL
 }
+
+var _ Callable = (*MapSet)(nil)
 
 func (set *MapSet) Empty() Collection {
 	return EmptySet()

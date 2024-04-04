@@ -45,13 +45,13 @@ func mapConj(m Map, obj Object) Conjable {
 	switch obj := obj.(type) {
 	case *Vector:
 		if obj.count != 2 {
-			panic(RT.NewError("Vector argument to map's conj must be a vector with two elements"))
+			panic(StubNewError("Vector argument to map's conj must be a vector with two elements"))
 		}
 		return m.Assoc(obj.at(0), obj.at(1))
 	case Map:
 		return m.Merge(obj)
 	default:
-		panic(RT.NewError("Argument to map's conj must be a vector with two elements or a map"))
+		panic(StubNewError("Argument to map's conj must be a vector with two elements or a map"))
 	}
 }
 
@@ -99,8 +99,8 @@ func mapToString(m Map, escape bool) string {
 	return b.String()
 }
 
-func callMap(m Map, args []Object) Object {
-	CheckArity(args, 1, 2)
+func callMap(env *Env, m Map, args []Object) Object {
+	CheckArity(env, args, 1, 2)
 	if ok, v := m.Get(args[0]); ok {
 		return v
 	}
