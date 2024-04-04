@@ -273,8 +273,8 @@ func lintFile(env *Env, filename string, dialect Dialect, workingDir string) {
 	ReadConfig(env, filename, workingDir)
 	configureLinterMode(env, dialect, filename, workingDir)
 	if processFile(env, filename, phase) == nil {
-		WarnOnUnusedNamespaces()
-		WarnOnUnusedVars()
+		WarnOnUnusedNamespaces(env)
+		WarnOnUnusedVars(env)
 	}
 }
 
@@ -321,17 +321,17 @@ func lintDir(env *Env, dirname string, dialect Dialect, reportGloballyUnused boo
 			env.CoreNamespace.Resolve("*loaded-libs*").Value = EmptySet()
 			processErr = processFile(env, path, phase)
 			if processErr == nil {
-				WarnOnUnusedNamespaces()
-				WarnOnUnusedVars()
+				WarnOnUnusedNamespaces(env)
+				WarnOnUnusedVars(env)
 			}
-			ResetUsage()
+			ResetUsage(env)
 			env.SetCurrentNamespace(ns)
 		}
 		return nil
 	})
 	if processErr == nil && reportGloballyUnused {
-		WarnOnGloballyUnusedNamespaces()
-		WarnOnGloballyUnusedVars()
+		WarnOnGloballyUnusedNamespaces(env)
+		WarnOnGloballyUnusedVars(env)
 	}
 }
 

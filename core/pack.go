@@ -580,7 +580,7 @@ func (vr *Var) Pack(p []byte, env *PackEnv) []byte {
 func unpackVar(env *Env, p []byte, header *PackHeader) (*Var, []byte) {
 	nsName, p := unpackSymbol(env, p, header)
 	name, p := unpackSymbol(env, p, header)
-	vr := GLOBAL_ENV.FindNamespace(nsName).mappings[name.name]
+	vr := env.FindNamespace(nsName).mappings[name.name]
 	if vr == nil {
 		panic(RT.NewError("Error unpacking var: cannot find var " + *nsName.name + "/" + *name.name))
 	}

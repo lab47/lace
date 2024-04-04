@@ -1131,7 +1131,7 @@ var procMacroexpand1 = func(env *Env, args []Object) Object {
 	switch s := args[0].(type) {
 	case Seq:
 		parseContext := &ParseContext{Env: env}
-		return macroexpand1(s, parseContext)
+		return macroexpand1(env, s, parseContext)
 	default:
 		return s
 	}
@@ -1502,7 +1502,7 @@ var procInternFakeVar = func(env *Env, args []Object) Object {
 	nsSym := EnsureSymbol(args, 0)
 	sym := EnsureSymbol(args, 1)
 	isMacro := ToBool(args[2])
-	res := InternFakeSymbol(env.FindNamespace(nsSym), sym)
+	res := InternFakeSymbol(env, env.FindNamespace(nsSym), sym)
 	res.isMacro = isMacro
 	return res
 }

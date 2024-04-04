@@ -294,8 +294,8 @@ func (expr *CallExpr) Eval(env *LocalEnv) Object {
 	}
 }
 
-func varCallableString(v *Var) string {
-	if v.ns == GLOBAL_ENV.CoreNamespace {
+func varCallableString(env *Env, v *Var) string {
+	if v.ns == env.CoreNamespace {
 		return "core/" + v.name.ToString(false)
 	}
 	return v.ns.Name.ToString(false) + "/" + v.name.ToString(false)
@@ -304,7 +304,7 @@ func varCallableString(v *Var) string {
 func (expr *CallExpr) Name() string {
 	switch c := expr.callable.(type) {
 	case *VarRefExpr:
-		return varCallableString(c.vr)
+		return varCallableString(GLOBAL_ENV, c.vr)
 	case *BindingExpr:
 		return c.binding.name.ToString(false)
 	case *LiteralExpr:

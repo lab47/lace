@@ -434,9 +434,9 @@ func isIgnoredUnusedNamespace(ns *Namespace) bool {
 	return ok
 }
 
-func ResetUsage() {
-	for _, ns := range GLOBAL_ENV.Namespaces {
-		if ns == GLOBAL_ENV.CoreNamespace {
+func ResetUsage(env *Env) {
+	for _, ns := range env.Namespaces {
+		if ns == env.CoreNamespace {
 			continue
 		}
 		ns.isUsed = true
@@ -451,11 +451,11 @@ func isEntryPointNs(ns *Namespace) bool {
 	return ok
 }
 
-func WarnOnGloballyUnusedNamespaces() {
+func WarnOnGloballyUnusedNamespaces(env *Env) {
 	var names []string
 	positions := make(map[string]Position)
 
-	for _, ns := range GLOBAL_ENV.Namespaces {
+	for _, ns := range env.Namespaces {
 		if !ns.isGloballyUsed && !isIgnoredUnusedNamespace(ns) && !isEntryPointNs(ns) {
 			pos := ns.Name.GetInfo()
 			if pos != nil && pos.Filename() != "<joker.core>" && pos.Filename() != "<user>" {
@@ -472,12 +472,12 @@ func WarnOnGloballyUnusedNamespaces() {
 	}
 }
 
-func WarnOnUnusedNamespaces() {
+func WarnOnUnusedNamespaces(env *Env) {
 	var names []string
 	positions := make(map[string]Position)
 
-	for _, ns := range GLOBAL_ENV.Namespaces {
-		if ns != GLOBAL_ENV.CurrentNamespace() && !ns.isUsed && !isIgnoredUnusedNamespace(ns) {
+	for _, ns := range env.Namespaces {
+		if ns != env.CurrentNamespace() && !ns.isUsed && !isIgnoredUnusedNamespace(ns) {
 			pos := ns.Name.GetInfo()
 			if pos != nil && pos.Filename() != "<joker.core>" && pos.Filename() != "<user>" {
 				name := ns.Name.ToString(false)
@@ -505,12 +505,12 @@ func isEntryPointVar(vr *Var) bool {
 	return ok
 }
 
-func WarnOnGloballyUnusedVars() {
+func WarnOnGloballyUnusedVars(env *Env) {
 	var names []string
 	positions := make(map[string]Position)
 
-	for _, ns := range GLOBAL_ENV.Namespaces {
-		if ns == GLOBAL_ENV.CoreNamespace {
+	for _, ns := range env.Namespaces {
+		if ns == env.CoreNamespace {
 			continue
 		}
 		for _, vr := range ns.mappings {
@@ -531,12 +531,12 @@ func WarnOnGloballyUnusedVars() {
 	}
 }
 
-func WarnOnUnusedVars() {
+func WarnOnUnusedVars(env *Env) {
 	var names []string
 	positions := make(map[string]Position)
 
-	for _, ns := range GLOBAL_ENV.Namespaces {
-		if ns == GLOBAL_ENV.CoreNamespace {
+	for _, ns := range env.Namespaces {
+		if ns == env.CoreNamespace {
 			continue
 		}
 		for _, vr := range ns.mappings {
@@ -1222,7 +1222,7 @@ func fixInfo(obj Object, info *ObjectInfo) Object {
 	}
 }
 
-func macroexpand1(seq Seq, ctx *ParseContext) Object {
+func macroexpand1(env *Env, seq Seq, ctx *ParseContext) Object {
 	op := seq.First()
 	vr := resolveMacro(op, ctx)
 	if vr != nil {
@@ -1230,7 +1230,7 @@ func macroexpand1(seq Seq, ctx *ParseContext) Object {
 			Position: GetPosition(seq),
 			macro:    vr.Value.(Callable),
 			args:     ToSlice(seq.Rest().Cons(ctx.localBindings.ToMap()).Cons(seq)),
-			name:     varCallableString(vr),
+			name:     varCallableString(env, vr),
 		}
 		return fixInfo(Eval(expr, nil), seq.GetInfo())
 	} else {
@@ -1374,9 +1374,9 @@ func parseSetMacro(obj Object, ctx *ParseContext) Expr {
 	panic(&ParseError{obj: obj, msg: "set-macro__ argument must be a var"})
 }
 
-func isKnownMacros(sym Symbol) (bool, Seq) {
+func isKnownMacros(env *Env, sym Symbol) (bool, Seq) {
 	if KNOWN_MACROS == nil {
-		knownMacros := GLOBAL_ENV.CoreNamespace.Resolve("*known-macros*")
+		knownMacros := env.CoreNamespace.Resolve("*known-macros*")
 		if knownMacros == nil {
 			return false, nil
 		}
@@ -1393,7 +1393,7 @@ func isKnownMacros(sym Symbol) (bool, Seq) {
 	return false, nil
 }
 
-func isUnknownCallable(expr Expr) (bool, Seq) {
+func isUnknownCallable(env *Env, expr Expr) (bool, Seq) {
 	if !LINTER_MODE {
 		return false, nil
 	}
@@ -1402,7 +1402,7 @@ func isUnknownCallable(expr Expr) (bool, Seq) {
 			return true, nil
 		}
 		var sym Symbol
-		if c.vr.ns != GLOBAL_ENV.CurrentNamespace() && c.vr.ns != GLOBAL_ENV.CoreNamespace {
+		if c.vr.ns != env.CurrentNamespace() && c.vr.ns != env.CoreNamespace {
 			sym = Symbol{
 				ns:   c.vr.ns.Name.name,
 				name: c.vr.name.name,
@@ -1410,14 +1410,14 @@ func isUnknownCallable(expr Expr) (bool, Seq) {
 		} else {
 			sym = MakeSymbol(*c.vr.name.name)
 		}
-		b, s := isKnownMacros(sym)
+		b, s := isKnownMacros(env, sym)
 		if b {
 			return b, s
 		}
 		if c.vr.expr != nil {
 			return false, nil
 		}
-		if sym.ns == nil && c.vr.ns != GLOBAL_ENV.CoreNamespace {
+		if sym.ns == nil && c.vr.ns != env.CoreNamespace {
 			return true, nil
 		}
 	}
@@ -1499,8 +1499,8 @@ func checkCall(expr Expr, isMacro bool, call *CallExpr, pos Position) {
 	}
 }
 
-func parseList(obj Object, ctx *ParseContext) Expr {
-	expanded := macroexpand1(obj.(Seq), ctx)
+func parseList(env *Env, obj Object, ctx *ParseContext) Expr {
+	expanded := macroexpand1(env, obj.(Seq), ctx)
 	if expanded != obj {
 		return Parse(expanded, ctx)
 	}
@@ -1568,7 +1568,7 @@ func parseList(obj Object, ctx *ParseContext) Expr {
 							printParseError(obj.GetInfo().Pos(), "Unable to resolve symbol: "+sym.ToString(false))
 						}
 					}
-					vr = InternFakeSymbol(symNs, sym)
+					vr = InternFakeSymbol(ctx.Env, symNs, sym)
 				}
 				vr.isUsed = true
 				vr.isGloballyUsed = true
@@ -1607,7 +1607,7 @@ func parseList(obj Object, ctx *ParseContext) Expr {
 
 	ctx.isUnknownCallableScope = currentIsUnknownCallableScope
 	callable := Parse(first, ctx)
-	unknown, syms := isUnknownCallable(callable)
+	unknown, syms := isUnknownCallable(env, callable)
 	if unknown {
 		ctx.isUnknownCallableScope = true
 		if syms != nil {
@@ -1675,7 +1675,7 @@ func parseList(obj Object, ctx *ParseContext) Expr {
 	return res
 }
 
-func InternFakeSymbol(ns *Namespace, sym Symbol) *Var {
+func InternFakeSymbol(env *Env, ns *Namespace, sym Symbol) *Var {
 	if ns != nil {
 		fakeSym := Symbol{
 			ns:   nil,
@@ -1687,7 +1687,7 @@ func InternFakeSymbol(ns *Namespace, sym Symbol) *Var {
 		ns:   nil,
 		name: STRINGS.Intern(sym.ToString(false)),
 	}
-	return GLOBAL_ENV.CurrentNamespace().Intern(fakeSym)
+	return env.CurrentNamespace().Intern(fakeSym)
 }
 
 func isInteropSymbol(sym Symbol) bool {
@@ -1775,7 +1775,7 @@ func parseSymbol(obj Object, ctx *ParseContext) Expr {
 			}
 		}
 	}
-	return MakeVarRefExpr(InternFakeSymbol(symNs, sym), obj)
+	return MakeVarRefExpr(InternFakeSymbol(ctx.Env, symNs, sym), obj)
 }
 
 func Parse(obj Object, ctx *ParseContext) Expr {
@@ -1795,7 +1795,7 @@ func Parse(obj Object, ctx *ParseContext) Expr {
 		canHaveMeta = true
 		res = parseSet(v, pos, ctx)
 	case Seq:
-		res = parseList(obj, ctx)
+		res = parseList(ctx.Env, obj, ctx)
 	case Symbol:
 		res = parseSymbol(obj, ctx)
 	default:
