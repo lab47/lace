@@ -997,7 +997,7 @@ var procFindVar = func(env *Env, args []Object) Object {
 	if sym.ns == nil {
 		panic(RT.NewError("find-var argument must be namespace-qualified symbol"))
 	}
-	if v, ok := GLOBAL_ENV.Resolve(sym); ok {
+	if v, ok := env.Resolve(sym); ok {
 		return v
 	}
 	return NIL
@@ -1015,7 +1015,7 @@ var procSort = func(env *Env, args []Object) Object {
 }
 
 var procEval = func(env *Env, args []Object) Object {
-	parseContext := &ParseContext{Env: GLOBAL_ENV}
+	parseContext := &ParseContext{Env: env}
 	expr := Parse(args[0], parseContext)
 	return Eval(expr, nil)
 }
@@ -1026,14 +1026,14 @@ var procType = func(env *Env, args []Object) Object {
 
 var procPprint = func(env *Env, args []Object) Object {
 	obj := args[0]
-	w := Assertio_Writer(GLOBAL_ENV.stdout.Value, "")
+	w := Assertio_Writer(env.stdout.Value, "")
 	pprintObject(obj, 0, w)
 	fmt.Fprint(w, "\n")
 	return NIL
 }
 
-func PrintObject(obj Object, w io.Writer) {
-	printReadably := ToBool(GLOBAL_ENV.printReadably.Value)
+func PrintObject(env *Env, obj Object, w io.Writer) {
+	printReadably := ToBool(env.printReadably.Value)
 	switch obj := obj.(type) {
 	case Printer:
 		obj.Print(w, printReadably)
@@ -1045,18 +1045,18 @@ func PrintObject(obj Object, w io.Writer) {
 var procPr = func(env *Env, args []Object) Object {
 	n := len(args)
 	if n > 0 {
-		f := Assertio_Writer(GLOBAL_ENV.stdout.Value, "")
+		f := Assertio_Writer(env.stdout.Value, "")
 		for _, arg := range args[:n-1] {
-			PrintObject(arg, f)
+			PrintObject(env, arg, f)
 			fmt.Fprint(f, " ")
 		}
-		PrintObject(args[n-1], f)
+		PrintObject(env, args[n-1], f)
 	}
 	return NIL
 }
 
 var procNewline = func(env *Env, args []Object) Object {
-	f := Assertio_Writer(GLOBAL_ENV.stdout.Value, "")
+	f := Assertio_Writer(env.stdout.Value, "")
 	fmt.Fprintln(f)
 	return NIL
 }
@@ -1105,7 +1105,7 @@ func readLine(r StringReader) (s string, e error) {
 
 var procReadLine = func(env *Env, args []Object) Object {
 	CheckArity(args, 0, 0)
-	f := AssertStringReader(GLOBAL_ENV.stdin.Value, "")
+	f := AssertStringReader(env.stdin.Value, "")
 	line, err := readLine(f)
 	if err != nil {
 		return NIL
@@ -1130,7 +1130,7 @@ var procNanoTime = func(env *Env, args []Object) Object {
 var procMacroexpand1 = func(env *Env, args []Object) Object {
 	switch s := args[0].(type) {
 	case Seq:
-		parseContext := &ParseContext{Env: GLOBAL_ENV}
+		parseContext := &ParseContext{Env: env}
 		return macroexpand1(s, parseContext)
 	default:
 		return s
@@ -1138,7 +1138,7 @@ var procMacroexpand1 = func(env *Env, args []Object) Object {
 }
 
 func loadReader(env *Env, reader *Reader) (Object, error) {
-	parseContext := &ParseContext{Env: GLOBAL_ENV}
+	parseContext := &ParseContext{Env: env}
 	var lastObj Object = NIL
 	for {
 		obj, err := TryRead(env, reader)
@@ -1169,7 +1169,7 @@ var procLoadString = func(env *Env, args []Object) Object {
 }
 
 var procFindNamespace = func(env *Env, args []Object) Object {
-	ns := GLOBAL_ENV.FindNamespace(EnsureSymbol(args, 0))
+	ns := env.FindNamespace(EnsureSymbol(args, 0))
 	if ns == nil {
 		return NIL
 	}
@@ -1178,7 +1178,7 @@ var procFindNamespace = func(env *Env, args []Object) Object {
 
 var procCreateNamespace = func(env *Env, args []Object) Object {
 	sym := EnsureSymbol(args, 0)
-	res := GLOBAL_ENV.EnsureNamespace(sym)
+	res := env.EnsureNamespace(sym)
 	// In linter mode the latest create-ns call overrides position info.
 	// This is for the cases when (ns ...) is called in .jokerd/linter.clj file and alike.
 	// Also, isUsed needs to be reset in this case.
@@ -1191,14 +1191,14 @@ var procCreateNamespace = func(env *Env, args []Object) Object {
 
 var procInjectNamespace = func(env *Env, args []Object) Object {
 	sym := EnsureSymbol(args, 0)
-	ns := GLOBAL_ENV.EnsureNamespace(sym)
+	ns := env.EnsureNamespace(sym)
 	ns.isUsed = true
 	ns.isGloballyUsed = true
 	return ns
 }
 
 var procRemoveNamespace = func(env *Env, args []Object) Object {
-	ns := GLOBAL_ENV.RemoveNamespace(EnsureSymbol(args, 0))
+	ns := env.RemoveNamespace(EnsureSymbol(args, 0))
 	if ns == nil {
 		return NIL
 	}
@@ -1206,8 +1206,8 @@ var procRemoveNamespace = func(env *Env, args []Object) Object {
 }
 
 var procAllNamespaces = func(env *Env, args []Object) Object {
-	s := make([]Object, 0, len(GLOBAL_ENV.Namespaces))
-	for _, ns := range GLOBAL_ENV.Namespaces {
+	s := make([]Object, 0, len(env.Namespaces))
+	for _, ns := range env.Namespaces {
 		s = append(s, ns)
 	}
 	return &ArraySeq{arr: s}
@@ -1285,7 +1285,7 @@ var procNsResolve = func(env *Env, args []Object) Object {
 	if sym.ns == nil && TYPES[sym.name] != nil {
 		return TYPES[sym.name]
 	}
-	if vr, ok := GLOBAL_ENV.ResolveIn(ns, sym); ok {
+	if vr, ok := env.ResolveIn(ns, sym); ok {
 		return vr
 	}
 	return NIL
@@ -1393,7 +1393,7 @@ var procLoadFile = func(env *Env, args []Object) Object {
 var procLoadLibFromPath = func(env *Env, args []Object) Object {
 	libname := EnsureSymbol(args, 0).Name()
 	pathname := EnsureString(args, 1).S
-	cp := GLOBAL_ENV.classPath.Value
+	cp := env.classPath.Value
 	cpvec := AssertVector(cp, "*classpath* must be a Vector, not a "+cp.GetType().ToString(false))
 	count := cpvec.Count()
 	var f *os.File
@@ -1443,8 +1443,8 @@ var procIndexOf = func(env *Env, args []Object) Object {
 	return Int{I: -1}
 }
 
-func libExternalPath(sym Symbol) (path string, ok bool) {
-	nsSourcesVar, _ := GLOBAL_ENV.Resolve(MakeSymbol("joker.core/*ns-sources*"))
+func libExternalPath(env *Env, sym Symbol) (path string, ok bool) {
+	nsSourcesVar, _ := env.Resolve(MakeSymbol("joker.core/*ns-sources*"))
 	nsSources := ToSlice(nsSourcesVar.Value.(*Vector).Seq())
 
 	var sourceKey string
@@ -1472,21 +1472,21 @@ var procLibPath = func(env *Env, args []Object) Object {
 	sym := EnsureSymbol(args, 0)
 	var path string
 
-	path, ok := libExternalPath(sym)
+	path, ok := libExternalPath(env, sym)
 
 	if !ok {
 		var file string
-		if GLOBAL_ENV.file.Value == nil {
+		if env.file.Value == nil {
 			var err error
 			file, err = filepath.Abs("user")
 			PanicOnErr(err)
 		} else {
-			file = AssertString(GLOBAL_ENV.file.Value, "").S
+			file = AssertString(env.file.Value, "").S
 			if linkDest, err := os.Readlink(file); err == nil {
 				file = linkDest
 			}
 		}
-		ns := GLOBAL_ENV.CurrentNamespace().Name
+		ns := env.CurrentNamespace().Name
 
 		parts := strings.Split(ns.Name(), ".")
 		for _ = range parts {
@@ -1502,20 +1502,20 @@ var procInternFakeVar = func(env *Env, args []Object) Object {
 	nsSym := EnsureSymbol(args, 0)
 	sym := EnsureSymbol(args, 1)
 	isMacro := ToBool(args[2])
-	res := InternFakeSymbol(GLOBAL_ENV.FindNamespace(nsSym), sym)
+	res := InternFakeSymbol(env.FindNamespace(nsSym), sym)
 	res.isMacro = isMacro
 	return res
 }
 
 var procParse = func(env *Env, args []Object) Object {
-	lm, _ := GLOBAL_ENV.Resolve(MakeSymbol("joker.core/*linter-mode*"))
+	lm, _ := env.Resolve(MakeSymbol("joker.core/*linter-mode*"))
 	lm.Value = Boolean{B: true}
 	LINTER_MODE = true
 	defer func() {
 		LINTER_MODE = false
 		lm.Value = Boolean{B: false}
 	}()
-	parseContext := &ParseContext{Env: GLOBAL_ENV}
+	parseContext := &ParseContext{Env: env}
 	res := Parse(args[0], parseContext)
 	return res.Dump(false)
 }
@@ -1615,7 +1615,7 @@ var procVerbosityLevel = func(env *Env, args []Object) Object {
 
 func PackReader(env *Env, reader *Reader, filename string) ([]byte, error) {
 	var p []byte
-	packEnv := NewPackEnv()
+	packEnv := NewPackEnv(env)
 	parseContext := &ParseContext{Env: env}
 	if filename != "" {
 		currentFilename := parseContext.Env.file.Value
@@ -1657,7 +1657,7 @@ var procIncProblemCount = func(env *Env, args []Object) Object {
 }
 
 func ProcessReader(env *Env, reader *Reader, filename string, phase Phase) error {
-	parseContext := &ParseContext{Env: GLOBAL_ENV}
+	parseContext := &ParseContext{Env: env}
 	if filename != "" {
 		currentFilename := parseContext.Env.file.Value
 		defer func() {
@@ -1702,7 +1702,7 @@ func ProcessReader(env *Env, reader *Reader, filename string, phase Phase) error
 }
 
 func ProcessReaderFromEval(env *Env, reader *Reader, filename string) {
-	parseContext := &ParseContext{Env: GLOBAL_ENV}
+	parseContext := &ParseContext{Env: env}
 	if filename != "" {
 		currentFilename := parseContext.Env.file.Value
 		defer func() {
@@ -1770,7 +1770,7 @@ var procIsNamespaceInitialized = func(env *Env, args []Object) Object {
 		panic(RT.NewError("Can't ask for namespace info on namespace-qualified symbol"))
 	}
 	// First look for registered (e.g. std) libs
-	ns, found := GLOBAL_ENV.Namespaces[sym.name]
+	ns, found := env.Namespaces[sym.name]
 	return MakeBoolean(found && ns.Lazy == nil)
 }
 
@@ -1850,7 +1850,7 @@ func knownMacrosToMap(km Object) (Map, error) {
 }
 
 func ReadConfig(env *Env, filename string, workingDir string) {
-	LINTER_CONFIG = GLOBAL_ENV.CoreNamespace.Intern(MakeSymbol("*linter-config*"))
+	LINTER_CONFIG = env.CoreNamespace.Intern(MakeSymbol("*linter-config*"))
 	LINTER_CONFIG.Value = EmptyArrayMap()
 	configFileName := findConfigFile(filename, workingDir, false)
 	if configFileName == "" {
@@ -1959,17 +1959,17 @@ func ReadConfig(env *Env, filename string, workingDir string) {
 	LINTER_CONFIG.Value = configMap
 }
 
-func removeJokerNamespaces() {
-	for k, ns := range GLOBAL_ENV.Namespaces {
-		if ns != GLOBAL_ENV.CoreNamespace && strings.HasPrefix(*k, "joker.") {
-			delete(GLOBAL_ENV.Namespaces, k)
+func removeJokerNamespaces(env *Env) {
+	for k, ns := range env.Namespaces {
+		if ns != env.CoreNamespace && strings.HasPrefix(*k, "joker.") {
+			delete(env.Namespaces, k)
 		}
 	}
 }
 
-func markJokerNamespacesAsUsed() {
-	for k, ns := range GLOBAL_ENV.Namespaces {
-		if ns != GLOBAL_ENV.CoreNamespace && strings.HasPrefix(*k, "joker.") {
+func markJokerNamespacesAsUsed(env *Env) {
+	for k, ns := range env.Namespaces {
+		if ns != env.CoreNamespace && strings.HasPrefix(*k, "joker.") {
 			ns.isUsed = true
 			ns.isGloballyUsed = true
 		}

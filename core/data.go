@@ -19,13 +19,13 @@ func ProcessReplData() {
 
 func ProcessLinterData(dialect Dialect) {
 	if dialect == EDN {
-		markJokerNamespacesAsUsed()
+		markJokerNamespacesAsUsed(GLOBAL_ENV)
 		return
 	}
 	processData(linter_allData)
 	GLOBAL_ENV.CoreNamespace.Resolve("*loaded-libs*").Value = EmptySet()
 	if dialect == JOKER {
-		markJokerNamespacesAsUsed()
+		markJokerNamespacesAsUsed(GLOBAL_ENV)
 		processData(linter_jokerData)
 		return
 	}
@@ -36,5 +36,5 @@ func ProcessLinterData(dialect Dialect) {
 	case CLJS:
 		processData(linter_cljsData)
 	}
-	removeJokerNamespaces()
+	removeJokerNamespaces(GLOBAL_ENV)
 }

@@ -36,6 +36,7 @@ const (
 
 type (
 	PackEnv struct {
+		Env              *Env
 		Strings          map[*string]uint16
 		Bindings         map[*Binding]int
 		nextStringIndex  uint16
@@ -70,8 +71,9 @@ func unpackBinding(env *Env, p []byte, header *PackHeader) (Binding, []byte) {
 	}, p
 }
 
-func NewPackEnv() *PackEnv {
+func NewPackEnv(env *Env) *PackEnv {
 	return &PackEnv{
+		Env:      env,
 		Strings:  make(map[*string]uint16),
 		Bindings: make(map[*Binding]int),
 	}
@@ -303,7 +305,7 @@ func packObject(obj Object, p []byte, env *PackEnv) []byte {
 	default:
 		p = append(p, NULL)
 		var buf bytes.Buffer
-		PrintObject(obj, &buf)
+		PrintObject(env.Env, obj, &buf)
 		bb := buf.Bytes()
 		p = appendInt(p, len(bb))
 		p = append(p, bb...)
