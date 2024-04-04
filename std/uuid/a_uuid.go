@@ -6,10 +6,11 @@ import (
 	. "github.com/candid82/joker/core"
 )
 
+
 var __new__P ProcFn = __new_
 var new_ Proc = Proc{Fn: __new__P, Name: "new_", Package: "std/uuid"}
 
-func __new_(_args []Object) Object {
+func __new_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 0:

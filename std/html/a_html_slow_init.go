@@ -5,8 +5,8 @@
 package html
 
 import (
-	"fmt"
 	. "github.com/candid82/joker/core"
+	"fmt"
 	"os"
 )
 
@@ -16,6 +16,7 @@ func InternsOrThunks() {
 	}
 	htmlNamespace.ResetMeta(MakeMeta(nil, `Provides functions for escaping and unescaping HTML text.`, "1.0"))
 
+	
 	htmlNamespace.InternVar("escape", escape_,
 		MakeMeta(
 			NewListFrom(NewVectorFrom(MakeSymbol("s"))),

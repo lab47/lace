@@ -147,7 +147,7 @@ type (
 		isGloballyUsed bool
 		taggedType     *Type
 	}
-	ProcFn func([]Object) Object
+	ProcFn func(env *Env, args []Object) Object
 	Proc   struct {
 		Fn      ProcFn
 		Name    string
@@ -740,7 +740,7 @@ func (fn *Fn) Compare(a, b Object) int {
 }
 
 func (p Proc) Call(args []Object) Object {
-	return p.Fn(args)
+	return p.Fn(GLOBAL_ENV, args)
 }
 
 func (p Proc) Compare(a, b Object) int {

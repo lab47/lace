@@ -5,7 +5,7 @@ package core
 
 var haveSetCoreNamespaces bool
 
-func ProcessCoreData() {
+func SetupGlobalEnvCoreData() {
 	// Let MaybeLazy() handle initialization.
 	if !haveSetCoreNamespaces {
 		setCoreNamespaces(GLOBAL_ENV)

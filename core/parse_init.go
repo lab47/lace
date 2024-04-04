@@ -1,3 +1,4 @@
+//go:build !fast_init
 // +build !fast_init
 
 package core
@@ -97,6 +98,7 @@ var (
 )
 
 func init() {
+	initEnv(GLOBAL_ENV)
 	SPECIAL_SYMBOLS[SYMBOLS._if.name] = true
 	SPECIAL_SYMBOLS[SYMBOLS.quote.name] = true
 	SPECIAL_SYMBOLS[SYMBOLS.fn_.name] = true

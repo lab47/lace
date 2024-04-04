@@ -1,11 +1,15 @@
+//go:build !fast_init
 // +build !fast_init
 
 package core
 
-/* Called by parse_init.go in an outer var block, this runs before any
-   func init() as well as before func main(). InitEnv() and others are
-   called at runtime to set some of these Values based on the current
-   invocation. */
+/*
+Called by parse_init.go in an outer var block, this runs before any
+
+	func init() as well as before func main(). InitEnv() and others are
+	called at runtime to set some of these Values based on the current
+	invocation.
+*/
 func NewEnv() *Env {
 	features := EmptySet()
 	features.Add(MakeKeyword("default"))

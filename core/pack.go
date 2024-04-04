@@ -57,8 +57,8 @@ func (b *Binding) Pack(p []byte, env *PackEnv) []byte {
 	return p
 }
 
-func unpackBinding(p []byte, header *PackHeader) (Binding, []byte) {
-	name, p := unpackSymbol(p, header)
+func unpackBinding(env *Env, p []byte, header *PackHeader) (Binding, []byte) {
+	name, p := unpackSymbol(env, p, header)
 	index, p := extractInt(p)
 	frame, p := extractInt(p)
 	isUsed, p := extractBool(p)
@@ -123,7 +123,7 @@ func UnpackHeader(p []byte, env *Env) (*PackHeader, []byte) {
 		var index int
 		var b Binding
 		index, p = extractInt(p)
-		b, p = unpackBinding(p, header)
+		b, p = unpackBinding(env, p, header)
 		bindings[index] = b
 	}
 	header.Bindings = bindings
@@ -243,11 +243,11 @@ func PackObjectOrNull(obj Object, p []byte, env *PackEnv) []byte {
 	return packObject(obj, p, env)
 }
 
-func UnpackObjectOrNull(p []byte, header *PackHeader) (Object, []byte) {
+func UnpackObjectOrNull(env *Env, p []byte, header *PackHeader) (Object, []byte) {
 	if p[0] == NULL {
 		return nil, p[1:]
 	}
-	return unpackObject(p[1:], header)
+	return unpackObject(env, p[1:], header)
 }
 
 func (s Symbol) Pack(p []byte, env *PackEnv) []byte {
@@ -259,9 +259,9 @@ func (s Symbol) Pack(p []byte, env *PackEnv) []byte {
 	return p
 }
 
-func unpackSymbol(p []byte, header *PackHeader) (Symbol, []byte) {
+func unpackSymbol(env *Env, p []byte, header *PackHeader) (Symbol, []byte) {
 	info, p := unpackObjectInfo(p, header)
-	meta, p := UnpackObjectOrNull(p, header)
+	meta, p := UnpackObjectOrNull(env, p, header)
 	iname, p := extractUInt16(p)
 	ins, p := extractUInt16(p)
 	hash, p := extractUInt32(p)
@@ -282,8 +282,8 @@ func (t *Type) Pack(p []byte, env *PackEnv) []byte {
 	return s.Pack(p, env)
 }
 
-func unpackType(p []byte, header *PackHeader) (*Type, []byte) {
-	s, p := unpackSymbol(p, header)
+func unpackType(env *Env, p []byte, header *PackHeader) (*Type, []byte) {
+	s, p := unpackSymbol(env, p, header)
 	return TYPES[s.name], p
 }
 
@@ -311,18 +311,18 @@ func packObject(obj Object, p []byte, env *PackEnv) []byte {
 	}
 }
 
-func unpackObject(p []byte, header *PackHeader) (Object, []byte) {
+func unpackObject(env *Env, p []byte, header *PackHeader) (Object, []byte) {
 	switch p[0] {
 	case SYMBOL_OBJ:
-		return unpackSymbol(p[1:], header)
+		return unpackSymbol(env, p[1:], header)
 	case VAR_OBJ:
-		return unpackVar(p[1:], header)
+		return unpackVar(env, p[1:], header)
 	case TYPE_OBJ:
-		return unpackType(p[1:], header)
+		return unpackType(env, p[1:], header)
 	case NULL:
 		var size int
 		size, p = extractInt(p[1:])
-		obj := readFromReader(bytes.NewReader(p[:size]))
+		obj := readFromReader(env, bytes.NewReader(p[:size]))
 		return obj, p[size:]
 	default:
 		panic(RT.NewError(fmt.Sprintf("Unknown object tag: %d", p[0])))
@@ -337,11 +337,11 @@ func (expr *LiteralExpr) Pack(p []byte, env *PackEnv) []byte {
 	return p
 }
 
-func unpackLiteralExpr(p []byte, header *PackHeader) (*LiteralExpr, []byte) {
+func unpackLiteralExpr(env *Env, p []byte, header *PackHeader) (*LiteralExpr, []byte) {
 	p = p[1:]
 	pos, p := unpackPosition(p, header)
 	isSurrogate, p := extractBool(p)
-	obj, p := unpackObject(p, header)
+	obj, p := unpackObject(env, p, header)
 	res := &LiteralExpr{
 		obj:         obj,
 		Position:    pos,
@@ -358,11 +358,11 @@ func packSeq(p []byte, s []Expr, env *PackEnv) []byte {
 	return p
 }
 
-func unpackSeq(p []byte, header *PackHeader) ([]Expr, []byte) {
+func unpackSeq(env *Env, p []byte, header *PackHeader) ([]Expr, []byte) {
 	c, p := extractInt(p)
 	res := make([]Expr, c)
 	for i := 0; i < c; i++ {
-		res[i], p = UnpackExpr(p, header)
+		res[i], p = UnpackExpr(env, p, header)
 	}
 	return res, p
 }
@@ -375,11 +375,11 @@ func packSymbolSeq(p []byte, s []Symbol, env *PackEnv) []byte {
 	return p
 }
 
-func unpackSymbolSeq(p []byte, header *PackHeader) ([]Symbol, []byte) {
+func unpackSymbolSeq(env *Env, p []byte, header *PackHeader) ([]Symbol, []byte) {
 	c, p := extractInt(p)
 	res := make([]Symbol, c)
 	for i := 0; i < c; i++ {
-		res[i], p = unpackSymbol(p, header)
+		res[i], p = unpackSymbol(env, p, header)
 	}
 	return res, p
 }
@@ -392,12 +392,12 @@ func packFnArityExprSeq(p []byte, s []FnArityExpr, env *PackEnv) []byte {
 	return p
 }
 
-func unpackFnArityExprSeq(p []byte, header *PackHeader) ([]FnArityExpr, []byte) {
+func unpackFnArityExprSeq(env *Env, p []byte, header *PackHeader) ([]FnArityExpr, []byte) {
 	c, p := extractInt(p)
 	res := make([]FnArityExpr, c)
 	for i := 0; i < c; i++ {
 		var e *FnArityExpr
-		e, p = unpackFnArityExpr(p, header)
+		e, p = unpackFnArityExpr(env, p, header)
 		res[i] = *e
 	}
 	return res, p
@@ -411,11 +411,11 @@ func packCatchExprSeq(p []byte, s []*CatchExpr, env *PackEnv) []byte {
 	return p
 }
 
-func unpackCatchExprSeq(p []byte, header *PackHeader) ([]*CatchExpr, []byte) {
+func unpackCatchExprSeq(env *Env, p []byte, header *PackHeader) ([]*CatchExpr, []byte) {
 	c, p := extractInt(p)
 	res := make([]*CatchExpr, c)
 	for i := 0; i < c; i++ {
-		res[i], p = unpackCatchExpr(p, header)
+		res[i], p = unpackCatchExpr(env, p, header)
 	}
 	return res, p
 }
@@ -426,10 +426,10 @@ func (expr *VectorExpr) Pack(p []byte, env *PackEnv) []byte {
 	return packSeq(p, expr.v, env)
 }
 
-func unpackVectorExpr(p []byte, header *PackHeader) (*VectorExpr, []byte) {
+func unpackVectorExpr(env *Env, p []byte, header *PackHeader) (*VectorExpr, []byte) {
 	p = p[1:]
 	pos, p := unpackPosition(p, header)
-	v, p := unpackSeq(p, header)
+	v, p := unpackSeq(env, p, header)
 	res := &VectorExpr{
 		Position: pos,
 		v:        v,
@@ -443,10 +443,10 @@ func (expr *SetExpr) Pack(p []byte, env *PackEnv) []byte {
 	return packSeq(p, expr.elements, env)
 }
 
-func unpackSetExpr(p []byte, header *PackHeader) (*SetExpr, []byte) {
+func unpackSetExpr(env *Env, p []byte, header *PackHeader) (*SetExpr, []byte) {
 	p = p[1:]
 	pos, p := unpackPosition(p, header)
-	v, p := unpackSeq(p, header)
+	v, p := unpackSeq(env, p, header)
 	res := &SetExpr{
 		Position: pos,
 		elements: v,
@@ -462,11 +462,11 @@ func (expr *MapExpr) Pack(p []byte, env *PackEnv) []byte {
 	return p
 }
 
-func unpackMapExpr(p []byte, header *PackHeader) (*MapExpr, []byte) {
+func unpackMapExpr(env *Env, p []byte, header *PackHeader) (*MapExpr, []byte) {
 	p = p[1:]
 	pos, p := unpackPosition(p, header)
-	ks, p := unpackSeq(p, header)
-	vs, p := unpackSeq(p, header)
+	ks, p := unpackSeq(env, p, header)
+	vs, p := unpackSeq(env, p, header)
 	res := &MapExpr{
 		Position: pos,
 		keys:     ks,
@@ -484,12 +484,12 @@ func (expr *IfExpr) Pack(p []byte, env *PackEnv) []byte {
 	return p
 }
 
-func unpackIfExpr(p []byte, header *PackHeader) (*IfExpr, []byte) {
+func unpackIfExpr(env *Env, p []byte, header *PackHeader) (*IfExpr, []byte) {
 	p = p[1:]
 	pos, p := unpackPosition(p, header)
-	cond, p := UnpackExpr(p, header)
-	positive, p := UnpackExpr(p, header)
-	negative, p := UnpackExpr(p, header)
+	cond, p := UnpackExpr(env, p, header)
+	positive, p := UnpackExpr(env, p, header)
+	negative, p := UnpackExpr(env, p, header)
 	res := &IfExpr{
 		Position: pos,
 		positive: positive,
@@ -509,15 +509,15 @@ func (expr *DefExpr) Pack(p []byte, env *PackEnv) []byte {
 	return p
 }
 
-func unpackDefExpr(p []byte, header *PackHeader) (*DefExpr, []byte) {
+func unpackDefExpr(env *Env, p []byte, header *PackHeader) (*DefExpr, []byte) {
 	p = p[1:]
 	pos, p := unpackPosition(p, header)
-	name, p := unpackSymbol(p, header)
+	name, p := unpackSymbol(env, p, header)
 	varName := name
 	varName.ns = nil
 	vr := header.GlobalEnv.CurrentNamespace().Intern(varName)
-	value, p := UnpackExprOrNull(p, header)
-	meta, p := UnpackExprOrNull(p, header)
+	value, p := UnpackExprOrNull(env, p, header)
+	meta, p := UnpackExprOrNull(env, p, header)
 	varInfo, p := unpackObjectInfo(p, header)
 	updateVar(vr, varInfo, value, name)
 	res := &DefExpr{
@@ -538,11 +538,11 @@ func (expr *CallExpr) Pack(p []byte, env *PackEnv) []byte {
 	return p
 }
 
-func unpackCallExpr(p []byte, header *PackHeader) (*CallExpr, []byte) {
+func unpackCallExpr(env *Env, p []byte, header *PackHeader) (*CallExpr, []byte) {
 	p = p[1:]
 	pos, p := unpackPosition(p, header)
-	callable, p := UnpackExpr(p, header)
-	args, p := unpackSeq(p, header)
+	callable, p := UnpackExpr(env, p, header)
+	args, p := unpackSeq(env, p, header)
 	res := &CallExpr{
 		Position: pos,
 		callable: callable,
@@ -558,10 +558,10 @@ func (expr *RecurExpr) Pack(p []byte, env *PackEnv) []byte {
 	return p
 }
 
-func unpackRecurExpr(p []byte, header *PackHeader) (*RecurExpr, []byte) {
+func unpackRecurExpr(env *Env, p []byte, header *PackHeader) (*RecurExpr, []byte) {
 	p = p[1:]
 	pos, p := unpackPosition(p, header)
-	args, p := unpackSeq(p, header)
+	args, p := unpackSeq(env, p, header)
 	res := &RecurExpr{
 		Position: pos,
 		args:     args,
@@ -575,9 +575,9 @@ func (vr *Var) Pack(p []byte, env *PackEnv) []byte {
 	return p
 }
 
-func unpackVar(p []byte, header *PackHeader) (*Var, []byte) {
-	nsName, p := unpackSymbol(p, header)
-	name, p := unpackSymbol(p, header)
+func unpackVar(env *Env, p []byte, header *PackHeader) (*Var, []byte) {
+	nsName, p := unpackSymbol(env, p, header)
+	name, p := unpackSymbol(env, p, header)
 	vr := GLOBAL_ENV.FindNamespace(nsName).mappings[name.name]
 	if vr == nil {
 		panic(RT.NewError("Error unpacking var: cannot find var " + *nsName.name + "/" + *name.name))
@@ -592,10 +592,10 @@ func (expr *VarRefExpr) Pack(p []byte, env *PackEnv) []byte {
 	return p
 }
 
-func unpackVarRefExpr(p []byte, header *PackHeader) (*VarRefExpr, []byte) {
+func unpackVarRefExpr(env *Env, p []byte, header *PackHeader) (*VarRefExpr, []byte) {
 	p = p[1:]
 	pos, p := unpackPosition(p, header)
-	vr, p := unpackVar(p, header)
+	vr, p := unpackVar(env, p, header)
 	res := &VarRefExpr{
 		Position: pos,
 		vr:       vr,
@@ -610,10 +610,10 @@ func (expr *SetMacroExpr) Pack(p []byte, env *PackEnv) []byte {
 	return p
 }
 
-func unpackSetMacroExpr(p []byte, header *PackHeader) (*SetMacroExpr, []byte) {
+func unpackSetMacroExpr(env *Env, p []byte, header *PackHeader) (*SetMacroExpr, []byte) {
 	p = p[1:]
 	pos, p := unpackPosition(p, header)
-	vr, p := unpackVar(p, header)
+	vr, p := unpackVar(env, p, header)
 	res := &SetMacroExpr{
 		Position: pos,
 		vr:       vr,
@@ -647,11 +647,11 @@ func (expr *MetaExpr) Pack(p []byte, env *PackEnv) []byte {
 	return p
 }
 
-func unpackMetaExpr(p []byte, header *PackHeader) (*MetaExpr, []byte) {
+func unpackMetaExpr(env *Env, p []byte, header *PackHeader) (*MetaExpr, []byte) {
 	p = p[1:]
 	pos, p := unpackPosition(p, header)
-	meta, p := unpackMapExpr(p, header)
-	expr, p := UnpackExpr(p, header)
+	meta, p := unpackMapExpr(env, p, header)
+	expr, p := UnpackExpr(env, p, header)
 	res := &MetaExpr{
 		Position: pos,
 		meta:     meta,
@@ -667,10 +667,10 @@ func (expr *DoExpr) Pack(p []byte, env *PackEnv) []byte {
 	return p
 }
 
-func unpackDoExpr(p []byte, header *PackHeader) (*DoExpr, []byte) {
+func unpackDoExpr(env *Env, p []byte, header *PackHeader) (*DoExpr, []byte) {
 	p = p[1:]
 	pos, p := unpackPosition(p, header)
-	body, p := unpackSeq(p, header)
+	body, p := unpackSeq(env, p, header)
 	res := &DoExpr{
 		Position: pos,
 		body:     body,
@@ -692,11 +692,11 @@ func (expr *FnArityExpr) Pack(p []byte, env *PackEnv) []byte {
 	return p
 }
 
-func unpackFnArityExpr(p []byte, header *PackHeader) (*FnArityExpr, []byte) {
+func unpackFnArityExpr(env *Env, p []byte, header *PackHeader) (*FnArityExpr, []byte) {
 	p = p[1:]
 	pos, p := unpackPosition(p, header)
-	args, p := unpackSymbolSeq(p, header)
-	body, p := unpackSeq(p, header)
+	args, p := unpackSymbolSeq(env, p, header)
+	body, p := unpackSeq(env, p, header)
 	var taggedType *Type
 	if p[0] == NULL {
 		p = p[1:]
@@ -729,18 +729,18 @@ func (expr *FnExpr) Pack(p []byte, env *PackEnv) []byte {
 	return p
 }
 
-func unpackFnExpr(p []byte, header *PackHeader) (*FnExpr, []byte) {
+func unpackFnExpr(env *Env, p []byte, header *PackHeader) (*FnExpr, []byte) {
 	p = p[1:]
 	pos, p := unpackPosition(p, header)
-	arities, p := unpackFnArityExprSeq(p, header)
+	arities, p := unpackFnArityExprSeq(env, p, header)
 	var variadic *FnArityExpr
 	if p[0] == NULL {
 		p = p[1:]
 	} else {
 		p = p[1:]
-		variadic, p = unpackFnArityExpr(p, header)
+		variadic, p = unpackFnArityExpr(env, p, header)
 	}
-	self, p := unpackSymbol(p, header)
+	self, p := unpackSymbol(env, p, header)
 	res := &FnExpr{
 		Position: pos,
 		arities:  arities,
@@ -759,12 +759,12 @@ func (expr *LetExpr) Pack(p []byte, env *PackEnv) []byte {
 	return p
 }
 
-func unpackLetExpr(p []byte, header *PackHeader) (*LetExpr, []byte) {
+func unpackLetExpr(env *Env, p []byte, header *PackHeader) (*LetExpr, []byte) {
 	p = p[1:]
 	pos, p := unpackPosition(p, header)
-	names, p := unpackSymbolSeq(p, header)
-	values, p := unpackSeq(p, header)
-	body, p := unpackSeq(p, header)
+	names, p := unpackSymbolSeq(env, p, header)
+	values, p := unpackSeq(env, p, header)
+	body, p := unpackSeq(env, p, header)
 	res := &LetExpr{
 		Position: pos,
 		names:    names,
@@ -783,12 +783,12 @@ func (expr *LoopExpr) Pack(p []byte, env *PackEnv) []byte {
 	return p
 }
 
-func unpackLoopExpr(p []byte, header *PackHeader) (*LoopExpr, []byte) {
+func unpackLoopExpr(env *Env, p []byte, header *PackHeader) (*LoopExpr, []byte) {
 	p = p[1:]
 	pos, p := unpackPosition(p, header)
-	names, p := unpackSymbolSeq(p, header)
-	values, p := unpackSeq(p, header)
-	body, p := unpackSeq(p, header)
+	names, p := unpackSymbolSeq(env, p, header)
+	values, p := unpackSeq(env, p, header)
+	body, p := unpackSeq(env, p, header)
 	res := &LoopExpr{
 		Position: pos,
 		names:    names,
@@ -805,10 +805,10 @@ func (expr *ThrowExpr) Pack(p []byte, env *PackEnv) []byte {
 	return p
 }
 
-func unpackThrowExpr(p []byte, header *PackHeader) (*ThrowExpr, []byte) {
+func unpackThrowExpr(env *Env, p []byte, header *PackHeader) (*ThrowExpr, []byte) {
 	p = p[1:]
 	pos, p := unpackPosition(p, header)
-	e, p := UnpackExpr(p, header)
+	e, p := UnpackExpr(env, p, header)
 	res := &ThrowExpr{
 		Position: pos,
 		e:        e,
@@ -825,13 +825,13 @@ func (expr *CatchExpr) Pack(p []byte, env *PackEnv) []byte {
 	return p
 }
 
-func unpackCatchExpr(p []byte, header *PackHeader) (*CatchExpr, []byte) {
+func unpackCatchExpr(env *Env, p []byte, header *PackHeader) (*CatchExpr, []byte) {
 	p = p[1:]
 	pos, p := unpackPosition(p, header)
 	i, p := extractUInt16(p)
 	typeName := header.Strings[i]
-	excSymbol, p := unpackSymbol(p, header)
-	body, p := unpackSeq(p, header)
+	excSymbol, p := unpackSymbol(env, p, header)
+	body, p := unpackSeq(env, p, header)
 	res := &CatchExpr{
 		Position:  pos,
 		excSymbol: excSymbol,
@@ -850,12 +850,12 @@ func (expr *TryExpr) Pack(p []byte, env *PackEnv) []byte {
 	return p
 }
 
-func unpackTryExpr(p []byte, header *PackHeader) (*TryExpr, []byte) {
+func unpackTryExpr(env *Env, p []byte, header *PackHeader) (*TryExpr, []byte) {
 	p = p[1:]
 	pos, p := unpackPosition(p, header)
-	body, p := unpackSeq(p, header)
-	catches, p := unpackCatchExprSeq(p, header)
-	finallyExpr, p := unpackSeq(p, header)
+	body, p := unpackSeq(env, p, header)
+	catches, p := unpackCatchExprSeq(env, p, header)
+	finallyExpr, p := unpackSeq(env, p, header)
 	res := &TryExpr{
 		Position:    pos,
 		body:        body,
@@ -873,53 +873,53 @@ func PackExprOrNull(expr Expr, p []byte, env *PackEnv) []byte {
 	return expr.Pack(p, env)
 }
 
-func UnpackExprOrNull(p []byte, header *PackHeader) (Expr, []byte) {
+func UnpackExprOrNull(env *Env, p []byte, header *PackHeader) (Expr, []byte) {
 	if p[0] == NULL {
 		return nil, p[1:]
 	}
-	return UnpackExpr(p[1:], header)
+	return UnpackExpr(env, p[1:], header)
 }
 
-func UnpackExpr(p []byte, header *PackHeader) (Expr, []byte) {
+func UnpackExpr(env *Env, p []byte, header *PackHeader) (Expr, []byte) {
 	switch p[0] {
 	case LITERAL_EXPR:
-		return unpackLiteralExpr(p, header)
+		return unpackLiteralExpr(env, p, header)
 	case VECTOR_EXPR:
-		return unpackVectorExpr(p, header)
+		return unpackVectorExpr(env, p, header)
 	case MAP_EXPR:
-		return unpackMapExpr(p, header)
+		return unpackMapExpr(env, p, header)
 	case SET_EXPR:
-		return unpackSetExpr(p, header)
+		return unpackSetExpr(env, p, header)
 	case IF_EXPR:
-		return unpackIfExpr(p, header)
+		return unpackIfExpr(env, p, header)
 	case DEF_EXPR:
-		return unpackDefExpr(p, header)
+		return unpackDefExpr(env, p, header)
 	case CALL_EXPR:
-		return unpackCallExpr(p, header)
+		return unpackCallExpr(env, p, header)
 	case RECUR_EXPR:
-		return unpackRecurExpr(p, header)
+		return unpackRecurExpr(env, p, header)
 	case META_EXPR:
-		return unpackMetaExpr(p, header)
+		return unpackMetaExpr(env, p, header)
 	case DO_EXPR:
-		return unpackDoExpr(p, header)
+		return unpackDoExpr(env, p, header)
 	case FN_ARITY_EXPR:
-		return unpackFnArityExpr(p, header)
+		return unpackFnArityExpr(env, p, header)
 	case FN_EXPR:
-		return unpackFnExpr(p, header)
+		return unpackFnExpr(env, p, header)
 	case LET_EXPR:
-		return unpackLetExpr(p, header)
+		return unpackLetExpr(env, p, header)
 	case LOOP_EXPR:
-		return unpackLoopExpr(p, header)
+		return unpackLoopExpr(env, p, header)
 	case THROW_EXPR:
-		return unpackThrowExpr(p, header)
+		return unpackThrowExpr(env, p, header)
 	case CATCH_EXPR:
-		return unpackCatchExpr(p, header)
+		return unpackCatchExpr(env, p, header)
 	case TRY_EXPR:
-		return unpackTryExpr(p, header)
+		return unpackTryExpr(env, p, header)
 	case VARREF_EXPR:
-		return unpackVarRefExpr(p, header)
+		return unpackVarRefExpr(env, p, header)
 	case SET_MACRO_EXPR:
-		return unpackSetMacroExpr(p, header)
+		return unpackSetMacroExpr(env, p, header)
 	case BINDING_EXPR:
 		return unpackBindingExpr(p, header)
 	default:

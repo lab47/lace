@@ -7,10 +7,11 @@ import (
 	"io"
 )
 
+
 var __close__P ProcFn = __close_
 var close_ Proc = Proc{Fn: __close__P, Name: "close_", Package: "std/io"}
 
-func __close_(_args []Object) Object {
+func __close_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
@@ -27,13 +28,13 @@ func __close_(_args []Object) Object {
 var __copy__P ProcFn = __copy_
 var copy_ Proc = Proc{Fn: __copy__P, Name: "copy_", Package: "std/io"}
 
-func __copy_(_args []Object) Object {
+func __copy_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 2:
 		dst := ExtractIOWriter(_args, 0)
 		src := ExtractIOReader(_args, 1)
-		n, err := io.Copy(dst, src)
+		 n, err := io.Copy(dst, src)
 		PanicOnErr(err)
 		_res := int(n)
 		return MakeInt(_res)
@@ -47,7 +48,7 @@ func __copy_(_args []Object) Object {
 var __pipe__P ProcFn = __pipe_
 var pipe_ Proc = Proc{Fn: __pipe__P, Name: "pipe_", Package: "std/io"}
 
-func __pipe_(_args []Object) Object {
+func __pipe_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 0:

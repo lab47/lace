@@ -6,10 +6,11 @@ import (
 	. "github.com/candid82/joker/core"
 )
 
+
 var __csv_seq__P ProcFn = __csv_seq_
 var csv_seq_ Proc = Proc{Fn: __csv_seq__P, Name: "csv_seq_", Package: "std/csv"}
 
-func __csv_seq_(_args []Object) Object {
+func __csv_seq_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
@@ -32,7 +33,7 @@ func __csv_seq_(_args []Object) Object {
 var __write__P ProcFn = __write_
 var write_ Proc = Proc{Fn: __write__P, Name: "write_", Package: "std/csv"}
 
-func __write_(_args []Object) Object {
+func __write_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 2:
@@ -57,7 +58,7 @@ func __write_(_args []Object) Object {
 var __write_string__P ProcFn = __write_string_
 var write_string_ Proc = Proc{Fn: __write_string__P, Name: "write_string_", Package: "std/csv"}
 
-func __write_string_(_args []Object) Object {
+func __write_string_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:

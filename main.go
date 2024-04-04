@@ -89,7 +89,7 @@ func (ctx *ReplContext) PushException(exc Object) {
 	ctx.exc.Value = exc
 }
 
-func processFile(filename string, phase Phase) error {
+func processFile(env *Env, filename string, phase Phase) error {
 	var reader *Reader
 	if filename == "-" {
 		reader = NewReader(bufio.NewReader(Stdin), "<stdin>")
@@ -104,12 +104,12 @@ func processFile(filename string, phase Phase) error {
 	if filename != "" {
 		f, err := filepath.Abs(filename)
 		PanicOnErr(err)
-		GLOBAL_ENV.SetMainFilename(f)
+		env.SetMainFilename(f)
 	}
 	if saveForRepl {
 		reader = NewReader(&replayable{reader}, "<replay>")
 	}
-	return ProcessReader(reader, filename, phase)
+	return ProcessReader(env, reader, filename, phase)
 }
 
 func skipRestOfLine(reader *Reader) {
@@ -121,7 +121,7 @@ func skipRestOfLine(reader *Reader) {
 	}
 }
 
-func processReplCommand(reader *Reader, phase Phase, parseContext *ParseContext, replContext *ReplContext) (exit bool) {
+func processReplCommand(env *Env, reader *Reader, phase Phase, parseContext *ParseContext, replContext *ReplContext) (exit bool) {
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -143,7 +143,7 @@ func processReplCommand(reader *Reader, phase Phase, parseContext *ParseContext,
 		}
 	}()
 
-	obj, err := TryRead(reader)
+	obj, err := TryRead(env, reader)
 	if err == io.EOF {
 		return true
 	}
@@ -171,9 +171,9 @@ func processReplCommand(reader *Reader, phase Phase, parseContext *ParseContext,
 	return false
 }
 
-func srepl(port string, phase Phase) {
+func srepl(env *Env, port string, phase Phase) {
 	ProcessReplData()
-	GLOBAL_ENV.FindNamespace(MakeSymbol("user")).ReferAll(GLOBAL_ENV.FindNamespace(MakeSymbol("joker.repl")))
+	env.FindNamespace(MakeSymbol("user")).ReferAll(env.FindNamespace(MakeSymbol("joker.repl")))
 	l, err := net.Listen("tcp", replSocket)
 	if err != nil {
 		fmt.Fprintf(Stderr, "Cannot start srepl listening on %s: %s\n",
@@ -193,19 +193,19 @@ func srepl(port string, phase Phase) {
 	oldStdIn := Stdin
 	oldStdOut := Stdout
 	oldStdErr := Stderr
-	oldStdinValue, oldStdoutValue, oldStderrValue := GLOBAL_ENV.StdIO()
+	oldStdinValue, oldStdoutValue, oldStderrValue := env.StdIO()
 	Stdin = conn
 	Stdout = conn
 	Stderr = conn
 	newIn := MakeBufferedReader(conn)
 	newOut := MakeIOWriter(conn)
-	GLOBAL_ENV.SetStdIO(newIn, newOut, newOut)
+	env.SetStdIO(newIn, newOut, newOut)
 	defer func() {
 		conn.Close()
 		Stdin = oldStdIn
 		Stdout = oldStdOut
 		Stderr = oldStdErr
-		GLOBAL_ENV.SetStdIO(oldStdinValue, oldStdoutValue, oldStderrValue)
+		env.SetStdIO(oldStdinValue, oldStdoutValue, oldStderrValue)
 	}()
 
 	fmt.Printf("Joker repl accepting client at %s...\n", conn.RemoteAddr())
@@ -214,7 +214,7 @@ func srepl(port string, phase Phase) {
 
 	/* The rest of this code comes from repl(), below: */
 
-	parseContext := &ParseContext{Env: GLOBAL_ENV}
+	parseContext := &ParseContext{Env: env}
 	replContext := NewReplContext(parseContext.Env)
 
 	reader := NewReader(runeReader, "<srepl>")
@@ -223,8 +223,8 @@ func srepl(port string, phase Phase) {
 		VERSION, conn.RemoteAddr())
 
 	for {
-		fmt.Fprint(Stdout, GLOBAL_ENV.CurrentNamespace().Name.ToString(false)+"=> ")
-		if processReplCommand(reader, phase, parseContext, replContext) {
+		fmt.Fprint(Stdout, env.CurrentNamespace().Name.ToString(false)+"=> ")
+		if processReplCommand(env, reader, phase, parseContext, replContext) {
 			return
 		}
 	}
@@ -243,13 +243,13 @@ func makeDialectKeyword(dialect Dialect) Keyword {
 	}
 }
 
-func configureLinterMode(dialect Dialect, filename string, workingDir string) {
-	ProcessLinterFiles(dialect, filename, workingDir)
+func configureLinterMode(env *Env, dialect Dialect, filename string, workingDir string) {
+	ProcessLinterFiles(env, dialect, filename, workingDir)
 	LINTER_MODE = true
 	DIALECT = dialect
-	lm, _ := GLOBAL_ENV.Resolve(MakeSymbol("joker.core/*linter-mode*"))
+	lm, _ := env.Resolve(MakeSymbol("joker.core/*linter-mode*"))
 	lm.Value = Boolean{B: true}
-	GLOBAL_ENV.Features = GLOBAL_ENV.Features.Disjoin(MakeKeyword("joker")).Conj(makeDialectKeyword(dialect)).(Set)
+	env.Features = env.Features.Disjoin(MakeKeyword("joker")).Conj(makeDialectKeyword(dialect)).(Set)
 	ProcessLinterData(dialect)
 }
 
@@ -265,14 +265,14 @@ func detectDialect(filename string) Dialect {
 	return CLJ
 }
 
-func lintFile(filename string, dialect Dialect, workingDir string) {
+func lintFile(env *Env, filename string, dialect Dialect, workingDir string) {
 	phase := PARSE
 	if dialect == EDN {
 		phase = READ
 	}
-	ReadConfig(filename, workingDir)
-	configureLinterMode(dialect, filename, workingDir)
-	if processFile(filename, phase) == nil {
+	ReadConfig(env, filename, workingDir)
+	configureLinterMode(env, dialect, filename, workingDir)
+	if processFile(env, filename, phase) == nil {
 		WarnOnUnusedNamespaces()
 		WarnOnUnusedVars()
 	}
@@ -303,29 +303,29 @@ func isIgnored(path string) bool {
 	return false
 }
 
-func lintDir(dirname string, dialect Dialect, reportGloballyUnused bool) {
+func lintDir(env *Env, dirname string, dialect Dialect, reportGloballyUnused bool) {
 	var processErr error
 	phase := PARSE
 	if dialect == EDN {
 		phase = READ
 	}
-	ns := GLOBAL_ENV.CurrentNamespace()
-	ReadConfig("", dirname)
-	configureLinterMode(dialect, "", dirname)
+	ns := env.CurrentNamespace()
+	ReadConfig(env, "", dirname)
+	configureLinterMode(env, dialect, "", dirname)
 	filepath.Walk(dirname, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			fmt.Fprintln(Stderr, "Error: ", err)
 			return nil
 		}
 		if !info.IsDir() && matchesDialect(path, dialect) && !isIgnored(path) {
-			GLOBAL_ENV.CoreNamespace.Resolve("*loaded-libs*").Value = EmptySet()
-			processErr = processFile(path, phase)
+			env.CoreNamespace.Resolve("*loaded-libs*").Value = EmptySet()
+			processErr = processFile(env, path, phase)
 			if processErr == nil {
 				WarnOnUnusedNamespaces()
 				WarnOnUnusedVars()
 			}
 			ResetUsage()
-			GLOBAL_ENV.SetCurrentNamespace(ns)
+			env.SetCurrentNamespace(ns)
 		}
 		return nil
 	})
@@ -681,18 +681,20 @@ func main() {
 		os.Exit(code)
 	})
 
-	GLOBAL_ENV.InitEnv(Stdin, Stdout, Stderr, os.Args[1:])
+	env := GLOBAL_ENV
+
+	env.InitEnv(Stdin, Stdout, Stderr, os.Args[1:])
 
 	parseArgs(os.Args) // Do this early enough so --verbose can show joker.core being processed.
 
 	saveForRepl = saveForRepl && (exitToRepl || errorToRepl) // don't bother saving stuff if no repl
 
 	RT.GIL.Lock()
-	ProcessCoreData()
+	SetupGlobalEnvCoreData()
 
-	GLOBAL_ENV.ReferCoreToUser()
-	GLOBAL_ENV.SetEnvArgs(remainingArgs)
-	GLOBAL_ENV.SetClassPath(classPath)
+	env.ReferCoreToUser()
+	env.SetEnvArgs(remainingArgs)
+	env.SetClassPath(classPath)
 
 	if debugOut != nil {
 		fmt.Fprintf(debugOut, "debugOut=%v\n", debugOut)
@@ -794,7 +796,7 @@ func main() {
 		if saveForRepl {
 			reader = NewReader(&replayable{reader}, "<replay>")
 		}
-		if err := ProcessReader(reader, "", phase); err != nil {
+		if err := ProcessReader(env, reader, "", phase); err != nil {
 			if !errorToRepl {
 				ExitJoker(1)
 			}
@@ -822,9 +824,9 @@ func main() {
 			dialect = detectDialect(filename)
 		}
 		if filename != "" {
-			lintFile(filename, dialect, workingDir)
+			lintFile(env, filename, dialect, workingDir)
 		} else if workingDir != "" {
-			lintDir(workingDir, dialect, reportGloballyUnusedFlag)
+			lintDir(env, workingDir, dialect, reportGloballyUnusedFlag)
 		} else {
 			fmt.Fprintf(Stderr, "Error: Missing --file or --working-dir argument.\n")
 			ExitJoker(16)
@@ -841,7 +843,7 @@ func main() {
 	}
 
 	if filename != "" {
-		if err := processFile(filename, phase); err != nil {
+		if err := processFile(env, filename, phase); err != nil {
 			if !errorToRepl {
 				ExitJoker(1)
 			}
@@ -853,12 +855,11 @@ func main() {
 	}
 
 	if replSocket != "" {
-		srepl(replSocket, phase)
+		srepl(env, replSocket, phase)
 		return
 	}
 
-	repl(phase)
-	return
+	repl(env, phase)
 }
 
 func finish() {

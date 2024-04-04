@@ -5,8 +5,8 @@
 package string
 
 import (
-	"fmt"
 	. "github.com/candid82/joker/core"
+	"fmt"
 	"os"
 )
 
@@ -16,6 +16,7 @@ func InternsOrThunks() {
 	}
 	stringNamespace.ResetMeta(MakeMeta(nil, `Implements simple functions to manipulate strings.`, "1.0"))
 
+	
 	stringNamespace.InternVar("blank?", isblank_,
 		MakeMeta(
 			NewListFrom(NewVectorFrom(MakeSymbol("s"))),

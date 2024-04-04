@@ -9,22 +9,22 @@ import (
 	"io"
 	"strings"
 
-	. "github.com/candid82/joker/core"
+	"github.com/candid82/joker/core"
 	"github.com/chzyer/readline"
 )
 
-func repl(phase Phase) {
-	ProcessReplData()
-	GLOBAL_ENV.FindNamespace(MakeSymbol("user")).ReferAll(GLOBAL_ENV.FindNamespace(MakeSymbol("joker.repl")))
-	fmt.Printf("Welcome to joker %s. Use EOF (Ctrl-D) or SIGINT (Ctrl-C) to exit.\n", VERSION)
-	parseContext := &ParseContext{Env: GLOBAL_ENV}
+func repl(env *core.Env, phase core.Phase) {
+	core.ProcessReplData()
+	env.FindNamespace(core.MakeSymbol("user")).ReferAll(env.FindNamespace(core.MakeSymbol("joker.repl")))
+	fmt.Printf("Welcome to joker %s. Use EOF (Ctrl-D) or SIGINT (Ctrl-C) to exit.\n", core.VERSION)
+	parseContext := &core.ParseContext{Env: env}
 	replContext := NewReplContext(parseContext.Env)
 
 	var runeReader io.RuneReader
 	var rl *readline.Instance
 	var err error
 	if noReadline {
-		runeReader = bufio.NewReader(Stdin)
+		runeReader = bufio.NewReader(core.Stdin)
 	} else {
 		rl, err = readline.New("")
 		if err != nil {
@@ -32,22 +32,22 @@ func repl(phase Phase) {
 			return
 		}
 		defer rl.Close()
-		runeReader = NewLineRuneReader(rl)
+		runeReader = core.NewLineRuneReader(rl)
 		for _, line := range strings.Split(string(dataRead), "\n") {
 			rl.SaveHistory(line)
 		}
 		dataRead = []rune{}
 	}
 
-	reader := NewReader(runeReader, "<repl>")
+	reader := core.NewReader(runeReader, "<repl>")
 
 	for {
 		if noReadline {
-			print(GLOBAL_ENV.CurrentNamespace().Name.ToString(false) + "=> ")
+			print(env.CurrentNamespace().Name.ToString(false) + "=> ")
 		} else {
-			rl.SetPrompt(GLOBAL_ENV.CurrentNamespace().Name.ToString(false) + "=> ")
+			rl.SetPrompt(env.CurrentNamespace().Name.ToString(false) + "=> ")
 		}
-		if processReplCommand(reader, phase, parseContext, replContext) {
+		if processReplCommand(env, reader, phase, parseContext, replContext) {
 			return
 		}
 	}
