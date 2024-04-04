@@ -1,3 +1,4 @@
+//go:build !gen_data
 // +build !gen_data
 
 package core
@@ -7,7 +8,7 @@ var haveSetCoreNamespaces bool
 func ProcessCoreData() {
 	// Let MaybeLazy() handle initialization.
 	if !haveSetCoreNamespaces {
-		setCoreNamespaces()
+		setCoreNamespaces(GLOBAL_ENV)
 		haveSetCoreNamespaces = true
 	}
 }

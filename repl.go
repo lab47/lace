@@ -1,3 +1,4 @@
+//go:build !plan9
 // +build !plan9
 
 package main
@@ -16,8 +17,8 @@ func repl(phase Phase) {
 	ProcessReplData()
 	GLOBAL_ENV.FindNamespace(MakeSymbol("user")).ReferAll(GLOBAL_ENV.FindNamespace(MakeSymbol("joker.repl")))
 	fmt.Printf("Welcome to joker %s. Use EOF (Ctrl-D) or SIGINT (Ctrl-C) to exit.\n", VERSION)
-	parseContext := &ParseContext{GlobalEnv: GLOBAL_ENV}
-	replContext := NewReplContext(parseContext.GlobalEnv)
+	parseContext := &ParseContext{Env: GLOBAL_ENV}
+	replContext := NewReplContext(parseContext.Env)
 
 	var runeReader io.RuneReader
 	var rl *readline.Instance

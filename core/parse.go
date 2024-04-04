@@ -145,7 +145,7 @@ type (
 		frame    int
 	}
 	ParseContext struct {
-		GlobalEnv              *Env
+		Env                    *Env
 		localBindings          *Bindings
 		loopBindings           [][]Symbol
 		linterBindings         *Bindings
@@ -699,7 +699,7 @@ func parseDef(obj Object, ctx *ParseContext, isForLinter bool) *DefExpr {
 	var meta Map
 	switch sym := s.(type) {
 	case Symbol:
-		if sym.ns != nil && (Symbol{name: sym.ns} != ctx.GlobalEnv.CurrentNamespace().Name) {
+		if sym.ns != nil && (Symbol{name: sym.ns} != ctx.Env.CurrentNamespace().Name) {
 			panic(&ParseError{
 				msg: "Can't create defs outside of current ns",
 				obj: obj,
@@ -707,7 +707,7 @@ func parseDef(obj Object, ctx *ParseContext, isForLinter bool) *DefExpr {
 		}
 		symWithoutNs := sym
 		symWithoutNs.ns = nil
-		vr := ctx.GlobalEnv.CurrentNamespace().Intern(symWithoutNs)
+		vr := ctx.Env.CurrentNamespace().Intern(symWithoutNs)
 		if isForLinter {
 			vr.isGloballyUsed = true
 		}
@@ -893,8 +893,9 @@ func wrapWithMeta(fnExpr *FnExpr, obj Object, ctx *ParseContext) Expr {
 // Examples:
 // (fn f [] 1 2)
 // (fn f ([] 1 2)
-//       ([a] a 3)
-//       ([a & b] a b))
+//
+//	([a] a 3)
+//	([a & b] a b))
 func parseFn(obj Object, ctx *ParseContext) Expr {
 	res := &FnExpr{Position: GetPosition(obj)}
 	bodies := obj.(Seq).Rest()
@@ -1161,7 +1162,7 @@ func resolveMacro(obj Object, ctx *ParseContext) *Var {
 		if ctx.GetLocalBinding(sym) != nil {
 			return nil
 		}
-		vr, ok := ctx.GlobalEnv.Resolve(sym)
+		vr, ok := ctx.Env.Resolve(sym)
 		if !ok || !vr.isMacro || vr.Value == nil {
 			return nil
 		}
@@ -1434,35 +1435,35 @@ func areAllLiteralExprs(exprs []Expr) bool {
 
 func getRequireVar(ctx *ParseContext) *Var {
 	if REQUIRE_VAR == nil {
-		REQUIRE_VAR = ctx.GlobalEnv.CoreNamespace.Resolve("require")
+		REQUIRE_VAR = ctx.Env.CoreNamespace.Resolve("require")
 	}
 	return REQUIRE_VAR
 }
 
 func getReferVar(ctx *ParseContext) *Var {
 	if REFER_VAR == nil {
-		REFER_VAR = ctx.GlobalEnv.CoreNamespace.Resolve("refer")
+		REFER_VAR = ctx.Env.CoreNamespace.Resolve("refer")
 	}
 	return REFER_VAR
 }
 
 func getAliasVar(ctx *ParseContext) *Var {
 	if ALIAS_VAR == nil {
-		ALIAS_VAR = ctx.GlobalEnv.CoreNamespace.Resolve("alias")
+		ALIAS_VAR = ctx.Env.CoreNamespace.Resolve("alias")
 	}
 	return ALIAS_VAR
 }
 
 func getCreateNsVar(ctx *ParseContext) *Var {
 	if CREATE_NS_VAR == nil {
-		CREATE_NS_VAR = ctx.GlobalEnv.CoreNamespace.Resolve("create-ns")
+		CREATE_NS_VAR = ctx.Env.CoreNamespace.Resolve("create-ns")
 	}
 	return CREATE_NS_VAR
 }
 
 func getInNsVar(ctx *ParseContext) *Var {
 	if IN_NS_VAR == nil {
-		IN_NS_VAR = ctx.GlobalEnv.CoreNamespace.Resolve("in-ns")
+		IN_NS_VAR = ctx.Env.CoreNamespace.Resolve("in-ns")
 	}
 	return IN_NS_VAR
 }
@@ -1556,14 +1557,14 @@ func parseList(obj Object, ctx *ParseContext) Expr {
 			checkForm(obj, 2, 2)
 			switch sym := Second(seq).(type) {
 			case Symbol:
-				vr, ok := ctx.GlobalEnv.Resolve(sym)
+				vr, ok := ctx.Env.Resolve(sym)
 				if !ok {
 					if !LINTER_MODE {
 						panic(&ParseError{obj: obj, msg: "Unable to resolve var " + sym.ToString(false) + " in this context"})
 					}
-					symNs := ctx.GlobalEnv.NamespaceFor(ctx.GlobalEnv.CurrentNamespace(), sym)
+					symNs := ctx.Env.NamespaceFor(ctx.Env.CurrentNamespace(), sym)
 					if !ctx.isUnknownCallableScope {
-						if symNs == nil || symNs == ctx.GlobalEnv.CurrentNamespace() {
+						if symNs == nil || symNs == ctx.Env.CurrentNamespace() {
 							printParseError(obj.GetInfo().Pos(), "Unable to resolve symbol: "+sym.ToString(false))
 						}
 					}
@@ -1728,7 +1729,7 @@ func parseSymbol(obj Object, ctx *ParseContext) Expr {
 			Position: GetPosition(obj),
 		}
 	}
-	if vr, ok := ctx.GlobalEnv.Resolve(sym); ok {
+	if vr, ok := ctx.Env.Resolve(sym); ok {
 		return MakeVarRefExpr(vr, obj)
 	}
 	if sym.ns == nil && TYPES[sym.name] != nil {
@@ -1742,9 +1743,9 @@ func parseSymbol(obj Object, ctx *ParseContext) Expr {
 	}
 	if DIALECT == CLJS && sym.ns == nil {
 		// Check if this is a "callable namespace"
-		ns := ctx.GlobalEnv.FindNamespace(sym)
+		ns := ctx.Env.FindNamespace(sym)
 		if ns == nil {
-			ns = ctx.GlobalEnv.CurrentNamespace().aliases[sym.name]
+			ns = ctx.Env.CurrentNamespace().aliases[sym.name]
 		}
 		if ns != nil {
 			ns.isUsed = true
@@ -1758,13 +1759,13 @@ func parseSymbol(obj Object, ctx *ParseContext) Expr {
 		}
 		// Check if this is a constructor call
 		if len(parts) == 2 && parts[0] != "" && parts[len(parts)-1] == "" {
-			if vr, ok := ctx.GlobalEnv.Resolve(MakeSymbol(parts[0])); ok {
+			if vr, ok := ctx.Env.Resolve(MakeSymbol(parts[0])); ok {
 				return MakeVarRefExpr(vr, obj)
 			}
 		}
 	}
-	symNs := ctx.GlobalEnv.NamespaceFor(ctx.GlobalEnv.CurrentNamespace(), sym)
-	if symNs == nil || symNs == ctx.GlobalEnv.CurrentNamespace() {
+	symNs := ctx.Env.NamespaceFor(ctx.Env.CurrentNamespace(), sym)
+	if symNs == nil || symNs == ctx.Env.CurrentNamespace() {
 		if isInteropSymbol(sym) || isJavaSymbol(sym) {
 			return NewSurrogateExpr(sym)
 		}

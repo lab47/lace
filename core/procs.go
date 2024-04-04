@@ -1016,7 +1016,7 @@ var procSort = func(args []Object) Object {
 }
 
 var procEval = func(args []Object) Object {
-	parseContext := &ParseContext{GlobalEnv: GLOBAL_ENV}
+	parseContext := &ParseContext{Env: GLOBAL_ENV}
 	expr := Parse(args[0], parseContext)
 	return Eval(expr, nil)
 }
@@ -1131,7 +1131,7 @@ var procNanoTime = func(args []Object) Object {
 var procMacroexpand1 = func(args []Object) Object {
 	switch s := args[0].(type) {
 	case Seq:
-		parseContext := &ParseContext{GlobalEnv: GLOBAL_ENV}
+		parseContext := &ParseContext{Env: GLOBAL_ENV}
 		return macroexpand1(s, parseContext)
 	default:
 		return s
@@ -1139,7 +1139,7 @@ var procMacroexpand1 = func(args []Object) Object {
 }
 
 func loadReader(reader *Reader) (Object, error) {
-	parseContext := &ParseContext{GlobalEnv: GLOBAL_ENV}
+	parseContext := &ParseContext{Env: GLOBAL_ENV}
 	var lastObj Object = NIL
 	for {
 		obj, err := TryRead(reader)
@@ -1516,7 +1516,7 @@ var procParse = func(args []Object) Object {
 		LINTER_MODE = false
 		lm.Value = Boolean{B: false}
 	}()
-	parseContext := &ParseContext{GlobalEnv: GLOBAL_ENV}
+	parseContext := &ParseContext{Env: GLOBAL_ENV}
 	res := Parse(args[0], parseContext)
 	return res.Dump(false)
 }
@@ -1614,18 +1614,18 @@ var procVerbosityLevel = func(args []Object) Object {
 	return MakeInt(VerbosityLevel)
 }
 
-func PackReader(reader *Reader, filename string) ([]byte, error) {
+func PackReader(env *Env, reader *Reader, filename string) ([]byte, error) {
 	var p []byte
 	packEnv := NewPackEnv()
-	parseContext := &ParseContext{GlobalEnv: GLOBAL_ENV}
+	parseContext := &ParseContext{Env: env}
 	if filename != "" {
-		currentFilename := parseContext.GlobalEnv.file.Value
+		currentFilename := parseContext.Env.file.Value
 		defer func() {
-			parseContext.GlobalEnv.SetFilename(currentFilename)
+			parseContext.Env.SetFilename(currentFilename)
 		}()
 		s, err := filepath.Abs(filename)
 		PanicOnErr(err)
-		parseContext.GlobalEnv.SetFilename(MakeString(s))
+		parseContext.Env.SetFilename(MakeString(s))
 	}
 	for {
 		obj, err := TryRead(reader)
@@ -1658,15 +1658,15 @@ var procIncProblemCount = func(args []Object) Object {
 }
 
 func ProcessReader(reader *Reader, filename string, phase Phase) error {
-	parseContext := &ParseContext{GlobalEnv: GLOBAL_ENV}
+	parseContext := &ParseContext{Env: GLOBAL_ENV}
 	if filename != "" {
-		currentFilename := parseContext.GlobalEnv.file.Value
+		currentFilename := parseContext.Env.file.Value
 		defer func() {
-			parseContext.GlobalEnv.SetFilename(currentFilename)
+			parseContext.Env.SetFilename(currentFilename)
 		}()
 		s, err := filepath.Abs(filename)
 		PanicOnErr(err)
-		parseContext.GlobalEnv.SetFilename(MakeString(s))
+		parseContext.Env.SetFilename(MakeString(s))
 	}
 	for {
 		obj, err := TryRead(reader)
@@ -1703,15 +1703,15 @@ func ProcessReader(reader *Reader, filename string, phase Phase) error {
 }
 
 func ProcessReaderFromEval(reader *Reader, filename string) {
-	parseContext := &ParseContext{GlobalEnv: GLOBAL_ENV}
+	parseContext := &ParseContext{Env: GLOBAL_ENV}
 	if filename != "" {
-		currentFilename := parseContext.GlobalEnv.file.Value
+		currentFilename := parseContext.Env.file.Value
 		defer func() {
-			parseContext.GlobalEnv.SetFilename(currentFilename)
+			parseContext.Env.SetFilename(currentFilename)
 		}()
 		s, err := filepath.Abs(filename)
 		PanicOnErr(err)
-		parseContext.GlobalEnv.SetFilename(MakeString(s))
+		parseContext.Env.SetFilename(MakeString(s))
 	}
 	for {
 		obj, err := TryRead(reader)
@@ -1727,10 +1727,14 @@ func ProcessReaderFromEval(reader *Reader, filename string) {
 }
 
 func processData(data []byte) {
-	ns := GLOBAL_ENV.CurrentNamespace()
-	GLOBAL_ENV.SetCurrentNamespace(GLOBAL_ENV.CoreNamespace)
-	defer func() { GLOBAL_ENV.SetCurrentNamespace(ns) }()
-	header, p := UnpackHeader(data, GLOBAL_ENV)
+	processInEnv(GLOBAL_ENV, data)
+}
+
+func processInEnv(env *Env, data []byte) error {
+	ns := env.CurrentNamespace()
+	env.SetCurrentNamespace(env.CoreNamespace)
+	defer func() { env.SetCurrentNamespace(ns) }()
+	header, p := UnpackHeader(data, env)
 	for len(p) > 0 {
 		var expr Expr
 		expr, p = UnpackExpr(p, header)
@@ -1738,12 +1742,14 @@ func processData(data []byte) {
 		PanicOnErr(err)
 	}
 	if VerbosityLevel > 0 {
-		fmt.Fprintf(Stderr, "processData: Evaluated code for %s\n", GLOBAL_ENV.CurrentNamespace().ToString(false))
+		fmt.Fprintf(Stderr, "processData: Evaluated code for %s\n", env.CurrentNamespace().ToString(false))
 	}
+
+	return nil
 }
 
-func setCoreNamespaces() {
-	ns := GLOBAL_ENV.CoreNamespace
+func setCoreNamespaces(env *Env) {
+	ns := env.CoreNamespace
 	ns.MaybeLazy("joker.core")
 
 	vr := ns.Resolve("*core-namespaces*")
@@ -2004,8 +2010,4 @@ func ProcessLinterFiles(dialect Dialect, filename string, workingDir string) {
 	case CLJ:
 		ProcessLinterFile(configDir, "linter.clj")
 	}
-}
-
-func init() {
-	rand.Seed(time.Now().UnixNano())
 }

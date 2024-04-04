@@ -214,8 +214,8 @@ func srepl(port string, phase Phase) {
 
 	/* The rest of this code comes from repl(), below: */
 
-	parseContext := &ParseContext{GlobalEnv: GLOBAL_ENV}
-	replContext := NewReplContext(parseContext.GlobalEnv)
+	parseContext := &ParseContext{Env: GLOBAL_ENV}
+	replContext := NewReplContext(parseContext.Env)
 
 	reader := NewReader(runeReader, "<srepl>")
 
