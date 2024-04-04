@@ -15,7 +15,7 @@ func __atoi_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		s := ExtractString(_args, 0)
+		s := ExtractString(_env, _args, 0)
 		_res, err := strconv.Atoi(s)
 		PanicOnErr(err)
 		return MakeInt(_res)
@@ -33,7 +33,7 @@ func __iscan_backquote_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		s := ExtractString(_args, 0)
+		s := ExtractString(_env, _args, 0)
 		_res := strconv.CanBackquote(s)
 		return MakeBoolean(_res)
 
@@ -50,7 +50,7 @@ func __format_bool_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		b := ExtractBoolean(_args, 0)
+		b := ExtractBoolean(_env, _args, 0)
 		_res := strconv.FormatBool(b)
 		return MakeString(_res)
 
@@ -67,10 +67,10 @@ func __format_double_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 4:
-		f := ExtractDouble(_args, 0)
-		fmt := ExtractChar(_args, 1)
-		prec := ExtractInt(_args, 2)
-		bitSize := ExtractInt(_args, 3)
+		f := ExtractDouble(_env, _args, 0)
+		fmt := ExtractChar(_env, _args, 1)
+		prec := ExtractInt(_env, _args, 2)
+		bitSize := ExtractInt(_env, _args, 3)
 		_res := strconv.FormatFloat(f, byte(fmt), prec, bitSize)
 		return MakeString(_res)
 
@@ -87,8 +87,8 @@ func __format_int_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 2:
-		i := ExtractInt(_args, 0)
-		base := ExtractInt(_args, 1)
+		i := ExtractInt(_env, _args, 0)
+		base := ExtractInt(_env, _args, 1)
 		_res := strconv.FormatInt(int64(i), base)
 		return MakeString(_res)
 
@@ -105,7 +105,7 @@ func __isgraphic_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		c := ExtractChar(_args, 0)
+		c := ExtractChar(_env, _args, 0)
 		_res := strconv.IsGraphic(c)
 		return MakeBoolean(_res)
 
@@ -122,7 +122,7 @@ func __itoa_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		i := ExtractInt(_args, 0)
+		i := ExtractInt(_env, _args, 0)
 		_res := strconv.Itoa(i)
 		return MakeString(_res)
 
@@ -139,7 +139,7 @@ func __parse_bool_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		s := ExtractString(_args, 0)
+		s := ExtractString(_env, _args, 0)
 		_res, err := strconv.ParseBool(s)
 		PanicOnErr(err)
 		return MakeBoolean(_res)
@@ -157,7 +157,7 @@ func __parse_double_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		s := ExtractString(_args, 0)
+		s := ExtractString(_env, _args, 0)
 		_res, err := strconv.ParseFloat(s, 64)
 		PanicOnErr(err)
 		return MakeDouble(_res)
@@ -175,9 +175,9 @@ func __parse_int_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 3:
-		s := ExtractString(_args, 0)
-		base := ExtractInt(_args, 1)
-		bitSize := ExtractInt(_args, 2)
+		s := ExtractString(_env, _args, 0)
+		base := ExtractInt(_env, _args, 1)
+		bitSize := ExtractInt(_env, _args, 2)
 		t, err := strconv.ParseInt(s, base, bitSize)
 		PanicOnErr(err)
 		_res := int(t)
@@ -196,7 +196,7 @@ func __isprintable_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		c := ExtractChar(_args, 0)
+		c := ExtractChar(_env, _args, 0)
 		_res := strconv.IsPrint(c)
 		return MakeBoolean(_res)
 
@@ -213,7 +213,7 @@ func __quote_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		s := ExtractString(_args, 0)
+		s := ExtractString(_env, _args, 0)
 		_res := strconv.Quote(s)
 		return MakeString(_res)
 
@@ -230,7 +230,7 @@ func __quote_char_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		c := ExtractChar(_args, 0)
+		c := ExtractChar(_env, _args, 0)
 		_res := strconv.QuoteRune(c)
 		return MakeString(_res)
 
@@ -247,7 +247,7 @@ func __quote_char_to_ascii_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		c := ExtractChar(_args, 0)
+		c := ExtractChar(_env, _args, 0)
 		_res := strconv.QuoteRuneToASCII(c)
 		return MakeString(_res)
 
@@ -264,7 +264,7 @@ func __quote_char_to_graphic_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		c := ExtractChar(_args, 0)
+		c := ExtractChar(_env, _args, 0)
 		_res := strconv.QuoteRuneToGraphic(c)
 		return MakeString(_res)
 
@@ -281,7 +281,7 @@ func __quote_to_ascii_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		s := ExtractString(_args, 0)
+		s := ExtractString(_env, _args, 0)
 		_res := strconv.QuoteToASCII(s)
 		return MakeString(_res)
 
@@ -298,7 +298,7 @@ func __quote_to_graphic_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		s := ExtractString(_args, 0)
+		s := ExtractString(_env, _args, 0)
 		_res := strconv.QuoteToGraphic(s)
 		return MakeString(_res)
 
@@ -315,7 +315,7 @@ func __unquote_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		s := ExtractString(_args, 0)
+		s := ExtractString(_env, _args, 0)
 		_res, err := strconv.Unquote(s)
 		PanicOnErr(err)
 		return MakeString(_res)

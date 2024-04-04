@@ -35,8 +35,8 @@ func __add_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 2:
-		t := ExtractTime(_args, 0)
-		d := ExtractInt(_args, 1)
+		t := ExtractTime(_env, _args, 0)
+		d := ExtractInt(_env, _args, 1)
 		_res := t.Add(time.Duration(d))
 		return MakeTime(_res)
 
@@ -53,10 +53,10 @@ func __add_date_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 4:
-		t := ExtractTime(_args, 0)
-		years := ExtractInt(_args, 1)
-		months := ExtractInt(_args, 2)
-		days := ExtractInt(_args, 3)
+		t := ExtractTime(_env, _args, 0)
+		years := ExtractInt(_env, _args, 1)
+		months := ExtractInt(_env, _args, 2)
+		days := ExtractInt(_env, _args, 3)
 		_res := t.AddDate(years, months, days)
 		return MakeTime(_res)
 
@@ -73,8 +73,8 @@ func __format_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 2:
-		t := ExtractTime(_args, 0)
-		layout := ExtractString(_args, 1)
+		t := ExtractTime(_env, _args, 0)
+		layout := ExtractString(_env, _args, 1)
 		_res := t.Format(layout)
 		return MakeString(_res)
 
@@ -91,8 +91,8 @@ func __from_unix_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 2:
-		sec := ExtractInt(_args, 0)
-		nsec := ExtractInt(_args, 1)
+		sec := ExtractInt(_env, _args, 0)
+		nsec := ExtractInt(_env, _args, 1)
 		_res := time.Unix(int64(sec), int64(nsec))
 		return MakeTime(_res)
 
@@ -109,7 +109,7 @@ func __hours_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		d := ExtractInt(_args, 0)
+		d := ExtractInt(_env, _args, 0)
 		_res := time.Duration(d).Hours()
 		return MakeDouble(_res)
 
@@ -126,7 +126,7 @@ func __minutes_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		d := ExtractInt(_args, 0)
+		d := ExtractInt(_env, _args, 0)
 		_res := time.Duration(d).Minutes()
 		return MakeDouble(_res)
 
@@ -159,8 +159,8 @@ func __parse_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 2:
-		layout := ExtractString(_args, 0)
-		value := ExtractString(_args, 1)
+		layout := ExtractString(_env, _args, 0)
+		value := ExtractString(_env, _args, 1)
 		_res, err := time.Parse(layout, value)
 		PanicOnErr(err)
 		return MakeTime(_res)
@@ -178,7 +178,7 @@ func __parse_duration_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		s := ExtractString(_args, 0)
+		s := ExtractString(_env, _args, 0)
 		t, err := time.ParseDuration(s)
 		PanicOnErr(err)
 		_res := int(t)
@@ -197,8 +197,8 @@ func __round_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 2:
-		d := ExtractInt(_args, 0)
-		m := ExtractInt(_args, 1)
+		d := ExtractInt(_env, _args, 0)
+		m := ExtractInt(_env, _args, 1)
 		_res := int(time.Duration(d).Round(time.Duration(m)))
 		return MakeInt(_res)
 
@@ -215,7 +215,7 @@ func __seconds_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		d := ExtractInt(_args, 0)
+		d := ExtractInt(_env, _args, 0)
 		_res := time.Duration(d).Seconds()
 		return MakeDouble(_res)
 
@@ -232,7 +232,7 @@ func __since_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		t := ExtractTime(_args, 0)
+		t := ExtractTime(_env, _args, 0)
 		_res := int(time.Since(t))
 		return MakeInt(_res)
 
@@ -249,7 +249,7 @@ func __sleep_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		d := ExtractInt(_args, 0)
+		d := ExtractInt(_env, _args, 0)
 		 time.Sleep(time.Duration(d))
 		_res := NIL
 		return _res
@@ -267,7 +267,7 @@ func __string_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		d := ExtractInt(_args, 0)
+		d := ExtractInt(_env, _args, 0)
 		_res := time.Duration(d).String()
 		return MakeString(_res)
 
@@ -284,8 +284,8 @@ func __sub_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 2:
-		t := ExtractTime(_args, 0)
-		u := ExtractTime(_args, 1)
+		t := ExtractTime(_env, _args, 0)
+		u := ExtractTime(_env, _args, 1)
 		_res := int(t.Sub(u))
 		return MakeInt(_res)
 
@@ -302,8 +302,8 @@ func __truncate_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 2:
-		d := ExtractInt(_args, 0)
-		m := ExtractInt(_args, 1)
+		d := ExtractInt(_env, _args, 0)
+		m := ExtractInt(_env, _args, 1)
 		_res := int(time.Duration(d).Truncate(time.Duration(m)))
 		return MakeInt(_res)
 
@@ -320,7 +320,7 @@ func __unix_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		t := ExtractTime(_args, 0)
+		t := ExtractTime(_env, _args, 0)
 		_res := int(t.Unix())
 		return MakeInt(_res)
 
@@ -337,7 +337,7 @@ func __until_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		t := ExtractTime(_args, 0)
+		t := ExtractTime(_env, _args, 0)
 		_res := int(time.Until(t))
 		return MakeInt(_res)
 

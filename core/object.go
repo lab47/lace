@@ -726,12 +726,12 @@ func compare(env *Env, c Callable, a, b Object) int {
 		if r.B {
 			return -1
 		}
-		if AssertBoolean(c.Call(env, []Object{b, a}), "").B {
+		if AssertBoolean(env, c.Call(env, []Object{b, a}), "").B {
 			return 1
 		}
 		return 0
 	default:
-		return AssertNumber(r, "Function is not a comparator since it returned a non-integer value").Int().I
+		return AssertNumber(env, r, "Function is not a comparator since it returned a non-integer value").Int().I
 	}
 }
 
@@ -796,7 +796,7 @@ func AlterMeta(env *Env, m *MetaHolder, fn *Fn, args []Object) Map {
 		meta = NIL
 	}
 	fargs := append([]Object{meta}, args...)
-	m.meta = AssertMap(fn.Call(env, fargs), "")
+	m.meta = AssertMap(env, fn.Call(env, fargs), "")
 	return m.meta
 }
 
@@ -851,7 +851,7 @@ func (v *Var) Resolve() Object {
 
 func (v *Var) Call(env *Env, args []Object) Object {
 	vl := v.Resolve()
-	return AssertCallable(
+	return AssertCallable(env,
 		vl,
 		"Var "+v.ToString(false)+" resolves to "+vl.ToString(false)+", which is not a Fn").Call(env, args)
 }
@@ -963,8 +963,8 @@ func (rat *Ratio) Hash() uint32 {
 	return hashGobEncoder(&rat.r)
 }
 
-func (rat *Ratio) Compare(other Object) int {
-	return CompareNumbers(rat, AssertNumber(other, "Cannot compare Ratio and "+other.GetType().ToString(false)))
+func (rat *Ratio) Compare(env *Env, other Object) int {
+	return CompareNumbers(rat, AssertNumber(env, other, "Cannot compare Ratio and "+other.GetType().ToString(false)))
 }
 
 func MakeBigInt(bi int64) *BigInt {
@@ -987,8 +987,8 @@ func (bi *BigInt) Hash() uint32 {
 	return hashGobEncoder(&bi.b)
 }
 
-func (bi *BigInt) Compare(other Object) int {
-	return CompareNumbers(bi, AssertNumber(other, "Cannot compare BigInt and "+other.GetType().ToString(false)))
+func (bi *BigInt) Compare(env *Env, other Object) int {
+	return CompareNumbers(bi, AssertNumber(env, other, "Cannot compare BigInt and "+other.GetType().ToString(false)))
 }
 
 func (bf *BigFloat) ToString(escape bool) string {
@@ -1007,8 +1007,8 @@ func (bf *BigFloat) Hash() uint32 {
 	return hashGobEncoder(&bf.b)
 }
 
-func (bf *BigFloat) Compare(other Object) int {
-	return CompareNumbers(bf, AssertNumber(other, "Cannot compare BigFloat and "+other.GetType().ToString(false)))
+func (bf *BigFloat) Compare(env *Env, other Object) int {
+	return CompareNumbers(bf, AssertNumber(env, other, "Cannot compare BigFloat and "+other.GetType().ToString(false)))
 }
 
 func (c Char) ToString(escape bool) string {
@@ -1041,8 +1041,8 @@ func (c Char) Hash() uint32 {
 	return h.Sum32()
 }
 
-func (c Char) Compare(other Object) int {
-	c2 := AssertChar(other, "Cannot compare Char and "+other.GetType().ToString(false))
+func (c Char) Compare(env *Env, other Object) int {
+	c2 := AssertChar(env, other, "Cannot compare Char and "+other.GetType().ToString(false))
 	if c.Ch < c2.Ch {
 		return -1
 	}
@@ -1088,8 +1088,8 @@ func (d Double) Hash() uint32 {
 	return h.Sum32()
 }
 
-func (d Double) Compare(other Object) int {
-	return CompareNumbers(d, AssertNumber(other, "Cannot compare Double and "+other.GetType().ToString(false)))
+func (d Double) Compare(env *Env, other Object) int {
+	return CompareNumbers(d, AssertNumber(env, other, "Cannot compare Double and "+other.GetType().ToString(false)))
 }
 
 func (i Int) ToString(escape bool) string {
@@ -1120,8 +1120,8 @@ func (i Int) Hash() uint32 {
 	return h.Sum32()
 }
 
-func (i Int) Compare(other Object) int {
-	return CompareNumbers(i, AssertNumber(other, "Cannot compare Int and "+other.GetType().ToString(false)))
+func (i Int) Compare(env *Env, other Object) int {
+	return CompareNumbers(i, AssertNumber(env, other, "Cannot compare Int and "+other.GetType().ToString(false)))
 }
 
 func (b Boolean) ToString(escape bool) string {
@@ -1157,8 +1157,8 @@ func (b Boolean) Hash() uint32 {
 	return h.Sum32()
 }
 
-func (b Boolean) Compare(other Object) int {
-	b2 := AssertBoolean(other, "Cannot compare Boolean and "+other.GetType().ToString(false))
+func (b Boolean) Compare(env *Env, other Object) int {
+	b2 := AssertBoolean(env, other, "Cannot compare Boolean and "+other.GetType().ToString(false))
 	if b.B == b2.B {
 		return 0
 	}
@@ -1193,8 +1193,8 @@ func (t Time) Hash() uint32 {
 	return hashGobEncoder(t.T)
 }
 
-func (t Time) Compare(other Object) int {
-	t2 := AssertTime(other, "Cannot compare Time and "+other.GetType().ToString(false))
+func (t Time) Compare(env *Env, other Object) int {
+	t2 := AssertTime(env, other, "Cannot compare Time and "+other.GetType().ToString(false))
 	if t.T.Equal(t2.T) {
 		return 0
 	}
@@ -1239,8 +1239,8 @@ func (k Keyword) Hash() uint32 {
 	return k.hash
 }
 
-func (k Keyword) Compare(other Object) int {
-	k2 := AssertKeyword(other, "Cannot compare Keyword and "+other.GetType().ToString(false))
+func (k Keyword) Compare(env *Env, other Object) int {
+	k2 := AssertKeyword(env, other, "Cannot compare Keyword and "+other.GetType().ToString(false))
 	return strings.Compare(k.ToString(false), k2.ToString(false))
 }
 
@@ -1317,8 +1317,8 @@ func (s Symbol) Hash() uint32 {
 	return hashSymbol(s.ns, s.name) + 0x9e3779b9
 }
 
-func (s Symbol) Compare(other Object) int {
-	s2 := AssertSymbol(other, "Cannot compare Symbol and "+other.GetType().ToString(false))
+func (s Symbol) Compare(env *Env, other Object) int {
+	s2 := AssertSymbol(env, other, "Cannot compare Symbol and "+other.GetType().ToString(false))
 	return strings.Compare(s.ToString(false), s2.ToString(false))
 }
 
@@ -1407,8 +1407,8 @@ func (s String) TryNth(i int, d Object) Object {
 	return d
 }
 
-func (s String) Compare(other Object) int {
-	s2 := AssertString(other, "Cannot compare String and "+other.GetType().ToString(false))
+func (s String) Compare(env *Env, other Object) int {
+	s2 := AssertString(env, other, "Cannot compare String and "+other.GetType().ToString(false))
 	return strings.Compare(s.S, s2.S)
 }
 

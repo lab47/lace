@@ -123,7 +123,7 @@ func (env *Env) IsStdIn(obj Object) bool {
 }
 
 func (env *Env) CurrentNamespace() *Namespace {
-	return AssertNamespace(env.ns.Value, "")
+	return AssertNamespace(env, env.ns.Value, "")
 }
 
 func (env *Env) SetCurrentNamespace(ns *Namespace) {

@@ -14,7 +14,7 @@ func __decode_string_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		s := ExtractString(_args, 0)
+		s := ExtractString(_env, _args, 0)
 		_res := decodeString(s)
 		return MakeString(_res)
 
@@ -31,7 +31,7 @@ func __encode_string_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		s := ExtractString(_args, 0)
+		s := ExtractString(_env, _args, 0)
 		_res := encodeString(s)
 		return MakeString(_res)
 

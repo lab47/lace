@@ -27,7 +27,7 @@ func __abs_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		x := ExtractNumber(_args, 0)
+		x := ExtractNumber(_env, _args, 0)
 		_res := math.Abs(x.Double().D)
 		return MakeDouble(_res)
 
@@ -44,7 +44,7 @@ func __ceil_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		x := ExtractNumber(_args, 0)
+		x := ExtractNumber(_env, _args, 0)
 		_res := math.Ceil(x.Double().D)
 		return MakeDouble(_res)
 
@@ -61,8 +61,8 @@ func __copy_sign_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 2:
-		x := ExtractNumber(_args, 0)
-		y := ExtractNumber(_args, 1)
+		x := ExtractNumber(_env, _args, 0)
+		y := ExtractNumber(_env, _args, 1)
 		_res := math.Copysign(x.Double().D, y.Double().D)
 		return MakeDouble(_res)
 
@@ -79,7 +79,7 @@ func __cos_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		x := ExtractNumber(_args, 0)
+		x := ExtractNumber(_env, _args, 0)
 		_res := math.Cos(x.Double().D)
 		return MakeDouble(_res)
 
@@ -96,7 +96,7 @@ func __cube_root_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		x := ExtractNumber(_args, 0)
+		x := ExtractNumber(_env, _args, 0)
 		_res := math.Cbrt(x.Double().D)
 		return MakeDouble(_res)
 
@@ -113,8 +113,8 @@ func __dim_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 2:
-		x := ExtractNumber(_args, 0)
-		y := ExtractNumber(_args, 1)
+		x := ExtractNumber(_env, _args, 0)
+		y := ExtractNumber(_env, _args, 1)
 		_res := math.Dim(x.Double().D, y.Double().D)
 		return MakeDouble(_res)
 
@@ -131,7 +131,7 @@ func __exp_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		x := ExtractNumber(_args, 0)
+		x := ExtractNumber(_env, _args, 0)
 		_res := math.Exp(x.Double().D)
 		return MakeDouble(_res)
 
@@ -148,7 +148,7 @@ func __exp_2_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		x := ExtractNumber(_args, 0)
+		x := ExtractNumber(_env, _args, 0)
 		_res := math.Exp2(x.Double().D)
 		return MakeDouble(_res)
 
@@ -165,7 +165,7 @@ func __exp_minus_1_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		x := ExtractNumber(_args, 0)
+		x := ExtractNumber(_env, _args, 0)
 		_res := math.Expm1(x.Double().D)
 		return MakeDouble(_res)
 
@@ -182,7 +182,7 @@ func __floor_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		x := ExtractNumber(_args, 0)
+		x := ExtractNumber(_env, _args, 0)
 		_res := math.Floor(x.Double().D)
 		return MakeDouble(_res)
 
@@ -199,8 +199,8 @@ func __hypot_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 2:
-		p := ExtractNumber(_args, 0)
-		q := ExtractNumber(_args, 1)
+		p := ExtractNumber(_env, _args, 0)
+		q := ExtractNumber(_env, _args, 1)
 		_res := math.Hypot(p.Double().D, q.Double().D)
 		return MakeDouble(_res)
 
@@ -217,7 +217,7 @@ func __inf_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		sign := ExtractInt(_args, 0)
+		sign := ExtractInt(_env, _args, 0)
 		_res := math.Inf(sign)
 		return MakeDouble(_res)
 
@@ -234,8 +234,8 @@ func __isinf_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 2:
-		x := ExtractNumber(_args, 0)
-		sign := ExtractInt(_args, 1)
+		x := ExtractNumber(_env, _args, 0)
+		sign := ExtractInt(_env, _args, 1)
 		_res := math.IsInf(x.Double().D, sign)
 		return MakeBoolean(_res)
 
@@ -252,7 +252,7 @@ func __log_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		x := ExtractNumber(_args, 0)
+		x := ExtractNumber(_env, _args, 0)
 		_res := math.Log(x.Double().D)
 		return MakeDouble(_res)
 
@@ -269,7 +269,7 @@ func __log_10_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		x := ExtractNumber(_args, 0)
+		x := ExtractNumber(_env, _args, 0)
 		_res := math.Log10(x.Double().D)
 		return MakeDouble(_res)
 
@@ -286,7 +286,7 @@ func __log_2_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		x := ExtractNumber(_args, 0)
+		x := ExtractNumber(_env, _args, 0)
 		_res := math.Log2(x.Double().D)
 		return MakeDouble(_res)
 
@@ -303,7 +303,7 @@ func __log_binary_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		x := ExtractNumber(_args, 0)
+		x := ExtractNumber(_env, _args, 0)
 		_res := math.Logb(x.Double().D)
 		return MakeDouble(_res)
 
@@ -320,7 +320,7 @@ func __log_plus_1_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		x := ExtractNumber(_args, 0)
+		x := ExtractNumber(_env, _args, 0)
 		_res := math.Log1p(x.Double().D)
 		return MakeDouble(_res)
 
@@ -337,7 +337,7 @@ func __modf_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		x := ExtractNumber(_args, 0)
+		x := ExtractNumber(_env, _args, 0)
 		_res := modf(x.Double().D)
 		return _res
 
@@ -370,7 +370,7 @@ func __isnan_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		x := ExtractNumber(_args, 0)
+		x := ExtractNumber(_env, _args, 0)
 		_res := math.IsNaN(x.Double().D)
 		return MakeBoolean(_res)
 
@@ -387,8 +387,8 @@ func __next_after_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 2:
-		x := ExtractNumber(_args, 0)
-		y := ExtractNumber(_args, 1)
+		x := ExtractNumber(_env, _args, 0)
+		y := ExtractNumber(_env, _args, 1)
 		_res := math.Nextafter(x.Double().D, y.Double().D)
 		return MakeDouble(_res)
 
@@ -405,8 +405,8 @@ func __pow_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 2:
-		x := ExtractNumber(_args, 0)
-		y := ExtractNumber(_args, 1)
+		x := ExtractNumber(_env, _args, 0)
+		y := ExtractNumber(_env, _args, 1)
 		_res := math.Pow(x.Double().D, y.Double().D)
 		return MakeDouble(_res)
 
@@ -423,7 +423,7 @@ func __pow_10_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		x := ExtractInt(_args, 0)
+		x := ExtractInt(_env, _args, 0)
 		_res := math.Pow10(x)
 		return MakeDouble(_res)
 
@@ -440,7 +440,7 @@ func __round_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		x := ExtractNumber(_args, 0)
+		x := ExtractNumber(_env, _args, 0)
 		_res := math.Round(x.Double().D)
 		return MakeDouble(_res)
 
@@ -457,7 +457,7 @@ func __round_to_even_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		x := ExtractNumber(_args, 0)
+		x := ExtractNumber(_env, _args, 0)
 		_res := math.RoundToEven(x.Double().D)
 		return MakeDouble(_res)
 
@@ -474,7 +474,7 @@ func __sign_bit_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		x := ExtractNumber(_args, 0)
+		x := ExtractNumber(_env, _args, 0)
 		_res := math.Signbit(x.Double().D)
 		return MakeBoolean(_res)
 
@@ -491,7 +491,7 @@ func __sin_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		x := ExtractNumber(_args, 0)
+		x := ExtractNumber(_env, _args, 0)
 		_res := math.Sin(x.Double().D)
 		return MakeDouble(_res)
 
@@ -508,7 +508,7 @@ func __sqrt_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		x := ExtractNumber(_args, 0)
+		x := ExtractNumber(_env, _args, 0)
 		_res := math.Sqrt(x.Double().D)
 		return MakeDouble(_res)
 
@@ -525,7 +525,7 @@ func __trunc_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		x := ExtractNumber(_args, 0)
+		x := ExtractNumber(_env, _args, 0)
 		_res := math.Trunc(x.Double().D)
 		return MakeDouble(_res)
 

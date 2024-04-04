@@ -14,13 +14,13 @@ func __read_string_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		s := ExtractString(_args, 0)
+		s := ExtractString(_env, _args, 0)
 		_res := readString(s, nil)
 		return _res
 
 	case _c == 2:
-		s := ExtractString(_args, 0)
-		opts := ExtractMap(_args, 1)
+		s := ExtractString(_env, _args, 0)
+		opts := ExtractMap(_env, _args, 1)
 		_res := readString(s, opts)
 		return _res
 
@@ -37,7 +37,7 @@ func __write_string_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		v := ExtractObject(_args, 0)
+		v := ExtractObject(_env, _args, 0)
 		_res := writeString(v)
 		return _res
 

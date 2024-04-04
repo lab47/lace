@@ -111,7 +111,7 @@
 (defn ^Boolean blank?
   "True if s is nil, empty, or contains only whitespace."
   {:added "1.0"
-  :go "isBlank(s)"}
+  :go "isBlank(_env, s)"}
   [^Object s])
 
 (defn ^String capitalize

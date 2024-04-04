@@ -130,7 +130,7 @@ func (seq *LazySeq) Seq() Seq {
 
 func (seq *LazySeq) realize() {
 	if seq.seq == nil {
-		seq.seq = AssertSeqable(seq.fn.Call(seq.env, []Object{}), "").Seq()
+		seq.seq = AssertSeqable(seq.env, seq.fn.Call(seq.env, []Object{}), "").Seq()
 	}
 }
 

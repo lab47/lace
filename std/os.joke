@@ -73,7 +73,7 @@
   :out - string capturing stdout of the program (unless :stdout option was passed)
   :err - string capturing stderr of the program (unless :stderr option was passed)."
   {:added "1.0"
-  :go "execute(name, opts)"}
+  :go "execute(_env, name, opts)"}
   [^String name ^Map opts])
 
 (defn mkdir

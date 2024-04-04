@@ -18,9 +18,9 @@ func __hmac_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 3:
-		algorithm := ExtractKeyword(_args, 0)
-		message := ExtractString(_args, 1)
-		key := ExtractString(_args, 2)
+		algorithm := ExtractKeyword(_env, _args, 0)
+		message := ExtractString(_env, _args, 1)
+		key := ExtractString(_env, _args, 2)
 		_res := hmacSum(algorithm, message, key)
 		return MakeString(_res)
 
@@ -37,7 +37,7 @@ func __md5_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		data := ExtractString(_args, 0)
+		data := ExtractString(_env, _args, 0)
 		 t := md5.Sum([]byte(data))
 		_res := string(t[:])
 		return MakeString(_res)
@@ -55,7 +55,7 @@ func __sha1_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		data := ExtractString(_args, 0)
+		data := ExtractString(_env, _args, 0)
 		 t := sha1.Sum([]byte(data))
 		_res := string(t[:])
 		return MakeString(_res)
@@ -73,7 +73,7 @@ func __sha224_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		data := ExtractString(_args, 0)
+		data := ExtractString(_env, _args, 0)
 		 t := sha256.Sum224([]byte(data))
 		_res := string(t[:])
 		return MakeString(_res)
@@ -91,7 +91,7 @@ func __sha256_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		data := ExtractString(_args, 0)
+		data := ExtractString(_env, _args, 0)
 		 t := sha256.Sum256([]byte(data))
 		_res := string(t[:])
 		return MakeString(_res)
@@ -109,7 +109,7 @@ func __sha384_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		data := ExtractString(_args, 0)
+		data := ExtractString(_env, _args, 0)
 		 t := sha512.Sum384([]byte(data))
 		_res := string(t[:])
 		return MakeString(_res)
@@ -127,7 +127,7 @@ func __sha512_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		data := ExtractString(_args, 0)
+		data := ExtractString(_env, _args, 0)
 		 t := sha512.Sum512([]byte(data))
 		_res := string(t[:])
 		return MakeString(_res)
@@ -145,7 +145,7 @@ func __sha512_224_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		data := ExtractString(_args, 0)
+		data := ExtractString(_env, _args, 0)
 		 t := sha512.Sum512_224([]byte(data))
 		_res := string(t[:])
 		return MakeString(_res)
@@ -163,7 +163,7 @@ func __sha512_256_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		data := ExtractString(_args, 0)
+		data := ExtractString(_env, _args, 0)
 		 t := sha512.Sum512_256([]byte(data))
 		_res := string(t[:])
 		return MakeString(_res)

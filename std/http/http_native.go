@@ -36,24 +36,24 @@ func getOrPanic(m Map, k Object, errMsg string) Object {
 	panic(StubNewError(errMsg))
 }
 
-func mapToReq(request Map) *http.Request {
+func mapToReq(env *Env, request Map) *http.Request {
 	method := strings.ToUpper(extractMethod(request))
-	url := AssertString(getOrPanic(request, MakeKeyword("url"), ":url key must be present in request map"), "url must be a string").S
+	url := AssertString(env, getOrPanic(request, MakeKeyword("url"), ":url key must be present in request map"), "url must be a string").S
 	var reqBody io.Reader
 	if ok, b := request.Get(MakeKeyword("body")); ok {
-		reqBody = strings.NewReader(AssertString(b, "body must be a string").S)
+		reqBody = strings.NewReader(AssertString(env, b, "body must be a string").S)
 	}
 	req, err := http.NewRequest(method, url, reqBody)
 	PanicOnErr(err)
 	if ok, headers := request.Get(MakeKeyword("headers")); ok {
-		h := AssertMap(headers, "headers must be a map")
+		h := AssertMap(env, headers, "headers must be a map")
 		for iter := h.Iter(); iter.HasNext(); {
 			p := iter.Next()
-			req.Header.Add(AssertString(p.Key, "header name must be a string").S, AssertString(p.Value, "header value must be a string").S)
+			req.Header.Add(AssertString(env, p.Key, "header name must be a string").S, AssertString(env, p.Value, "header value must be a string").S)
 		}
 	}
 	if ok, host := request.Get(MakeKeyword("host")); ok {
-		req.Host = AssertString(host, "host must be a string").S
+		req.Host = AssertString(env, host, "host must be a string").S
 	}
 	return req
 }
@@ -97,28 +97,28 @@ func respToMap(resp *http.Response) Map {
 	return res
 }
 
-func mapToResp(response Map, w http.ResponseWriter) {
+func mapToResp(env *Env, response Map, w http.ResponseWriter) {
 	status := 0
 	if ok, s := response.Get(MakeKeyword("status")); ok {
-		status = AssertInt(s, "HTTP response status must be an integer").I
+		status = AssertInt(env, s, "HTTP response status must be an integer").I
 	}
 	body := ""
 	if ok, b := response.Get(MakeKeyword("body")); ok {
-		body = AssertString(b, "HTTP response body must be a string").S
+		body = AssertString(env, b, "HTTP response body must be a string").S
 	}
 	if ok, headers := response.Get(MakeKeyword("headers")); ok {
 		header := w.Header()
-		h := AssertMap(headers, "HTTP response headers must be a map")
+		h := AssertMap(env, headers, "HTTP response headers must be a map")
 		for iter := h.Iter(); iter.HasNext(); {
 			p := iter.Next()
-			hname := AssertString(p.Key, "HTTP response header name must be a string").S
+			hname := AssertString(env, p.Key, "HTTP response header name must be a string").S
 			switch pvalue := p.Value.(type) {
 			case String:
 				header.Add(hname, pvalue.S)
 			case Seqable:
 				s := pvalue.Seq()
 				for !s.IsEmpty() {
-					header.Add(hname, AssertString(s.First(), "HTTP response header value must be a string").S)
+					header.Add(hname, AssertString(env, s.First(), "HTTP response header value must be a string").S)
 					s = s.Rest()
 				}
 			default:
@@ -132,8 +132,8 @@ func mapToResp(response Map, w http.ResponseWriter) {
 	io.WriteString(w, body)
 }
 
-func sendRequest(request Map) Map {
-	req := mapToReq(request)
+func sendRequest(env *Env, request Map) Map {
+	req := mapToReq(env, request)
 	//RT.GIL.Unlock()
 	resp, err := client.Do(req)
 	//RT.GIL.Lock()
@@ -141,7 +141,7 @@ func sendRequest(request Map) Map {
 	return respToMap(resp)
 }
 
-func startServer(addr string, handler Callable) Object {
+func startServer(env *Env, addr string, handler Callable) Object {
 	i := strings.LastIndexByte(addr, byte(':'))
 	host, port := MakeString(addr), MakeString("")
 	if i != -1 {
@@ -160,8 +160,8 @@ func startServer(addr string, handler Callable) Object {
 				fmt.Fprintln(os.Stderr, r)
 			}
 		}()
-		response := handler.Call(GLOBAL_ENV, []Object{reqToMap(host, port, req)})
-		mapToResp(AssertMap(response, "HTTP response must be a map"), w)
+		response := handler.Call(env, []Object{reqToMap(host, port, req)})
+		mapToResp(env, AssertMap(env, response, "HTTP response must be a map"), w)
 	}))
 	PanicOnErr(err)
 	return NIL

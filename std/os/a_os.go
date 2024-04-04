@@ -31,7 +31,7 @@ func __chdir_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		dirname := ExtractString(_args, 0)
+		dirname := ExtractString(_env, _args, 0)
 		_res := chdir(dirname)
 		return _res
 
@@ -48,7 +48,7 @@ func __close_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		f := ExtractFile(_args, 0)
+		f := ExtractFile(_env, _args, 0)
 		 err := f.Close()
 		PanicOnErr(err)
 		_res := NIL
@@ -67,7 +67,7 @@ func __create_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		name := ExtractString(_args, 0)
+		name := ExtractString(_env, _args, 0)
 		 _res, err := os.Create(name)
 		PanicOnErr(err)
 		return MakeFile(_res)
@@ -117,9 +117,9 @@ func __exec_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 2:
-		name := ExtractString(_args, 0)
-		opts := ExtractMap(_args, 1)
-		_res := execute(name, opts)
+		name := ExtractString(_env, _args, 0)
+		opts := ExtractMap(_env, _args, 1)
+		_res := execute(_env, name, opts)
 		return _res
 
 	default:
@@ -135,7 +135,7 @@ func __isexists_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		path := ExtractString(_args, 0)
+		path := ExtractString(_env, _args, 0)
 		_res := exists(path)
 		return MakeBoolean(_res)
 
@@ -152,7 +152,7 @@ func __exit_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		code := ExtractInt(_args, 0)
+		code := ExtractInt(_env, _args, 0)
 		_res := NIL
 		ExitJoker(code)
 		return _res
@@ -170,7 +170,7 @@ func __get_env_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		key := ExtractString(_args, 0)
+		key := ExtractString(_env, _args, 0)
 		_res := getEnv(key)
 		return _res
 
@@ -187,7 +187,7 @@ func __ls_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		dirname := ExtractString(_args, 0)
+		dirname := ExtractString(_env, _args, 0)
 		_res := readDir(dirname)
 		return _res
 
@@ -204,8 +204,8 @@ func __mkdir_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 2:
-		name := ExtractString(_args, 0)
-		perm := ExtractInt(_args, 1)
+		name := ExtractString(_env, _args, 0)
+		perm := ExtractInt(_env, _args, 1)
 		_res := mkdir(name, perm)
 		return _res
 
@@ -222,7 +222,7 @@ func __open_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		name := ExtractString(_args, 0)
+		name := ExtractString(_env, _args, 0)
 		 _res, err := os.Open(name)
 		PanicOnErr(err)
 		return MakeFile(_res)
@@ -240,7 +240,7 @@ func __remove_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		name := ExtractString(_args, 0)
+		name := ExtractString(_env, _args, 0)
 		 err := os.Remove(name)
 		PanicOnErr(err)
 		_res := NIL
@@ -259,7 +259,7 @@ func __remove_all_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		path := ExtractString(_args, 0)
+		path := ExtractString(_env, _args, 0)
 		 err := os.RemoveAll(path)
 		PanicOnErr(err)
 		_res := NIL
@@ -278,8 +278,8 @@ func __set_env_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 2:
-		key := ExtractString(_args, 0)
-		value := ExtractString(_args, 1)
+		key := ExtractString(_env, _args, 0)
+		value := ExtractString(_env, _args, 1)
 		_res := setEnv(key, value)
 		return _res
 
@@ -297,8 +297,8 @@ func __sh_(_env *Env, _args []Object) Object {
 	switch {
 	case true:
 		CheckArity(_env, _args, 1, 999)
-		name := ExtractString(_args, 0)
-		arguments := ExtractStrings(_args, 1)
+		name := ExtractString(_env, _args, 0)
+		arguments := ExtractStrings(_env, _args, 1)
 		_res := sh("", nil, nil, nil, name, arguments)
 		return _res
 
@@ -316,9 +316,9 @@ func __sh_from_(_env *Env, _args []Object) Object {
 	switch {
 	case true:
 		CheckArity(_env, _args, 2, 999)
-		dir := ExtractString(_args, 0)
-		name := ExtractString(_args, 1)
-		arguments := ExtractStrings(_args, 2)
+		dir := ExtractString(_env, _args, 0)
+		name := ExtractString(_env, _args, 1)
+		arguments := ExtractStrings(_env, _args, 2)
 		_res := sh(dir, nil, nil, nil, name, arguments)
 		return _res
 
@@ -335,7 +335,7 @@ func __stat_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		filename := ExtractString(_args, 0)
+		filename := ExtractString(_env, _args, 0)
 		_res := stat(filename)
 		return _res
 

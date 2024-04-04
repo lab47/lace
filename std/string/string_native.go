@@ -87,11 +87,11 @@ func join(sep string, seqable Seqable) string {
 	return b.String()
 }
 
-func isBlank(s Object) bool {
+func isBlank(env *Env, s Object) bool {
 	if s.Equals(NIL) {
 		return true
 	}
-	str := AssertString(s, "").S
+	str := AssertString(env, s, "").S
 	for _, r := range str {
 		if !unicode.IsSpace(r) {
 			return false

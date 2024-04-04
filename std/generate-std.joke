@@ -76,7 +76,7 @@
       (let [m (meta arg)
             t (cond-> (:tag m)
                 (:varargs m) (str "s"))]
-        (str arg " := Extract" t "(_args, " (str i) ")")))
+        (str arg " := Extract" t "(_env, _args, " (str i) ")")))
     args)))
 
 (defn handle-varargs

@@ -28,7 +28,7 @@ import (
 `
 
 var assertTemplate string = `
-func Assert{{.Name}}(obj Object, msg string) {{.TypeName}} {
+func Assert{{.Name}}(env *Env, obj Object, msg string) {{.TypeName}} {
 	switch c := obj.(type) {
 	case {{.TypeName}}:
 		return c
@@ -36,18 +36,18 @@ func Assert{{.Name}}(obj Object, msg string) {{.TypeName}} {
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "{{.ShowName}}", obj.GetType().ToString(false))
 		}
-		panic(StubNewError(msg))
+		panic(env.RT.NewError(msg))
 	}
 }
 `
 
 var ensureTemplate string = `
-func Ensure{{.Name}}(args []Object, index int) {{.TypeName}} {
+func Ensure{{.Name}}(env *Env, args []Object, index int) {{.TypeName}} {
 	switch c := args[index].(type) {
 	case {{.TypeName}}:
 		return c
 	default:
-		panic(StubNewArgTypeError(index, c, "{{.ShowName}}"))
+		panic(env.RT.NewArgTypeError(index, c, "{{.ShowName}}"))
 	}
 }
 `

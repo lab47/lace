@@ -7,7 +7,7 @@ import (
 	"io"
 )
 
-func AssertComparable(obj Object, msg string) Comparable {
+func AssertComparable(env *Env, obj Object, msg string) Comparable {
 	switch c := obj.(type) {
 	case Comparable:
 		return c
@@ -15,20 +15,20 @@ func AssertComparable(obj Object, msg string) Comparable {
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Comparable", obj.GetType().ToString(false))
 		}
-		panic(StubNewError(msg))
+		panic(env.RT.NewError(msg))
 	}
 }
 
-func EnsureComparable(args []Object, index int) Comparable {
+func EnsureComparable(env *Env, args []Object, index int) Comparable {
 	switch c := args[index].(type) {
 	case Comparable:
 		return c
 	default:
-		panic(StubNewArgTypeError(index, c, "Comparable"))
+		panic(env.RT.NewArgTypeError(index, c, "Comparable"))
 	}
 }
 
-func AssertVector(obj Object, msg string) *Vector {
+func AssertVector(env *Env, obj Object, msg string) *Vector {
 	switch c := obj.(type) {
 	case *Vector:
 		return c
@@ -36,20 +36,20 @@ func AssertVector(obj Object, msg string) *Vector {
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Vector", obj.GetType().ToString(false))
 		}
-		panic(StubNewError(msg))
+		panic(env.RT.NewError(msg))
 	}
 }
 
-func EnsureVector(args []Object, index int) *Vector {
+func EnsureVector(env *Env, args []Object, index int) *Vector {
 	switch c := args[index].(type) {
 	case *Vector:
 		return c
 	default:
-		panic(StubNewArgTypeError(index, c, "Vector"))
+		panic(env.RT.NewArgTypeError(index, c, "Vector"))
 	}
 }
 
-func AssertChar(obj Object, msg string) Char {
+func AssertChar(env *Env, obj Object, msg string) Char {
 	switch c := obj.(type) {
 	case Char:
 		return c
@@ -57,20 +57,20 @@ func AssertChar(obj Object, msg string) Char {
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Char", obj.GetType().ToString(false))
 		}
-		panic(StubNewError(msg))
+		panic(env.RT.NewError(msg))
 	}
 }
 
-func EnsureChar(args []Object, index int) Char {
+func EnsureChar(env *Env, args []Object, index int) Char {
 	switch c := args[index].(type) {
 	case Char:
 		return c
 	default:
-		panic(StubNewArgTypeError(index, c, "Char"))
+		panic(env.RT.NewArgTypeError(index, c, "Char"))
 	}
 }
 
-func AssertString(obj Object, msg string) String {
+func AssertString(env *Env, obj Object, msg string) String {
 	switch c := obj.(type) {
 	case String:
 		return c
@@ -78,20 +78,20 @@ func AssertString(obj Object, msg string) String {
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "String", obj.GetType().ToString(false))
 		}
-		panic(StubNewError(msg))
+		panic(env.RT.NewError(msg))
 	}
 }
 
-func EnsureString(args []Object, index int) String {
+func EnsureString(env *Env, args []Object, index int) String {
 	switch c := args[index].(type) {
 	case String:
 		return c
 	default:
-		panic(StubNewArgTypeError(index, c, "String"))
+		panic(env.RT.NewArgTypeError(index, c, "String"))
 	}
 }
 
-func AssertSymbol(obj Object, msg string) Symbol {
+func AssertSymbol(env *Env, obj Object, msg string) Symbol {
 	switch c := obj.(type) {
 	case Symbol:
 		return c
@@ -99,20 +99,20 @@ func AssertSymbol(obj Object, msg string) Symbol {
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Symbol", obj.GetType().ToString(false))
 		}
-		panic(StubNewError(msg))
+		panic(env.RT.NewError(msg))
 	}
 }
 
-func EnsureSymbol(args []Object, index int) Symbol {
+func EnsureSymbol(env *Env, args []Object, index int) Symbol {
 	switch c := args[index].(type) {
 	case Symbol:
 		return c
 	default:
-		panic(StubNewArgTypeError(index, c, "Symbol"))
+		panic(env.RT.NewArgTypeError(index, c, "Symbol"))
 	}
 }
 
-func AssertKeyword(obj Object, msg string) Keyword {
+func AssertKeyword(env *Env, obj Object, msg string) Keyword {
 	switch c := obj.(type) {
 	case Keyword:
 		return c
@@ -120,20 +120,20 @@ func AssertKeyword(obj Object, msg string) Keyword {
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Keyword", obj.GetType().ToString(false))
 		}
-		panic(StubNewError(msg))
+		panic(env.RT.NewError(msg))
 	}
 }
 
-func EnsureKeyword(args []Object, index int) Keyword {
+func EnsureKeyword(env *Env, args []Object, index int) Keyword {
 	switch c := args[index].(type) {
 	case Keyword:
 		return c
 	default:
-		panic(StubNewArgTypeError(index, c, "Keyword"))
+		panic(env.RT.NewArgTypeError(index, c, "Keyword"))
 	}
 }
 
-func AssertRegex(obj Object, msg string) *Regex {
+func AssertRegex(env *Env, obj Object, msg string) *Regex {
 	switch c := obj.(type) {
 	case *Regex:
 		return c
@@ -141,20 +141,20 @@ func AssertRegex(obj Object, msg string) *Regex {
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Regex", obj.GetType().ToString(false))
 		}
-		panic(StubNewError(msg))
+		panic(env.RT.NewError(msg))
 	}
 }
 
-func EnsureRegex(args []Object, index int) *Regex {
+func EnsureRegex(env *Env, args []Object, index int) *Regex {
 	switch c := args[index].(type) {
 	case *Regex:
 		return c
 	default:
-		panic(StubNewArgTypeError(index, c, "Regex"))
+		panic(env.RT.NewArgTypeError(index, c, "Regex"))
 	}
 }
 
-func AssertBoolean(obj Object, msg string) Boolean {
+func AssertBoolean(env *Env, obj Object, msg string) Boolean {
 	switch c := obj.(type) {
 	case Boolean:
 		return c
@@ -162,20 +162,20 @@ func AssertBoolean(obj Object, msg string) Boolean {
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Boolean", obj.GetType().ToString(false))
 		}
-		panic(StubNewError(msg))
+		panic(env.RT.NewError(msg))
 	}
 }
 
-func EnsureBoolean(args []Object, index int) Boolean {
+func EnsureBoolean(env *Env, args []Object, index int) Boolean {
 	switch c := args[index].(type) {
 	case Boolean:
 		return c
 	default:
-		panic(StubNewArgTypeError(index, c, "Boolean"))
+		panic(env.RT.NewArgTypeError(index, c, "Boolean"))
 	}
 }
 
-func AssertTime(obj Object, msg string) Time {
+func AssertTime(env *Env, obj Object, msg string) Time {
 	switch c := obj.(type) {
 	case Time:
 		return c
@@ -183,20 +183,20 @@ func AssertTime(obj Object, msg string) Time {
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Time", obj.GetType().ToString(false))
 		}
-		panic(StubNewError(msg))
+		panic(env.RT.NewError(msg))
 	}
 }
 
-func EnsureTime(args []Object, index int) Time {
+func EnsureTime(env *Env, args []Object, index int) Time {
 	switch c := args[index].(type) {
 	case Time:
 		return c
 	default:
-		panic(StubNewArgTypeError(index, c, "Time"))
+		panic(env.RT.NewArgTypeError(index, c, "Time"))
 	}
 }
 
-func AssertNumber(obj Object, msg string) Number {
+func AssertNumber(env *Env, obj Object, msg string) Number {
 	switch c := obj.(type) {
 	case Number:
 		return c
@@ -204,20 +204,20 @@ func AssertNumber(obj Object, msg string) Number {
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Number", obj.GetType().ToString(false))
 		}
-		panic(StubNewError(msg))
+		panic(env.RT.NewError(msg))
 	}
 }
 
-func EnsureNumber(args []Object, index int) Number {
+func EnsureNumber(env *Env, args []Object, index int) Number {
 	switch c := args[index].(type) {
 	case Number:
 		return c
 	default:
-		panic(StubNewArgTypeError(index, c, "Number"))
+		panic(env.RT.NewArgTypeError(index, c, "Number"))
 	}
 }
 
-func AssertSeqable(obj Object, msg string) Seqable {
+func AssertSeqable(env *Env, obj Object, msg string) Seqable {
 	switch c := obj.(type) {
 	case Seqable:
 		return c
@@ -225,20 +225,20 @@ func AssertSeqable(obj Object, msg string) Seqable {
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Seqable", obj.GetType().ToString(false))
 		}
-		panic(StubNewError(msg))
+		panic(env.RT.NewError(msg))
 	}
 }
 
-func EnsureSeqable(args []Object, index int) Seqable {
+func EnsureSeqable(env *Env, args []Object, index int) Seqable {
 	switch c := args[index].(type) {
 	case Seqable:
 		return c
 	default:
-		panic(StubNewArgTypeError(index, c, "Seqable"))
+		panic(env.RT.NewArgTypeError(index, c, "Seqable"))
 	}
 }
 
-func AssertCallable(obj Object, msg string) Callable {
+func AssertCallable(env *Env, obj Object, msg string) Callable {
 	switch c := obj.(type) {
 	case Callable:
 		return c
@@ -246,20 +246,20 @@ func AssertCallable(obj Object, msg string) Callable {
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Callable", obj.GetType().ToString(false))
 		}
-		panic(StubNewError(msg))
+		panic(env.RT.NewError(msg))
 	}
 }
 
-func EnsureCallable(args []Object, index int) Callable {
+func EnsureCallable(env *Env, args []Object, index int) Callable {
 	switch c := args[index].(type) {
 	case Callable:
 		return c
 	default:
-		panic(StubNewArgTypeError(index, c, "Callable"))
+		panic(env.RT.NewArgTypeError(index, c, "Callable"))
 	}
 }
 
-func AssertType(obj Object, msg string) *Type {
+func AssertType(env *Env, obj Object, msg string) *Type {
 	switch c := obj.(type) {
 	case *Type:
 		return c
@@ -267,20 +267,20 @@ func AssertType(obj Object, msg string) *Type {
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Type", obj.GetType().ToString(false))
 		}
-		panic(StubNewError(msg))
+		panic(env.RT.NewError(msg))
 	}
 }
 
-func EnsureType(args []Object, index int) *Type {
+func EnsureType(env *Env, args []Object, index int) *Type {
 	switch c := args[index].(type) {
 	case *Type:
 		return c
 	default:
-		panic(StubNewArgTypeError(index, c, "Type"))
+		panic(env.RT.NewArgTypeError(index, c, "Type"))
 	}
 }
 
-func AssertMeta(obj Object, msg string) Meta {
+func AssertMeta(env *Env, obj Object, msg string) Meta {
 	switch c := obj.(type) {
 	case Meta:
 		return c
@@ -288,20 +288,20 @@ func AssertMeta(obj Object, msg string) Meta {
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Meta", obj.GetType().ToString(false))
 		}
-		panic(StubNewError(msg))
+		panic(env.RT.NewError(msg))
 	}
 }
 
-func EnsureMeta(args []Object, index int) Meta {
+func EnsureMeta(env *Env, args []Object, index int) Meta {
 	switch c := args[index].(type) {
 	case Meta:
 		return c
 	default:
-		panic(StubNewArgTypeError(index, c, "Meta"))
+		panic(env.RT.NewArgTypeError(index, c, "Meta"))
 	}
 }
 
-func AssertInt(obj Object, msg string) Int {
+func AssertInt(env *Env, obj Object, msg string) Int {
 	switch c := obj.(type) {
 	case Int:
 		return c
@@ -309,20 +309,20 @@ func AssertInt(obj Object, msg string) Int {
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Int", obj.GetType().ToString(false))
 		}
-		panic(StubNewError(msg))
+		panic(env.RT.NewError(msg))
 	}
 }
 
-func EnsureInt(args []Object, index int) Int {
+func EnsureInt(env *Env, args []Object, index int) Int {
 	switch c := args[index].(type) {
 	case Int:
 		return c
 	default:
-		panic(StubNewArgTypeError(index, c, "Int"))
+		panic(env.RT.NewArgTypeError(index, c, "Int"))
 	}
 }
 
-func AssertDouble(obj Object, msg string) Double {
+func AssertDouble(env *Env, obj Object, msg string) Double {
 	switch c := obj.(type) {
 	case Double:
 		return c
@@ -330,20 +330,20 @@ func AssertDouble(obj Object, msg string) Double {
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Double", obj.GetType().ToString(false))
 		}
-		panic(StubNewError(msg))
+		panic(env.RT.NewError(msg))
 	}
 }
 
-func EnsureDouble(args []Object, index int) Double {
+func EnsureDouble(env *Env, args []Object, index int) Double {
 	switch c := args[index].(type) {
 	case Double:
 		return c
 	default:
-		panic(StubNewArgTypeError(index, c, "Double"))
+		panic(env.RT.NewArgTypeError(index, c, "Double"))
 	}
 }
 
-func AssertStack(obj Object, msg string) Stack {
+func AssertStack(env *Env, obj Object, msg string) Stack {
 	switch c := obj.(type) {
 	case Stack:
 		return c
@@ -351,20 +351,20 @@ func AssertStack(obj Object, msg string) Stack {
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Stack", obj.GetType().ToString(false))
 		}
-		panic(StubNewError(msg))
+		panic(env.RT.NewError(msg))
 	}
 }
 
-func EnsureStack(args []Object, index int) Stack {
+func EnsureStack(env *Env, args []Object, index int) Stack {
 	switch c := args[index].(type) {
 	case Stack:
 		return c
 	default:
-		panic(StubNewArgTypeError(index, c, "Stack"))
+		panic(env.RT.NewArgTypeError(index, c, "Stack"))
 	}
 }
 
-func AssertMap(obj Object, msg string) Map {
+func AssertMap(env *Env, obj Object, msg string) Map {
 	switch c := obj.(type) {
 	case Map:
 		return c
@@ -372,20 +372,20 @@ func AssertMap(obj Object, msg string) Map {
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Map", obj.GetType().ToString(false))
 		}
-		panic(StubNewError(msg))
+		panic(env.RT.NewError(msg))
 	}
 }
 
-func EnsureMap(args []Object, index int) Map {
+func EnsureMap(env *Env, args []Object, index int) Map {
 	switch c := args[index].(type) {
 	case Map:
 		return c
 	default:
-		panic(StubNewArgTypeError(index, c, "Map"))
+		panic(env.RT.NewArgTypeError(index, c, "Map"))
 	}
 }
 
-func AssertSet(obj Object, msg string) Set {
+func AssertSet(env *Env, obj Object, msg string) Set {
 	switch c := obj.(type) {
 	case Set:
 		return c
@@ -393,20 +393,20 @@ func AssertSet(obj Object, msg string) Set {
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Set", obj.GetType().ToString(false))
 		}
-		panic(StubNewError(msg))
+		panic(env.RT.NewError(msg))
 	}
 }
 
-func EnsureSet(args []Object, index int) Set {
+func EnsureSet(env *Env, args []Object, index int) Set {
 	switch c := args[index].(type) {
 	case Set:
 		return c
 	default:
-		panic(StubNewArgTypeError(index, c, "Set"))
+		panic(env.RT.NewArgTypeError(index, c, "Set"))
 	}
 }
 
-func AssertAssociative(obj Object, msg string) Associative {
+func AssertAssociative(env *Env, obj Object, msg string) Associative {
 	switch c := obj.(type) {
 	case Associative:
 		return c
@@ -414,20 +414,20 @@ func AssertAssociative(obj Object, msg string) Associative {
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Associative", obj.GetType().ToString(false))
 		}
-		panic(StubNewError(msg))
+		panic(env.RT.NewError(msg))
 	}
 }
 
-func EnsureAssociative(args []Object, index int) Associative {
+func EnsureAssociative(env *Env, args []Object, index int) Associative {
 	switch c := args[index].(type) {
 	case Associative:
 		return c
 	default:
-		panic(StubNewArgTypeError(index, c, "Associative"))
+		panic(env.RT.NewArgTypeError(index, c, "Associative"))
 	}
 }
 
-func AssertReversible(obj Object, msg string) Reversible {
+func AssertReversible(env *Env, obj Object, msg string) Reversible {
 	switch c := obj.(type) {
 	case Reversible:
 		return c
@@ -435,20 +435,20 @@ func AssertReversible(obj Object, msg string) Reversible {
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Reversible", obj.GetType().ToString(false))
 		}
-		panic(StubNewError(msg))
+		panic(env.RT.NewError(msg))
 	}
 }
 
-func EnsureReversible(args []Object, index int) Reversible {
+func EnsureReversible(env *Env, args []Object, index int) Reversible {
 	switch c := args[index].(type) {
 	case Reversible:
 		return c
 	default:
-		panic(StubNewArgTypeError(index, c, "Reversible"))
+		panic(env.RT.NewArgTypeError(index, c, "Reversible"))
 	}
 }
 
-func AssertNamed(obj Object, msg string) Named {
+func AssertNamed(env *Env, obj Object, msg string) Named {
 	switch c := obj.(type) {
 	case Named:
 		return c
@@ -456,20 +456,20 @@ func AssertNamed(obj Object, msg string) Named {
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Named", obj.GetType().ToString(false))
 		}
-		panic(StubNewError(msg))
+		panic(env.RT.NewError(msg))
 	}
 }
 
-func EnsureNamed(args []Object, index int) Named {
+func EnsureNamed(env *Env, args []Object, index int) Named {
 	switch c := args[index].(type) {
 	case Named:
 		return c
 	default:
-		panic(StubNewArgTypeError(index, c, "Named"))
+		panic(env.RT.NewArgTypeError(index, c, "Named"))
 	}
 }
 
-func AssertComparator(obj Object, msg string) Comparator {
+func AssertComparator(env *Env, obj Object, msg string) Comparator {
 	switch c := obj.(type) {
 	case Comparator:
 		return c
@@ -477,20 +477,20 @@ func AssertComparator(obj Object, msg string) Comparator {
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Comparator", obj.GetType().ToString(false))
 		}
-		panic(StubNewError(msg))
+		panic(env.RT.NewError(msg))
 	}
 }
 
-func EnsureComparator(args []Object, index int) Comparator {
+func EnsureComparator(env *Env, args []Object, index int) Comparator {
 	switch c := args[index].(type) {
 	case Comparator:
 		return c
 	default:
-		panic(StubNewArgTypeError(index, c, "Comparator"))
+		panic(env.RT.NewArgTypeError(index, c, "Comparator"))
 	}
 }
 
-func AssertRatio(obj Object, msg string) *Ratio {
+func AssertRatio(env *Env, obj Object, msg string) *Ratio {
 	switch c := obj.(type) {
 	case *Ratio:
 		return c
@@ -498,20 +498,20 @@ func AssertRatio(obj Object, msg string) *Ratio {
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Ratio", obj.GetType().ToString(false))
 		}
-		panic(StubNewError(msg))
+		panic(env.RT.NewError(msg))
 	}
 }
 
-func EnsureRatio(args []Object, index int) *Ratio {
+func EnsureRatio(env *Env, args []Object, index int) *Ratio {
 	switch c := args[index].(type) {
 	case *Ratio:
 		return c
 	default:
-		panic(StubNewArgTypeError(index, c, "Ratio"))
+		panic(env.RT.NewArgTypeError(index, c, "Ratio"))
 	}
 }
 
-func AssertNamespace(obj Object, msg string) *Namespace {
+func AssertNamespace(env *Env, obj Object, msg string) *Namespace {
 	switch c := obj.(type) {
 	case *Namespace:
 		return c
@@ -519,20 +519,20 @@ func AssertNamespace(obj Object, msg string) *Namespace {
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Namespace", obj.GetType().ToString(false))
 		}
-		panic(StubNewError(msg))
+		panic(env.RT.NewError(msg))
 	}
 }
 
-func EnsureNamespace(args []Object, index int) *Namespace {
+func EnsureNamespace(env *Env, args []Object, index int) *Namespace {
 	switch c := args[index].(type) {
 	case *Namespace:
 		return c
 	default:
-		panic(StubNewArgTypeError(index, c, "Namespace"))
+		panic(env.RT.NewArgTypeError(index, c, "Namespace"))
 	}
 }
 
-func AssertVar(obj Object, msg string) *Var {
+func AssertVar(env *Env, obj Object, msg string) *Var {
 	switch c := obj.(type) {
 	case *Var:
 		return c
@@ -540,20 +540,20 @@ func AssertVar(obj Object, msg string) *Var {
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Var", obj.GetType().ToString(false))
 		}
-		panic(StubNewError(msg))
+		panic(env.RT.NewError(msg))
 	}
 }
 
-func EnsureVar(args []Object, index int) *Var {
+func EnsureVar(env *Env, args []Object, index int) *Var {
 	switch c := args[index].(type) {
 	case *Var:
 		return c
 	default:
-		panic(StubNewArgTypeError(index, c, "Var"))
+		panic(env.RT.NewArgTypeError(index, c, "Var"))
 	}
 }
 
-func AssertError(obj Object, msg string) Error {
+func AssertError(env *Env, obj Object, msg string) Error {
 	switch c := obj.(type) {
 	case Error:
 		return c
@@ -561,20 +561,20 @@ func AssertError(obj Object, msg string) Error {
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Error", obj.GetType().ToString(false))
 		}
-		panic(StubNewError(msg))
+		panic(env.RT.NewError(msg))
 	}
 }
 
-func EnsureError(args []Object, index int) Error {
+func EnsureError(env *Env, args []Object, index int) Error {
 	switch c := args[index].(type) {
 	case Error:
 		return c
 	default:
-		panic(StubNewArgTypeError(index, c, "Error"))
+		panic(env.RT.NewArgTypeError(index, c, "Error"))
 	}
 }
 
-func AssertFn(obj Object, msg string) *Fn {
+func AssertFn(env *Env, obj Object, msg string) *Fn {
 	switch c := obj.(type) {
 	case *Fn:
 		return c
@@ -582,20 +582,20 @@ func AssertFn(obj Object, msg string) *Fn {
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Fn", obj.GetType().ToString(false))
 		}
-		panic(StubNewError(msg))
+		panic(env.RT.NewError(msg))
 	}
 }
 
-func EnsureFn(args []Object, index int) *Fn {
+func EnsureFn(env *Env, args []Object, index int) *Fn {
 	switch c := args[index].(type) {
 	case *Fn:
 		return c
 	default:
-		panic(StubNewArgTypeError(index, c, "Fn"))
+		panic(env.RT.NewArgTypeError(index, c, "Fn"))
 	}
 }
 
-func AssertDeref(obj Object, msg string) Deref {
+func AssertDeref(env *Env, obj Object, msg string) Deref {
 	switch c := obj.(type) {
 	case Deref:
 		return c
@@ -603,20 +603,20 @@ func AssertDeref(obj Object, msg string) Deref {
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Deref", obj.GetType().ToString(false))
 		}
-		panic(StubNewError(msg))
+		panic(env.RT.NewError(msg))
 	}
 }
 
-func EnsureDeref(args []Object, index int) Deref {
+func EnsureDeref(env *Env, args []Object, index int) Deref {
 	switch c := args[index].(type) {
 	case Deref:
 		return c
 	default:
-		panic(StubNewArgTypeError(index, c, "Deref"))
+		panic(env.RT.NewArgTypeError(index, c, "Deref"))
 	}
 }
 
-func AssertAtom(obj Object, msg string) *Atom {
+func AssertAtom(env *Env, obj Object, msg string) *Atom {
 	switch c := obj.(type) {
 	case *Atom:
 		return c
@@ -624,20 +624,20 @@ func AssertAtom(obj Object, msg string) *Atom {
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Atom", obj.GetType().ToString(false))
 		}
-		panic(StubNewError(msg))
+		panic(env.RT.NewError(msg))
 	}
 }
 
-func EnsureAtom(args []Object, index int) *Atom {
+func EnsureAtom(env *Env, args []Object, index int) *Atom {
 	switch c := args[index].(type) {
 	case *Atom:
 		return c
 	default:
-		panic(StubNewArgTypeError(index, c, "Atom"))
+		panic(env.RT.NewArgTypeError(index, c, "Atom"))
 	}
 }
 
-func AssertRef(obj Object, msg string) Ref {
+func AssertRef(env *Env, obj Object, msg string) Ref {
 	switch c := obj.(type) {
 	case Ref:
 		return c
@@ -645,20 +645,20 @@ func AssertRef(obj Object, msg string) Ref {
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Ref", obj.GetType().ToString(false))
 		}
-		panic(StubNewError(msg))
+		panic(env.RT.NewError(msg))
 	}
 }
 
-func EnsureRef(args []Object, index int) Ref {
+func EnsureRef(env *Env, args []Object, index int) Ref {
 	switch c := args[index].(type) {
 	case Ref:
 		return c
 	default:
-		panic(StubNewArgTypeError(index, c, "Ref"))
+		panic(env.RT.NewArgTypeError(index, c, "Ref"))
 	}
 }
 
-func AssertKVReduce(obj Object, msg string) KVReduce {
+func AssertKVReduce(env *Env, obj Object, msg string) KVReduce {
 	switch c := obj.(type) {
 	case KVReduce:
 		return c
@@ -666,20 +666,20 @@ func AssertKVReduce(obj Object, msg string) KVReduce {
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "KVReduce", obj.GetType().ToString(false))
 		}
-		panic(StubNewError(msg))
+		panic(env.RT.NewError(msg))
 	}
 }
 
-func EnsureKVReduce(args []Object, index int) KVReduce {
+func EnsureKVReduce(env *Env, args []Object, index int) KVReduce {
 	switch c := args[index].(type) {
 	case KVReduce:
 		return c
 	default:
-		panic(StubNewArgTypeError(index, c, "KVReduce"))
+		panic(env.RT.NewArgTypeError(index, c, "KVReduce"))
 	}
 }
 
-func AssertPending(obj Object, msg string) Pending {
+func AssertPending(env *Env, obj Object, msg string) Pending {
 	switch c := obj.(type) {
 	case Pending:
 		return c
@@ -687,20 +687,20 @@ func AssertPending(obj Object, msg string) Pending {
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Pending", obj.GetType().ToString(false))
 		}
-		panic(StubNewError(msg))
+		panic(env.RT.NewError(msg))
 	}
 }
 
-func EnsurePending(args []Object, index int) Pending {
+func EnsurePending(env *Env, args []Object, index int) Pending {
 	switch c := args[index].(type) {
 	case Pending:
 		return c
 	default:
-		panic(StubNewArgTypeError(index, c, "Pending"))
+		panic(env.RT.NewArgTypeError(index, c, "Pending"))
 	}
 }
 
-func AssertFile(obj Object, msg string) *File {
+func AssertFile(env *Env, obj Object, msg string) *File {
 	switch c := obj.(type) {
 	case *File:
 		return c
@@ -708,20 +708,20 @@ func AssertFile(obj Object, msg string) *File {
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "File", obj.GetType().ToString(false))
 		}
-		panic(StubNewError(msg))
+		panic(env.RT.NewError(msg))
 	}
 }
 
-func EnsureFile(args []Object, index int) *File {
+func EnsureFile(env *Env, args []Object, index int) *File {
 	switch c := args[index].(type) {
 	case *File:
 		return c
 	default:
-		panic(StubNewArgTypeError(index, c, "File"))
+		panic(env.RT.NewArgTypeError(index, c, "File"))
 	}
 }
 
-func Assertio_Reader(obj Object, msg string) io.Reader {
+func Assertio_Reader(env *Env, obj Object, msg string) io.Reader {
 	switch c := obj.(type) {
 	case io.Reader:
 		return c
@@ -729,20 +729,20 @@ func Assertio_Reader(obj Object, msg string) io.Reader {
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "io.Reader", obj.GetType().ToString(false))
 		}
-		panic(StubNewError(msg))
+		panic(env.RT.NewError(msg))
 	}
 }
 
-func Ensureio_Reader(args []Object, index int) io.Reader {
+func Ensureio_Reader(env *Env, args []Object, index int) io.Reader {
 	switch c := args[index].(type) {
 	case io.Reader:
 		return c
 	default:
-		panic(StubNewArgTypeError(index, c, "io.Reader"))
+		panic(env.RT.NewArgTypeError(index, c, "io.Reader"))
 	}
 }
 
-func Assertio_Writer(obj Object, msg string) io.Writer {
+func Assertio_Writer(env *Env, obj Object, msg string) io.Writer {
 	switch c := obj.(type) {
 	case io.Writer:
 		return c
@@ -750,20 +750,20 @@ func Assertio_Writer(obj Object, msg string) io.Writer {
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "io.Writer", obj.GetType().ToString(false))
 		}
-		panic(StubNewError(msg))
+		panic(env.RT.NewError(msg))
 	}
 }
 
-func Ensureio_Writer(args []Object, index int) io.Writer {
+func Ensureio_Writer(env *Env, args []Object, index int) io.Writer {
 	switch c := args[index].(type) {
 	case io.Writer:
 		return c
 	default:
-		panic(StubNewArgTypeError(index, c, "io.Writer"))
+		panic(env.RT.NewArgTypeError(index, c, "io.Writer"))
 	}
 }
 
-func AssertStringReader(obj Object, msg string) StringReader {
+func AssertStringReader(env *Env, obj Object, msg string) StringReader {
 	switch c := obj.(type) {
 	case StringReader:
 		return c
@@ -771,20 +771,20 @@ func AssertStringReader(obj Object, msg string) StringReader {
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "StringReader", obj.GetType().ToString(false))
 		}
-		panic(StubNewError(msg))
+		panic(env.RT.NewError(msg))
 	}
 }
 
-func EnsureStringReader(args []Object, index int) StringReader {
+func EnsureStringReader(env *Env, args []Object, index int) StringReader {
 	switch c := args[index].(type) {
 	case StringReader:
 		return c
 	default:
-		panic(StubNewArgTypeError(index, c, "StringReader"))
+		panic(env.RT.NewArgTypeError(index, c, "StringReader"))
 	}
 }
 
-func Assertio_RuneReader(obj Object, msg string) io.RuneReader {
+func Assertio_RuneReader(env *Env, obj Object, msg string) io.RuneReader {
 	switch c := obj.(type) {
 	case io.RuneReader:
 		return c
@@ -792,20 +792,20 @@ func Assertio_RuneReader(obj Object, msg string) io.RuneReader {
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "io.RuneReader", obj.GetType().ToString(false))
 		}
-		panic(StubNewError(msg))
+		panic(env.RT.NewError(msg))
 	}
 }
 
-func Ensureio_RuneReader(args []Object, index int) io.RuneReader {
+func Ensureio_RuneReader(env *Env, args []Object, index int) io.RuneReader {
 	switch c := args[index].(type) {
 	case io.RuneReader:
 		return c
 	default:
-		panic(StubNewArgTypeError(index, c, "io.RuneReader"))
+		panic(env.RT.NewArgTypeError(index, c, "io.RuneReader"))
 	}
 }
 
-func AssertChannel(obj Object, msg string) *Channel {
+func AssertChannel(env *Env, obj Object, msg string) *Channel {
 	switch c := obj.(type) {
 	case *Channel:
 		return c
@@ -813,15 +813,15 @@ func AssertChannel(obj Object, msg string) *Channel {
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Channel", obj.GetType().ToString(false))
 		}
-		panic(StubNewError(msg))
+		panic(env.RT.NewError(msg))
 	}
 }
 
-func EnsureChannel(args []Object, index int) *Channel {
+func EnsureChannel(env *Env, args []Object, index int) *Channel {
 	switch c := args[index].(type) {
 	case *Channel:
 		return c
 	default:
-		panic(StubNewArgTypeError(index, c, "Channel"))
+		panic(env.RT.NewArgTypeError(index, c, "Channel"))
 	}
 }

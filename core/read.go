@@ -873,7 +873,7 @@ func readTagged(env *Env, reader *Reader) Object {
 		if !ok {
 			return handleNoReaderError(env, reader, s)
 		}
-		return AssertVar(readFunc, "").Call(env, []Object{readFirst(env, reader)})
+		return AssertVar(env, readFunc, "").Call(env, []Object{readFirst(env, reader)})
 	default:
 		panic(MakeReadError(reader, "Reader tag must be a symbol"))
 	}

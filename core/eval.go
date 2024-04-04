@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"strings"
-	"sync"
 	"unsafe"
 )
 
@@ -28,7 +27,7 @@ type (
 	Runtime struct {
 		callstack   *Callstack
 		currentExpr Expr
-		GIL         sync.Mutex
+		// GIL         sync.Mutex
 	}
 )
 
@@ -192,6 +191,10 @@ func (err *EvalError) Message() Object {
 
 func (err *EvalError) Error() string {
 	pos := err.pos
+	if err.rt == nil {
+		return fmt.Sprintf("%s:%d:%d: Eval error: %s", pos.Filename(), pos.startLine, pos.startColumn, err.msg)
+	}
+
 	if len(err.rt.callstack.frames) > 0 && !LINTER_MODE {
 		return fmt.Sprintf("%s:%d:%d: Eval error: %s\nStacktrace:\n%s", pos.Filename(), pos.startLine, pos.startColumn, err.msg, err.rt.stacktrace())
 	} else {

@@ -14,8 +14,8 @@ func __send_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		request := ExtractMap(_args, 0)
-		_res := sendRequest(request)
+		request := ExtractMap(_env, _args, 0)
+		_res := sendRequest(_env, request)
 		return _res
 
 	default:
@@ -31,8 +31,8 @@ func __start_file_server_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 2:
-		addr := ExtractString(_args, 0)
-		root := ExtractString(_args, 1)
+		addr := ExtractString(_env, _args, 0)
+		root := ExtractString(_env, _args, 1)
 		_res := startFileServer(addr, root)
 		return _res
 
@@ -49,9 +49,9 @@ func __start_server_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 2:
-		addr := ExtractString(_args, 0)
-		handler := ExtractCallable(_args, 1)
-		_res := startServer(addr, handler)
+		addr := ExtractString(_env, _args, 0)
+		handler := ExtractCallable(_env, _args, 1)
+		_res := startServer(_env, addr, handler)
 		return _res
 
 	default:

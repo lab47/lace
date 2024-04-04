@@ -14,14 +14,14 @@ func __csv_seq_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		rdr := ExtractObject(_args, 0)
-		_res := csvSeqOpts(rdr, EmptyArrayMap())
+		rdr := ExtractObject(_env, _args, 0)
+		_res := csvSeqOpts(_env, rdr, EmptyArrayMap())
 		return _res
 
 	case _c == 2:
-		rdr := ExtractObject(_args, 0)
-		opts := ExtractMap(_args, 1)
-		_res := csvSeqOpts(rdr, opts)
+		rdr := ExtractObject(_env, _args, 0)
+		opts := ExtractMap(_env, _args, 1)
+		_res := csvSeqOpts(_env, rdr, opts)
 		return _res
 
 	default:
@@ -37,16 +37,16 @@ func __write_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 2:
-		f := ExtractIOWriter(_args, 0)
-		data := ExtractSeqable(_args, 1)
-		_res := write(f, data, EmptyArrayMap())
+		f := ExtractIOWriter(_env, _args, 0)
+		data := ExtractSeqable(_env, _args, 1)
+		_res := write(_env, f, data, EmptyArrayMap())
 		return _res
 
 	case _c == 3:
-		f := ExtractIOWriter(_args, 0)
-		data := ExtractSeqable(_args, 1)
-		opts := ExtractMap(_args, 2)
-		_res := write(f, data, opts)
+		f := ExtractIOWriter(_env, _args, 0)
+		data := ExtractSeqable(_env, _args, 1)
+		opts := ExtractMap(_env, _args, 2)
+		_res := write(_env, f, data, opts)
 		return _res
 
 	default:
@@ -62,14 +62,14 @@ func __write_string_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		data := ExtractSeqable(_args, 0)
-		_res := writeString(data, EmptyArrayMap())
+		data := ExtractSeqable(_env, _args, 0)
+		_res := writeString(_env, data, EmptyArrayMap())
 		return MakeString(_res)
 
 	case _c == 2:
-		data := ExtractSeqable(_args, 0)
-		opts := ExtractMap(_args, 1)
-		_res := writeString(data, opts)
+		data := ExtractSeqable(_env, _args, 0)
+		opts := ExtractMap(_env, _args, 1)
+		_res := writeString(_env, data, opts)
 		return MakeString(_res)
 
 	default:

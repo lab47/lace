@@ -15,7 +15,7 @@ func __close_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		f := ExtractObject(_args, 0)
+		f := ExtractObject(_env, _args, 0)
 		_res := close(f)
 		return _res
 
@@ -32,8 +32,8 @@ func __copy_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 2:
-		dst := ExtractIOWriter(_args, 0)
-		src := ExtractIOReader(_args, 1)
+		dst := ExtractIOWriter(_env, _args, 0)
+		src := ExtractIOReader(_env, _args, 1)
 		 n, err := io.Copy(dst, src)
 		PanicOnErr(err)
 		_res := int(n)

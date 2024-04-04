@@ -41,18 +41,18 @@ func commandArgs() Object {
 
 const defaultFailedCode = 127 // seen from 'sh no-such-file' on OS X and Ubuntu
 
-func execute(name string, opts Map) Object {
+func execute(env *Env, name string, opts Map) Object {
 	var dir string
 	var args []string
 	var stdin io.Reader
 	var stdout, stderr io.Writer
 	if ok, dirObj := opts.Get(MakeKeyword("dir")); ok {
-		dir = AssertString(dirObj, "dir must be a string").S
+		dir = AssertString(env, dirObj, "dir must be a string").S
 	}
 	if ok, argsObj := opts.Get(MakeKeyword("args")); ok {
-		s := AssertSeqable(argsObj, "args must be Seqable").Seq()
+		s := AssertSeqable(env, argsObj, "args must be Seqable").Seq()
 		for !s.IsEmpty() {
-			args = append(args, AssertString(s.First(), "args must be strings").S)
+			args = append(args, AssertString(env, s.First(), "args must be strings").S)
 			s = s.Rest()
 		}
 	}

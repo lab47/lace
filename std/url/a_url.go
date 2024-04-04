@@ -15,7 +15,7 @@ func __path_escape_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		s := ExtractString(_args, 0)
+		s := ExtractString(_env, _args, 0)
 		_res := url.PathEscape(s)
 		return MakeString(_res)
 
@@ -32,7 +32,7 @@ func __path_unescape_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		s := ExtractString(_args, 0)
+		s := ExtractString(_env, _args, 0)
 		_res := pathUnescape(s)
 		return MakeString(_res)
 
@@ -49,7 +49,7 @@ func __query_escape_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		s := ExtractString(_args, 0)
+		s := ExtractString(_env, _args, 0)
 		_res := url.QueryEscape(s)
 		return MakeString(_res)
 
@@ -66,7 +66,7 @@ func __query_unescape_(_env *Env, _args []Object) Object {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		s := ExtractString(_args, 0)
+		s := ExtractString(_env, _args, 0)
 		_res := queryUnescape(s)
 		return MakeString(_res)
 

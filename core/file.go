@@ -39,6 +39,6 @@ func MakeFile(f *os.File) *File {
 	return &File{f}
 }
 
-func ExtractFile(args []Object, index int) *File {
-	return EnsureFile(args, index)
+func ExtractFile(env *Env, args []Object, index int) *File {
+	return EnsureFile(env, args, index)
 }
