@@ -6,18 +6,18 @@ import (
 	. "github.com/candid82/joker/core"
 )
 
-func pathUnescape(s string) string {
+func pathUnescape(s string) (string, error) {
 	res, err := url.PathUnescape(s)
 	if err != nil {
-		panic(StubNewError("Error unescaping string: " + err.Error()))
+		return "", StubNewError("Error unescaping string: " + err.Error())
 	}
-	return res
+	return res, nil
 }
 
-func queryUnescape(s string) string {
+func queryUnescape(s string) (string, error) {
 	res, err := url.QueryUnescape(s)
 	if err != nil {
-		panic(StubNewError("Error unescaping string: " + err.Error()))
+		return "", StubNewError("Error unescaping string: " + err.Error())
 	}
-	return res
+	return res, nil
 }

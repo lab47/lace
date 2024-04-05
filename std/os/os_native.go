@@ -9,50 +9,68 @@ import (
 	. "github.com/candid82/joker/core"
 )
 
-func env() Object {
+func env() (Object, error) {
 	res := EmptyArrayMap()
 	for _, v := range os.Environ() {
 		parts := strings.Split(v, "=")
 		res.Add(String{S: parts[0]}, String{S: parts[1]})
 	}
-	return res
+	return res, nil
 }
 
-func setEnv(key string, value string) Object {
+func setEnv(key string, value string) (Object, error) {
 	err := os.Setenv(key, value)
 	PanicOnErr(err)
-	return NIL
+	return NIL, nil
 }
 
-func getEnv(key string) Object {
+func getEnv(key string) (Object, error) {
 	if v, ok := os.LookupEnv(key); ok {
-		return MakeString(v)
+		return MakeString(v), nil
 	}
-	return NIL
+	return NIL, nil
 }
 
-func commandArgs() Object {
+func commandArgs() (Object, error) {
 	res := EmptyVector()
+	var err error
 	for _, arg := range os.Args {
-		res = res.Conjoin(String{S: arg})
+		res, err = res.Conjoin(String{S: arg})
+		if err != nil {
+			return nil, err
+		}
 	}
-	return res
+	return res, nil
 }
 
 const defaultFailedCode = 127 // seen from 'sh no-such-file' on OS X and Ubuntu
 
-func execute(env *Env, name string, opts Map) Object {
+func execute(env *Env, name string, opts Map) (Object, error) {
 	var dir string
 	var args []string
 	var stdin io.Reader
 	var stdout, stderr io.Writer
 	if ok, dirObj := opts.Get(MakeKeyword("dir")); ok {
-		dir = AssertString(env, dirObj, "dir must be a string").S
+		dirv, err := AssertString(env, dirObj, "dir must be a string")
+		if err != nil {
+			return nil, err
+		}
+
+		dir = dirv.S
 	}
 	if ok, argsObj := opts.Get(MakeKeyword("args")); ok {
-		s := AssertSeqable(env, argsObj, "args must be Seqable").Seq()
+		sv, err := AssertSeqable(env, argsObj, "args must be Seqable")
+		if err != nil {
+			return nil, err
+		}
+
+		s := sv.Seq()
 		for !s.IsEmpty() {
-			args = append(args, AssertString(env, s.First(), "args must be strings").S)
+			so, err := AssertString(env, s.First(), "args must be strings")
+			if err != nil {
+				return nil, err
+			}
+			args = append(args, so.S)
 			s = s.Rest()
 		}
 	}
@@ -101,13 +119,12 @@ func execute(env *Env, name string, opts Map) Object {
 	return sh(dir, stdin, stdout, stderr, name, args)
 }
 
-func mkdir(name string, perm int) Object {
+func mkdir(name string, perm int) (Object, error) {
 	err := os.Mkdir(name, os.FileMode(perm))
-	PanicOnErr(err)
-	return NIL
+	return NIL, err
 }
 
-func readDir(dirname string) Object {
+func readDir(dirname string) (Object, error) {
 	files, err := ioutil.ReadDir(dirname)
 	PanicOnErr(err)
 	res := EmptyVector()
@@ -123,36 +140,39 @@ func readDir(dirname string) Object {
 		m.Add(mode, MakeInt(int(f.Mode())))
 		m.Add(isDir, MakeBoolean(f.IsDir()))
 		m.Add(modTime, MakeInt(int(f.ModTime().Unix())))
-		res = res.Conjoin(m)
+		res, err = res.Conjoin(m)
+		if err != nil {
+			return nil, err
+		}
 	}
-	return res
+	return res, nil
 }
 
-func getwd() string {
+func getwd() (string, error) {
 	res, err := os.Getwd()
-	PanicOnErr(err)
-	return res
+	return res, err
 }
 
-func chdir(dirname string) Object {
+func chdir(dirname string) (Object, error) {
 	err := os.Chdir(dirname)
-	PanicOnErr(err)
-	return NIL
+	return NIL, err
 }
 
-func stat(filename string) Object {
+func stat(filename string) (Object, error) {
 	info, err := os.Stat(filename)
-	PanicOnErr(err)
-	return FileInfoMap(info.Name(), info)
+	if err != nil {
+		return nil, err
+	}
+	return FileInfoMap(info.Name(), info), nil
 }
 
-func exists(path string) bool {
+func exists(path string) (bool, error) {
 	_, err := os.Stat(path)
 	if err == nil {
-		return true
+		return true, nil
 	}
 	if os.IsNotExist(err) {
-		return false
+		return false, nil
 	}
-	panic(StubNewError(err.Error()))
+	return false, StubNewError(err.Error())
 }

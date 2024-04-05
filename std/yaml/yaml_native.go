@@ -44,36 +44,51 @@ func fromObject(obj Object) interface{} {
 	}
 }
 
-func toObject(v interface{}) Object {
+func toObject(v interface{}) (Object, error) {
 	switch v := v.(type) {
 	case string:
-		return MakeString(v)
+		return MakeString(v), nil
 	case float64:
-		return Double{D: v}
+		return Double{D: v}, nil
 	case int:
-		return Int{I: v}
+		return Int{I: v}, nil
 	case bool:
-		return Boolean{B: v}
+		return Boolean{B: v}, nil
 	case nil:
-		return NIL
+		return NIL, nil
 	case []interface{}:
 		res := EmptyVector()
 		for _, v := range v {
-			res = res.Conjoin(toObject(v))
+			o, err := toObject(v)
+			if err != nil {
+				return nil, err
+			}
+			res, err = res.Conjoin(o)
+			if err != nil {
+				return nil, err
+			}
 		}
-		return res
+		return res, nil
 	case map[interface{}]interface{}:
 		res := EmptyArrayMap()
 		for k, v := range v {
-			res.Add(toObject(k), toObject(v))
+			ko, err := toObject(k)
+			if err != nil {
+				return nil, err
+			}
+			vo, err := toObject(v)
+			if err != nil {
+				return nil, err
+			}
+			res.Add(ko, vo)
 		}
-		return res
+		return res, nil
 	default:
 		panic(StubNewError(fmt.Sprintf("Unknown yaml value: %v", v)))
 	}
 }
 
-func readString(s string) Object {
+func readString(s string) (Object, error) {
 	var v interface{}
 	if err := yaml.Unmarshal([]byte(s), &v); err != nil {
 		panic(StubNewError("Invalid yaml: " + err.Error()))
@@ -81,10 +96,10 @@ func readString(s string) Object {
 	return toObject(v)
 }
 
-func writeString(obj Object) String {
+func writeString(obj Object) (String, error) {
 	res, err := yaml.Marshal(fromObject(obj))
 	if err != nil {
-		panic(StubNewError("Cannot encode value to yaml: " + err.Error()))
+		return String{}, StubNewError("Cannot encode value to yaml: " + err.Error())
 	}
-	return String{S: string(res)}
+	return String{S: string(res)}, nil
 }

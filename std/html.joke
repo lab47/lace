@@ -6,11 +6,11 @@
 (defn ^String escape
   "Escapes special characters like < to become &lt;. It escapes only five such characters: <, >, &, ' and \"."
   {:added "1.0"
-  :go "html.EscapeString(s)"}
+  :go "html.EscapeString(s), nil"}
   [^String s])
 
 (defn ^String unescape
   "Unescapes entities like &lt; to become <."
   {:added "1.0"
-  :go "html.UnescapeString(s)"}
+  :go "html.UnescapeString(s), nil"}
   [^String s])

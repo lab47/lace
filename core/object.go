@@ -49,7 +49,7 @@ type (
 	}
 	Conjable interface {
 		Object
-		Conj(obj Object) Conjable
+		Conj(obj Object) (Conjable, error)
 	}
 	Counted interface {
 		Count() int
@@ -61,10 +61,10 @@ type (
 	}
 	Meta interface {
 		GetMeta() Map
-		WithMeta(Map) Object
+		WithMeta(Map) (Object, error)
 	}
 	Ref interface {
-		AlterMeta(env *Env, fn *Fn, args []Object) Map
+		AlterMeta(env *Env, fn *Fn, args []Object) (Map, error)
 		ResetMeta(m Map) Map
 	}
 	MetaHolder struct {
@@ -147,7 +147,7 @@ type (
 		isGloballyUsed bool
 		taggedType     *Type
 	}
-	ProcFn func(env *Env, args []Object) Object
+	ProcFn func(env *Env, args []Object) (Object, error)
 	Proc   struct {
 		Fn      ProcFn
 		Name    string
@@ -189,8 +189,8 @@ type (
 	Associative interface {
 		Conjable
 		Gettable
-		EntryAt(key Object) *Vector
-		Assoc(key, val Object) Associative
+		EntryAt(key Object) (*Vector, error)
+		Assoc(key, val Object) (Associative, error)
 	}
 	Reversible interface {
 		Rseq() Seq
@@ -223,7 +223,7 @@ type (
 		value Object
 	}
 	Deref interface {
-		Deref() Object
+		Deref() (Object, error)
 	}
 	Native interface {
 		Native() interface{}
@@ -407,31 +407,40 @@ func rangeString(min, max int) string {
 	return "between " + strconv.Itoa(min) + " and " + strconv.Itoa(max) + ", inclusive"
 }
 
-func PanicArityMinMax(env *Env, n, min, max int) {
+func PanicArityMinMax(env *Env, n, min, max int) error {
 	name := env.RT.currentExpr.(Traceable).Name()
 	panic(env.RT.NewError(fmt.Sprintf("Wrong number of args (%d) passed to %s; expects %s", n, name, rangeString(min, max))))
 }
 
-func CheckArity(env *Env, args []Object, min int, max int) {
-	n := len(args)
-	if n < min || n > max {
-		PanicArityMinMax(env, n, min, max)
-	}
+func ReturnArityMinMax(env *Env, n, min, max int) error {
+	name := env.RT.currentExpr.(Traceable).Name()
+	return env.RT.NewError(fmt.Sprintf("Wrong number of args (%d) passed to %s; expects %s", n, name, rangeString(min, max)))
 }
 
-func getMap(env *Env, k Object, args []Object) Object {
-	CheckArity(env, args, 1, 2)
+func CheckArity(env *Env, args []Object, min int, max int) error {
+	n := len(args)
+	if n < min || n > max {
+		return ReturnArityMinMax(env, n, min, max)
+	}
+	return nil
+}
+
+func getMap(env *Env, k Object, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 2); err != nil {
+		return nil, err
+	}
+
 	switch m := args[0].(type) {
 	case Map:
 		ok, v := m.Get(k)
 		if ok {
-			return v
+			return v, nil
 		}
 	}
 	if len(args) == 2 {
-		return args[1]
+		return args[1], nil
 	}
-	return NIL
+	return NIL, nil
 }
 
 func (s SortableSlice) Len() int {
@@ -504,10 +513,14 @@ func (a *Atom) WithInfo(info *ObjectInfo) Object {
 	return a
 }
 
-func (a *Atom) WithMeta(meta Map) Object {
+func (a *Atom) WithMeta(meta Map) (Object, error) {
 	res := *a
-	res.meta = SafeMerge(res.meta, meta)
-	return &res
+	m, err := SafeMerge(res.meta, meta)
+	if err != nil {
+		return nil, err
+	}
+	res.meta = m
+	return &res, nil
 }
 
 func (a *Atom) ResetMeta(newMeta Map) Map {
@@ -515,7 +528,7 @@ func (a *Atom) ResetMeta(newMeta Map) Map {
 	return a.meta
 }
 
-func (a *Atom) AlterMeta(env *Env, fn *Fn, args []Object) Map {
+func (a *Atom) AlterMeta(env *Env, fn *Fn, args []Object) (Map, error) {
 	return AlterMeta(env, &a.MetaHolder, fn, args)
 }
 
@@ -547,14 +560,18 @@ func (d *Delay) WithInfo(info *ObjectInfo) Object {
 	return d
 }
 
-func (d *Delay) Force(env *Env) Object {
+func (d *Delay) Force(env *Env) (Object, error) {
 	if d.value == nil {
-		d.value = d.fn.Call(env, []Object{})
+		val, err := d.fn.Call(env, []Object{})
+		if err != nil {
+			return nil, err
+		}
+		d.value = val
 	}
-	return d.value
+	return d.value, nil
 }
 
-func (d *Delay) Deref(env *Env) Object {
+func (d *Delay) Deref(env *Env) (Object, error) {
 	return d.Force(env)
 }
 
@@ -659,10 +676,14 @@ func (fn *Fn) Equals(other interface{}) bool {
 	}
 }
 
-func (fn *Fn) WithMeta(meta Map) Object {
+func (fn *Fn) WithMeta(meta Map) (Object, error) {
 	res := *fn
-	res.meta = SafeMerge(res.meta, meta)
-	return &res
+	m, err := SafeMerge(res.meta, meta)
+	if err != nil {
+		return nil, err
+	}
+	res.meta = m
+	return &res, nil
 }
 
 func (fn *Fn) GetType() *Type {
@@ -673,7 +694,7 @@ func (fn *Fn) Hash() uint32 {
 	return HashPtr(uintptr(unsafe.Pointer(fn)))
 }
 
-func (fn *Fn) Call(env *Env, args []Object) Object {
+func (fn *Fn) Call(env *Env, args []Object) (Object, error) {
 	min := math.MaxInt32
 	max := -1
 	for _, arity := range fn.fnExpr.arities {
@@ -720,33 +741,54 @@ func (fn *Fn) Call(env *Env, args []Object) Object {
 	return evalLoop(env, v.body, fn.env.addFrame(vargs))
 }
 
-func compare(env *Env, c Callable, a, b Object) int {
-	switch r := c.Call(env, []Object{a, b}).(type) {
+func compare(env *Env, c Callable, a, b Object) (int, error) {
+	val, err := c.Call(env, []Object{a, b})
+	if err != nil {
+		return 0, err
+	}
+
+	switch r := val.(type) {
 	case Boolean:
 		if r.B {
-			return -1
+			return -1, nil
 		}
-		if AssertBoolean(env, c.Call(env, []Object{b, a}), "").B {
-			return 1
+
+		v, err := c.Call(env, []Object{b, a})
+		if err != nil {
+			return 0, err
 		}
-		return 0
+
+		b, err := AssertBoolean(env, v, "")
+		if err != nil {
+			return 0, err
+		}
+
+		if b.B {
+			return 1, nil
+		}
+		return 0, nil
 	default:
-		return AssertNumber(env, r, "Function is not a comparator since it returned a non-integer value").Int().I
+		a, err := AssertNumber(env, r, "Function is not a comparator since it returned a non-integer value")
+		if err != nil {
+			return 0, err
+		}
+
+		return a.Int().I, nil
 	}
 }
 
-func (fn *Fn) Compare(env *Env, a, b Object) int {
+func (fn *Fn) Compare(env *Env, a, b Object) (int, error) {
 	return compare(env, fn, a, b)
 }
 
-func (p Proc) Call(env *Env, args []Object) Object {
+func (p Proc) Call(env *Env, args []Object) (Object, error) {
 	return p.Fn(env, args)
 }
 
 var _ Callable = (*Fn)(nil)
 var _ Callable = Proc{}
 
-func (p Proc) Compare(env *Env, a, b Object) int {
+func (p Proc) Compare(env *Env, a, b Object) (int, error) {
 	return compare(env, p, a, b)
 }
 
@@ -790,20 +832,34 @@ func (m MetaHolder) GetMeta() Map {
 	return m.meta
 }
 
-func AlterMeta(env *Env, m *MetaHolder, fn *Fn, args []Object) Map {
+func AlterMeta(env *Env, m *MetaHolder, fn *Fn, args []Object) (Map, error) {
 	meta := m.meta
 	if meta == nil {
 		meta = NIL
 	}
 	fargs := append([]Object{meta}, args...)
-	m.meta = AssertMap(env, fn.Call(env, fargs), "")
-	return m.meta
+
+	v, err := fn.Call(env, fargs)
+	if err != nil {
+		return nil, err
+	}
+
+	mm, err := AssertMap(env, v, "")
+	if err != nil {
+		return nil, err
+	}
+	m.meta = mm
+	return m.meta, nil
 }
 
-func (sym Symbol) WithMeta(meta Map) Object {
+func (sym Symbol) WithMeta(meta Map) (Object, error) {
 	res := sym
-	res.meta = SafeMerge(res.meta, meta)
-	return res
+	m, err := SafeMerge(res.meta, meta)
+	if err != nil {
+		return nil, err
+	}
+	res.meta = m
+	return res, nil
 }
 
 func (v *Var) Name() string {
@@ -819,10 +875,14 @@ func (v *Var) Equals(other interface{}) bool {
 	return v == other
 }
 
-func (v *Var) WithMeta(meta Map) Object {
+func (v *Var) WithMeta(meta Map) (Object, error) {
 	res := *v
-	res.meta = SafeMerge(res.meta, meta)
-	return &res
+	m, err := SafeMerge(res.meta, meta)
+	if err != nil {
+		return nil, err
+	}
+	res.meta = m
+	return &res, nil
 }
 
 func (v *Var) ResetMeta(newMeta Map) Map {
@@ -830,7 +890,7 @@ func (v *Var) ResetMeta(newMeta Map) Map {
 	return v.meta
 }
 
-func (v *Var) AlterMeta(env *Env, fn *Fn, args []Object) Map {
+func (v *Var) AlterMeta(env *Env, fn *Fn, args []Object) (Map, error) {
 	return AlterMeta(env, &v.MetaHolder, fn, args)
 }
 
@@ -849,11 +909,16 @@ func (v *Var) Resolve() Object {
 	return v.Value
 }
 
-func (v *Var) Call(env *Env, args []Object) Object {
+func (v *Var) Call(env *Env, args []Object) (Object, error) {
 	vl := v.Resolve()
-	return AssertCallable(env,
+	call, err := AssertCallable(env,
 		vl,
-		"Var "+v.ToString(false)+" resolves to "+vl.ToString(false)+", which is not a Fn").Call(env, args)
+		"Var "+v.ToString(false)+" resolves to "+vl.ToString(false)+", which is not a Fn")
+	if err != nil {
+		return nil, err
+	}
+
+	return call.Call(env, args)
 }
 
 var _ Callable = (*Var)(nil)
@@ -903,8 +968,8 @@ func (n Nil) Cons(obj Object) Seq {
 	return NewListFrom(obj)
 }
 
-func (n Nil) Conj(obj Object) Conjable {
-	return NewListFrom(obj)
+func (n Nil) Conj(obj Object) (Conjable, error) {
+	return NewListFrom(obj), nil
 }
 
 func (n Nil) Without(key Object) Map {
@@ -919,16 +984,16 @@ func (n Nil) Iter() MapIterator {
 	return emptyMapIterator
 }
 
-func (n Nil) Merge(other Map) Map {
-	return other
+func (n Nil) Merge(other Map) (Map, error) {
+	return other, nil
 }
 
-func (n Nil) Assoc(key, value Object) Associative {
+func (n Nil) Assoc(key, value Object) (Associative, error) {
 	return EmptyArrayMap().Assoc(key, value)
 }
 
-func (n Nil) EntryAt(key Object) *Vector {
-	return nil
+func (n Nil) EntryAt(key Object) (*Vector, error) {
+	return nil, nil
 }
 
 func (n Nil) Get(key Object) (bool, Object) {
@@ -963,8 +1028,13 @@ func (rat *Ratio) Hash() uint32 {
 	return hashGobEncoder(&rat.r)
 }
 
-func (rat *Ratio) Compare(env *Env, other Object) int {
-	return CompareNumbers(rat, AssertNumber(env, other, "Cannot compare Ratio and "+other.GetType().ToString(false)))
+func (rat *Ratio) Compare(env *Env, other Object) (int, error) {
+	n, err := AssertNumber(env, other, "Cannot compare Ratio and "+other.GetType().ToString(false))
+	if err != nil {
+		return 0, err
+	}
+
+	return CompareNumbers(rat, n), nil
 }
 
 func MakeBigInt(bi int64) *BigInt {
@@ -987,8 +1057,12 @@ func (bi *BigInt) Hash() uint32 {
 	return hashGobEncoder(&bi.b)
 }
 
-func (bi *BigInt) Compare(env *Env, other Object) int {
-	return CompareNumbers(bi, AssertNumber(env, other, "Cannot compare BigInt and "+other.GetType().ToString(false)))
+func (bi *BigInt) Compare(env *Env, other Object) (int, error) {
+	n, err := AssertNumber(env, other, "Cannot compare BigInt and "+other.GetType().ToString(false))
+	if err != nil {
+		return 0, err
+	}
+	return CompareNumbers(bi, n), nil
 }
 
 func (bf *BigFloat) ToString(escape bool) string {
@@ -1007,8 +1081,13 @@ func (bf *BigFloat) Hash() uint32 {
 	return hashGobEncoder(&bf.b)
 }
 
-func (bf *BigFloat) Compare(env *Env, other Object) int {
-	return CompareNumbers(bf, AssertNumber(env, other, "Cannot compare BigFloat and "+other.GetType().ToString(false)))
+func (bf *BigFloat) Compare(env *Env, other Object) (int, error) {
+	n, err := AssertNumber(env, other, "Cannot compare BigFloat and "+other.GetType().ToString(false))
+	if err != nil {
+		return 0, err
+	}
+
+	return CompareNumbers(bf, n), nil
 }
 
 func (c Char) ToString(escape bool) string {
@@ -1041,15 +1120,18 @@ func (c Char) Hash() uint32 {
 	return h.Sum32()
 }
 
-func (c Char) Compare(env *Env, other Object) int {
-	c2 := AssertChar(env, other, "Cannot compare Char and "+other.GetType().ToString(false))
+func (c Char) Compare(env *Env, other Object) (int, error) {
+	c2, err := AssertChar(env, other, "Cannot compare Char and "+other.GetType().ToString(false))
+	if err != nil {
+		return 0, err
+	}
 	if c.Ch < c2.Ch {
-		return -1
+		return -1, nil
 	}
 	if c2.Ch < c.Ch {
-		return 1
+		return 1, nil
 	}
-	return 0
+	return 0, nil
 }
 
 func MakeBoolean(b bool) Boolean {
@@ -1088,8 +1170,12 @@ func (d Double) Hash() uint32 {
 	return h.Sum32()
 }
 
-func (d Double) Compare(env *Env, other Object) int {
-	return CompareNumbers(d, AssertNumber(env, other, "Cannot compare Double and "+other.GetType().ToString(false)))
+func (d Double) Compare(env *Env, other Object) (int, error) {
+	n, err := AssertNumber(env, other, "Cannot compare Double and "+other.GetType().ToString(false))
+	if err != nil {
+		return 0, err
+	}
+	return CompareNumbers(d, n), nil
 }
 
 func (i Int) ToString(escape bool) string {
@@ -1120,8 +1206,12 @@ func (i Int) Hash() uint32 {
 	return h.Sum32()
 }
 
-func (i Int) Compare(env *Env, other Object) int {
-	return CompareNumbers(i, AssertNumber(env, other, "Cannot compare Int and "+other.GetType().ToString(false)))
+func (i Int) Compare(env *Env, other Object) (int, error) {
+	n, err := AssertNumber(env, other, "Cannot compare Int and "+other.GetType().ToString(false))
+	if err != nil {
+		return 0, err
+	}
+	return CompareNumbers(i, n), nil
 }
 
 func (b Boolean) ToString(escape bool) string {
@@ -1157,15 +1247,18 @@ func (b Boolean) Hash() uint32 {
 	return h.Sum32()
 }
 
-func (b Boolean) Compare(env *Env, other Object) int {
-	b2 := AssertBoolean(env, other, "Cannot compare Boolean and "+other.GetType().ToString(false))
+func (b Boolean) Compare(env *Env, other Object) (int, error) {
+	b2, err := AssertBoolean(env, other, "Cannot compare Boolean and "+other.GetType().ToString(false))
+	if err != nil {
+		return 0, err
+	}
 	if b.B == b2.B {
-		return 0
+		return 0, nil
 	}
 	if b.B {
-		return 1
+		return 1, nil
 	}
-	return -1
+	return -1, nil
 }
 
 func (t Time) ToString(escape bool) string {
@@ -1193,15 +1286,18 @@ func (t Time) Hash() uint32 {
 	return hashGobEncoder(t.T)
 }
 
-func (t Time) Compare(env *Env, other Object) int {
-	t2 := AssertTime(env, other, "Cannot compare Time and "+other.GetType().ToString(false))
+func (t Time) Compare(env *Env, other Object) (int, error) {
+	t2, err := AssertTime(env, other, "Cannot compare Time and "+other.GetType().ToString(false))
+	if err != nil {
+		return 0, err
+	}
 	if t.T.Equal(t2.T) {
-		return 0
+		return 0, nil
 	}
 	if t2.T.Before(t.T) {
-		return 1
+		return 1, nil
 	}
-	return -1
+	return -1, nil
 }
 
 func (k Keyword) ToString(escape bool) string {
@@ -1239,12 +1335,15 @@ func (k Keyword) Hash() uint32 {
 	return k.hash
 }
 
-func (k Keyword) Compare(env *Env, other Object) int {
-	k2 := AssertKeyword(env, other, "Cannot compare Keyword and "+other.GetType().ToString(false))
-	return strings.Compare(k.ToString(false), k2.ToString(false))
+func (k Keyword) Compare(env *Env, other Object) (int, error) {
+	k2, err := AssertKeyword(env, other, "Cannot compare Keyword and "+other.GetType().ToString(false))
+	if err != nil {
+		return 0, err
+	}
+	return strings.Compare(k.ToString(false), k2.ToString(false)), nil
 }
 
-func (k Keyword) Call(env *Env, args []Object) Object {
+func (k Keyword) Call(env *Env, args []Object) (Object, error) {
 	return getMap(env, k, args)
 }
 
@@ -1317,12 +1416,15 @@ func (s Symbol) Hash() uint32 {
 	return hashSymbol(s.ns, s.name) + 0x9e3779b9
 }
 
-func (s Symbol) Compare(env *Env, other Object) int {
-	s2 := AssertSymbol(env, other, "Cannot compare Symbol and "+other.GetType().ToString(false))
-	return strings.Compare(s.ToString(false), s2.ToString(false))
+func (s Symbol) Compare(env *Env, other Object) (int, error) {
+	s2, err := AssertSymbol(env, other, "Cannot compare Symbol and "+other.GetType().ToString(false))
+	if err != nil {
+		return 0, err
+	}
+	return strings.Compare(s.ToString(false), s2.ToString(false)), nil
 }
 
-func (s Symbol) Call(env *Env, args []Object) Object {
+func (s Symbol) Call(env *Env, args []Object) (Object, error) {
 	return getMap(env, s, args)
 }
 
@@ -1342,7 +1444,7 @@ func MakeString(s string) String {
 func MakeStringVector(ss []string) *Vector {
 	res := EmptyVector()
 	for _, s := range ss {
-		res = res.Conjoin(MakeString(s))
+		res, _ = res.Conjoin(MakeString(s))
 	}
 	return res
 }
@@ -1407,9 +1509,13 @@ func (s String) TryNth(i int, d Object) Object {
 	return d
 }
 
-func (s String) Compare(env *Env, other Object) int {
-	s2 := AssertString(env, other, "Cannot compare String and "+other.GetType().ToString(false))
-	return strings.Compare(s.S, s2.S)
+func (s String) Compare(env *Env, other Object) (int, error) {
+	s2, err := AssertString(env, other, "Cannot compare String and "+other.GetType().ToString(false))
+	if err != nil {
+		return 0, err
+	}
+
+	return strings.Compare(s.S, s2.S), nil
 }
 
 func IsSymbol(obj Object) bool {

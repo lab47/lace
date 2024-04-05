@@ -10,54 +10,57 @@ import (
 var __send__P ProcFn = __send_
 var send_ Proc = Proc{Fn: __send__P, Name: "send_", Package: "std/http"}
 
-func __send_(_env *Env, _args []Object) Object {
+func __send_(_env *Env, _args []Object) (Object, error) {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		request := ExtractMap(_env, _args, 0)
-		_res := sendRequest(_env, request)
-		return _res
+		var err error
+		request, err := ExtractMap(_env, _args, 0); if err != nil { return nil, err }
+		_res, err := sendRequest(_env, request)
+		return _res, err
 
 	default:
 		PanicArity(_env, _c)
 	}
-	return NIL
+	return NIL, nil
 }
 
 var __start_file_server__P ProcFn = __start_file_server_
 var start_file_server_ Proc = Proc{Fn: __start_file_server__P, Name: "start_file_server_", Package: "std/http"}
 
-func __start_file_server_(_env *Env, _args []Object) Object {
+func __start_file_server_(_env *Env, _args []Object) (Object, error) {
 	_c := len(_args)
 	switch {
 	case _c == 2:
-		addr := ExtractString(_env, _args, 0)
-		root := ExtractString(_env, _args, 1)
-		_res := startFileServer(addr, root)
-		return _res
+		var err error
+		addr, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		root, err := ExtractString(_env, _args, 1); if err != nil { return nil, err }
+		_res, err := startFileServer(addr, root)
+		return _res, err
 
 	default:
 		PanicArity(_env, _c)
 	}
-	return NIL
+	return NIL, nil
 }
 
 var __start_server__P ProcFn = __start_server_
 var start_server_ Proc = Proc{Fn: __start_server__P, Name: "start_server_", Package: "std/http"}
 
-func __start_server_(_env *Env, _args []Object) Object {
+func __start_server_(_env *Env, _args []Object) (Object, error) {
 	_c := len(_args)
 	switch {
 	case _c == 2:
-		addr := ExtractString(_env, _args, 0)
-		handler := ExtractCallable(_env, _args, 1)
-		_res := startServer(_env, addr, handler)
-		return _res
+		var err error
+		addr, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		handler, err := ExtractCallable(_env, _args, 1); if err != nil { return nil, err }
+		_res, err := startServer(_env, addr, handler)
+		return _res, err
 
 	default:
 		PanicArity(_env, _c)
 	}
-	return NIL
+	return NIL, nil
 }
 
 func Init() {

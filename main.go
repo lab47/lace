@@ -158,13 +158,21 @@ func processReplCommand(env *Env, reader *Reader, phase Phase, parseContext *Par
 		return false
 	}
 
-	expr := Parse(obj, parseContext)
+	expr, err := Parse(obj, parseContext)
+	if err != nil {
+		fmt.Printf("error: %s\n", err)
+		return true
+	}
 	if phase == PARSE {
 		fmt.Println(expr)
 		return false
 	}
 
-	res := Eval(env, expr, nil)
+	res, err := Eval(env, expr, nil)
+	if err != nil {
+		fmt.Printf("error: %s\n", err)
+		return true
+	}
 	replContext.PushValue(res)
 	PrintObject(env, res, Stdout)
 	fmt.Fprintln(Stdout, "")
@@ -243,14 +251,19 @@ func makeDialectKeyword(dialect Dialect) Keyword {
 	}
 }
 
-func configureLinterMode(env *Env, dialect Dialect, filename string, workingDir string) {
+func configureLinterMode(env *Env, dialect Dialect, filename string, workingDir string) error {
 	ProcessLinterFiles(env, dialect, filename, workingDir)
 	LINTER_MODE = true
 	DIALECT = dialect
 	lm, _ := env.Resolve(MakeSymbol("joker.core/*linter-mode*"))
 	lm.Value = Boolean{B: true}
-	env.Features = env.Features.Disjoin(MakeKeyword("joker")).Conj(makeDialectKeyword(dialect)).(Set)
+	f, err := env.Features.Disjoin(MakeKeyword("joker")).Conj(makeDialectKeyword(dialect))
+	if err != nil {
+		return err
+	}
+	env.Features = f.(Set)
 	ProcessLinterData(dialect)
+	return nil
 }
 
 func detectDialect(filename string) Dialect {

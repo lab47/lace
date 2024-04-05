@@ -6,13 +6,13 @@
 (defn ^Boolean ends-with?
   "True if s ends with substr."
   {:added "1.0"
-  :go "strings.HasSuffix(s, substr)"}
+  :go "strings.HasSuffix(s, substr), nil"}
   [^String s ^Stringable substr])
 
 (defn ^Boolean starts-with?
   "True if s starts with substr."
   {:added "1.0"
-  :go "strings.HasPrefix(s, substr)"}
+  :go "strings.HasPrefix(s, substr), nil"}
   [^String s ^Stringable substr])
 
 (defn ^String pad-right
@@ -75,37 +75,37 @@
 (defn ^String trim
   "Removes whitespace from both ends of string."
   {:added "1.0"
-  :go "strings.TrimSpace(s)"}
+  :go "strings.TrimSpace(s), nil"}
   [^String s])
 
 (defn ^String trim-newline
   "Removes all trailing newline \\n or return \\r characters from string."
   {:added "1.0"
-  :go "strings.TrimRight(s, \"\\n\\r\")"}
+  :go "strings.TrimRight(s, \"\\n\\r\"), nil"}
   [^String s])
 
 (defn ^String trim-left
   "Removes whitespace from the left side of string."
   {:added "1.0"
-  :go "strings.TrimLeftFunc(s, unicode.IsSpace)"}
+  :go "strings.TrimLeftFunc(s, unicode.IsSpace), nil"}
   [^String s])
 
 (defn ^String triml
   "Removes whitespace from the left side of string."
   {:added "1.0"
-   :go "strings.TrimLeftFunc(s, unicode.IsSpace)"}
+   :go "strings.TrimLeftFunc(s, unicode.IsSpace), nil"}
   [^String s])
 
 (defn ^String trim-right
   "Removes whitespace from the right side of string."
   {:added "1.0"
-  :go "strings.TrimRightFunc(s, unicode.IsSpace)"}
+  :go "strings.TrimRightFunc(s, unicode.IsSpace), nil"}
   [^String s])
 
 (defn ^String trimr
   "Removes whitespace from the right side of string."
   {:added "1.0"
-   :go "strings.TrimRightFunc(s, unicode.IsSpace)"}
+   :go "strings.TrimRightFunc(s, unicode.IsSpace), nil"}
   [^String s])
 
 (defn ^Boolean blank?
@@ -134,7 +134,7 @@
 (defn ^Boolean includes?
   "True if s includes substr."
   {:added "1.0"
-  :go "strings.Contains(s, substr)"}
+  :go "strings.Contains(s, substr), nil"}
   [^String s ^Stringable substr])
 
 (defn index-of
@@ -158,13 +158,13 @@
 (defn ^String lower-case
   "Converts string to all lower-case."
   {:added "1.0"
-  :go "strings.ToLower(s)"}
+  :go "strings.ToLower(s), nil"}
   [^Stringable s])
 
 (defn ^String upper-case
   "Converts string to all upper-case."
   {:added "1.0"
-  :go "strings.ToUpper(s)"}
+  :go "strings.ToUpper(s), nil"}
   [^Stringable s])
 
 (defn ^String reverse
@@ -176,5 +176,5 @@
 (defn ^Regex re-quote
   "Returns an instance of Regex that matches the string exactly"
   {:added "1.0"
-   :go "regexp.MustCompile(regexp.QuoteMeta(s))"}
+   :go "regexp.Compile(regexp.QuoteMeta(s))"}
   [^String s])

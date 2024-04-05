@@ -89,10 +89,14 @@ func (seq *MappingSeq) Pprint(w io.Writer, indent int) int {
 	return pprintSeq(seq, w, indent)
 }
 
-func (seq *MappingSeq) WithMeta(meta Map) Object {
+func (seq *MappingSeq) WithMeta(meta Map) (Object, error) {
 	res := *seq
-	res.meta = SafeMerge(res.meta, meta)
-	return &res
+	m, err := SafeMerge(res.meta, meta)
+	if err != nil {
+		return nil, err
+	}
+	res.meta = m
+	return &res, nil
 }
 
 func (seq *MappingSeq) GetType() *Type {
@@ -128,10 +132,20 @@ func (seq *LazySeq) Seq() Seq {
 	return seq
 }
 
-func (seq *LazySeq) realize() {
+func (seq *LazySeq) realize() error {
 	if seq.seq == nil {
-		seq.seq = AssertSeqable(seq.env, seq.fn.Call(seq.env, []Object{}), "").Seq()
+		o, err := seq.fn.Call(seq.env, []Object{})
+		if err != nil {
+			return err
+		}
+		v, err := AssertSeqable(seq.env, o, "")
+		if err != nil {
+			return err
+		}
+		seq.seq = v.Seq()
 	}
+
+	return nil
 }
 
 func (seq *LazySeq) IsRealized() bool {
@@ -150,10 +164,14 @@ func (seq *LazySeq) Pprint(w io.Writer, indent int) int {
 	return pprintSeq(seq, w, indent)
 }
 
-func (seq *LazySeq) WithMeta(meta Map) Object {
+func (seq *LazySeq) WithMeta(meta Map) (Object, error) {
 	res := *seq
-	res.meta = SafeMerge(res.meta, meta)
-	return &res
+	m, err := SafeMerge(res.meta, meta)
+	if err != nil {
+		return nil, err
+	}
+	res.meta = m
+	return &res, nil
 }
 
 func (seq *LazySeq) GetType() *Type {
@@ -205,10 +223,14 @@ func (seq *ArraySeq) Pprint(w io.Writer, indent int) int {
 	return pprintSeq(seq, w, indent)
 }
 
-func (seq *ArraySeq) WithMeta(meta Map) Object {
+func (seq *ArraySeq) WithMeta(meta Map) (Object, error) {
 	res := *seq
-	res.meta = SafeMerge(res.meta, meta)
-	return &res
+	m, err := SafeMerge(res.meta, meta)
+	if err != nil {
+		return nil, err
+	}
+	res.meta = m
+	return &res, nil
 }
 
 func (seq *ArraySeq) GetType() *Type {
@@ -256,10 +278,14 @@ func SeqToString(seq Seq, escape bool) string {
 	return b.String()
 }
 
-func (seq *ConsSeq) WithMeta(meta Map) Object {
+func (seq *ConsSeq) WithMeta(meta Map) (Object, error) {
 	res := *seq
-	res.meta = SafeMerge(res.meta, meta)
-	return &res
+	m, err := SafeMerge(res.meta, meta)
+	if err != nil {
+		return nil, err
+	}
+	res.meta = m
+	return &res, nil
 }
 
 func (seq *ConsSeq) Seq() Seq {

@@ -12,10 +12,10 @@ import (
 
 var newLine *regexp.Regexp
 
-func padRight(s, pad string, n int) string {
+func padRight(s, pad string, n int) (string, error) {
 	toAdd := n - utf8.RuneCountInString(s)
 	if toAdd <= 0 {
-		return s
+		return s, nil
 	}
 	c := utf8.RuneCountInString(pad)
 	d := toAdd / c
@@ -26,13 +26,13 @@ func padRight(s, pad string, n int) string {
 	if r > 0 {
 		s += string([]rune(pad)[:r])
 	}
-	return s
+	return s, nil
 }
 
-func padLeft(s, pad string, n int) string {
+func padLeft(s, pad string, n int) (string, error) {
 	toAdd := n - utf8.RuneCountInString(s)
 	if toAdd <= 0 {
-		return s
+		return s, nil
 	}
 	c := utf8.RuneCountInString(pad)
 	d := toAdd / c
@@ -43,30 +43,38 @@ func padLeft(s, pad string, n int) string {
 	if r > 0 {
 		s = string([]rune(pad)[c-r:]) + s
 	}
-	return s
+	return s, nil
 }
 
-func split(s string, r *regexp.Regexp, n int) Object {
+func split(s string, r *regexp.Regexp, n int) (Object, error) {
 	indexes := r.FindAllStringIndex(s, n-1)
 	lastStart := 0
 	result := EmptyVector()
+	var err error
 	for _, el := range indexes {
-		result = result.Conjoin(String{S: s[lastStart:el[0]]})
+		result, err = result.Conjoin(String{S: s[lastStart:el[0]]})
+		if err != nil {
+			return nil, err
+		}
 		lastStart = el[1]
 	}
-	result = result.Conjoin(String{S: s[lastStart:]})
-	return result
+	result, err = result.Conjoin(String{S: s[lastStart:]})
+	return result, err
 }
 
-func splitOnStringOrRegex(s string, sep Object, n int) Object {
+func splitOnStringOrRegex(s string, sep Object, n int) (Object, error) {
 	switch sep := sep.(type) {
 	case String:
 		v := strings.Split(s, sep.S)
 		result := EmptyVector()
+		var err error
 		for _, el := range v {
-			result = result.Conjoin(String{S: el})
+			result, err = result.Conjoin(String{S: el})
+			if err != nil {
+				return nil, err
+			}
 		}
-		return result
+		return result, nil
 	case *Regex:
 		return split(s, sep.R, n)
 	default:
@@ -74,7 +82,7 @@ func splitOnStringOrRegex(s string, sep Object, n int) Object {
 	}
 }
 
-func join(sep string, seqable Seqable) string {
+func join(sep string, seqable Seqable) (string, error) {
 	seq := seqable.Seq()
 	var b bytes.Buffer
 	for !seq.IsEmpty() {
@@ -84,42 +92,49 @@ func join(sep string, seqable Seqable) string {
 			b.WriteString(sep)
 		}
 	}
-	return b.String()
+	return b.String(), nil
 }
 
-func isBlank(env *Env, s Object) bool {
+func isBlank(env *Env, s Object) (bool, error) {
 	if s.Equals(NIL) {
-		return true
+		return true, nil
 	}
-	str := AssertString(env, s, "").S
-	for _, r := range str {
+	str, err := AssertString(env, s, "")
+	if err != nil {
+		return false, err
+	}
+	for _, r := range str.S {
 		if !unicode.IsSpace(r) {
-			return false
+			return false, nil
 		}
 	}
-	return true
+	return true, nil
 }
 
-func capitalize(s string) string {
+func capitalize(s string) (string, error) {
 	if len(s) < 2 {
-		return strings.ToUpper(s)
+		return strings.ToUpper(s), nil
 	}
-	return strings.ToUpper(string([]rune(s)[:1])) + strings.ToLower(string([]rune(s)[1:]))
+	return strings.ToUpper(string([]rune(s)[:1])) + strings.ToLower(string([]rune(s)[1:])), nil
 }
 
-func escape(env *Env, s string, cmap Callable) string {
+func escape(env *Env, s string, cmap Callable) (string, error) {
 	var b bytes.Buffer
 	for _, r := range s {
-		if obj := cmap.Call(env, []Object{Char{Ch: r}}); !obj.Equals(NIL) {
+		obj, err := cmap.Call(env, []Object{Char{Ch: r}})
+		if err != nil {
+			return "", err
+		}
+		if !obj.Equals(NIL) {
 			b.WriteString(obj.ToString(false))
 		} else {
 			b.WriteRune(r)
 		}
 	}
-	return b.String()
+	return b.String(), nil
 }
 
-func indexOf(s string, value Object, from int) Object {
+func indexOf(s string, value Object, from int) (Object, error) {
 	var res int
 	if from != 0 {
 		s = string([]rune(s)[from:])
@@ -130,15 +145,15 @@ func indexOf(s string, value Object, from int) Object {
 	case String:
 		res = strings.Index(s, value.S)
 	default:
-		panic(StubNewArgTypeError(1, value, "String or Char"))
+		return nil, StubNewArgTypeError(1, value, "String or Char")
 	}
 	if res == -1 {
-		return NIL
+		return NIL, nil
 	}
-	return MakeInt(utf8.RuneCountInString(s[:res]) + from)
+	return MakeInt(utf8.RuneCountInString(s[:res]) + from), nil
 }
 
-func lastIndexOf(s string, value Object, from int) Object {
+func lastIndexOf(s string, value Object, from int) (Object, error) {
 	var res int
 	if from != 0 {
 		s = string([]rune(s)[:from])
@@ -149,46 +164,46 @@ func lastIndexOf(s string, value Object, from int) Object {
 	case String:
 		res = strings.LastIndex(s, value.S)
 	default:
-		panic(StubNewArgTypeError(1, value, "String or Char"))
+		return nil, StubNewArgTypeError(1, value, "String or Char")
 	}
 	if res == -1 {
-		return NIL
+		return NIL, nil
 	}
-	return MakeInt(utf8.RuneCountInString(s[:res]))
+	return MakeInt(utf8.RuneCountInString(s[:res])), nil
 }
 
-func replace(s string, match Object, repl string) string {
+func replace(s string, match Object, repl string) (string, error) {
 	switch match := match.(type) {
 	case String:
-		return strings.Replace(s, match.S, repl, -1)
+		return strings.Replace(s, match.S, repl, -1), nil
 	case *Regex:
-		return match.R.ReplaceAllString(s, repl)
+		return match.R.ReplaceAllString(s, repl), nil
 	default:
-		panic(StubNewArgTypeError(1, match, "String or Regex"))
+		return "", StubNewArgTypeError(1, match, "String or Regex")
 	}
 }
 
-func replaceFirst(s string, match Object, repl string) string {
+func replaceFirst(s string, match Object, repl string) (string, error) {
 	switch match := match.(type) {
 	case String:
-		return strings.Replace(s, match.S, repl, 1)
+		return strings.Replace(s, match.S, repl, 1), nil
 	case *Regex:
 		m := match.R.FindStringIndex(s)
 		if m == nil {
-			return s
+			return s, nil
 		}
-		return s[:m[0]] + repl + s[m[1]:]
+		return s[:m[0]] + repl + s[m[1]:], nil
 	default:
-		panic(StubNewArgTypeError(1, match, "String or Regex"))
+		return "", StubNewArgTypeError(1, match, "String or Regex")
 	}
 }
 
-func reverse(s string) string {
+func reverse(s string) (string, error) {
 	runes := []rune(s)
 	for i, j := 0, len(runes)-1; i < j; i, j = i+1, j-1 {
 		runes[i], runes[j] = runes[j], runes[i]
 	}
-	return string(runes)
+	return string(runes), nil
 }
 
 func init() {

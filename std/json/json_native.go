@@ -43,22 +43,29 @@ func fromObject(obj Object) interface{} {
 	}
 }
 
-func toObject(v interface{}, keywordize bool) Object {
+func toObject(v interface{}, keywordize bool) (Object, error) {
 	switch v := v.(type) {
 	case string:
-		return MakeString(v)
+		return MakeString(v), nil
 	case float64:
-		return Double{D: v}
+		return Double{D: v}, nil
 	case bool:
-		return Boolean{B: v}
+		return Boolean{B: v}, nil
 	case nil:
-		return NIL
+		return NIL, nil
 	case []interface{}:
 		res := EmptyVector()
 		for _, v := range v {
-			res = res.Conjoin(toObject(v, keywordize))
+			o, err := toObject(v, keywordize)
+			if err != nil {
+				return nil, err
+			}
+			res, err = res.Conjoin(o)
+			if err != nil {
+				return nil, err
+			}
 		}
-		return res
+		return res, nil
 	case map[string]interface{}:
 		res := EmptyArrayMap()
 		for k, v := range v {
@@ -68,18 +75,22 @@ func toObject(v interface{}, keywordize bool) Object {
 			} else {
 				key = MakeString(k)
 			}
-			res.Add(key, toObject(v, keywordize))
+			o, err := toObject(v, keywordize)
+			if err != nil {
+				return nil, err
+			}
+			res.Add(key, o)
 		}
-		return res
+		return res, nil
 	default:
-		panic(StubNewError(fmt.Sprintf("Unknown json value: %v", v)))
+		return nil, StubNewError(fmt.Sprintf("Unknown json value: %v", v))
 	}
 }
 
-func readString(s string, opts Map) Object {
+func readString(s string, opts Map) (Object, error) {
 	var v interface{}
 	if err := json.Unmarshal([]byte(s), &v); err != nil {
-		panic(StubNewError("Invalid json: " + err.Error()))
+		return nil, StubNewError("Invalid json: " + err.Error())
 	}
 	var keywordize bool
 	if opts != nil {
@@ -90,10 +101,10 @@ func readString(s string, opts Map) Object {
 	return toObject(v, keywordize)
 }
 
-func writeString(obj Object) String {
+func writeString(obj Object) (String, error) {
 	res, err := json.Marshal(fromObject(obj))
 	if err != nil {
-		panic(StubNewError("Cannot encode value to json: " + err.Error()))
+		return String{}, StubNewError("Cannot encode value to json: " + err.Error())
 	}
-	return String{S: string(res)}
+	return String{S: string(res)}, nil
 }

@@ -4,27 +4,27 @@ import (
 	"fmt"
 )
 
-func AssertStringable(obj Object, msg string) String {
+func AssertStringable(obj Object, msg string) (String, error) {
 	switch c := obj.(type) {
 	case String:
-		return c
+		return c, nil
 	case Char:
-		return String{S: string(c.Ch)}
+		return String{S: string(c.Ch)}, nil
 	default:
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Stringable", obj.GetType().ToString(false))
 		}
-		panic(StubNewError(msg))
+		return String{}, StubNewError(msg)
 	}
 }
 
-func EnsureStringable(args []Object, index int) String {
+func EnsureStringable(args []Object, index int) (String, error) {
 	switch c := args[index].(type) {
 	case String:
-		return c
+		return c, nil
 	case Char:
-		return String{S: string(c.Ch)}
+		return String{S: string(c.Ch)}, nil
 	default:
-		panic(StubNewArgTypeError(index, c, "Stringable"))
+		return String{}, StubNewArgTypeError(index, c, "Stringable")
 	}
 }

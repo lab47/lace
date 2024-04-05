@@ -33,13 +33,13 @@ func encodeHex(dst []byte, uuid UUID) {
 	hex.Encode(dst[24:], uuid[10:])
 }
 
-func new() string {
+func new() (string, error) {
 	var uuid UUID
 	_, err := io.ReadFull(rander, uuid[:])
 	if err != nil {
-		panic(StubNewError("Error generating UUID: " + err.Error()))
+		return "", StubNewError("Error generating UUID: " + err.Error())
 	}
 	uuid[6] = (uuid[6] & 0x0f) | 0x40 // Version 4
 	uuid[8] = (uuid[8] & 0x3f) | 0x80 // Variant is 10
-	return uuid.String()
+	return uuid.String(), nil
 }

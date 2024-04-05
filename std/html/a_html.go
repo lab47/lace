@@ -11,35 +11,37 @@ import (
 var __escape__P ProcFn = __escape_
 var escape_ Proc = Proc{Fn: __escape__P, Name: "escape_", Package: "std/html"}
 
-func __escape_(_env *Env, _args []Object) Object {
+func __escape_(_env *Env, _args []Object) (Object, error) {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		s := ExtractString(_env, _args, 0)
-		_res := html.EscapeString(s)
-		return MakeString(_res)
+		var err error
+		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		_res, err := html.EscapeString(s), nil
+		return MakeString(_res), err
 
 	default:
 		PanicArity(_env, _c)
 	}
-	return NIL
+	return NIL, nil
 }
 
 var __unescape__P ProcFn = __unescape_
 var unescape_ Proc = Proc{Fn: __unescape__P, Name: "unescape_", Package: "std/html"}
 
-func __unescape_(_env *Env, _args []Object) Object {
+func __unescape_(_env *Env, _args []Object) (Object, error) {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		s := ExtractString(_env, _args, 0)
-		_res := html.UnescapeString(s)
-		return MakeString(_res)
+		var err error
+		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		_res, err := html.UnescapeString(s), nil
+		return MakeString(_res), err
 
 	default:
 		PanicArity(_env, _c)
 	}
-	return NIL
+	return NIL, nil
 }
 
 func Init() {

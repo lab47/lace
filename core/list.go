@@ -29,18 +29,22 @@ func NewListFrom(objs ...Object) *List {
 	return res
 }
 
-func (list *List) WithMeta(meta Map) Object {
+func (list *List) WithMeta(meta Map) (Object, error) {
 	res := *list
-	res.meta = SafeMerge(res.meta, meta)
-	return &res
+	m, err := SafeMerge(res.meta, meta)
+	if err != nil {
+		return nil, err
+	}
+	res.meta = m
+	return &res, nil
 }
 
 func (list *List) conj(obj Object) *List {
 	return NewList(obj, list)
 }
 
-func (list *List) Conj(obj Object) Conjable {
-	return list.conj(obj)
+func (list *List) Conj(obj Object) (Conjable, error) {
+	return list.conj(obj), nil
 }
 
 func (list *List) ToString(escape bool) string {

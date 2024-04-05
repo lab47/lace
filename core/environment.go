@@ -52,7 +52,7 @@ func versionMap() Map {
 func (env *Env) SetEnvArgs(newArgs []string) {
 	args := EmptyVector()
 	for _, arg := range newArgs {
-		args = args.Conjoin(MakeString(arg))
+		args, _ = args.Conjoin(MakeString(arg))
 	}
 	if args.Count() > 0 {
 		env.args.Value = args.Seq()
@@ -70,10 +70,10 @@ func (env *Env) SetClassPath(cp string) {
 	cpArray := filepath.SplitList(cp)
 	cpVec := EmptyVector()
 	for _, cpelem := range cpArray {
-		cpVec = cpVec.Conjoin(MakeString(cpelem))
+		cpVec, _ = cpVec.Conjoin(MakeString(cpelem))
 	}
 	if cpVec.Count() == 0 {
-		cpVec = cpVec.Conjoin(MakeString(""))
+		cpVec, _ = cpVec.Conjoin(MakeString(""))
 	}
 	env.classPath.Value = cpVec
 }
@@ -123,7 +123,12 @@ func (env *Env) IsStdIn(obj Object) bool {
 }
 
 func (env *Env) CurrentNamespace() *Namespace {
-	return AssertNamespace(env, env.ns.Value, "")
+	ns, err := AssertNamespace(env, env.ns.Value, "")
+	if err != nil {
+		panic(err) // this is extremely rare, we should probably make it not possible
+	}
+
+	return ns
 }
 
 func (env *Env) SetCurrentNamespace(ns *Namespace) {
@@ -174,7 +179,8 @@ func (env *Env) ResolveIn(n *Namespace, s Symbol) (*Var, bool) {
 }
 
 func (env *Env) Resolve(s Symbol) (*Var, bool) {
-	return env.ResolveIn(env.CurrentNamespace(), s)
+	ns := env.CurrentNamespace()
+	return env.ResolveIn(ns, s)
 }
 
 func (env *Env) FindNamespace(s Symbol) *Namespace {
@@ -200,14 +206,15 @@ func (env *Env) RemoveNamespace(s Symbol) *Namespace {
 	return ns
 }
 
-func (env *Env) ResolveSymbol(s Symbol) Symbol {
+func (env *Env) ResolveSymbol(s Symbol) (Symbol, error) {
 	if strings.ContainsRune(*s.name, '.') {
-		return s
+		return s, nil
 	}
 	if s.ns == nil && TYPES[s.name] != nil {
-		return s
+		return s, nil
 	}
 	currentNs := env.CurrentNamespace()
+
 	if s.ns != nil {
 		ns := env.NamespaceFor(currentNs, s)
 		if ns == nil || ns.Name.name == s.ns {
@@ -215,21 +222,21 @@ func (env *Env) ResolveSymbol(s Symbol) Symbol {
 				ns.isUsed = true
 				ns.isGloballyUsed = true
 			}
-			return s
+			return s, nil
 		}
 		ns.isUsed = true
 		ns.isGloballyUsed = true
 		return Symbol{
 			name: s.name,
 			ns:   ns.Name.name,
-		}
+		}, nil
 	}
 	vr, ok := currentNs.mappings[s.name]
 	if !ok {
 		return Symbol{
 			name: s.name,
 			ns:   currentNs.Name.name,
-		}
+		}, nil
 	}
 	vr.isUsed = true
 	vr.isGloballyUsed = true
@@ -238,7 +245,7 @@ func (env *Env) ResolveSymbol(s Symbol) Symbol {
 	return Symbol{
 		name: vr.name.name,
 		ns:   vr.ns.Name.name,
-	}
+	}, nil
 }
 
 func init() {

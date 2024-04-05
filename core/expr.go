@@ -29,7 +29,7 @@ func exprArrayMap(expr Expr, exprType string, pos bool) *ArrayMap {
 func addVector(res *ArrayMap, body []Expr, name string, pos bool) {
 	b := EmptyVector()
 	for _, e := range body {
-		b = b.Conjoin(e.Dump(pos))
+		b, _ = b.Conjoin(e.Dump(pos))
 	}
 	res.Add(MakeKeyword(name), b)
 }
@@ -131,7 +131,7 @@ func (expr *MacroCallExpr) Dump(pos bool) Map {
 	res.Add(MakeKeyword("name"), String{S: expr.name})
 	args := EmptyVector()
 	for _, arg := range expr.args {
-		args = args.Conjoin(arg)
+		args, _ = args.Conjoin(arg)
 	}
 	res.Add(MakeKeyword("args"), args)
 	return res
@@ -227,7 +227,7 @@ func (expr *FnArityExpr) Dump(pos bool) Map {
 	res := exprArrayMap(expr, "arity", pos)
 	args := EmptyVector()
 	for _, arg := range expr.args {
-		args = args.Conjoin(arg)
+		args, _ = args.Conjoin(arg)
 	}
 	res.Add(MakeKeyword("args"), args)
 	addVector(res, expr.body, "body", pos)
@@ -244,7 +244,7 @@ func (expr *FnExpr) Dump(pos bool) Map {
 	}
 	arities := EmptyVector()
 	for _, a := range expr.arities {
-		arities = arities.Conjoin(a.Dump(pos))
+		arities, _ = arities.Conjoin(a.Dump(pos))
 	}
 	res.Add(MakeKeyword("arities"), arities)
 	return res
@@ -258,7 +258,7 @@ func (expr *LetExpr) Dump(pos bool) Map {
 	res := exprArrayMap(expr, "let", pos)
 	names := EmptyVector()
 	for _, name := range expr.names {
-		names = names.Conjoin(name)
+		names, _ = names.Conjoin(name)
 	}
 	addVector(res, expr.values, "values", pos)
 	addVector(res, expr.body, "body", pos)
@@ -273,7 +273,7 @@ func (expr *LoopExpr) Dump(pos bool) Map {
 	res := exprArrayMap(expr, "loop", pos)
 	names := EmptyVector()
 	for _, name := range expr.names {
-		names = names.Conjoin(name)
+		names, _ = names.Conjoin(name)
 	}
 	addVector(res, expr.values, "values", pos)
 	addVector(res, expr.body, "body", pos)
@@ -312,7 +312,7 @@ func (expr *TryExpr) Dump(pos bool) Map {
 	addVector(res, expr.finallyExpr, "finally", pos)
 	catches := EmptyVector()
 	for _, c := range expr.catches {
-		catches = catches.Conjoin(c.Dump(pos))
+		catches, _ = catches.Conjoin(c.Dump(pos))
 	}
 	res.Add(MakeKeyword("catches"), catches)
 	return res

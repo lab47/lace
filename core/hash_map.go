@@ -158,10 +158,14 @@ func newArrayNodeSeq(nodes []Node, i int, s Seq) Seq {
 	return nil
 }
 
-func (s *ArrayNodeSeq) WithMeta(meta Map) Object {
+func (s *ArrayNodeSeq) WithMeta(meta Map) (Object, error) {
 	res := *s
-	res.meta = SafeMerge(res.meta, meta)
-	return &res
+	m, err := SafeMerge(res.meta, meta)
+	if err != nil {
+		return nil, err
+	}
+	res.meta = m
+	return &res, nil
 }
 
 func (s *ArrayNodeSeq) Seq() Seq {
@@ -247,10 +251,15 @@ func newNodeSeq(array []interface{}, i int, s Seq) Seq {
 	return nil
 }
 
-func (s *NodeSeq) WithMeta(meta Map) Object {
+func (s *NodeSeq) WithMeta(meta Map) (Object, error) {
 	res := *s
-	res.meta = SafeMerge(res.meta, meta)
-	return &res
+	m, err := SafeMerge(res.meta, meta)
+	if err != nil {
+		return nil, err
+	}
+
+	s.meta = m
+	return &res, nil
 }
 
 func (s *NodeSeq) Seq() Seq {
@@ -682,10 +691,14 @@ func (b *BitmapIndexedNode) nodeSeq() Seq {
 	return newNodeSeq(b.array, 0, nil)
 }
 
-func (m *HashMap) WithMeta(meta Map) Object {
+func (m *HashMap) WithMeta(meta Map) (Object, error) {
 	res := *m
-	res.meta = SafeMerge(res.meta, meta)
-	return &res
+	v, err := SafeMerge(res.meta, meta)
+	if err != nil {
+		return nil, err
+	}
+	res.meta = v
+	return &res, nil
 }
 
 func (m *HashMap) ToString(escape bool) string {
@@ -726,7 +739,7 @@ func (m *HashMap) containsKey(key Object) bool {
 	}
 }
 
-func (m *HashMap) Assoc(key, val Object) Associative {
+func (m *HashMap) Assoc(key, val Object) (Associative, error) {
 	addedLeaf := &Box{}
 	var newroot, t Node
 	if m.root == nil {
@@ -736,7 +749,7 @@ func (m *HashMap) Assoc(key, val Object) Associative {
 	}
 	newroot = t.assoc(0, key.Hash(), key, val, addedLeaf)
 	if newroot == m.root {
-		return m
+		return m, nil
 	}
 	newcount := m.count
 	if addedLeaf.val != nil {
@@ -747,17 +760,17 @@ func (m *HashMap) Assoc(key, val Object) Associative {
 		root:  newroot,
 	}
 	res.meta = m.meta
-	return res
+	return res, nil
 }
 
-func (m *HashMap) EntryAt(key Object) *Vector {
+func (m *HashMap) EntryAt(key Object) (*Vector, error) {
 	if m.root != nil {
 		p := m.root.find(0, key.Hash(), key)
 		if p != nil {
-			return NewVectorFrom(p.Key, p.Value)
+			return NewVectorFrom(p.Key, p.Value), nil
 		}
 	}
-	return nil
+	return nil, nil
 }
 
 func (m *HashMap) Get(key Object) (bool, Object) {
@@ -769,7 +782,7 @@ func (m *HashMap) Get(key Object) (bool, Object) {
 	return false, nil
 }
 
-func (m *HashMap) Conj(obj Object) Conjable {
+func (m *HashMap) Conj(obj Object) (Conjable, error) {
 	return mapConj(m, obj)
 }
 
@@ -798,19 +811,23 @@ func (m *HashMap) Vals() Seq {
 	}
 }
 
-func (m *HashMap) Merge(other Map) Map {
+func (m *HashMap) Merge(other Map) (Map, error) {
 	if other.Count() == 0 {
-		return m
+		return m, nil
 	}
 	if m.Count() == 0 {
-		return other
+		return other, nil
 	}
 	var res Associative = m
+	var err error
 	for iter := other.Iter(); iter.HasNext(); {
 		p := iter.Next()
-		res = res.Assoc(p.Key, p.Value)
+		res, err = res.Assoc(p.Key, p.Value)
+		if err != nil {
+			return nil, err
+		}
 	}
-	return res.(Map)
+	return res.(Map), nil
 }
 
 func (m *HashMap) Without(key Object) Map {
@@ -829,18 +846,22 @@ func (m *HashMap) Without(key Object) Map {
 	return res
 }
 
-func (m *HashMap) Call(env *Env, args []Object) Object {
+func (m *HashMap) Call(env *Env, args []Object) (Object, error) {
 	return callMap(env, m, args)
 }
 
 var _ Callable = (*HashMap)(nil)
 
-func NewHashMap(keyvals ...Object) *HashMap {
+func NewHashMap(keyvals ...Object) (*HashMap, error) {
 	var res Associative = EmptyHashMap
+	var err error
 	for i := 0; i < len(keyvals); i += 2 {
-		res = res.Assoc(keyvals[i], keyvals[i+1])
+		res, err = res.Assoc(keyvals[i], keyvals[i+1])
+		if err != nil {
+			return nil, err
+		}
 	}
-	return res.(*HashMap)
+	return res.(*HashMap), nil
 }
 
 func (m *HashMap) Empty() Collection {

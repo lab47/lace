@@ -3,7 +3,16 @@
 
 package core
 
-var privateMeta Map = EmptyArrayMap().Assoc(KEYWORDS.private, Boolean{B: true}).(Map)
+var privateMeta Map
+
+func init() {
+	v, err := EmptyArrayMap().Assoc(KEYWORDS.private, Boolean{B: true})
+	if err != nil {
+		panic(err)
+	}
+
+	privateMeta = v.(Map)
+}
 
 func intern(env *Env, name string, proc ProcFn, procName string) {
 	vr := env.CoreNamespace.Intern(MakeSymbol(name))

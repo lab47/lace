@@ -36,33 +36,60 @@ func getOrPanic(m Map, k Object, errMsg string) Object {
 	panic(StubNewError(errMsg))
 }
 
-func mapToReq(env *Env, request Map) *http.Request {
+func mapToReq(env *Env, request Map) (*http.Request, error) {
 	method := strings.ToUpper(extractMethod(request))
-	url := AssertString(env, getOrPanic(request, MakeKeyword("url"), ":url key must be present in request map"), "url must be a string").S
+	urlv, err := AssertString(env, getOrPanic(request, MakeKeyword("url"), ":url key must be present in request map"), "url must be a string")
+	if err != nil {
+		return nil, err
+	}
+
+	url := urlv.S
 	var reqBody io.Reader
 	if ok, b := request.Get(MakeKeyword("body")); ok {
-		reqBody = strings.NewReader(AssertString(env, b, "body must be a string").S)
+		sv, err := AssertString(env, b, "body must be a string")
+		if err != nil {
+			return nil, err
+		}
+		reqBody = strings.NewReader(sv.S)
 	}
 	req, err := http.NewRequest(method, url, reqBody)
 	PanicOnErr(err)
 	if ok, headers := request.Get(MakeKeyword("headers")); ok {
-		h := AssertMap(env, headers, "headers must be a map")
+		h, err := AssertMap(env, headers, "headers must be a map")
+		if err != nil {
+			return nil, err
+		}
 		for iter := h.Iter(); iter.HasNext(); {
 			p := iter.Next()
-			req.Header.Add(AssertString(env, p.Key, "header name must be a string").S, AssertString(env, p.Value, "header value must be a string").S)
+			key, err := AssertString(env, p.Key, "header name must be a string")
+			if err != nil {
+				return nil, err
+			}
+
+			val, err := AssertString(env, p.Value, "header value must be a string")
+			if err != nil {
+				return nil, err
+			}
+			req.Header.Add(key.S, val.S)
 		}
 	}
 	if ok, host := request.Get(MakeKeyword("host")); ok {
-		req.Host = AssertString(env, host, "host must be a string").S
+		s, err := AssertString(env, host, "host must be a string")
+		if err != nil {
+			return nil, err
+		}
+		req.Host = s.S
 	}
-	return req
+	return req, nil
 }
 
-func reqToMap(host String, port String, req *http.Request) Map {
+func reqToMap(host String, port String, req *http.Request) (Map, error) {
 	defer req.Body.Close()
 	res := EmptyArrayMap()
 	body, err := ioutil.ReadAll(req.Body)
-	PanicOnErr(err)
+	if err != nil {
+		return nil, err
+	}
 	res.Add(MakeKeyword("request-method"), MakeKeyword(strings.ToLower(req.Method)))
 	res.Add(MakeKeyword("body"), MakeString(string(body)))
 	res.Add(MakeKeyword("uri"), MakeString(req.URL.Path))
@@ -77,14 +104,16 @@ func reqToMap(host String, port String, req *http.Request) Map {
 		headers.Add(MakeString(strings.ToLower(k)), MakeString(strings.Join(v, ",")))
 	}
 	res.Add(MakeKeyword("headers"), headers)
-	return res
+	return res, nil
 }
 
-func respToMap(resp *http.Response) Map {
+func respToMap(resp *http.Response) (Map, error) {
 	defer resp.Body.Close()
 	res := EmptyArrayMap()
-	body, err := ioutil.ReadAll(resp.Body)
-	PanicOnErr(err)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
 	res.Add(MakeKeyword("body"), MakeString(string(body)))
 	res.Add(MakeKeyword("status"), MakeInt(resp.StatusCode))
 	respHeaders := EmptyArrayMap()
@@ -94,31 +123,51 @@ func respToMap(resp *http.Response) Map {
 	res.Add(MakeKeyword("headers"), respHeaders)
 	// TODO: 32-bit issue
 	res.Add(MakeKeyword("content-length"), MakeInt(int(resp.ContentLength)))
-	return res
+	return res, nil
 }
 
-func mapToResp(env *Env, response Map, w http.ResponseWriter) {
+func mapToResp(env *Env, response Map, w http.ResponseWriter) error {
 	status := 0
 	if ok, s := response.Get(MakeKeyword("status")); ok {
-		status = AssertInt(env, s, "HTTP response status must be an integer").I
+		sv, err := AssertInt(env, s, "HTTP response status must be an integer")
+		if err != nil {
+			return err
+		}
+		status = sv.I
 	}
 	body := ""
 	if ok, b := response.Get(MakeKeyword("body")); ok {
-		body = AssertString(env, b, "HTTP response body must be a string").S
+		bodyv, err := AssertString(env, b, "HTTP response body must be a string")
+		if err != nil {
+			return err
+		}
+
+		body = bodyv.S
 	}
 	if ok, headers := response.Get(MakeKeyword("headers")); ok {
 		header := w.Header()
-		h := AssertMap(env, headers, "HTTP response headers must be a map")
+		h, err := AssertMap(env, headers, "HTTP response headers must be a map")
+		if err != nil {
+			return err
+		}
 		for iter := h.Iter(); iter.HasNext(); {
 			p := iter.Next()
-			hname := AssertString(env, p.Key, "HTTP response header name must be a string").S
+			hnamev, err := AssertString(env, p.Key, "HTTP response header name must be a string")
+			if err != nil {
+				return err
+			}
+			hname := hnamev.S
 			switch pvalue := p.Value.(type) {
 			case String:
 				header.Add(hname, pvalue.S)
 			case Seqable:
 				s := pvalue.Seq()
 				for !s.IsEmpty() {
-					header.Add(hname, AssertString(env, s.First(), "HTTP response header value must be a string").S)
+					x, err := AssertString(env, s.First(), "HTTP response header value must be a string")
+					if err != nil {
+						return err
+					}
+					header.Add(hname, x.S)
 					s = s.Rest()
 				}
 			default:
@@ -130,10 +179,14 @@ func mapToResp(env *Env, response Map, w http.ResponseWriter) {
 		w.WriteHeader(status)
 	}
 	io.WriteString(w, body)
+	return nil
 }
 
-func sendRequest(env *Env, request Map) Map {
-	req := mapToReq(env, request)
+func sendRequest(env *Env, request Map) (Map, error) {
+	req, err := mapToReq(env, request)
+	if err != nil {
+		return nil, err
+	}
 	//RT.GIL.Unlock()
 	resp, err := client.Do(req)
 	//RT.GIL.Lock()
@@ -141,7 +194,7 @@ func sendRequest(env *Env, request Map) Map {
 	return respToMap(resp)
 }
 
-func startServer(env *Env, addr string, handler Callable) Object {
+func startServer(env *Env, addr string, handler Callable) (Object, error) {
 	i := strings.LastIndexByte(addr, byte(':'))
 	host, port := MakeString(addr), MakeString("")
 	if i != -1 {
@@ -160,15 +213,24 @@ func startServer(env *Env, addr string, handler Callable) Object {
 				fmt.Fprintln(os.Stderr, r)
 			}
 		}()
-		response := handler.Call(env, []Object{reqToMap(host, port, req)})
-		mapToResp(env, AssertMap(env, response, "HTTP response must be a map"), w)
+		m, err := reqToMap(host, port, req)
+		if err != nil {
+			fmt.Printf("ERROR: %s\n", err.Error())
+			return
+		}
+		response, err := handler.Call(env, []Object{m})
+		rm, err := AssertMap(env, response, "HTTP response must be a map")
+		if err != nil {
+			fmt.Printf("ERROR: %s\n", err.Error())
+			return
+		}
+		mapToResp(env, rm, w)
 	}))
 	PanicOnErr(err)
-	return NIL
+	return NIL, nil
 }
 
-func startFileServer(addr string, root string) Object {
+func startFileServer(addr string, root string) (Object, error) {
 	err := http.ListenAndServe(addr, http.FileServer(http.Dir(root)))
-	PanicOnErr(err)
-	return NIL
+	return NIL, err
 }

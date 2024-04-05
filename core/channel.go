@@ -50,7 +50,7 @@ func MakeChannel(ch chan FutureResult) *Channel {
 	return res
 }
 
-func ExtractChannel(env *Env, args []Object, index int) *Channel {
+func ExtractChannel(env *Env, args []Object, index int) (*Channel, error) {
 	return EnsureChannel(env, args, index)
 }
 

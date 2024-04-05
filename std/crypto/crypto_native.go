@@ -10,7 +10,7 @@ import (
 	. "github.com/candid82/joker/core"
 )
 
-func hmacSum(algorithm, message, key string) string {
+func hmacSum(algorithm, message, key string) (string, error) {
 	var h func() hash.Hash
 	switch algorithm {
 	case ":sha1":
@@ -24,10 +24,10 @@ func hmacSum(algorithm, message, key string) string {
 	case ":sha512":
 		h = sha512.New
 	default:
-		panic(StubNewError("Unsupported algorithm " + algorithm +
-			". Supported algorithms are: :sha1, :sha224, :sha256, :sha384, :sha512"))
+		return "", StubNewError("Unsupported algorithm " + algorithm +
+			". Supported algorithms are: :sha1, :sha224, :sha256, :sha384, :sha512")
 	}
 	mac := hmac.New(h, []byte(key))
 	mac.Write([]byte(message))
-	return string(mac.Sum(nil))
+	return string(mac.Sum(nil)), nil
 }

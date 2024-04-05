@@ -15,18 +15,18 @@ type (
 	}
 	Ops interface {
 		Combine(ops Ops) Ops
-		Add(Number, Number) Number
-		Subtract(Number, Number) Number
-		Multiply(Number, Number) Number
-		Divide(Number, Number) Number
+		Add(Number, Number) (Number, error)
+		Subtract(Number, Number) (Number, error)
+		Multiply(Number, Number) (Number, error)
+		Divide(Number, Number) (Number, error)
 		IsZero(Number) bool
 		Lt(Number, Number) bool
 		Lte(Number, Number) bool
 		Gt(Number, Number) bool
 		Gte(Number, Number) bool
 		Eq(Number, Number) bool
-		Quotient(Number, Number) Number
-		Rem(Number, Number) Number
+		Quotient(Number, Number) (Number, error)
+		Rem(Number, Number) (Number, error)
 	}
 	IntOps      struct{}
 	DoubleOps   struct{}
@@ -52,15 +52,15 @@ var (
 	RATIO_OPS    = RatioOps{}
 )
 
-func ratioOrInt(r *big.Rat) Number {
+func ratioOrInt(r *big.Rat) (Number, error) {
 	if r.IsInt() {
 		if r.Num().IsInt64() {
 			// TODO: 32-bit issue
-			return MakeInt(int(r.Num().Int64()))
+			return MakeInt(int(r.Num().Int64())), nil
 		}
-		return &BigInt{b: *r.Num()}
+		return &BigInt{b: *r.Num()}, nil
 	}
-	return &Ratio{r: *r}
+	return &Ratio{r: *r}, nil
 }
 
 func (ops IntOps) Combine(other Ops) Ops {
@@ -239,29 +239,29 @@ func (r *Ratio) Ratio() *big.Rat {
 
 // Add
 
-func (ops IntOps) Add(x, y Number) Number {
-	return Int{I: x.Int().I + y.Int().I}
+func (ops IntOps) Add(x, y Number) (Number, error) {
+	return Int{I: x.Int().I + y.Int().I}, nil
 }
 
-func (ops DoubleOps) Add(x, y Number) Number {
-	return Double{D: x.Double().D + y.Double().D}
+func (ops DoubleOps) Add(x, y Number) (Number, error) {
+	return Double{D: x.Double().D + y.Double().D}, nil
 }
 
-func (ops BigIntOps) Add(x, y Number) Number {
+func (ops BigIntOps) Add(x, y Number) (Number, error) {
 	b := big.Int{}
 	b.Add(x.BigInt(), y.BigInt())
 	res := BigInt{b: b}
-	return &res
+	return &res, nil
 }
 
-func (ops BigFloatOps) Add(x, y Number) Number {
+func (ops BigFloatOps) Add(x, y Number) (Number, error) {
 	b := big.Float{}
 	b.Add(x.BigFloat(), y.BigFloat())
 	res := BigFloat{b: b}
-	return &res
+	return &res, nil
 }
 
-func (ops RatioOps) Add(x, y Number) Number {
+func (ops RatioOps) Add(x, y Number) (Number, error) {
 	r := big.Rat{}
 	r.Add(x.Ratio(), y.Ratio())
 	return ratioOrInt(&r)
@@ -269,29 +269,29 @@ func (ops RatioOps) Add(x, y Number) Number {
 
 // Subtract
 
-func (ops IntOps) Subtract(x, y Number) Number {
-	return Int{I: x.Int().I - y.Int().I}
+func (ops IntOps) Subtract(x, y Number) (Number, error) {
+	return Int{I: x.Int().I - y.Int().I}, nil
 }
 
-func (ops DoubleOps) Subtract(x, y Number) Number {
-	return Double{D: x.Double().D - y.Double().D}
+func (ops DoubleOps) Subtract(x, y Number) (Number, error) {
+	return Double{D: x.Double().D - y.Double().D}, nil
 }
 
-func (ops BigIntOps) Subtract(x, y Number) Number {
+func (ops BigIntOps) Subtract(x, y Number) (Number, error) {
 	b := big.Int{}
 	b.Sub(x.BigInt(), y.BigInt())
 	res := BigInt{b: b}
-	return &res
+	return &res, nil
 }
 
-func (ops BigFloatOps) Subtract(x, y Number) Number {
+func (ops BigFloatOps) Subtract(x, y Number) (Number, error) {
 	b := big.Float{}
 	b.Sub(x.BigFloat(), y.BigFloat())
 	res := BigFloat{b: b}
-	return &res
+	return &res, nil
 }
 
-func (ops RatioOps) Subtract(x, y Number) Number {
+func (ops RatioOps) Subtract(x, y Number) (Number, error) {
 	r := big.Rat{}
 	r.Sub(x.Ratio(), y.Ratio())
 	return ratioOrInt(&r)
@@ -299,29 +299,29 @@ func (ops RatioOps) Subtract(x, y Number) Number {
 
 // Multiply
 
-func (ops IntOps) Multiply(x, y Number) Number {
-	return Int{I: x.Int().I * y.Int().I}
+func (ops IntOps) Multiply(x, y Number) (Number, error) {
+	return Int{I: x.Int().I * y.Int().I}, nil
 }
 
-func (ops DoubleOps) Multiply(x, y Number) Number {
-	return Double{D: x.Double().D * y.Double().D}
+func (ops DoubleOps) Multiply(x, y Number) (Number, error) {
+	return Double{D: x.Double().D * y.Double().D}, nil
 }
 
-func (ops BigIntOps) Multiply(x, y Number) Number {
+func (ops BigIntOps) Multiply(x, y Number) (Number, error) {
 	b := big.Int{}
 	b.Mul(x.BigInt(), y.BigInt())
 	res := BigInt{b: b}
-	return &res
+	return &res, nil
 }
 
-func (ops BigFloatOps) Multiply(x, y Number) Number {
+func (ops BigFloatOps) Multiply(x, y Number) (Number, error) {
 	b := big.Float{}
 	b.Mul(x.BigFloat(), y.BigFloat())
 	res := BigFloat{b: b}
-	return &res
+	return &res, nil
 }
 
-func (ops RatioOps) Multiply(x, y Number) Number {
+func (ops RatioOps) Multiply(x, y Number) (Number, error) {
 	r := big.Rat{}
 	r.Mul(x.Ratio(), y.Ratio())
 	return ratioOrInt(&r)
@@ -335,36 +335,36 @@ func panicOnZero(ops Ops, n Number) {
 
 // Divide
 
-func (ops IntOps) Divide(x, y Number) Number {
+func (ops IntOps) Divide(x, y Number) (Number, error) {
 	panicOnZero(ops, y)
 	b := big.NewRat(int64(x.Int().I), int64(y.Int().I))
 	return ratioOrInt(b)
 }
 
-func (ops DoubleOps) Divide(x, y Number) Number {
-	return Double{D: x.Double().D / y.Double().D}
+func (ops DoubleOps) Divide(x, y Number) (Number, error) {
+	return Double{D: x.Double().D / y.Double().D}, nil
 }
 
-func (ops BigIntOps) Divide(x, y Number) Number {
+func (ops BigIntOps) Divide(x, y Number) (Number, error) {
 	panicOnZero(ops, y)
 	b := big.Rat{}
 	b.Quo(x.Ratio(), y.Ratio())
 	if b.IsInt() {
 		res := BigInt{b: *b.Num()}
-		return &res
+		return &res, nil
 	}
 	res := Ratio{r: b}
-	return &res
+	return &res, nil
 }
 
-func (ops BigFloatOps) Divide(x, y Number) Number {
+func (ops BigFloatOps) Divide(x, y Number) (Number, error) {
 	b := big.Float{}
 	b.Quo(x.BigFloat(), y.BigFloat())
 	res := BigFloat{b: b}
-	return &res
+	return &res, nil
 }
 
-func (ops RatioOps) Divide(x, y Number) Number {
+func (ops RatioOps) Divide(x, y Number) (Number, error) {
 	if y.Ratio().Num().Int64() == 0 {
 		panic(StubNewError("Division by zero"))
 	}
@@ -375,61 +375,61 @@ func (ops RatioOps) Divide(x, y Number) Number {
 
 // Quotient
 
-func (ops IntOps) Quotient(x, y Number) Number {
+func (ops IntOps) Quotient(x, y Number) (Number, error) {
 	panicOnZero(ops, y)
-	return Int{I: x.Int().I / y.Int().I}
+	return Int{I: x.Int().I / y.Int().I}, nil
 }
 
-func (ops DoubleOps) Quotient(x, y Number) Number {
+func (ops DoubleOps) Quotient(x, y Number) (Number, error) {
 	panicOnZero(ops, y)
 	z := x.Double().D / y.Double().D
-	return Double{D: float64(int64(z))}
+	return Double{D: float64(int64(z))}, nil
 }
 
-func (ops BigIntOps) Quotient(x, y Number) Number {
+func (ops BigIntOps) Quotient(x, y Number) (Number, error) {
 	panicOnZero(ops, y)
 	z := big.Int{}
 	z.Quo(x.BigInt(), y.BigInt())
-	return &BigInt{b: z}
+	return &BigInt{b: z}, nil
 }
 
-func (ops BigFloatOps) Quotient(x, y Number) Number {
+func (ops BigFloatOps) Quotient(x, y Number) (Number, error) {
 	panicOnZero(ops, y)
 	z := big.Float{}
 	i, _ := z.Quo(x.BigFloat(), y.BigFloat()).Int64()
-	return &BigFloat{b: *z.SetInt64(i)}
+	return &BigFloat{b: *z.SetInt64(i)}, nil
 }
 
-func (ops RatioOps) Quotient(x, y Number) Number {
+func (ops RatioOps) Quotient(x, y Number) (Number, error) {
 	panicOnZero(ops, y)
 	z := big.Rat{}
 	f, _ := z.Quo(x.Ratio(), y.Ratio()).Float64()
-	return &BigInt{b: *big.NewInt(int64(f))}
+	return &BigInt{b: *big.NewInt(int64(f))}, nil
 }
 
 // Remainder
 
-func (ops IntOps) Rem(x, y Number) Number {
+func (ops IntOps) Rem(x, y Number) (Number, error) {
 	panicOnZero(ops, y)
-	return Int{I: x.Int().I % y.Int().I}
+	return Int{I: x.Int().I % y.Int().I}, nil
 }
 
-func (ops DoubleOps) Rem(x, y Number) Number {
+func (ops DoubleOps) Rem(x, y Number) (Number, error) {
 	panicOnZero(ops, y)
 	n := x.Double().D
 	d := y.Double().D
 	z := n / d
-	return Double{D: n - float64(int64(z))*d}
+	return Double{D: n - float64(int64(z))*d}, nil
 }
 
-func (ops BigIntOps) Rem(x, y Number) Number {
+func (ops BigIntOps) Rem(x, y Number) (Number, error) {
 	panicOnZero(ops, y)
 	z := big.Int{}
 	z.Rem(x.BigInt(), y.BigInt())
-	return &BigInt{b: z}
+	return &BigInt{b: z}, nil
 }
 
-func (ops BigFloatOps) Rem(x, y Number) Number {
+func (ops BigFloatOps) Rem(x, y Number) (Number, error) {
 	panicOnZero(ops, y)
 	n := x.BigFloat()
 	d := y.BigFloat()
@@ -437,10 +437,10 @@ func (ops BigFloatOps) Rem(x, y Number) Number {
 	i, _ := z.Quo(n, d).Int64()
 	d.Mul(d, big.NewFloat(float64(i)))
 	z.Sub(n, d)
-	return &BigFloat{b: z}
+	return &BigFloat{b: z}, nil
 }
 
-func (ops RatioOps) Rem(x, y Number) Number {
+func (ops RatioOps) Rem(x, y Number) (Number, error) {
 	panicOnZero(ops, y)
 	n := x.Ratio()
 	d := y.Ratio()

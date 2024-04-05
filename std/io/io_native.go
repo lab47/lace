@@ -6,20 +6,22 @@ import (
 	. "github.com/candid82/joker/core"
 )
 
-func pipe() Object {
+func pipe() (Object, error) {
 	r, w := io.Pipe()
 	res := EmptyVector()
-	res = res.Conjoin(MakeIOReader(r))
-	res = res.Conjoin(MakeIOWriter(w))
-	return res
+	res, err := res.Conjoin(MakeIOReader(r))
+	if err != nil {
+		return nil, err
+	}
+	return res.Conjoin(MakeIOWriter(w))
 }
 
-func close(f Object) Nil {
+func close(f Object) (Nil, error) {
 	if c, ok := f.(io.Closer); ok {
 		if err := c.Close(); err != nil {
-			panic(StubNewError(err.Error()))
+			return NIL, StubNewError(err.Error())
 		}
-		return NIL
+		return NIL, nil
 	}
-	panic(StubNewError("Object is not closable: " + f.ToString(false)))
+	return NIL, StubNewError("Object is not closable: " + f.ToString(false))
 }

@@ -10,17 +10,18 @@ import (
 var __new__P ProcFn = __new_
 var new_ Proc = Proc{Fn: __new__P, Name: "new_", Package: "std/uuid"}
 
-func __new_(_env *Env, _args []Object) Object {
+func __new_(_env *Env, _args []Object) (Object, error) {
 	_c := len(_args)
 	switch {
 	case _c == 0:
-		_res := new()
-		return MakeString(_res)
+		var err error
+		_res, err := new()
+		return MakeString(_res), err
 
 	default:
 		PanicArity(_env, _c)
 	}
-	return NIL
+	return NIL, nil
 }
 
 func Init() {

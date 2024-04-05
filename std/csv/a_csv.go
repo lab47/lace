@@ -10,72 +10,78 @@ import (
 var __csv_seq__P ProcFn = __csv_seq_
 var csv_seq_ Proc = Proc{Fn: __csv_seq__P, Name: "csv_seq_", Package: "std/csv"}
 
-func __csv_seq_(_env *Env, _args []Object) Object {
+func __csv_seq_(_env *Env, _args []Object) (Object, error) {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		rdr := ExtractObject(_env, _args, 0)
-		_res := csvSeqOpts(_env, rdr, EmptyArrayMap())
-		return _res
+		var err error
+		rdr, err := ExtractObject(_env, _args, 0); if err != nil { return nil, err }
+		_res, err := csvSeqOpts(_env, rdr, EmptyArrayMap())
+		return _res, err
 
 	case _c == 2:
-		rdr := ExtractObject(_env, _args, 0)
-		opts := ExtractMap(_env, _args, 1)
-		_res := csvSeqOpts(_env, rdr, opts)
-		return _res
+		var err error
+		rdr, err := ExtractObject(_env, _args, 0); if err != nil { return nil, err }
+		opts, err := ExtractMap(_env, _args, 1); if err != nil { return nil, err }
+		_res, err := csvSeqOpts(_env, rdr, opts)
+		return _res, err
 
 	default:
 		PanicArity(_env, _c)
 	}
-	return NIL
+	return NIL, nil
 }
 
 var __write__P ProcFn = __write_
 var write_ Proc = Proc{Fn: __write__P, Name: "write_", Package: "std/csv"}
 
-func __write_(_env *Env, _args []Object) Object {
+func __write_(_env *Env, _args []Object) (Object, error) {
 	_c := len(_args)
 	switch {
 	case _c == 2:
-		f := ExtractIOWriter(_env, _args, 0)
-		data := ExtractSeqable(_env, _args, 1)
-		_res := write(_env, f, data, EmptyArrayMap())
-		return _res
+		var err error
+		f, err := ExtractIOWriter(_env, _args, 0); if err != nil { return nil, err }
+		data, err := ExtractSeqable(_env, _args, 1); if err != nil { return nil, err }
+		_res, err := write(_env, f, data, EmptyArrayMap())
+		return _res, err
 
 	case _c == 3:
-		f := ExtractIOWriter(_env, _args, 0)
-		data := ExtractSeqable(_env, _args, 1)
-		opts := ExtractMap(_env, _args, 2)
-		_res := write(_env, f, data, opts)
-		return _res
+		var err error
+		f, err := ExtractIOWriter(_env, _args, 0); if err != nil { return nil, err }
+		data, err := ExtractSeqable(_env, _args, 1); if err != nil { return nil, err }
+		opts, err := ExtractMap(_env, _args, 2); if err != nil { return nil, err }
+		_res, err := write(_env, f, data, opts)
+		return _res, err
 
 	default:
 		PanicArity(_env, _c)
 	}
-	return NIL
+	return NIL, nil
 }
 
 var __write_string__P ProcFn = __write_string_
 var write_string_ Proc = Proc{Fn: __write_string__P, Name: "write_string_", Package: "std/csv"}
 
-func __write_string_(_env *Env, _args []Object) Object {
+func __write_string_(_env *Env, _args []Object) (Object, error) {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		data := ExtractSeqable(_env, _args, 0)
-		_res := writeString(_env, data, EmptyArrayMap())
-		return MakeString(_res)
+		var err error
+		data, err := ExtractSeqable(_env, _args, 0); if err != nil { return nil, err }
+		_res, err := writeString(_env, data, EmptyArrayMap())
+		return MakeString(_res), err
 
 	case _c == 2:
-		data := ExtractSeqable(_env, _args, 0)
-		opts := ExtractMap(_env, _args, 1)
-		_res := writeString(_env, data, opts)
-		return MakeString(_res)
+		var err error
+		data, err := ExtractSeqable(_env, _args, 0); if err != nil { return nil, err }
+		opts, err := ExtractMap(_env, _args, 1); if err != nil { return nil, err }
+		_res, err := writeString(_env, data, opts)
+		return MakeString(_res), err
 
 	default:
 		PanicArity(_env, _c)
 	}
-	return NIL
+	return NIL, nil
 }
 
 func Init() {

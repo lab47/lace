@@ -12,13 +12,13 @@
 (defn ^Boolean can-backquote?
   "Reports whether the string s can be represented unchanged as a single-line backquoted string without control characters other than tab."
   {:added "1.0"
-  :go "strconv.CanBackquote(s)"}
+  :go "strconv.CanBackquote(s), nil"}
   [^String s])
 
 (defn ^String format-bool
   "Returns \"true\" or \"false\" according to the value of b."
   {:added "1.0"
-  :go "strconv.FormatBool(b)"}
+  :go "strconv.FormatBool(b), nil"}
   [^Boolean b])
 
 (defn ^String format-double
@@ -26,31 +26,31 @@
   The format fmt is one of 'b' (-ddddp±ddd, a binary exponent), 'e' (-d.dddde±dd, a decimal exponent), 'E' (-d.ddddE±dd, a decimal exponent), 'f' (-ddd.dddd, no exponent), 'g' ('e' for large exponents, 'f' otherwise), or 'G' ('E' for large exponents, 'f' otherwise).
   The precision prec controls the number of digits (excluding the exponent) printed by the 'e', 'E', 'f', 'g', and 'G' formats. For 'e', 'E', and 'f' it is the number of digits after the decimal point. For 'g' and 'G' it is the maximum number of significant digits (trailing zeros are removed). The special precision -1 uses the smallest number of digits necessary such that ParseFloat will return f exactly."
   {:added "1.0"
-  :go "strconv.FormatFloat(f, byte(fmt), prec, bitSize)"}
+  :go "strconv.FormatFloat(f, byte(fmt), prec, bitSize), nil"}
   [^Double f ^Char fmt ^Int prec ^Int bitSize])
 
 (defn ^String format-int
   "Returns the string representation of i in the given base, for 2 <= base <= 36. The result uses the lower-case letters 'a' to 'z' for digit values >= 10."
   {:added "1.0"
-  :go "strconv.FormatInt(int64(i), base)"}
+  :go "strconv.FormatInt(int64(i), base), nil"}
   [^Int i ^Int base])
 
 (defn ^Boolean graphic?
   "Reports whether the char is defined as a Graphic by Unicode. Such characters include letters, marks, numbers, punctuation, symbols, and spaces, from categories L, M, N, P, S, and Zs."
   {:added "1.0"
-  :go "strconv.IsGraphic(c)"}
+  :go "strconv.IsGraphic(c), nil"}
   [^Char c])
 
 (defn ^Boolean printable?
   "Reports whether the char is defined as printable by Joker: letters, numbers, punctuation, symbols and ASCII space."
   {:added "1.0"
-  :go "strconv.IsPrint(c)"}
+  :go "strconv.IsPrint(c), nil"}
   [^Char c])
 
 (defn ^String itoa
   "Equivalent to (format-int i 10)."
   {:added "1.0"
-  :go "strconv.Itoa(i)"}
+  :go "strconv.Itoa(i), nil"}
   [^Int i])
 
 (defn ^Boolean parse-bool
@@ -78,42 +78,42 @@
   "Returns a double-quoted string literal representing s. The returned string uses escape sequences (\\t, \\n, \\xFF, \\u0100)
   for control characters and non-printable characters as defined by printable?."
   {:added "1.0"
-  :go "strconv.Quote(s)"}
+  :go "strconv.Quote(s), nil"}
   [^String s])
 
 (defn ^String quote-char
   "Returns a single-quoted char literal representing the character. The returned string uses escape sequences (\\t, \\n, \\xFF, \\u0100)
   for control characters and non-printable characters as defined by printable?."
   {:added "1.0"
-  :go "strconv.QuoteRune(c)"}
+  :go "strconv.QuoteRune(c), nil"}
   [^Char c])
 
 (defn ^String quote-char-to-ascii
   "Returns a single-quoted char literal representing the character. The returned string uses escape sequences (\\t, \\n, \\xFF, \\u0100)
   for non-ASCII characters and non-printable characters as defined by printable?."
   {:added "1.0"
-  :go "strconv.QuoteRuneToASCII(c)"}
+  :go "strconv.QuoteRuneToASCII(c), nil"}
   [^Char c])
 
 (defn ^String quote-char-to-graphic
   "Returns a single-quoted char literal representing the character. The returned string uses escape sequences (\\t, \\n, \\xFF, \\u0100)
   for non-ASCII characters and non-printable characters as defined by graphic?."
   {:added "1.0"
-  :go "strconv.QuoteRuneToGraphic(c)"}
+  :go "strconv.QuoteRuneToGraphic(c), nil"}
   [^Char c])
 
 (defn ^String quote-to-ascii
   "Returns a double-quoted string literal representing s. The returned string uses escape sequences (\\t, \\n, \\xFF, \\u0100)
   for non-ASCII characters and non-printable characters as defined by printable?."
   {:added "1.0"
-  :go "strconv.QuoteToASCII(s)"}
+  :go "strconv.QuoteToASCII(s), nil"}
   [^String s])
 
 (defn ^String quote-to-graphic
   "Returns a double-quoted string literal representing s. The returned string uses escape sequences (\\t, \\n, \\xFF, \\u0100)
   for non-ASCII characters and non-printable characters as defined by graphic?."
   {:added "1.0"
-  :go "strconv.QuoteToGraphic(s)"}
+  :go "strconv.QuoteToGraphic(s), nil"}
   [^String s])
 
 (defn ^String unquote

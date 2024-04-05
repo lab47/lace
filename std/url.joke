@@ -6,7 +6,7 @@
 (defn ^String path-escape
   "Escapes the string so it can be safely placed inside a URL path segment."
   {:added "1.0"
-  :go "url.PathEscape(s)"}
+  :go "url.PathEscape(s), nil"}
   [^String s])
 
 (defn ^String path-unescape
@@ -22,7 +22,7 @@
 (defn ^String query-escape
   "Escapes the string so it can be safely placed inside a URL query."
   {:added "1.0"
-  :go "url.QueryEscape(s)"}
+  :go "url.QueryEscape(s), nil"}
   [^String s])
 
 (defn ^String query-unescape

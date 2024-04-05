@@ -11,338 +11,353 @@ import (
 var __args__P ProcFn = __args_
 var args_ Proc = Proc{Fn: __args__P, Name: "args_", Package: "std/os"}
 
-func __args_(_env *Env, _args []Object) Object {
+func __args_(_env *Env, _args []Object) (Object, error) {
 	_c := len(_args)
 	switch {
 	case _c == 0:
-		_res := commandArgs()
-		return _res
+		var err error
+		_res, err := commandArgs()
+		return _res, err
 
 	default:
 		PanicArity(_env, _c)
 	}
-	return NIL
+	return NIL, nil
 }
 
 var __chdir__P ProcFn = __chdir_
 var chdir_ Proc = Proc{Fn: __chdir__P, Name: "chdir_", Package: "std/os"}
 
-func __chdir_(_env *Env, _args []Object) Object {
+func __chdir_(_env *Env, _args []Object) (Object, error) {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		dirname := ExtractString(_env, _args, 0)
-		_res := chdir(dirname)
-		return _res
+		var err error
+		dirname, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		_res, err := chdir(dirname)
+		return _res, err
 
 	default:
 		PanicArity(_env, _c)
 	}
-	return NIL
+	return NIL, nil
 }
 
 var __close__P ProcFn = __close_
 var close_ Proc = Proc{Fn: __close__P, Name: "close_", Package: "std/os"}
 
-func __close_(_env *Env, _args []Object) Object {
+func __close_(_env *Env, _args []Object) (Object, error) {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		f := ExtractFile(_env, _args, 0)
-		 err := f.Close()
+		var err error
+		f, err := ExtractFile(_env, _args, 0); if err != nil { return nil, err }
+		 err = f.Close()
 		PanicOnErr(err)
 		_res := NIL
-		return _res
+		return _res, err
 
 	default:
 		PanicArity(_env, _c)
 	}
-	return NIL
+	return NIL, nil
 }
 
 var __create__P ProcFn = __create_
 var create_ Proc = Proc{Fn: __create__P, Name: "create_", Package: "std/os"}
 
-func __create_(_env *Env, _args []Object) Object {
+func __create_(_env *Env, _args []Object) (Object, error) {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		name := ExtractString(_env, _args, 0)
+		var err error
+		name, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
 		 _res, err := os.Create(name)
 		PanicOnErr(err)
-		return MakeFile(_res)
+		return MakeFile(_res), err
 
 	default:
 		PanicArity(_env, _c)
 	}
-	return NIL
+	return NIL, nil
 }
 
 var __cwd__P ProcFn = __cwd_
 var cwd_ Proc = Proc{Fn: __cwd__P, Name: "cwd_", Package: "std/os"}
 
-func __cwd_(_env *Env, _args []Object) Object {
+func __cwd_(_env *Env, _args []Object) (Object, error) {
 	_c := len(_args)
 	switch {
 	case _c == 0:
-		_res := getwd()
-		return MakeString(_res)
+		var err error
+		_res, err := getwd()
+		return MakeString(_res), err
 
 	default:
 		PanicArity(_env, _c)
 	}
-	return NIL
+	return NIL, nil
 }
 
 var __env__P ProcFn = __env_
 var env_ Proc = Proc{Fn: __env__P, Name: "env_", Package: "std/os"}
 
-func __env_(_env *Env, _args []Object) Object {
+func __env_(_env *Env, _args []Object) (Object, error) {
 	_c := len(_args)
 	switch {
 	case _c == 0:
-		_res := env()
-		return _res
+		var err error
+		_res, err := env()
+		return _res, err
 
 	default:
 		PanicArity(_env, _c)
 	}
-	return NIL
+	return NIL, nil
 }
 
 var __exec__P ProcFn = __exec_
 var exec_ Proc = Proc{Fn: __exec__P, Name: "exec_", Package: "std/os"}
 
-func __exec_(_env *Env, _args []Object) Object {
+func __exec_(_env *Env, _args []Object) (Object, error) {
 	_c := len(_args)
 	switch {
 	case _c == 2:
-		name := ExtractString(_env, _args, 0)
-		opts := ExtractMap(_env, _args, 1)
-		_res := execute(_env, name, opts)
-		return _res
+		var err error
+		name, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		opts, err := ExtractMap(_env, _args, 1); if err != nil { return nil, err }
+		_res, err := execute(_env, name, opts)
+		return _res, err
 
 	default:
 		PanicArity(_env, _c)
 	}
-	return NIL
+	return NIL, nil
 }
 
 var __isexists__P ProcFn = __isexists_
 var isexists_ Proc = Proc{Fn: __isexists__P, Name: "isexists_", Package: "std/os"}
 
-func __isexists_(_env *Env, _args []Object) Object {
+func __isexists_(_env *Env, _args []Object) (Object, error) {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		path := ExtractString(_env, _args, 0)
-		_res := exists(path)
-		return MakeBoolean(_res)
+		var err error
+		path, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		_res, err := exists(path)
+		return MakeBoolean(_res), err
 
 	default:
 		PanicArity(_env, _c)
 	}
-	return NIL
+	return NIL, nil
 }
 
 var __exit__P ProcFn = __exit_
 var exit_ Proc = Proc{Fn: __exit__P, Name: "exit_", Package: "std/os"}
 
-func __exit_(_env *Env, _args []Object) Object {
+func __exit_(_env *Env, _args []Object) (Object, error) {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		code := ExtractInt(_env, _args, 0)
-		_res := NIL
+		var err error
+		code, err := ExtractInt(_env, _args, 0); if err != nil { return nil, err }
+		_res, err := NIL, nil
 		ExitJoker(code)
-		return _res
+		return _res, err
 
 	default:
 		PanicArity(_env, _c)
 	}
-	return NIL
+	return NIL, nil
 }
 
 var __get_env__P ProcFn = __get_env_
 var get_env_ Proc = Proc{Fn: __get_env__P, Name: "get_env_", Package: "std/os"}
 
-func __get_env_(_env *Env, _args []Object) Object {
+func __get_env_(_env *Env, _args []Object) (Object, error) {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		key := ExtractString(_env, _args, 0)
-		_res := getEnv(key)
-		return _res
+		var err error
+		key, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		_res, err := getEnv(key)
+		return _res, err
 
 	default:
 		PanicArity(_env, _c)
 	}
-	return NIL
+	return NIL, nil
 }
 
 var __ls__P ProcFn = __ls_
 var ls_ Proc = Proc{Fn: __ls__P, Name: "ls_", Package: "std/os"}
 
-func __ls_(_env *Env, _args []Object) Object {
+func __ls_(_env *Env, _args []Object) (Object, error) {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		dirname := ExtractString(_env, _args, 0)
-		_res := readDir(dirname)
-		return _res
+		var err error
+		dirname, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		_res, err := readDir(dirname)
+		return _res, err
 
 	default:
 		PanicArity(_env, _c)
 	}
-	return NIL
+	return NIL, nil
 }
 
 var __mkdir__P ProcFn = __mkdir_
 var mkdir_ Proc = Proc{Fn: __mkdir__P, Name: "mkdir_", Package: "std/os"}
 
-func __mkdir_(_env *Env, _args []Object) Object {
+func __mkdir_(_env *Env, _args []Object) (Object, error) {
 	_c := len(_args)
 	switch {
 	case _c == 2:
-		name := ExtractString(_env, _args, 0)
-		perm := ExtractInt(_env, _args, 1)
-		_res := mkdir(name, perm)
-		return _res
+		var err error
+		name, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		perm, err := ExtractInt(_env, _args, 1); if err != nil { return nil, err }
+		_res, err := mkdir(name, perm)
+		return _res, err
 
 	default:
 		PanicArity(_env, _c)
 	}
-	return NIL
+	return NIL, nil
 }
 
 var __open__P ProcFn = __open_
 var open_ Proc = Proc{Fn: __open__P, Name: "open_", Package: "std/os"}
 
-func __open_(_env *Env, _args []Object) Object {
+func __open_(_env *Env, _args []Object) (Object, error) {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		name := ExtractString(_env, _args, 0)
+		var err error
+		name, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
 		 _res, err := os.Open(name)
 		PanicOnErr(err)
-		return MakeFile(_res)
+		return MakeFile(_res), err
 
 	default:
 		PanicArity(_env, _c)
 	}
-	return NIL
+	return NIL, nil
 }
 
 var __remove__P ProcFn = __remove_
 var remove_ Proc = Proc{Fn: __remove__P, Name: "remove_", Package: "std/os"}
 
-func __remove_(_env *Env, _args []Object) Object {
+func __remove_(_env *Env, _args []Object) (Object, error) {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		name := ExtractString(_env, _args, 0)
-		 err := os.Remove(name)
-		PanicOnErr(err)
-		_res := NIL
-		return _res
+		var err error
+		name, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		_res, err := NIL, os.Remove(name)
+		return _res, err
 
 	default:
 		PanicArity(_env, _c)
 	}
-	return NIL
+	return NIL, nil
 }
 
 var __remove_all__P ProcFn = __remove_all_
 var remove_all_ Proc = Proc{Fn: __remove_all__P, Name: "remove_all_", Package: "std/os"}
 
-func __remove_all_(_env *Env, _args []Object) Object {
+func __remove_all_(_env *Env, _args []Object) (Object, error) {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		path := ExtractString(_env, _args, 0)
-		 err := os.RemoveAll(path)
-		PanicOnErr(err)
-		_res := NIL
-		return _res
+		var err error
+		path, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		_res, err := NIL, os.RemoveAll(path)
+		return _res, err
 
 	default:
 		PanicArity(_env, _c)
 	}
-	return NIL
+	return NIL, nil
 }
 
 var __set_env__P ProcFn = __set_env_
 var set_env_ Proc = Proc{Fn: __set_env__P, Name: "set_env_", Package: "std/os"}
 
-func __set_env_(_env *Env, _args []Object) Object {
+func __set_env_(_env *Env, _args []Object) (Object, error) {
 	_c := len(_args)
 	switch {
 	case _c == 2:
-		key := ExtractString(_env, _args, 0)
-		value := ExtractString(_env, _args, 1)
-		_res := setEnv(key, value)
-		return _res
+		var err error
+		key, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		value, err := ExtractString(_env, _args, 1); if err != nil { return nil, err }
+		_res, err := setEnv(key, value)
+		return _res, err
 
 	default:
 		PanicArity(_env, _c)
 	}
-	return NIL
+	return NIL, nil
 }
 
 var __sh__P ProcFn = __sh_
 var sh_ Proc = Proc{Fn: __sh__P, Name: "sh_", Package: "std/os"}
 
-func __sh_(_env *Env, _args []Object) Object {
+func __sh_(_env *Env, _args []Object) (Object, error) {
 	_c := len(_args)
 	switch {
 	case true:
+		var err error
 		CheckArity(_env, _args, 1, 999)
-		name := ExtractString(_env, _args, 0)
-		arguments := ExtractStrings(_env, _args, 1)
-		_res := sh("", nil, nil, nil, name, arguments)
-		return _res
+		name, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		arguments, err := ExtractStrings(_env, _args, 1); if err != nil { return nil, err }
+		_res, err := sh("", nil, nil, nil, name, arguments)
+		return _res, err
 
 	default:
 		PanicArity(_env, _c)
 	}
-	return NIL
+	return NIL, nil
 }
 
 var __sh_from__P ProcFn = __sh_from_
 var sh_from_ Proc = Proc{Fn: __sh_from__P, Name: "sh_from_", Package: "std/os"}
 
-func __sh_from_(_env *Env, _args []Object) Object {
+func __sh_from_(_env *Env, _args []Object) (Object, error) {
 	_c := len(_args)
 	switch {
 	case true:
+		var err error
 		CheckArity(_env, _args, 2, 999)
-		dir := ExtractString(_env, _args, 0)
-		name := ExtractString(_env, _args, 1)
-		arguments := ExtractStrings(_env, _args, 2)
-		_res := sh(dir, nil, nil, nil, name, arguments)
-		return _res
+		dir, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		name, err := ExtractString(_env, _args, 1); if err != nil { return nil, err }
+		arguments, err := ExtractStrings(_env, _args, 2); if err != nil { return nil, err }
+		_res, err := sh(dir, nil, nil, nil, name, arguments)
+		return _res, err
 
 	default:
 		PanicArity(_env, _c)
 	}
-	return NIL
+	return NIL, nil
 }
 
 var __stat__P ProcFn = __stat_
 var stat_ Proc = Proc{Fn: __stat__P, Name: "stat_", Package: "std/os"}
 
-func __stat_(_env *Env, _args []Object) Object {
+func __stat_(_env *Env, _args []Object) (Object, error) {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		filename := ExtractString(_env, _args, 0)
-		_res := stat(filename)
-		return _res
+		var err error
+		filename, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		_res, err := stat(filename)
+		return _res, err
 
 	default:
 		PanicArity(_env, _c)
 	}
-	return NIL
+	return NIL, nil
 }
 
 func Init() {

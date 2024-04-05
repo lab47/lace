@@ -32,12 +32,12 @@ func ArraySeqFromArrayMap(m *ArrayMap) *ArraySeq {
 	return &ArraySeq{arr: m.arr}
 }
 
-func SafeMerge(m1, m2 Map) Map {
+func SafeMerge(m1, m2 Map) (Map, error) {
 	if m1 == nil {
-		return m2
+		return m2, nil
 	}
 	if m2 == nil {
-		return m1
+		return m1, nil
 	}
 	return m1.Merge(m2)
 }
@@ -56,10 +56,14 @@ func (seq *ArrayMapSeq) Pprint(w io.Writer, indent int) int {
 	return pprintSeq(seq, w, indent)
 }
 
-func (seq *ArrayMapSeq) WithMeta(meta Map) Object {
+func (seq *ArrayMapSeq) WithMeta(meta Map) (Object, error) {
 	res := *seq
-	res.meta = SafeMerge(res.meta, meta)
-	return &res
+	m, err := SafeMerge(res.meta, meta)
+	if err != nil {
+		return nil, err
+	}
+	res.meta = m
+	return &res, nil
 }
 
 func (seq *ArrayMapSeq) GetType() *Type {
@@ -109,10 +113,14 @@ func (iter *ArrayMapIterator) HasNext() bool {
 	return iter.current < len(iter.m.arr)
 }
 
-func (v *ArrayMap) WithMeta(meta Map) Object {
+func (v *ArrayMap) WithMeta(meta Map) (Object, error) {
 	res := *v
-	res.meta = SafeMerge(res.meta, meta)
-	return &res
+	m, err := SafeMerge(res.meta, meta)
+	if err != nil {
+		return nil, err
+	}
+	res.meta = m
+	return &res, nil
 }
 
 func (m *ArrayMap) indexOf(key Object) int {
@@ -172,28 +180,33 @@ func (m *ArrayMap) Clone() *ArrayMap {
 	return &result
 }
 
-func (m *ArrayMap) Assoc(key Object, value Object) Associative {
+func (m *ArrayMap) Assoc(key Object, value Object) (Associative, error) {
 	i := m.indexOf(key)
 	if i != -1 {
 		res := m.Clone()
 		res.arr[i+1] = value
-		return res
+		return res, nil
 	}
 	if int64(len(m.arr)) >= HASHMAP_THRESHOLD {
-		return NewHashMap(m.arr...).Assoc(key, value)
+		hm, err := NewHashMap(m.arr...)
+		if err != nil {
+			return nil, err
+		}
+
+		return hm.Assoc(key, value)
 	}
 	res := m.Clone()
 	res.arr = append(res.arr, key)
 	res.arr = append(res.arr, value)
-	return res
+	return res, nil
 }
 
-func (m *ArrayMap) EntryAt(key Object) *Vector {
+func (m *ArrayMap) EntryAt(key Object) (*Vector, error) {
 	i := m.indexOf(key)
 	if i != -1 {
-		return NewVectorFrom(key, m.arr[i+1])
+		return NewVectorFrom(key, m.arr[i+1]), nil
 	}
-	return nil
+	return nil, nil
 }
 
 func (m *ArrayMap) Without(key Object) Map {
@@ -213,22 +226,28 @@ func (m *ArrayMap) Without(key Object) Map {
 	return &result
 }
 
-func (m *ArrayMap) Merge(other Map) Map {
+func (m *ArrayMap) Merge(other Map) (Map, error) {
 	if other.Count() == 0 {
-		return m
+		return m, nil
 	}
 	if m.Count() == 0 {
-		return other
+		return other, nil
 	}
 	res := m.Clone()
 	for iter := other.Iter(); iter.HasNext(); {
 		p := iter.Next()
 		res.Set(p.Key, p.Value)
 		if int64(len(res.arr)) > HASHMAP_THRESHOLD {
-			return NewHashMap(m.arr...).Merge(other)
+			hm, err := NewHashMap(m.arr...)
+			if err != nil {
+				return nil, err
+			}
+
+			return hm.Merge(other)
 		}
 	}
-	return res
+
+	return res, nil
 }
 
 func (m *ArrayMap) Keys() Seq {
@@ -253,7 +272,7 @@ func (m *ArrayMap) Iter() MapIterator {
 	return &ArrayMapIterator{m: m}
 }
 
-func (m *ArrayMap) Conj(obj Object) Conjable {
+func (m *ArrayMap) Conj(obj Object) (Conjable, error) {
 	return mapConj(m, obj)
 }
 
@@ -277,7 +296,7 @@ func (m *ArrayMap) Seq() Seq {
 	return &ArrayMapSeq{m: m, index: 0}
 }
 
-func (m *ArrayMap) Call(env *Env, args []Object) Object {
+func (m *ArrayMap) Call(env *Env, args []Object) (Object, error) {
 	return callMap(env, m, args)
 }
 

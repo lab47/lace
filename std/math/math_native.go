@@ -6,10 +6,12 @@ import (
 	. "github.com/candid82/joker/core"
 )
 
-func modf(x float64) Object {
+func modf(x float64) (Object, error) {
 	i, f := math.Modf(x)
 	res := EmptyVector()
-	res = res.Conjoin(MakeDouble(i))
-	res = res.Conjoin(MakeDouble(f))
-	return res
+	res, err := res.Conjoin(MakeDouble(i))
+	if err != nil {
+		return nil, err
+	}
+	return res.Conjoin(MakeDouble(f))
 }

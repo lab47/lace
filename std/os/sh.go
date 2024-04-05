@@ -12,7 +12,7 @@ import (
 	. "github.com/candid82/joker/core"
 )
 
-func sh(dir string, stdin io.Reader, stdout io.Writer, stderr io.Writer, name string, args []string) Object {
+func sh(dir string, stdin io.Reader, stdout io.Writer, stderr io.Writer, name string, args []string) (Object, error) {
 	cmd := exec.Command(name, args...)
 	cmd.Dir = dir
 	cmd.Stdin = stdin
@@ -57,5 +57,5 @@ func sh(dir string, stdin io.Reader, stdout io.Writer, stderr io.Writer, name st
 	if stderr == nil {
 		res.Add(MakeKeyword("err"), String{S: string(stderrBuffer.Bytes())})
 	}
-	return res
+	return res, nil
 }

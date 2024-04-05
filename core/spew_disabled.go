@@ -3,6 +3,6 @@
 
 package core
 
-var procGoSpew = func(env *Env, args []Object) (res Object) {
-	return MakeBoolean(false)
+var procGoSpew = func(env *Env, args []Object) (Object, error) {
+	return MakeBoolean(false), nil
 }

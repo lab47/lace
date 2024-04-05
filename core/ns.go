@@ -44,10 +44,15 @@ func (ns *Namespace) GetType() *Type {
 	return TYPE.Namespace
 }
 
-func (ns *Namespace) WithMeta(meta Map) Object {
+func (ns *Namespace) WithMeta(meta Map) (Object, error) {
 	res := *ns
-	res.meta = SafeMerge(res.meta, meta)
-	return &res
+	v, err := SafeMerge(res.meta, meta)
+	if err != nil {
+		return nil, err
+	}
+
+	ns.meta = v
+	return &res, nil
 }
 
 func (ns *Namespace) ResetMeta(newMeta Map) Map {
@@ -55,7 +60,7 @@ func (ns *Namespace) ResetMeta(newMeta Map) Map {
 	return ns.meta
 }
 
-func (ns *Namespace) AlterMeta(env *Env, fn *Fn, args []Object) Map {
+func (ns *Namespace) AlterMeta(env *Env, fn *Fn, args []Object) (Map, error) {
 	return AlterMeta(env, &ns.MetaHolder, fn, args)
 }
 

@@ -28,26 +28,28 @@ import (
 `
 
 var assertTemplate string = `
-func Assert{{.Name}}(env *Env, obj Object, msg string) {{.TypeName}} {
+func Assert{{.Name}}(env *Env, obj Object, msg string) ({{.TypeName}}, error) {
 	switch c := obj.(type) {
 	case {{.TypeName}}:
-		return c
+		return c, nil
 	default:
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "{{.ShowName}}", obj.GetType().ToString(false))
 		}
-		panic(env.RT.NewError(msg))
+		var v {{.TypeName}}
+		return v, env.RT.NewError(msg)
 	}
 }
 `
 
 var ensureTemplate string = `
-func Ensure{{.Name}}(env *Env, args []Object, index int) {{.TypeName}} {
+func Ensure{{.Name}}(env *Env, args []Object, index int) ({{.TypeName}}, error) {
 	switch c := args[index].(type) {
 	case {{.TypeName}}:
-		return c
+		return c, nil
 	default:
-		panic(env.RT.NewArgTypeError(index, c, "{{.ShowName}}"))
+		var v {{.TypeName}}
+		return v, env.RT.NewArgTypeError(index, c, "{{.ShowName}}")
 	}
 }
 `

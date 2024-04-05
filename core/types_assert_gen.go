@@ -7,821 +7,899 @@ import (
 	"io"
 )
 
-func AssertComparable(env *Env, obj Object, msg string) Comparable {
+func AssertComparable(env *Env, obj Object, msg string) (Comparable, error) {
 	switch c := obj.(type) {
 	case Comparable:
-		return c
+		return c, nil
 	default:
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Comparable", obj.GetType().ToString(false))
 		}
-		panic(env.RT.NewError(msg))
+		var v Comparable
+		return v, env.RT.NewError(msg)
 	}
 }
 
-func EnsureComparable(env *Env, args []Object, index int) Comparable {
+func EnsureComparable(env *Env, args []Object, index int) (Comparable, error) {
 	switch c := args[index].(type) {
 	case Comparable:
-		return c
+		return c, nil
 	default:
-		panic(env.RT.NewArgTypeError(index, c, "Comparable"))
+		var v Comparable
+		return v, env.RT.NewArgTypeError(index, c, "Comparable")
 	}
 }
 
-func AssertVector(env *Env, obj Object, msg string) *Vector {
+func AssertVector(env *Env, obj Object, msg string) (*Vector, error) {
 	switch c := obj.(type) {
 	case *Vector:
-		return c
+		return c, nil
 	default:
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Vector", obj.GetType().ToString(false))
 		}
-		panic(env.RT.NewError(msg))
+		var v *Vector
+		return v, env.RT.NewError(msg)
 	}
 }
 
-func EnsureVector(env *Env, args []Object, index int) *Vector {
+func EnsureVector(env *Env, args []Object, index int) (*Vector, error) {
 	switch c := args[index].(type) {
 	case *Vector:
-		return c
+		return c, nil
 	default:
-		panic(env.RT.NewArgTypeError(index, c, "Vector"))
+		var v *Vector
+		return v, env.RT.NewArgTypeError(index, c, "Vector")
 	}
 }
 
-func AssertChar(env *Env, obj Object, msg string) Char {
+func AssertChar(env *Env, obj Object, msg string) (Char, error) {
 	switch c := obj.(type) {
 	case Char:
-		return c
+		return c, nil
 	default:
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Char", obj.GetType().ToString(false))
 		}
-		panic(env.RT.NewError(msg))
+		var v Char
+		return v, env.RT.NewError(msg)
 	}
 }
 
-func EnsureChar(env *Env, args []Object, index int) Char {
+func EnsureChar(env *Env, args []Object, index int) (Char, error) {
 	switch c := args[index].(type) {
 	case Char:
-		return c
+		return c, nil
 	default:
-		panic(env.RT.NewArgTypeError(index, c, "Char"))
+		var v Char
+		return v, env.RT.NewArgTypeError(index, c, "Char")
 	}
 }
 
-func AssertString(env *Env, obj Object, msg string) String {
+func AssertString(env *Env, obj Object, msg string) (String, error) {
 	switch c := obj.(type) {
 	case String:
-		return c
+		return c, nil
 	default:
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "String", obj.GetType().ToString(false))
 		}
-		panic(env.RT.NewError(msg))
+		var v String
+		return v, env.RT.NewError(msg)
 	}
 }
 
-func EnsureString(env *Env, args []Object, index int) String {
+func EnsureString(env *Env, args []Object, index int) (String, error) {
 	switch c := args[index].(type) {
 	case String:
-		return c
+		return c, nil
 	default:
-		panic(env.RT.NewArgTypeError(index, c, "String"))
+		var v String
+		return v, env.RT.NewArgTypeError(index, c, "String")
 	}
 }
 
-func AssertSymbol(env *Env, obj Object, msg string) Symbol {
+func AssertSymbol(env *Env, obj Object, msg string) (Symbol, error) {
 	switch c := obj.(type) {
 	case Symbol:
-		return c
+		return c, nil
 	default:
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Symbol", obj.GetType().ToString(false))
 		}
-		panic(env.RT.NewError(msg))
+		var v Symbol
+		return v, env.RT.NewError(msg)
 	}
 }
 
-func EnsureSymbol(env *Env, args []Object, index int) Symbol {
+func EnsureSymbol(env *Env, args []Object, index int) (Symbol, error) {
 	switch c := args[index].(type) {
 	case Symbol:
-		return c
+		return c, nil
 	default:
-		panic(env.RT.NewArgTypeError(index, c, "Symbol"))
+		var v Symbol
+		return v, env.RT.NewArgTypeError(index, c, "Symbol")
 	}
 }
 
-func AssertKeyword(env *Env, obj Object, msg string) Keyword {
+func AssertKeyword(env *Env, obj Object, msg string) (Keyword, error) {
 	switch c := obj.(type) {
 	case Keyword:
-		return c
+		return c, nil
 	default:
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Keyword", obj.GetType().ToString(false))
 		}
-		panic(env.RT.NewError(msg))
+		var v Keyword
+		return v, env.RT.NewError(msg)
 	}
 }
 
-func EnsureKeyword(env *Env, args []Object, index int) Keyword {
+func EnsureKeyword(env *Env, args []Object, index int) (Keyword, error) {
 	switch c := args[index].(type) {
 	case Keyword:
-		return c
+		return c, nil
 	default:
-		panic(env.RT.NewArgTypeError(index, c, "Keyword"))
+		var v Keyword
+		return v, env.RT.NewArgTypeError(index, c, "Keyword")
 	}
 }
 
-func AssertRegex(env *Env, obj Object, msg string) *Regex {
+func AssertRegex(env *Env, obj Object, msg string) (*Regex, error) {
 	switch c := obj.(type) {
 	case *Regex:
-		return c
+		return c, nil
 	default:
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Regex", obj.GetType().ToString(false))
 		}
-		panic(env.RT.NewError(msg))
+		var v *Regex
+		return v, env.RT.NewError(msg)
 	}
 }
 
-func EnsureRegex(env *Env, args []Object, index int) *Regex {
+func EnsureRegex(env *Env, args []Object, index int) (*Regex, error) {
 	switch c := args[index].(type) {
 	case *Regex:
-		return c
+		return c, nil
 	default:
-		panic(env.RT.NewArgTypeError(index, c, "Regex"))
+		var v *Regex
+		return v, env.RT.NewArgTypeError(index, c, "Regex")
 	}
 }
 
-func AssertBoolean(env *Env, obj Object, msg string) Boolean {
+func AssertBoolean(env *Env, obj Object, msg string) (Boolean, error) {
 	switch c := obj.(type) {
 	case Boolean:
-		return c
+		return c, nil
 	default:
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Boolean", obj.GetType().ToString(false))
 		}
-		panic(env.RT.NewError(msg))
+		var v Boolean
+		return v, env.RT.NewError(msg)
 	}
 }
 
-func EnsureBoolean(env *Env, args []Object, index int) Boolean {
+func EnsureBoolean(env *Env, args []Object, index int) (Boolean, error) {
 	switch c := args[index].(type) {
 	case Boolean:
-		return c
+		return c, nil
 	default:
-		panic(env.RT.NewArgTypeError(index, c, "Boolean"))
+		var v Boolean
+		return v, env.RT.NewArgTypeError(index, c, "Boolean")
 	}
 }
 
-func AssertTime(env *Env, obj Object, msg string) Time {
+func AssertTime(env *Env, obj Object, msg string) (Time, error) {
 	switch c := obj.(type) {
 	case Time:
-		return c
+		return c, nil
 	default:
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Time", obj.GetType().ToString(false))
 		}
-		panic(env.RT.NewError(msg))
+		var v Time
+		return v, env.RT.NewError(msg)
 	}
 }
 
-func EnsureTime(env *Env, args []Object, index int) Time {
+func EnsureTime(env *Env, args []Object, index int) (Time, error) {
 	switch c := args[index].(type) {
 	case Time:
-		return c
+		return c, nil
 	default:
-		panic(env.RT.NewArgTypeError(index, c, "Time"))
+		var v Time
+		return v, env.RT.NewArgTypeError(index, c, "Time")
 	}
 }
 
-func AssertNumber(env *Env, obj Object, msg string) Number {
+func AssertNumber(env *Env, obj Object, msg string) (Number, error) {
 	switch c := obj.(type) {
 	case Number:
-		return c
+		return c, nil
 	default:
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Number", obj.GetType().ToString(false))
 		}
-		panic(env.RT.NewError(msg))
+		var v Number
+		return v, env.RT.NewError(msg)
 	}
 }
 
-func EnsureNumber(env *Env, args []Object, index int) Number {
+func EnsureNumber(env *Env, args []Object, index int) (Number, error) {
 	switch c := args[index].(type) {
 	case Number:
-		return c
+		return c, nil
 	default:
-		panic(env.RT.NewArgTypeError(index, c, "Number"))
+		var v Number
+		return v, env.RT.NewArgTypeError(index, c, "Number")
 	}
 }
 
-func AssertSeqable(env *Env, obj Object, msg string) Seqable {
+func AssertSeqable(env *Env, obj Object, msg string) (Seqable, error) {
 	switch c := obj.(type) {
 	case Seqable:
-		return c
+		return c, nil
 	default:
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Seqable", obj.GetType().ToString(false))
 		}
-		panic(env.RT.NewError(msg))
+		var v Seqable
+		return v, env.RT.NewError(msg)
 	}
 }
 
-func EnsureSeqable(env *Env, args []Object, index int) Seqable {
+func EnsureSeqable(env *Env, args []Object, index int) (Seqable, error) {
 	switch c := args[index].(type) {
 	case Seqable:
-		return c
+		return c, nil
 	default:
-		panic(env.RT.NewArgTypeError(index, c, "Seqable"))
+		var v Seqable
+		return v, env.RT.NewArgTypeError(index, c, "Seqable")
 	}
 }
 
-func AssertCallable(env *Env, obj Object, msg string) Callable {
+func AssertCallable(env *Env, obj Object, msg string) (Callable, error) {
 	switch c := obj.(type) {
 	case Callable:
-		return c
+		return c, nil
 	default:
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Callable", obj.GetType().ToString(false))
 		}
-		panic(env.RT.NewError(msg))
+		var v Callable
+		return v, env.RT.NewError(msg)
 	}
 }
 
-func EnsureCallable(env *Env, args []Object, index int) Callable {
+func EnsureCallable(env *Env, args []Object, index int) (Callable, error) {
 	switch c := args[index].(type) {
 	case Callable:
-		return c
+		return c, nil
 	default:
-		panic(env.RT.NewArgTypeError(index, c, "Callable"))
+		var v Callable
+		return v, env.RT.NewArgTypeError(index, c, "Callable")
 	}
 }
 
-func AssertType(env *Env, obj Object, msg string) *Type {
+func AssertType(env *Env, obj Object, msg string) (*Type, error) {
 	switch c := obj.(type) {
 	case *Type:
-		return c
+		return c, nil
 	default:
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Type", obj.GetType().ToString(false))
 		}
-		panic(env.RT.NewError(msg))
+		var v *Type
+		return v, env.RT.NewError(msg)
 	}
 }
 
-func EnsureType(env *Env, args []Object, index int) *Type {
+func EnsureType(env *Env, args []Object, index int) (*Type, error) {
 	switch c := args[index].(type) {
 	case *Type:
-		return c
+		return c, nil
 	default:
-		panic(env.RT.NewArgTypeError(index, c, "Type"))
+		var v *Type
+		return v, env.RT.NewArgTypeError(index, c, "Type")
 	}
 }
 
-func AssertMeta(env *Env, obj Object, msg string) Meta {
+func AssertMeta(env *Env, obj Object, msg string) (Meta, error) {
 	switch c := obj.(type) {
 	case Meta:
-		return c
+		return c, nil
 	default:
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Meta", obj.GetType().ToString(false))
 		}
-		panic(env.RT.NewError(msg))
+		var v Meta
+		return v, env.RT.NewError(msg)
 	}
 }
 
-func EnsureMeta(env *Env, args []Object, index int) Meta {
+func EnsureMeta(env *Env, args []Object, index int) (Meta, error) {
 	switch c := args[index].(type) {
 	case Meta:
-		return c
+		return c, nil
 	default:
-		panic(env.RT.NewArgTypeError(index, c, "Meta"))
+		var v Meta
+		return v, env.RT.NewArgTypeError(index, c, "Meta")
 	}
 }
 
-func AssertInt(env *Env, obj Object, msg string) Int {
+func AssertInt(env *Env, obj Object, msg string) (Int, error) {
 	switch c := obj.(type) {
 	case Int:
-		return c
+		return c, nil
 	default:
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Int", obj.GetType().ToString(false))
 		}
-		panic(env.RT.NewError(msg))
+		var v Int
+		return v, env.RT.NewError(msg)
 	}
 }
 
-func EnsureInt(env *Env, args []Object, index int) Int {
+func EnsureInt(env *Env, args []Object, index int) (Int, error) {
 	switch c := args[index].(type) {
 	case Int:
-		return c
+		return c, nil
 	default:
-		panic(env.RT.NewArgTypeError(index, c, "Int"))
+		var v Int
+		return v, env.RT.NewArgTypeError(index, c, "Int")
 	}
 }
 
-func AssertDouble(env *Env, obj Object, msg string) Double {
+func AssertDouble(env *Env, obj Object, msg string) (Double, error) {
 	switch c := obj.(type) {
 	case Double:
-		return c
+		return c, nil
 	default:
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Double", obj.GetType().ToString(false))
 		}
-		panic(env.RT.NewError(msg))
+		var v Double
+		return v, env.RT.NewError(msg)
 	}
 }
 
-func EnsureDouble(env *Env, args []Object, index int) Double {
+func EnsureDouble(env *Env, args []Object, index int) (Double, error) {
 	switch c := args[index].(type) {
 	case Double:
-		return c
+		return c, nil
 	default:
-		panic(env.RT.NewArgTypeError(index, c, "Double"))
+		var v Double
+		return v, env.RT.NewArgTypeError(index, c, "Double")
 	}
 }
 
-func AssertStack(env *Env, obj Object, msg string) Stack {
+func AssertStack(env *Env, obj Object, msg string) (Stack, error) {
 	switch c := obj.(type) {
 	case Stack:
-		return c
+		return c, nil
 	default:
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Stack", obj.GetType().ToString(false))
 		}
-		panic(env.RT.NewError(msg))
+		var v Stack
+		return v, env.RT.NewError(msg)
 	}
 }
 
-func EnsureStack(env *Env, args []Object, index int) Stack {
+func EnsureStack(env *Env, args []Object, index int) (Stack, error) {
 	switch c := args[index].(type) {
 	case Stack:
-		return c
+		return c, nil
 	default:
-		panic(env.RT.NewArgTypeError(index, c, "Stack"))
+		var v Stack
+		return v, env.RT.NewArgTypeError(index, c, "Stack")
 	}
 }
 
-func AssertMap(env *Env, obj Object, msg string) Map {
+func AssertMap(env *Env, obj Object, msg string) (Map, error) {
 	switch c := obj.(type) {
 	case Map:
-		return c
+		return c, nil
 	default:
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Map", obj.GetType().ToString(false))
 		}
-		panic(env.RT.NewError(msg))
+		var v Map
+		return v, env.RT.NewError(msg)
 	}
 }
 
-func EnsureMap(env *Env, args []Object, index int) Map {
+func EnsureMap(env *Env, args []Object, index int) (Map, error) {
 	switch c := args[index].(type) {
 	case Map:
-		return c
+		return c, nil
 	default:
-		panic(env.RT.NewArgTypeError(index, c, "Map"))
+		var v Map
+		return v, env.RT.NewArgTypeError(index, c, "Map")
 	}
 }
 
-func AssertSet(env *Env, obj Object, msg string) Set {
+func AssertSet(env *Env, obj Object, msg string) (Set, error) {
 	switch c := obj.(type) {
 	case Set:
-		return c
+		return c, nil
 	default:
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Set", obj.GetType().ToString(false))
 		}
-		panic(env.RT.NewError(msg))
+		var v Set
+		return v, env.RT.NewError(msg)
 	}
 }
 
-func EnsureSet(env *Env, args []Object, index int) Set {
+func EnsureSet(env *Env, args []Object, index int) (Set, error) {
 	switch c := args[index].(type) {
 	case Set:
-		return c
+		return c, nil
 	default:
-		panic(env.RT.NewArgTypeError(index, c, "Set"))
+		var v Set
+		return v, env.RT.NewArgTypeError(index, c, "Set")
 	}
 }
 
-func AssertAssociative(env *Env, obj Object, msg string) Associative {
+func AssertAssociative(env *Env, obj Object, msg string) (Associative, error) {
 	switch c := obj.(type) {
 	case Associative:
-		return c
+		return c, nil
 	default:
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Associative", obj.GetType().ToString(false))
 		}
-		panic(env.RT.NewError(msg))
+		var v Associative
+		return v, env.RT.NewError(msg)
 	}
 }
 
-func EnsureAssociative(env *Env, args []Object, index int) Associative {
+func EnsureAssociative(env *Env, args []Object, index int) (Associative, error) {
 	switch c := args[index].(type) {
 	case Associative:
-		return c
+		return c, nil
 	default:
-		panic(env.RT.NewArgTypeError(index, c, "Associative"))
+		var v Associative
+		return v, env.RT.NewArgTypeError(index, c, "Associative")
 	}
 }
 
-func AssertReversible(env *Env, obj Object, msg string) Reversible {
+func AssertReversible(env *Env, obj Object, msg string) (Reversible, error) {
 	switch c := obj.(type) {
 	case Reversible:
-		return c
+		return c, nil
 	default:
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Reversible", obj.GetType().ToString(false))
 		}
-		panic(env.RT.NewError(msg))
+		var v Reversible
+		return v, env.RT.NewError(msg)
 	}
 }
 
-func EnsureReversible(env *Env, args []Object, index int) Reversible {
+func EnsureReversible(env *Env, args []Object, index int) (Reversible, error) {
 	switch c := args[index].(type) {
 	case Reversible:
-		return c
+		return c, nil
 	default:
-		panic(env.RT.NewArgTypeError(index, c, "Reversible"))
+		var v Reversible
+		return v, env.RT.NewArgTypeError(index, c, "Reversible")
 	}
 }
 
-func AssertNamed(env *Env, obj Object, msg string) Named {
+func AssertNamed(env *Env, obj Object, msg string) (Named, error) {
 	switch c := obj.(type) {
 	case Named:
-		return c
+		return c, nil
 	default:
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Named", obj.GetType().ToString(false))
 		}
-		panic(env.RT.NewError(msg))
+		var v Named
+		return v, env.RT.NewError(msg)
 	}
 }
 
-func EnsureNamed(env *Env, args []Object, index int) Named {
+func EnsureNamed(env *Env, args []Object, index int) (Named, error) {
 	switch c := args[index].(type) {
 	case Named:
-		return c
+		return c, nil
 	default:
-		panic(env.RT.NewArgTypeError(index, c, "Named"))
+		var v Named
+		return v, env.RT.NewArgTypeError(index, c, "Named")
 	}
 }
 
-func AssertComparator(env *Env, obj Object, msg string) Comparator {
+func AssertComparator(env *Env, obj Object, msg string) (Comparator, error) {
 	switch c := obj.(type) {
 	case Comparator:
-		return c
+		return c, nil
 	default:
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Comparator", obj.GetType().ToString(false))
 		}
-		panic(env.RT.NewError(msg))
+		var v Comparator
+		return v, env.RT.NewError(msg)
 	}
 }
 
-func EnsureComparator(env *Env, args []Object, index int) Comparator {
+func EnsureComparator(env *Env, args []Object, index int) (Comparator, error) {
 	switch c := args[index].(type) {
 	case Comparator:
-		return c
+		return c, nil
 	default:
-		panic(env.RT.NewArgTypeError(index, c, "Comparator"))
+		var v Comparator
+		return v, env.RT.NewArgTypeError(index, c, "Comparator")
 	}
 }
 
-func AssertRatio(env *Env, obj Object, msg string) *Ratio {
+func AssertRatio(env *Env, obj Object, msg string) (*Ratio, error) {
 	switch c := obj.(type) {
 	case *Ratio:
-		return c
+		return c, nil
 	default:
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Ratio", obj.GetType().ToString(false))
 		}
-		panic(env.RT.NewError(msg))
+		var v *Ratio
+		return v, env.RT.NewError(msg)
 	}
 }
 
-func EnsureRatio(env *Env, args []Object, index int) *Ratio {
+func EnsureRatio(env *Env, args []Object, index int) (*Ratio, error) {
 	switch c := args[index].(type) {
 	case *Ratio:
-		return c
+		return c, nil
 	default:
-		panic(env.RT.NewArgTypeError(index, c, "Ratio"))
+		var v *Ratio
+		return v, env.RT.NewArgTypeError(index, c, "Ratio")
 	}
 }
 
-func AssertNamespace(env *Env, obj Object, msg string) *Namespace {
+func AssertNamespace(env *Env, obj Object, msg string) (*Namespace, error) {
 	switch c := obj.(type) {
 	case *Namespace:
-		return c
+		return c, nil
 	default:
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Namespace", obj.GetType().ToString(false))
 		}
-		panic(env.RT.NewError(msg))
+		var v *Namespace
+		return v, env.RT.NewError(msg)
 	}
 }
 
-func EnsureNamespace(env *Env, args []Object, index int) *Namespace {
+func EnsureNamespace(env *Env, args []Object, index int) (*Namespace, error) {
 	switch c := args[index].(type) {
 	case *Namespace:
-		return c
+		return c, nil
 	default:
-		panic(env.RT.NewArgTypeError(index, c, "Namespace"))
+		var v *Namespace
+		return v, env.RT.NewArgTypeError(index, c, "Namespace")
 	}
 }
 
-func AssertVar(env *Env, obj Object, msg string) *Var {
+func AssertVar(env *Env, obj Object, msg string) (*Var, error) {
 	switch c := obj.(type) {
 	case *Var:
-		return c
+		return c, nil
 	default:
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Var", obj.GetType().ToString(false))
 		}
-		panic(env.RT.NewError(msg))
+		var v *Var
+		return v, env.RT.NewError(msg)
 	}
 }
 
-func EnsureVar(env *Env, args []Object, index int) *Var {
+func EnsureVar(env *Env, args []Object, index int) (*Var, error) {
 	switch c := args[index].(type) {
 	case *Var:
-		return c
+		return c, nil
 	default:
-		panic(env.RT.NewArgTypeError(index, c, "Var"))
+		var v *Var
+		return v, env.RT.NewArgTypeError(index, c, "Var")
 	}
 }
 
-func AssertError(env *Env, obj Object, msg string) Error {
+func AssertError(env *Env, obj Object, msg string) (Error, error) {
 	switch c := obj.(type) {
 	case Error:
-		return c
+		return c, nil
 	default:
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Error", obj.GetType().ToString(false))
 		}
-		panic(env.RT.NewError(msg))
+		var v Error
+		return v, env.RT.NewError(msg)
 	}
 }
 
-func EnsureError(env *Env, args []Object, index int) Error {
+func EnsureError(env *Env, args []Object, index int) (Error, error) {
 	switch c := args[index].(type) {
 	case Error:
-		return c
+		return c, nil
 	default:
-		panic(env.RT.NewArgTypeError(index, c, "Error"))
+		var v Error
+		return v, env.RT.NewArgTypeError(index, c, "Error")
 	}
 }
 
-func AssertFn(env *Env, obj Object, msg string) *Fn {
+func AssertFn(env *Env, obj Object, msg string) (*Fn, error) {
 	switch c := obj.(type) {
 	case *Fn:
-		return c
+		return c, nil
 	default:
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Fn", obj.GetType().ToString(false))
 		}
-		panic(env.RT.NewError(msg))
+		var v *Fn
+		return v, env.RT.NewError(msg)
 	}
 }
 
-func EnsureFn(env *Env, args []Object, index int) *Fn {
+func EnsureFn(env *Env, args []Object, index int) (*Fn, error) {
 	switch c := args[index].(type) {
 	case *Fn:
-		return c
+		return c, nil
 	default:
-		panic(env.RT.NewArgTypeError(index, c, "Fn"))
+		var v *Fn
+		return v, env.RT.NewArgTypeError(index, c, "Fn")
 	}
 }
 
-func AssertDeref(env *Env, obj Object, msg string) Deref {
+func AssertDeref(env *Env, obj Object, msg string) (Deref, error) {
 	switch c := obj.(type) {
 	case Deref:
-		return c
+		return c, nil
 	default:
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Deref", obj.GetType().ToString(false))
 		}
-		panic(env.RT.NewError(msg))
+		var v Deref
+		return v, env.RT.NewError(msg)
 	}
 }
 
-func EnsureDeref(env *Env, args []Object, index int) Deref {
+func EnsureDeref(env *Env, args []Object, index int) (Deref, error) {
 	switch c := args[index].(type) {
 	case Deref:
-		return c
+		return c, nil
 	default:
-		panic(env.RT.NewArgTypeError(index, c, "Deref"))
+		var v Deref
+		return v, env.RT.NewArgTypeError(index, c, "Deref")
 	}
 }
 
-func AssertAtom(env *Env, obj Object, msg string) *Atom {
+func AssertAtom(env *Env, obj Object, msg string) (*Atom, error) {
 	switch c := obj.(type) {
 	case *Atom:
-		return c
+		return c, nil
 	default:
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Atom", obj.GetType().ToString(false))
 		}
-		panic(env.RT.NewError(msg))
+		var v *Atom
+		return v, env.RT.NewError(msg)
 	}
 }
 
-func EnsureAtom(env *Env, args []Object, index int) *Atom {
+func EnsureAtom(env *Env, args []Object, index int) (*Atom, error) {
 	switch c := args[index].(type) {
 	case *Atom:
-		return c
+		return c, nil
 	default:
-		panic(env.RT.NewArgTypeError(index, c, "Atom"))
+		var v *Atom
+		return v, env.RT.NewArgTypeError(index, c, "Atom")
 	}
 }
 
-func AssertRef(env *Env, obj Object, msg string) Ref {
+func AssertRef(env *Env, obj Object, msg string) (Ref, error) {
 	switch c := obj.(type) {
 	case Ref:
-		return c
+		return c, nil
 	default:
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Ref", obj.GetType().ToString(false))
 		}
-		panic(env.RT.NewError(msg))
+		var v Ref
+		return v, env.RT.NewError(msg)
 	}
 }
 
-func EnsureRef(env *Env, args []Object, index int) Ref {
+func EnsureRef(env *Env, args []Object, index int) (Ref, error) {
 	switch c := args[index].(type) {
 	case Ref:
-		return c
+		return c, nil
 	default:
-		panic(env.RT.NewArgTypeError(index, c, "Ref"))
+		var v Ref
+		return v, env.RT.NewArgTypeError(index, c, "Ref")
 	}
 }
 
-func AssertKVReduce(env *Env, obj Object, msg string) KVReduce {
+func AssertKVReduce(env *Env, obj Object, msg string) (KVReduce, error) {
 	switch c := obj.(type) {
 	case KVReduce:
-		return c
+		return c, nil
 	default:
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "KVReduce", obj.GetType().ToString(false))
 		}
-		panic(env.RT.NewError(msg))
+		var v KVReduce
+		return v, env.RT.NewError(msg)
 	}
 }
 
-func EnsureKVReduce(env *Env, args []Object, index int) KVReduce {
+func EnsureKVReduce(env *Env, args []Object, index int) (KVReduce, error) {
 	switch c := args[index].(type) {
 	case KVReduce:
-		return c
+		return c, nil
 	default:
-		panic(env.RT.NewArgTypeError(index, c, "KVReduce"))
+		var v KVReduce
+		return v, env.RT.NewArgTypeError(index, c, "KVReduce")
 	}
 }
 
-func AssertPending(env *Env, obj Object, msg string) Pending {
+func AssertPending(env *Env, obj Object, msg string) (Pending, error) {
 	switch c := obj.(type) {
 	case Pending:
-		return c
+		return c, nil
 	default:
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Pending", obj.GetType().ToString(false))
 		}
-		panic(env.RT.NewError(msg))
+		var v Pending
+		return v, env.RT.NewError(msg)
 	}
 }
 
-func EnsurePending(env *Env, args []Object, index int) Pending {
+func EnsurePending(env *Env, args []Object, index int) (Pending, error) {
 	switch c := args[index].(type) {
 	case Pending:
-		return c
+		return c, nil
 	default:
-		panic(env.RT.NewArgTypeError(index, c, "Pending"))
+		var v Pending
+		return v, env.RT.NewArgTypeError(index, c, "Pending")
 	}
 }
 
-func AssertFile(env *Env, obj Object, msg string) *File {
+func AssertFile(env *Env, obj Object, msg string) (*File, error) {
 	switch c := obj.(type) {
 	case *File:
-		return c
+		return c, nil
 	default:
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "File", obj.GetType().ToString(false))
 		}
-		panic(env.RT.NewError(msg))
+		var v *File
+		return v, env.RT.NewError(msg)
 	}
 }
 
-func EnsureFile(env *Env, args []Object, index int) *File {
+func EnsureFile(env *Env, args []Object, index int) (*File, error) {
 	switch c := args[index].(type) {
 	case *File:
-		return c
+		return c, nil
 	default:
-		panic(env.RT.NewArgTypeError(index, c, "File"))
+		var v *File
+		return v, env.RT.NewArgTypeError(index, c, "File")
 	}
 }
 
-func Assertio_Reader(env *Env, obj Object, msg string) io.Reader {
+func Assertio_Reader(env *Env, obj Object, msg string) (io.Reader, error) {
 	switch c := obj.(type) {
 	case io.Reader:
-		return c
+		return c, nil
 	default:
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "io.Reader", obj.GetType().ToString(false))
 		}
-		panic(env.RT.NewError(msg))
+		var v io.Reader
+		return v, env.RT.NewError(msg)
 	}
 }
 
-func Ensureio_Reader(env *Env, args []Object, index int) io.Reader {
+func Ensureio_Reader(env *Env, args []Object, index int) (io.Reader, error) {
 	switch c := args[index].(type) {
 	case io.Reader:
-		return c
+		return c, nil
 	default:
-		panic(env.RT.NewArgTypeError(index, c, "io.Reader"))
+		var v io.Reader
+		return v, env.RT.NewArgTypeError(index, c, "io.Reader")
 	}
 }
 
-func Assertio_Writer(env *Env, obj Object, msg string) io.Writer {
+func Assertio_Writer(env *Env, obj Object, msg string) (io.Writer, error) {
 	switch c := obj.(type) {
 	case io.Writer:
-		return c
+		return c, nil
 	default:
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "io.Writer", obj.GetType().ToString(false))
 		}
-		panic(env.RT.NewError(msg))
+		var v io.Writer
+		return v, env.RT.NewError(msg)
 	}
 }
 
-func Ensureio_Writer(env *Env, args []Object, index int) io.Writer {
+func Ensureio_Writer(env *Env, args []Object, index int) (io.Writer, error) {
 	switch c := args[index].(type) {
 	case io.Writer:
-		return c
+		return c, nil
 	default:
-		panic(env.RT.NewArgTypeError(index, c, "io.Writer"))
+		var v io.Writer
+		return v, env.RT.NewArgTypeError(index, c, "io.Writer")
 	}
 }
 
-func AssertStringReader(env *Env, obj Object, msg string) StringReader {
+func AssertStringReader(env *Env, obj Object, msg string) (StringReader, error) {
 	switch c := obj.(type) {
 	case StringReader:
-		return c
+		return c, nil
 	default:
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "StringReader", obj.GetType().ToString(false))
 		}
-		panic(env.RT.NewError(msg))
+		var v StringReader
+		return v, env.RT.NewError(msg)
 	}
 }
 
-func EnsureStringReader(env *Env, args []Object, index int) StringReader {
+func EnsureStringReader(env *Env, args []Object, index int) (StringReader, error) {
 	switch c := args[index].(type) {
 	case StringReader:
-		return c
+		return c, nil
 	default:
-		panic(env.RT.NewArgTypeError(index, c, "StringReader"))
+		var v StringReader
+		return v, env.RT.NewArgTypeError(index, c, "StringReader")
 	}
 }
 
-func Assertio_RuneReader(env *Env, obj Object, msg string) io.RuneReader {
+func Assertio_RuneReader(env *Env, obj Object, msg string) (io.RuneReader, error) {
 	switch c := obj.(type) {
 	case io.RuneReader:
-		return c
+		return c, nil
 	default:
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "io.RuneReader", obj.GetType().ToString(false))
 		}
-		panic(env.RT.NewError(msg))
+		var v io.RuneReader
+		return v, env.RT.NewError(msg)
 	}
 }
 
-func Ensureio_RuneReader(env *Env, args []Object, index int) io.RuneReader {
+func Ensureio_RuneReader(env *Env, args []Object, index int) (io.RuneReader, error) {
 	switch c := args[index].(type) {
 	case io.RuneReader:
-		return c
+		return c, nil
 	default:
-		panic(env.RT.NewArgTypeError(index, c, "io.RuneReader"))
+		var v io.RuneReader
+		return v, env.RT.NewArgTypeError(index, c, "io.RuneReader")
 	}
 }
 
-func AssertChannel(env *Env, obj Object, msg string) *Channel {
+func AssertChannel(env *Env, obj Object, msg string) (*Channel, error) {
 	switch c := obj.(type) {
 	case *Channel:
-		return c
+		return c, nil
 	default:
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Channel", obj.GetType().ToString(false))
 		}
-		panic(env.RT.NewError(msg))
+		var v *Channel
+		return v, env.RT.NewError(msg)
 	}
 }
 
-func EnsureChannel(env *Env, args []Object, index int) *Channel {
+func EnsureChannel(env *Env, args []Object, index int) (*Channel, error) {
 	switch c := args[index].(type) {
 	case *Channel:
-		return c
+		return c, nil
 	default:
-		panic(env.RT.NewArgTypeError(index, c, "Channel"))
+		var v *Channel
+		return v, env.RT.NewArgTypeError(index, c, "Channel")
 	}
 }

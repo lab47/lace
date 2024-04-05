@@ -19,33 +19,47 @@ type (
 	}
 )
 
-func (v *MapSet) WithMeta(meta Map) Object {
+func (v *MapSet) WithMeta(meta Map) (Object, error) {
 	res := *v
-	res.meta = SafeMerge(res.meta, meta)
-	return &res
+	m, err := SafeMerge(res.meta, meta)
+	if err != nil {
+		return nil, err
+	}
+
+	res.meta = m
+	return &res, nil
 }
 
 func (set *MapSet) Disjoin(key Object) Set {
 	return &MapSet{m: set.m.Without(key)}
 }
 
-func (set *MapSet) Add(obj Object) bool {
+func (set *MapSet) Add(obj Object) (bool, error) {
 	switch m := set.m.(type) {
 	case *ArrayMap:
-		return m.Add(obj, Boolean{B: true})
+		return m.Add(obj, Boolean{B: true}), nil
 	case *HashMap:
 		if m.containsKey(obj) {
-			return false
+			return false, nil
 		}
-		set.m = set.m.Assoc(obj, Boolean{B: true}).(Map)
-		return true
+		v, err := set.m.Assoc(obj, Boolean{B: true})
+		if err != nil {
+			return false, err
+		}
+		set.m = v.(Map)
+		return true, nil
 	default:
-		return false
+		return false, nil
 	}
 }
 
-func (set *MapSet) Conj(obj Object) Conjable {
-	return &MapSet{m: set.m.Assoc(obj, Boolean{B: true}).(Map)}
+func (set *MapSet) Conj(obj Object) (Conjable, error) {
+	v, err := set.m.Assoc(obj, Boolean{B: true})
+	if err != nil {
+		return nil, err
+	}
+
+	return &MapSet{m: v.(Map)}, nil
 }
 
 func EmptySet() *MapSet {
@@ -97,12 +111,15 @@ func (set *MapSet) Count() int {
 	return set.m.Count()
 }
 
-func (set *MapSet) Call(env *Env, args []Object) Object {
-	CheckArity(env, args, 1, 1)
-	if ok, _ := set.Get(args[0]); ok {
-		return args[0]
+func (set *MapSet) Call(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
 	}
-	return NIL
+
+	if ok, _ := set.Get(args[0]); ok {
+		return args[0], nil
+	}
+	return NIL, nil
 }
 
 var _ Callable = (*MapSet)(nil)

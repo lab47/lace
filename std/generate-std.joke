@@ -76,7 +76,7 @@
       (let [m (meta arg)
             t (cond-> (:tag m)
                 (:varargs m) (str "s"))]
-        (str arg " := Extract" t "(_env, _args, " (str i) ")")))
+        (str arg ", err := Extract" t "(_env, _args, " (str i) "); if err != nil { return nil, err }")))
     args)))
 
 (defn handle-varargs
@@ -105,7 +105,7 @@
                   :else (get go cnt))
         go-res (if (s/starts-with? go-expr "!")
                  (subs go-expr 1)
-                 (str "_res := " go-expr))]
+                 (str "_res, err := " go-expr))]
     (-> arity-template
         (rpl "{arity}" (if varargs? "true" (str "_c == " (count args))))
         (rpl "{arityCheck}" (if varargs?
@@ -117,8 +117,8 @@
         (rpl "{goExpr}" (rpl go-res "; " "\n\t\t"))
         (rpl "{return}"
              (if tag
-               (str "return Make" (type-name tag) "(_res)")
-               "return _res")))))
+               (str "return Make" (type-name tag) "(_res), err")
+               "return _res, err")))))
 
 (defn generate-arglist
   [args]

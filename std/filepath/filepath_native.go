@@ -7,13 +7,14 @@ import (
 	. "github.com/candid82/joker/core"
 )
 
-func fileSeq(root string) *Vector {
+func fileSeq(root string) (*Vector, error) {
 	res := EmptyVector()
-	filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+	var err error
+	err = filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		PanicOnErr(err)
 		m := FileInfoMap(path, info)
-		res = res.Conjoin(m)
-		return nil
+		res, err = res.Conjoin(m)
+		return err
 	})
-	return res
+	return res, err
 }

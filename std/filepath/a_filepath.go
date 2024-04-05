@@ -12,299 +12,316 @@ var separator_ String
 var __abs__P ProcFn = __abs_
 var abs_ Proc = Proc{Fn: __abs__P, Name: "abs_", Package: "std/filepath"}
 
-func __abs_(_env *Env, _args []Object) Object {
+func __abs_(_env *Env, _args []Object) (Object, error) {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		path := ExtractString(_env, _args, 0)
+		var err error
+		path, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
 		 _res, err := filepath.Abs(path)
 		PanicOnErr(err)
-		return MakeString(_res)
+		return MakeString(_res), err
 
 	default:
 		PanicArity(_env, _c)
 	}
-	return NIL
+	return NIL, nil
 }
 
 var __isabs__P ProcFn = __isabs_
 var isabs_ Proc = Proc{Fn: __isabs__P, Name: "isabs_", Package: "std/filepath"}
 
-func __isabs_(_env *Env, _args []Object) Object {
+func __isabs_(_env *Env, _args []Object) (Object, error) {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		path := ExtractString(_env, _args, 0)
-		_res := filepath.IsAbs(path)
-		return MakeBoolean(_res)
+		var err error
+		path, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		_res, err := filepath.IsAbs(path), nil
+		return MakeBoolean(_res), err
 
 	default:
 		PanicArity(_env, _c)
 	}
-	return NIL
+	return NIL, nil
 }
 
 var __base__P ProcFn = __base_
 var base_ Proc = Proc{Fn: __base__P, Name: "base_", Package: "std/filepath"}
 
-func __base_(_env *Env, _args []Object) Object {
+func __base_(_env *Env, _args []Object) (Object, error) {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		path := ExtractString(_env, _args, 0)
-		_res := filepath.Base(path)
-		return MakeString(_res)
+		var err error
+		path, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		_res, err := filepath.Base(path), nil
+		return MakeString(_res), err
 
 	default:
 		PanicArity(_env, _c)
 	}
-	return NIL
+	return NIL, nil
 }
 
 var __clean__P ProcFn = __clean_
 var clean_ Proc = Proc{Fn: __clean__P, Name: "clean_", Package: "std/filepath"}
 
-func __clean_(_env *Env, _args []Object) Object {
+func __clean_(_env *Env, _args []Object) (Object, error) {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		path := ExtractString(_env, _args, 0)
-		_res := filepath.Clean(path)
-		return MakeString(_res)
+		var err error
+		path, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		_res, err := filepath.Clean(path), nil
+		return MakeString(_res), err
 
 	default:
 		PanicArity(_env, _c)
 	}
-	return NIL
+	return NIL, nil
 }
 
 var __dir__P ProcFn = __dir_
 var dir_ Proc = Proc{Fn: __dir__P, Name: "dir_", Package: "std/filepath"}
 
-func __dir_(_env *Env, _args []Object) Object {
+func __dir_(_env *Env, _args []Object) (Object, error) {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		path := ExtractString(_env, _args, 0)
-		_res := filepath.Dir(path)
-		return MakeString(_res)
+		var err error
+		path, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		_res, err := filepath.Dir(path), nil
+		return MakeString(_res), err
 
 	default:
 		PanicArity(_env, _c)
 	}
-	return NIL
+	return NIL, nil
 }
 
 var __eval_symlinks__P ProcFn = __eval_symlinks_
 var eval_symlinks_ Proc = Proc{Fn: __eval_symlinks__P, Name: "eval_symlinks_", Package: "std/filepath"}
 
-func __eval_symlinks_(_env *Env, _args []Object) Object {
+func __eval_symlinks_(_env *Env, _args []Object) (Object, error) {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		path := ExtractString(_env, _args, 0)
+		var err error
+		path, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
 		 _res, err := filepath.EvalSymlinks(path)
 		PanicOnErr(err)
-		return MakeString(_res)
+		return MakeString(_res), err
 
 	default:
 		PanicArity(_env, _c)
 	}
-	return NIL
+	return NIL, nil
 }
 
 var __ext__P ProcFn = __ext_
 var ext_ Proc = Proc{Fn: __ext__P, Name: "ext_", Package: "std/filepath"}
 
-func __ext_(_env *Env, _args []Object) Object {
+func __ext_(_env *Env, _args []Object) (Object, error) {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		path := ExtractString(_env, _args, 0)
-		_res := filepath.Ext(path)
-		return MakeString(_res)
+		var err error
+		path, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		_res, err := filepath.Ext(path), nil
+		return MakeString(_res), err
 
 	default:
 		PanicArity(_env, _c)
 	}
-	return NIL
+	return NIL, nil
 }
 
 var __file_seq__P ProcFn = __file_seq_
 var file_seq_ Proc = Proc{Fn: __file_seq__P, Name: "file_seq_", Package: "std/filepath"}
 
-func __file_seq_(_env *Env, _args []Object) Object {
+func __file_seq_(_env *Env, _args []Object) (Object, error) {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		root := ExtractString(_env, _args, 0)
-		_res := fileSeq(root)
-		return _res
+		var err error
+		root, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		_res, err := fileSeq(root)
+		return _res, err
 
 	default:
 		PanicArity(_env, _c)
 	}
-	return NIL
+	return NIL, nil
 }
 
 var __from_slash__P ProcFn = __from_slash_
 var from_slash_ Proc = Proc{Fn: __from_slash__P, Name: "from_slash_", Package: "std/filepath"}
 
-func __from_slash_(_env *Env, _args []Object) Object {
+func __from_slash_(_env *Env, _args []Object) (Object, error) {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		path := ExtractString(_env, _args, 0)
-		_res := filepath.FromSlash(path)
-		return MakeString(_res)
+		var err error
+		path, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		_res, err := filepath.FromSlash(path), nil
+		return MakeString(_res), err
 
 	default:
 		PanicArity(_env, _c)
 	}
-	return NIL
+	return NIL, nil
 }
 
 var __glob__P ProcFn = __glob_
 var glob_ Proc = Proc{Fn: __glob__P, Name: "glob_", Package: "std/filepath"}
 
-func __glob_(_env *Env, _args []Object) Object {
+func __glob_(_env *Env, _args []Object) (Object, error) {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		pattern := ExtractString(_env, _args, 0)
+		var err error
+		pattern, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
 		 _res, err := filepath.Glob(pattern)
 		PanicOnErr(err)
-		return MakeStringVector(_res)
+		return MakeStringVector(_res), err
 
 	default:
 		PanicArity(_env, _c)
 	}
-	return NIL
+	return NIL, nil
 }
 
 var __join__P ProcFn = __join_
 var join_ Proc = Proc{Fn: __join__P, Name: "join_", Package: "std/filepath"}
 
-func __join_(_env *Env, _args []Object) Object {
+func __join_(_env *Env, _args []Object) (Object, error) {
 	_c := len(_args)
 	switch {
 	case true:
+		var err error
 		CheckArity(_env, _args, 0, 999)
-		elems := ExtractStrings(_env, _args, 0)
-		_res := filepath.Join(elems...)
-		return MakeString(_res)
+		elems, err := ExtractStrings(_env, _args, 0); if err != nil { return nil, err }
+		_res, err := filepath.Join(elems...), nil
+		return MakeString(_res), err
 
 	default:
 		PanicArity(_env, _c)
 	}
-	return NIL
+	return NIL, nil
 }
 
 var __ismatches__P ProcFn = __ismatches_
 var ismatches_ Proc = Proc{Fn: __ismatches__P, Name: "ismatches_", Package: "std/filepath"}
 
-func __ismatches_(_env *Env, _args []Object) Object {
+func __ismatches_(_env *Env, _args []Object) (Object, error) {
 	_c := len(_args)
 	switch {
 	case _c == 2:
-		pattern := ExtractString(_env, _args, 0)
-		name := ExtractString(_env, _args, 1)
+		var err error
+		pattern, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		name, err := ExtractString(_env, _args, 1); if err != nil { return nil, err }
 		 _res, err := filepath.Match(pattern, name)
 		PanicOnErr(err)
-		return MakeBoolean(_res)
+		return MakeBoolean(_res), err
 
 	default:
 		PanicArity(_env, _c)
 	}
-	return NIL
+	return NIL, nil
 }
 
 var __rel__P ProcFn = __rel_
 var rel_ Proc = Proc{Fn: __rel__P, Name: "rel_", Package: "std/filepath"}
 
-func __rel_(_env *Env, _args []Object) Object {
+func __rel_(_env *Env, _args []Object) (Object, error) {
 	_c := len(_args)
 	switch {
 	case _c == 2:
-		basepath := ExtractString(_env, _args, 0)
-		targpath := ExtractString(_env, _args, 1)
+		var err error
+		basepath, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		targpath, err := ExtractString(_env, _args, 1); if err != nil { return nil, err }
 		 _res, err := filepath.Rel(basepath, targpath)
 		PanicOnErr(err)
-		return MakeString(_res)
+		return MakeString(_res), err
 
 	default:
 		PanicArity(_env, _c)
 	}
-	return NIL
+	return NIL, nil
 }
 
 var __split__P ProcFn = __split_
 var split_ Proc = Proc{Fn: __split__P, Name: "split_", Package: "std/filepath"}
 
-func __split_(_env *Env, _args []Object) Object {
+func __split_(_env *Env, _args []Object) (Object, error) {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		path := ExtractString(_env, _args, 0)
+		var err error
+		path, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
 		 _dir, _file := filepath.Split(path)
 		_res := NewVectorFrom(MakeString(_dir), MakeString(_file))
-		return _res
+		return _res, err
 
 	default:
 		PanicArity(_env, _c)
 	}
-	return NIL
+	return NIL, nil
 }
 
 var __split_list__P ProcFn = __split_list_
 var split_list_ Proc = Proc{Fn: __split_list__P, Name: "split_list_", Package: "std/filepath"}
 
-func __split_list_(_env *Env, _args []Object) Object {
+func __split_list_(_env *Env, _args []Object) (Object, error) {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		path := ExtractString(_env, _args, 0)
-		_res := filepath.SplitList(path)
-		return MakeStringVector(_res)
+		var err error
+		path, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		_res, err := filepath.SplitList(path), nil
+		return MakeStringVector(_res), err
 
 	default:
 		PanicArity(_env, _c)
 	}
-	return NIL
+	return NIL, nil
 }
 
 var __to_slash__P ProcFn = __to_slash_
 var to_slash_ Proc = Proc{Fn: __to_slash__P, Name: "to_slash_", Package: "std/filepath"}
 
-func __to_slash_(_env *Env, _args []Object) Object {
+func __to_slash_(_env *Env, _args []Object) (Object, error) {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		path := ExtractString(_env, _args, 0)
-		_res := filepath.ToSlash(path)
-		return MakeString(_res)
+		var err error
+		path, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		_res, err := filepath.ToSlash(path), nil
+		return MakeString(_res), err
 
 	default:
 		PanicArity(_env, _c)
 	}
-	return NIL
+	return NIL, nil
 }
 
 var __volume_name__P ProcFn = __volume_name_
 var volume_name_ Proc = Proc{Fn: __volume_name__P, Name: "volume_name_", Package: "std/filepath"}
 
-func __volume_name_(_env *Env, _args []Object) Object {
+func __volume_name_(_env *Env, _args []Object) (Object, error) {
 	_c := len(_args)
 	switch {
 	case _c == 1:
-		path := ExtractString(_env, _args, 0)
-		_res := filepath.VolumeName(path)
-		return MakeString(_res)
+		var err error
+		path, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		_res, err := filepath.VolumeName(path), nil
+		return MakeString(_res), err
 
 	default:
 		PanicArity(_env, _c)
 	}
-	return NIL
+	return NIL, nil
 }
 
 func Init() {

@@ -129,7 +129,7 @@ func (rt *Runtime) popFrame() {
 	rt.callstack.popFrame()
 }
 
-func Eval(genv *Env, expr Expr, env *LocalEnv) Object {
+func Eval(genv *Env, expr Expr, env *LocalEnv) (Object, error) {
 	parentExpr := genv.RT.currentExpr
 	genv.RT.currentExpr = expr
 	defer (func() { genv.RT.currentExpr = parentExpr })()
@@ -227,75 +227,117 @@ func (err *EvalError) Error() string {
 	}
 }
 
-func (expr *VarRefExpr) Eval(genv *Env, env *LocalEnv) Object {
-	return expr.vr.Resolve()
+func (expr *VarRefExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
+	return expr.vr.Resolve(), nil
 }
 
-func (expr *SetMacroExpr) Eval(genv *Env, env *LocalEnv) Object {
+func (expr *SetMacroExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 	expr.vr.isMacro = true
 	expr.vr.isUsed = false
 	if fn, ok := expr.vr.Value.(*Fn); ok {
 		fn.isMacro = true
 	}
 	setMacroMeta(expr.vr)
-	return expr.vr
+	return expr.vr, nil
 }
 
-func (expr *BindingExpr) Eval(genv *Env, env *LocalEnv) Object {
+func (expr *BindingExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 	for i := env.frame; i > expr.binding.frame; i-- {
 		env = env.parent
 	}
-	return env.bindings[expr.binding.index]
+	return env.bindings[expr.binding.index], nil
 }
 
-func (expr *LiteralExpr) Eval(genv *Env, env *LocalEnv) Object {
-	return expr.obj
+func (expr *LiteralExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
+	return expr.obj, nil
 }
 
-func (expr *VectorExpr) Eval(genv *Env, env *LocalEnv) Object {
+func (expr *VectorExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 	res := EmptyVector()
 	for _, e := range expr.v {
-		res = res.Conjoin(Eval(genv, e, env))
+		o, err := Eval(genv, e, env)
+		if err != nil {
+			return nil, err
+		}
+		res, _ = res.Conjoin(o)
 	}
-	return res
+	return res, nil
 }
 
-func (expr *MapExpr) Eval(genv *Env, env *LocalEnv) Object {
+func (expr *MapExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 	if int64(len(expr.keys)) > HASHMAP_THRESHOLD/2 {
 		res := EmptyHashMap
 		for i := range expr.keys {
-			key := Eval(genv, expr.keys[i], env)
+			key, err := Eval(genv, expr.keys[i], env)
+			if err != nil {
+				return nil, err
+			}
 			if res.containsKey(key) {
 				panic(genv.RT.NewError("Duplicate key: " + key.ToString(false)))
 			}
-			res = res.Assoc(key, Eval(genv, expr.values[i], env)).(*HashMap)
+			v, err := Eval(genv, expr.values[i], env)
+			if err != nil {
+				return nil, err
+			}
+			v, err = res.Assoc(key, v)
+			if err != nil {
+				return nil, err
+			}
+			res = v.(*HashMap)
 		}
-		return res
+		return res, nil
 	}
 	res := EmptyArrayMap()
 	for i := range expr.keys {
-		key := Eval(genv, expr.keys[i], env)
-		if !res.Add(key, Eval(genv, expr.values[i], env)) {
+		key, err := Eval(genv, expr.keys[i], env)
+		if err != nil {
+			return nil, err
+		}
+		v, err := Eval(genv, expr.values[i], env)
+		if err != nil {
+			return nil, err
+		}
+		if !res.Add(key, v) {
 			panic(genv.RT.NewError("Duplicate key: " + key.ToString(false)))
 		}
 	}
-	return res
+	return res, nil
 }
 
-func (expr *SetExpr) Eval(genv *Env, env *LocalEnv) Object {
+func (expr *SetExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 	res := EmptySet()
 	for _, elemExpr := range expr.elements {
-		el := Eval(genv, elemExpr, env)
-		if !res.Add(el) {
+		el, err := Eval(genv, elemExpr, env)
+		if err != nil {
+			return nil, err
+		}
+		ok, err := res.Add(el)
+		if err != nil {
+			return nil, err
+		}
+		if !ok {
 			panic(genv.RT.NewError("Duplicate set element: " + el.ToString(false)))
 		}
 	}
-	return res
+	return res, nil
 }
 
-func (expr *DefExpr) Eval(genv *Env, env *LocalEnv) Object {
+func iEval(dst *Object, genv *Env, obj Expr, env *LocalEnv) error {
+	x, err := Eval(genv, obj, env)
+	if err != nil {
+		return err
+	}
+
+	*dst = x
+	return nil
+}
+
+func (expr *DefExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 	if expr.value != nil {
-		expr.vr.Value = Eval(genv, expr.value, env)
+		err := iEval(&expr.vr.Value, genv, expr.value, env)
+		if err != nil {
+			return nil, err
+		}
 	}
 	meta := EmptyArrayMap()
 	meta.Add(KEYWORDS.line, Int{I: expr.startLine})
@@ -305,34 +347,62 @@ func (expr *DefExpr) Eval(genv *Env, env *LocalEnv) Object {
 	meta.Add(KEYWORDS.name, expr.vr.name)
 	expr.vr.meta = meta
 	if expr.meta != nil {
-		expr.vr.meta = expr.vr.meta.Merge(Eval(genv, expr.meta, env).(Map))
+		v, err := Eval(genv, expr.meta, env)
+		if err != nil {
+			return nil, err
+		}
+		expr.vr.meta, err = expr.vr.meta.Merge(v.(Map))
+		if err != nil {
+			return nil, err
+		}
 	}
 	// isMacro can be set by set-macro__ during parse stage
 	if expr.vr.isMacro {
-		expr.vr.meta = expr.vr.meta.Assoc(KEYWORDS.macro, Boolean{B: true}).(Map)
+		v, err := expr.vr.meta.Assoc(KEYWORDS.macro, Boolean{B: true})
+		if err != nil {
+			return nil, err
+		}
+		expr.vr.meta = v.(Map)
 	}
-	return expr.vr
+	return expr.vr, nil
 }
 
-func (expr *MetaExpr) Eval(genv *Env, env *LocalEnv) Object {
-	meta := Eval(genv, expr.meta, env)
-	res := Eval(genv, expr.expr, env)
+func (expr *MetaExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
+	meta, err := Eval(genv, expr.meta, env)
+	if err != nil {
+		return nil, err
+	}
+	res, err := Eval(genv, expr.expr, env)
+	if err != nil {
+		return nil, err
+	}
 	return res.(Meta).WithMeta(meta.(Map))
 }
 
-func evalSeq(genv *Env, exprs []Expr, env *LocalEnv) []Object {
+func evalSeq(genv *Env, exprs []Expr, env *LocalEnv) ([]Object, error) {
 	res := make([]Object, len(exprs))
 	for i, expr := range exprs {
-		res[i] = Eval(genv, expr, env)
+		v, err := Eval(genv, expr, env)
+		if err != nil {
+			return nil, err
+		}
+		res[i] = v
 	}
-	return res
+	return res, nil
 }
 
-func (expr *CallExpr) Eval(genv *Env, env *LocalEnv) Object {
-	callable := Eval(genv, expr.callable, env)
+func (expr *CallExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
+	callable, err := Eval(genv, expr.callable, env)
+	if err != nil {
+		return nil, err
+	}
+
 	switch callable := callable.(type) {
 	case Callable:
-		args := evalSeq(genv, expr.args, env)
+		args, err := evalSeq(genv, expr.args, env)
+		if err != nil {
+			return nil, err
+		}
 		return callable.Call(genv, args)
 	default:
 		panic(genv.RT.NewErrorWithPos(callable.ToString(false)+" is not a Fn", expr.callable.Pos()))
@@ -359,8 +429,12 @@ func (expr *CallExpr) Name() string {
 	}
 }
 
-func (expr *ThrowExpr) Eval(genv *Env, env *LocalEnv) Object {
-	e := Eval(genv, expr.e, env)
+func (expr *ThrowExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
+	e, err := Eval(genv, expr.e, env)
+	if err != nil {
+		return nil, err
+	}
+
 	switch e.(type) {
 	case Error:
 		panic(e)
@@ -369,11 +443,11 @@ func (expr *ThrowExpr) Eval(genv *Env, env *LocalEnv) Object {
 	}
 }
 
-func (expr *TryExpr) Eval(genv *Env, env *LocalEnv) (obj Object) {
+func (expr *TryExpr) Eval(genv *Env, env *LocalEnv) (obj Object, err error) {
 	defer func() {
 		defer func() {
 			if expr.finallyExpr != nil {
-				evalBody(genv, expr.finallyExpr, env)
+				_, err = evalBody(genv, expr.finallyExpr, env)
 			}
 		}()
 		if r := recover(); r != nil {
@@ -381,7 +455,7 @@ func (expr *TryExpr) Eval(genv *Env, env *LocalEnv) (obj Object) {
 			case Error:
 				for _, catchExpr := range expr.catches {
 					if IsInstance(catchExpr.excType, r) {
-						obj = evalBody(genv, catchExpr.body, env.addFrame([]Object{r}))
+						obj, err = evalBody(genv, catchExpr.body, env.addFrame([]Object{r}))
 						return
 					}
 				}
@@ -394,78 +468,103 @@ func (expr *TryExpr) Eval(genv *Env, env *LocalEnv) (obj Object) {
 	return evalBody(genv, expr.body, env)
 }
 
-func (expr *CatchExpr) Eval(genv *Env, env *LocalEnv) (obj Object) {
-	panic(genv.RT.NewError("This should never happen!"))
+func (expr *CatchExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
+	return nil, genv.RT.NewError("This should never happen!")
 }
 
-func evalBody(genv *Env, body []Expr, env *LocalEnv) Object {
+func evalBody(genv *Env, body []Expr, env *LocalEnv) (Object, error) {
 	var res Object = NIL
+	var err error
 	for _, expr := range body {
-		res = Eval(genv, expr, env)
+		res, err = Eval(genv, expr, env)
+		if err != nil {
+			return nil, err
+		}
 	}
-	return res
+	return res, nil
 }
 
-func evalLoop(genv *Env, body []Expr, env *LocalEnv) Object {
+func evalLoop(genv *Env, body []Expr, env *LocalEnv) (Object, error) {
 	var res Object = NIL
+	var err error
 loop:
 	for _, expr := range body {
-		res = Eval(genv, expr, env)
+		res, err = Eval(genv, expr, env)
+		if err != nil {
+			return nil, err
+		}
 	}
 	switch res := res.(type) {
 	default:
-		return res
+		return res, nil
 	case RecurBindings:
 		env = env.replaceFrame(res)
 		goto loop
 	}
 }
 
-func (doExpr *DoExpr) Eval(genv *Env, env *LocalEnv) Object {
+func (doExpr *DoExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 	return evalBody(genv, doExpr.body, env)
 }
 
-func (expr *IfExpr) Eval(genv *Env, env *LocalEnv) Object {
-	if ToBool(Eval(genv, expr.cond, env)) {
+func (expr *IfExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
+	v, err := Eval(genv, expr.cond, env)
+	if err != nil {
+		return nil, err
+	}
+
+	if ToBool(v) {
 		return Eval(genv, expr.positive, env)
 	}
 	return Eval(genv, expr.negative, env)
 }
 
-func (expr *FnExpr) Eval(genv *Env, env *LocalEnv) Object {
+func (expr *FnExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 	res := &Fn{fnExpr: expr}
 	if expr.self.name != nil {
 		env = env.addFrame([]Object{res})
 	}
 	res.env = env
-	return res
+	return res, nil
 }
 
-func (expr *FnArityExpr) Eval(genv *Env, env *LocalEnv) Object {
-	panic(genv.RT.NewError("This should never happen!"))
+func (expr *FnArityExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
+	return nil, genv.RT.NewError("This should never happen!")
 }
 
-func (expr *LetExpr) Eval(genv *Env, env *LocalEnv) Object {
+func (expr *LetExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 	env = env.addEmptyFrame(len(expr.names))
 	for _, bindingExpr := range expr.values {
-		env.addBinding(Eval(genv, bindingExpr, env))
+		v, err := Eval(genv, bindingExpr, env)
+		if err != nil {
+			return nil, err
+		}
+		env.addBinding(v)
 	}
 	return evalBody(genv, expr.body, env)
 }
 
-func (expr *LoopExpr) Eval(genv *Env, env *LocalEnv) Object {
+func (expr *LoopExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 	env = env.addEmptyFrame(len(expr.names))
 	for _, bindingExpr := range expr.values {
-		env.addBinding(Eval(genv, bindingExpr, env))
+		v, err := Eval(genv, bindingExpr, env)
+		if err != nil {
+			return nil, err
+		}
+		env.addBinding(v)
 	}
 	return evalLoop(genv, expr.body, env)
 }
 
-func (expr *RecurExpr) Eval(genv *Env, env *LocalEnv) Object {
-	return RecurBindings(evalSeq(genv, expr.args, env))
+func (expr *RecurExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
+	v, err := evalSeq(genv, expr.args, env)
+	if err != nil {
+		return nil, err
+	}
+	return RecurBindings(v), nil
 }
 
-func (expr *MacroCallExpr) Eval(genv *Env, env *LocalEnv) Object {
+func (expr *MacroCallExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 	return expr.macro.Call(genv, expr.args)
 }
 
@@ -487,7 +586,7 @@ func TryEval(env *Env, expr Expr) (obj Object, err error) {
 		}
 	}()
 
-	return Eval(env, expr, nil), nil
+	return Eval(env, expr, nil)
 }
 
 func PanicOnErr(err error) {

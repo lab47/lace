@@ -14,7 +14,7 @@ type (
 		Without(key Object) Map
 		Keys() Seq
 		Vals() Seq
-		Merge(m Map) Map
+		Merge(m Map) (Map, error)
 		Iter() MapIterator
 	}
 	MapIterator interface {
@@ -41,7 +41,7 @@ func (iter *EmptyMapIterator) Next() *Pair {
 	panic(newIteratorError())
 }
 
-func mapConj(m Map, obj Object) Conjable {
+func mapConj(m Map, obj Object) (Conjable, error) {
 	switch obj := obj.(type) {
 	case *Vector:
 		if obj.count != 2 {
@@ -99,15 +99,15 @@ func mapToString(m Map, escape bool) string {
 	return b.String()
 }
 
-func callMap(env *Env, m Map, args []Object) Object {
+func callMap(env *Env, m Map, args []Object) (Object, error) {
 	CheckArity(env, args, 1, 2)
 	if ok, v := m.Get(args[0]); ok {
-		return v
+		return v, nil
 	}
 	if len(args) == 2 {
-		return args[1]
+		return args[1], nil
 	}
-	return NIL
+	return NIL, nil
 }
 
 func pprintMap(m Map, w io.Writer, indent int) int {
