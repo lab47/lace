@@ -708,7 +708,8 @@ var procApply = func(env *Env, args []Object) Object {
 
 var procLazySeq = func(env *Env, args []Object) Object {
 	return &LazySeq{
-		fn: args[0].(*Fn),
+		env: env,
+		fn:  args[0].(*Fn),
 	}
 }
 
