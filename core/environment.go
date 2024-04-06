@@ -198,7 +198,7 @@ func (env *Env) RemoveNamespace(s Symbol) *Namespace {
 	if s.ns != nil {
 		return nil
 	}
-	if s.Equals(SYMBOLS.lace_core) {
+	if s.Equals(criticalSymbols.lace_core) {
 		panic(env.RT.NewError("Cannot remove core namespace"))
 	}
 	ns := env.Namespaces[s.name]

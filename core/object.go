@@ -774,7 +774,7 @@ func (exInfo *ExInfo) Hash() uint32 {
 }
 
 func (exInfo *ExInfo) Message() Object {
-	if ok, res := exInfo.Get(KEYWORDS.message); ok {
+	if ok, res := exInfo.Get(criticalKeywords.message); ok {
 		return res
 	}
 	return NIL
@@ -782,18 +782,18 @@ func (exInfo *ExInfo) Message() Object {
 
 func (exInfo *ExInfo) Error() string {
 	var pos Position
-	_, data := exInfo.Get(KEYWORDS.data)
-	ok, form := data.(Map).Get(KEYWORDS.form)
+	_, data := exInfo.Get(criticalKeywords.data)
+	ok, form := data.(Map).Get(criticalKeywords.form)
 	if ok {
 		if form.GetInfo() != nil {
 			pos = form.GetInfo().Pos()
 		}
 	}
 	prefix := "Exception"
-	if ok, pr := data.(Map).Get(KEYWORDS._prefix); ok {
+	if ok, pr := data.(Map).Get(criticalKeywords._prefix); ok {
 		prefix = pr.ToString(false)
 	}
-	_, msg := exInfo.Get(KEYWORDS.message)
+	_, msg := exInfo.Get(criticalKeywords.message)
 	if len(exInfo.rt.callstack.frames) > 0 && !LINTER_MODE {
 		return fmt.Sprintf("%s:%d:%d: %s: %s\nStacktrace:\n%s", pos.Filename(), pos.startLine, pos.startColumn, prefix, msg.(String).S, exInfo.rt.stacktrace())
 	} else {
@@ -1711,10 +1711,36 @@ func IsInstance(t *Type, obj Object) bool {
 	return IsEqualOrImplements(t, obj.GetType())
 }
 
+var specialSymbols = make(map[*string]struct{})
+
+func init() {
+	specialSymbols[criticalSymbols._if.name] = struct{}{}
+	specialSymbols[criticalSymbols.quote.name] = struct{}{}
+	specialSymbols[criticalSymbols.fn_.name] = struct{}{}
+	specialSymbols[criticalSymbols.let_.name] = struct{}{}
+	specialSymbols[criticalSymbols.letfn_.name] = struct{}{}
+	specialSymbols[criticalSymbols.loop_.name] = struct{}{}
+	specialSymbols[criticalSymbols.recur.name] = struct{}{}
+	specialSymbols[criticalSymbols.setMacro_.name] = struct{}{}
+	specialSymbols[criticalSymbols.def.name] = struct{}{}
+	specialSymbols[criticalSymbols.defLinter.name] = struct{}{}
+	specialSymbols[criticalSymbols._var.name] = struct{}{}
+	specialSymbols[criticalSymbols.do.name] = struct{}{}
+	specialSymbols[criticalSymbols.throw.name] = struct{}{}
+	specialSymbols[criticalSymbols.try.name] = struct{}{}
+	specialSymbols[criticalSymbols.catch.name] = struct{}{}
+	specialSymbols[criticalSymbols.finally.name] = struct{}{}
+}
+
 func IsSpecialSymbol(obj Object) bool {
 	switch obj := obj.(type) {
 	case Symbol:
-		return obj.ns == nil && SPECIAL_SYMBOLS[obj.name]
+		if obj.ns != nil {
+			return false
+		}
+
+		_, found := specialSymbols[obj.name]
+		return found
 	default:
 		return false
 	}
@@ -1723,9 +1749,9 @@ func IsSpecialSymbol(obj Object) bool {
 func MakeMeta(arglists Seq, docstring string, added string) *ArrayMap {
 	res := EmptyArrayMap()
 	if arglists != nil {
-		res.Add(KEYWORDS.arglist, arglists)
+		res.Add(criticalKeywords.arglist, arglists)
 	}
-	res.Add(KEYWORDS.doc, String{S: docstring})
-	res.Add(KEYWORDS.added, String{S: added})
+	res.Add(criticalKeywords.doc, String{S: docstring})
+	res.Add(criticalKeywords.added, String{S: added})
 	return res
 }

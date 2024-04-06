@@ -125,7 +125,7 @@ func (ns *Namespace) Intern(sym Symbol) *Var {
 		return newVar
 	}
 	if existingVar.ns != ns {
-		if existingVar.ns.Name.Equals(SYMBOLS.lace_core) {
+		if existingVar.ns.Name.Equals(criticalSymbols.lace_core) {
 			newVar := &Var{
 				ns:   ns,
 				name: sym,
@@ -140,7 +140,7 @@ func (ns *Namespace) Intern(sym Symbol) *Var {
 		panic(StubNewErrorWithPos(fmt.Sprintf("WARNING: %s already refers to: %s in namespace %s",
 			sym.ToString(false), existingVar.ToString(false), ns.ToString(false)), sym.GetInfo().Pos()))
 	}
-	if LINTER_MODE && existingVar.expr != nil && !existingVar.ns.Name.Equals(SYMBOLS.lace_core) {
+	if LINTER_MODE && existingVar.expr != nil && !existingVar.ns.Name.Equals(criticalSymbols.lace_core) {
 		printParseWarning(sym.GetInfo().Pos(), "Duplicate def of "+existingVar.ToString(false))
 	}
 	return existingVar
@@ -149,8 +149,8 @@ func (ns *Namespace) Intern(sym Symbol) *Var {
 func (ns *Namespace) InternVar(name string, val Object, meta *ArrayMap) *Var {
 	vr := ns.Intern(MakeSymbol(name))
 	vr.Value = val
-	meta.Add(KEYWORDS.ns, ns)
-	meta.Add(KEYWORDS.name, vr.name)
+	meta.Add(criticalKeywords.ns, ns)
+	meta.Add(criticalKeywords.name, vr.name)
 	vr.meta = meta
 	return vr
 }

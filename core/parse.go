@@ -702,10 +702,10 @@ func updateVar(vr *Var, info *ObjectInfo, valueExpr Expr, sym Symbol) {
 	vr.expr = valueExpr
 	meta := sym.GetMeta()
 	if meta != nil {
-		if ok, p := meta.Get(KEYWORDS.private); ok {
+		if ok, p := meta.Get(criticalKeywords.private); ok {
 			vr.isPrivate = ToBool(p)
 		}
-		if ok, p := meta.Get(KEYWORDS.dynamic); ok {
+		if ok, p := meta.Get(criticalKeywords.dynamic); ok {
 			vr.isDynamic = ToBool(p)
 		}
 		vr.taggedType = getTaggedType(sym)
@@ -761,13 +761,13 @@ func parseDef(obj Object, ctx *ParseContext, isForLinter bool) (*DefExpr, error)
 			switch docstring.(type) {
 			case String:
 				if meta != nil {
-					v, err := meta.Assoc(KEYWORDS.doc, docstring)
+					v, err := meta.Assoc(criticalKeywords.doc, docstring)
 					if err != nil {
 						return nil, err
 					}
 					meta = v.(Map)
 				} else {
-					v, err := EmptyArrayMap().Assoc(KEYWORDS.doc, docstring)
+					v, err := EmptyArrayMap().Assoc(criticalKeywords.doc, docstring)
 					if err != nil {
 						return nil, err
 					}
@@ -835,7 +835,7 @@ func parseParams(params Object) ([]Symbol, bool, error) {
 				return nil, false, &ParseError{obj: ro, msg: "Unsupported binding form: " + sym.ToString(false)}
 			}
 		}
-		if SYMBOLS.amp.Equals(sym) {
+		if criticalSymbols.amp.Equals(sym) {
 			if v.count > i+2 {
 				ro := v.at(i + 2)
 				return nil, false, &ParseError{obj: ro, msg: "Unexpected parameter: " + ro.ToString(false)}
@@ -1000,11 +1000,11 @@ func parseFn(obj Object, ctx *ParseContext) (Expr, error) {
 }
 
 func isCatch(obj Object) bool {
-	return IsSeq(obj) && obj.(Seq).First().Equals(SYMBOLS.catch)
+	return IsSeq(obj) && obj.(Seq).First().Equals(criticalSymbols.catch)
 }
 
 func isFinally(obj Object) bool {
-	return IsSeq(obj) && obj.(Seq).First().Equals(SYMBOLS.finally)
+	return IsSeq(obj) && obj.(Seq).First().Equals(criticalSymbols.finally)
 }
 
 func resolveType(obj Object, ctx *ParseContext) (*Type, error) {
@@ -1139,7 +1139,7 @@ func parseLetfn(obj Object, ctx *ParseContext) (*LoopExpr, error) {
 
 func isSkipUnused(obj Meta) bool {
 	if m := obj.GetMeta(); m != nil {
-		if ok, v := m.Get(KEYWORDS.skipUnused); ok {
+		if ok, v := m.Get(criticalKeywords.skipUnused); ok {
 			return ToBool(v)
 		}
 	}
@@ -1365,7 +1365,7 @@ func reportNotAFunction(pos Position, name string) {
 
 func getTaggedType(obj Meta) *Type {
 	if m := obj.GetMeta(); m != nil {
-		if ok, typeName := m.Get(KEYWORDS.tag); ok {
+		if ok, typeName := m.Get(criticalKeywords.tag); ok {
 			if typeSym, ok := typeName.(Symbol); ok {
 				if t := TYPES[typeSym.name]; t != nil {
 					return t
@@ -1379,7 +1379,7 @@ func getTaggedType(obj Meta) *Type {
 func getTaggedTypes(obj Meta) []*Type {
 	var res []*Type
 	if m := obj.GetMeta(); m != nil {
-		if ok, typeName := m.Get(KEYWORDS.tag); ok {
+		if ok, typeName := m.Get(criticalKeywords.tag); ok {
 			switch typeDecl := typeName.(type) {
 			case Symbol:
 				if t := TYPES[typeDecl.name]; t != nil {
@@ -1462,7 +1462,7 @@ func checkArglist(arglist Seq, passedArgsCount int) bool {
 	for !arglist.IsEmpty() {
 		if v, ok := arglist.First().(*Vector); ok {
 			if v.Count() == passedArgsCount ||
-				v.Count() >= 2 && v.Nth(v.Count()-2).Equals(SYMBOLS.amp) && passedArgsCount >= (v.Count()-2) {
+				v.Count() >= 2 && v.Nth(v.Count()-2).Equals(criticalSymbols.amp) && passedArgsCount >= (v.Count()-2) {
 				return true
 			}
 		}
@@ -1475,9 +1475,9 @@ func setMacroMeta(vr *Var) error {
 	var err error
 	var ass Associative
 	if vr.meta == nil {
-		ass, err = EmptyArrayMap().Assoc(KEYWORDS.macro, Boolean{B: true})
+		ass, err = EmptyArrayMap().Assoc(criticalKeywords.macro, Boolean{B: true})
 	} else {
-		ass, err = vr.meta.Assoc(KEYWORDS.macro, Boolean{B: true})
+		ass, err = vr.meta.Assoc(criticalKeywords.macro, Boolean{B: true})
 	}
 
 	vr.meta = ass.(Map)
@@ -1814,7 +1814,7 @@ func parseList(env *Env, obj Object, ctx *ParseContext) (Expr, error) {
 					}
 				case Callable:
 					if m := c.vr.GetMeta(); m != nil {
-						if ok, arglist := m.Get(KEYWORDS.arglist); ok {
+						if ok, arglist := m.Get(criticalKeywords.arglist); ok {
 							if arglist, ok := arglist.(Seq); ok {
 								if !checkArglist(arglist, len(res.args)) {
 									printParseWarning(pos, fmt.Sprintf("Wrong number of args (%d) passed to %s", len(res.args), res.Name()))

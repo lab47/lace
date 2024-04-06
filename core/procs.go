@@ -478,27 +478,27 @@ var procExInfo = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	res.Add(KEYWORDS.message, s)
-	res.Add(KEYWORDS.data, m)
+	res.Add(criticalKeywords.message, s)
+	res.Add(criticalKeywords.data, m)
 	if len(args) == 3 {
 		e, err := EnsureError(env, args, 2)
 		if err != nil {
 			return nil, err
 		}
-		res.Add(KEYWORDS.cause, e)
+		res.Add(criticalKeywords.cause, e)
 	}
 	return res, nil
 }
 
 var procExData = func(env *Env, args []Object) (Object, error) {
-	if ok, res := args[0].(*ExInfo).Get(KEYWORDS.data); ok {
+	if ok, res := args[0].(*ExInfo).Get(criticalKeywords.data); ok {
 		return res, nil
 	}
 	return NIL, nil
 }
 
 var procExCause = func(env *Env, args []Object) (Object, error) {
-	if ok, res := args[0].(*ExInfo).Get(KEYWORDS.cause); ok {
+	if ok, res := args[0].(*ExInfo).Get(criticalKeywords.cause); ok {
 		return res, nil
 	}
 	return NIL, nil
@@ -660,7 +660,7 @@ var procAtom = func(env *Env, args []Object) (Object, error) {
 		if err != nil {
 			return nil, err
 		}
-		if ok, v := m.Get(KEYWORDS.meta); ok {
+		if ok, v := m.Get(criticalKeywords.meta); ok {
 			mm, err := AssertMap(env, v, "")
 			if err != nil {
 				return nil, err
@@ -2668,7 +2668,7 @@ func ReadConfig(env *Env, filename string, workingDir string) error {
 			return nil
 		}
 	}
-	ok, knownMacros := configMap.Get(KEYWORDS.knownMacros)
+	ok, knownMacros := configMap.Get(criticalKeywords.knownMacros)
 	if ok {
 		_, ok1 := knownMacros.(Seqable)
 		if !ok1 {
@@ -2680,26 +2680,26 @@ func ReadConfig(env *Env, filename string, workingDir string) error {
 			printConfigError(configFileName, err.Error())
 			return nil
 		}
-		v, err := configMap.Assoc(KEYWORDS.knownMacros, m)
+		v, err := configMap.Assoc(criticalKeywords.knownMacros, m)
 		if err != nil {
 			return err
 		}
 		configMap = v.(Map)
 	}
-	ok, rules := configMap.Get(KEYWORDS.rules)
+	ok, rules := configMap.Get(criticalKeywords.rules)
 	if ok {
 		m, ok := rules.(Map)
 		if !ok {
 			printConfigError(configFileName, ":rules value must be a map, got "+rules.GetType().ToString(false))
 			return nil
 		}
-		if ok, v := m.Get(KEYWORDS.ifWithoutElse); ok {
+		if ok, v := m.Get(criticalKeywords.ifWithoutElse); ok {
 			WARNINGS.ifWithoutElse = ToBool(v)
 		}
-		if ok, v := m.Get(KEYWORDS.unusedFnParameters); ok {
+		if ok, v := m.Get(criticalKeywords.unusedFnParameters); ok {
 			WARNINGS.unusedFnParameters = ToBool(v)
 		}
-		if ok, v := m.Get(KEYWORDS.fnWithEmptyBody); ok {
+		if ok, v := m.Get(criticalKeywords.fnWithEmptyBody); ok {
 			WARNINGS.fnWithEmptyBody = ToBool(v)
 		}
 	}

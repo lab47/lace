@@ -808,7 +808,7 @@ func readMeta(env *Env, reader *Reader) (*ArrayMap, error) {
 	case *ArrayMap:
 		return v, nil
 	case String, Symbol:
-		return &ArrayMap{arr: []Object{DeriveReadObject(obj, KEYWORDS.tag), obj}}, nil
+		return &ArrayMap{arr: []Object{DeriveReadObject(obj, criticalKeywords.tag), obj}}, nil
 	case Keyword:
 		return &ArrayMap{arr: []Object{obj, DeriveReadObject(obj, Boolean{B: true})}}, nil
 	default:
@@ -839,7 +839,7 @@ func makeFnForm(args map[int]Symbol, body Object) (Object, error) {
 		}
 	}
 	if v, ok := args[-1]; ok {
-		a[len(args)-1] = SYMBOLS.amp
+		a[len(args)-1] = criticalSymbols.amp
 		a = append(a, v)
 	}
 	argVector := EmptyVector()
@@ -888,7 +888,7 @@ func readArgSymbol(env *Env, reader *Reader) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	if obj.Equals(SYMBOLS.amp) {
+	if obj.Equals(criticalSymbols.amp) {
 		return MakeReadObject(reader, registerArg(-1)), nil
 	}
 	switch n := obj.(type) {
@@ -924,14 +924,14 @@ func syntaxQuoteSeq(tenv *Env, seq Seq, env map[*string]Symbol, reader *Reader) 
 	res := make([]Object, 0)
 	for iter := iter(seq); iter.HasNext(); {
 		obj := iter.Next()
-		if isCall(obj, SYMBOLS.unquoteSplicing) {
+		if isCall(obj, criticalSymbols.unquoteSplicing) {
 			res = append(res, (obj).(Seq).Rest().First())
 		} else {
 			q, err := makeSyntaxQuote(tenv, obj, env, reader)
 			if err != nil {
 				return nil, err
 			}
-			res = append(res, DeriveReadObject(q, NewListFrom(SYMBOLS.list, q)))
+			res = append(res, DeriveReadObject(q, NewListFrom(criticalSymbols.list, q)))
 		}
 	}
 	return &ArraySeq{arr: res}, nil
@@ -943,11 +943,11 @@ func syntaxQuoteColl(tenv *Env, seq Seq, env map[*string]Symbol, reader *Reader,
 		return nil, err
 	}
 
-	concat := q.Cons(SYMBOLS.concat)
-	seqList := NewListFrom(SYMBOLS.seq, concat)
+	concat := q.Cons(criticalSymbols.concat)
+	seqList := NewListFrom(criticalSymbols.seq, concat)
 	var res Object = seqList
-	if ctor != SYMBOLS.emptySymbol {
-		res = NewListFrom(ctor, seqList).Cons(SYMBOLS.apply)
+	if ctor != criticalSymbols.emptySymbol {
+		res = NewListFrom(ctor, seqList).Cons(criticalSymbols.apply)
 	}
 	return res.WithInfo(info), nil
 }
@@ -957,7 +957,7 @@ func makeSyntaxQuote(tenv *Env, obj Object, env map[*string]Symbol, reader *Read
 		return obj, nil
 	}
 	if IsSpecialSymbol(obj) {
-		return makeQuote(obj, SYMBOLS.quote), nil
+		return makeQuote(obj, criticalSymbols.quote), nil
 	}
 	info := obj.GetInfo()
 	switch s := obj.(type) {
@@ -977,21 +977,21 @@ func makeSyntaxQuote(tenv *Env, obj Object, env map[*string]Symbol, reader *Read
 			}
 			obj = DeriveReadObject(obj, v)
 		}
-		return makeQuote(obj, SYMBOLS.quote), nil
+		return makeQuote(obj, criticalSymbols.quote), nil
 	case Seq:
-		if isCall(obj, SYMBOLS.unquote) {
+		if isCall(obj, criticalSymbols.unquote) {
 			return Second(s), nil
 		}
-		if isCall(obj, SYMBOLS.unquoteSplicing) {
+		if isCall(obj, criticalSymbols.unquoteSplicing) {
 			return nil, MakeReadError(reader, "Splice not in list")
 		}
-		return syntaxQuoteColl(tenv, s, env, reader, SYMBOLS.emptySymbol, info)
+		return syntaxQuoteColl(tenv, s, env, reader, criticalSymbols.emptySymbol, info)
 	case *Vector:
-		return syntaxQuoteColl(tenv, s.Seq(), env, reader, SYMBOLS.vector, info)
+		return syntaxQuoteColl(tenv, s.Seq(), env, reader, criticalSymbols.vector, info)
 	case *ArrayMap:
-		return syntaxQuoteColl(tenv, ArraySeqFromArrayMap(s), env, reader, SYMBOLS.hashMap, info)
+		return syntaxQuoteColl(tenv, ArraySeqFromArrayMap(s), env, reader, criticalSymbols.hashMap, info)
 	case *MapSet:
-		return syntaxQuoteColl(tenv, s.Seq(), env, reader, SYMBOLS.hashSet, info)
+		return syntaxQuoteColl(tenv, s.Seq(), env, reader, criticalSymbols.hashSet, info)
 	default:
 		return obj, nil
 	}
@@ -1022,7 +1022,7 @@ func readTagged(env *Env, reader *Reader) (Object, error) {
 
 	switch s := obj.(type) {
 	case Symbol:
-		readersVar, ok := env.CoreNamespace.mappings[SYMBOLS.defaultDataReaders.name]
+		readersVar, ok := env.CoreNamespace.mappings[criticalSymbols.defaultDataReaders.name]
 		if !ok {
 			return handleNoReaderError(env, reader, s)
 		}
@@ -1197,7 +1197,7 @@ func readDispatch(env *Env, reader *Reader) (Object, bool, error) {
 		if err != nil {
 			return nil, false, err
 		}
-		return DeriveReadObject(nextObj, NewListFrom(DeriveReadObject(nextObj, SYMBOLS._var), nextObj)), false, nil
+		return DeriveReadObject(nextObj, NewListFrom(DeriveReadObject(nextObj, criticalSymbols._var), nextObj)), false, nil
 	case '^':
 		popPos()
 		v, err := readWithMeta(env, reader)
@@ -1353,21 +1353,21 @@ func Read(env *Env, reader *Reader) (Object, bool, error) {
 		}
 		return v, false, nil
 	case r == '/' && isDelimiter(reader.Peek()):
-		return MakeReadObject(reader, SYMBOLS.backslash), false, nil
+		return MakeReadObject(reader, criticalSymbols.backslash), false, nil
 	case r == '\'':
 		popPos()
 		nextObj, err := readFirst(env, reader)
 		if err != nil {
 			return nil, false, err
 		}
-		return makeQuote(nextObj, SYMBOLS.quote), false, nil
+		return makeQuote(nextObj, criticalSymbols.quote), false, nil
 	case r == '@':
 		popPos()
 		nextObj, err := readFirst(env, reader)
 		if err != nil {
 			return nil, false, err
 		}
-		return DeriveReadObject(nextObj, NewListFrom(DeriveReadObject(nextObj, SYMBOLS.deref), nextObj)), false, nil
+		return DeriveReadObject(nextObj, NewListFrom(DeriveReadObject(nextObj, criticalSymbols.deref), nextObj)), false, nil
 	case r == '~':
 		popPos()
 		if reader.Peek() == '@' {
@@ -1376,13 +1376,13 @@ func Read(env *Env, reader *Reader) (Object, bool, error) {
 			if err != nil {
 				return nil, false, err
 			}
-			return makeQuote(nextObj, SYMBOLS.unquoteSplicing), false, nil
+			return makeQuote(nextObj, criticalSymbols.unquoteSplicing), false, nil
 		}
 		nextObj, err := readFirst(env, reader)
 		if err != nil {
 			return nil, false, err
 		}
-		return makeQuote(nextObj, SYMBOLS.unquote), false, nil
+		return makeQuote(nextObj, criticalSymbols.unquote), false, nil
 	case r == '`':
 		popPos()
 		nextObj, err := readFirst(env, reader)

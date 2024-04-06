@@ -9,19 +9,19 @@ func (expr *LiteralExpr) InferType() *Type {
 
 func dumpPosition(p Position) Map {
 	res := EmptyArrayMap()
-	res.Add(KEYWORDS.startLine, Int{I: p.startLine})
-	res.Add(KEYWORDS.endLine, Int{I: p.endLine})
-	res.Add(KEYWORDS.startColumn, Int{I: p.startColumn})
-	res.Add(KEYWORDS.endColumn, Int{I: p.endColumn})
-	res.Add(KEYWORDS.filename, String{S: p.Filename()})
+	res.Add(criticalKeywords.startLine, Int{I: p.startLine})
+	res.Add(criticalKeywords.endLine, Int{I: p.endLine})
+	res.Add(criticalKeywords.startColumn, Int{I: p.startColumn})
+	res.Add(criticalKeywords.endColumn, Int{I: p.endColumn})
+	res.Add(criticalKeywords.filename, String{S: p.Filename()})
 	return res
 }
 
 func exprArrayMap(expr Expr, exprType string, pos bool) *ArrayMap {
 	res := EmptyArrayMap()
-	res.Add(KEYWORDS.type_, MakeKeyword(exprType))
+	res.Add(criticalKeywords.type_, MakeKeyword(exprType))
 	if pos {
-		res.Add(KEYWORDS.pos, dumpPosition(expr.Pos()))
+		res.Add(criticalKeywords.pos, dumpPosition(expr.Pos()))
 	}
 	return res
 }
@@ -36,7 +36,7 @@ func addVector(res *ArrayMap, body []Expr, name string, pos bool) {
 
 func (expr *LiteralExpr) Dump(pos bool) Map {
 	res := exprArrayMap(expr, "literal", pos)
-	res.Add(KEYWORDS.object, expr.obj)
+	res.Add(criticalKeywords.object, expr.obj)
 	return res
 }
 
@@ -89,13 +89,13 @@ func (expr *DefExpr) InferType() *Type {
 
 func (expr *DefExpr) Dump(pos bool) Map {
 	res := exprArrayMap(expr, "def", pos)
-	res.Add(KEYWORDS.var_, expr.vr)
-	res.Add(KEYWORDS.name, expr.name)
+	res.Add(criticalKeywords.var_, expr.vr)
+	res.Add(criticalKeywords.name, expr.name)
 	if expr.value != nil {
-		res.Add(KEYWORDS.value, expr.value.Dump(pos))
+		res.Add(criticalKeywords.value, expr.value.Dump(pos))
 	}
 	if expr.meta != nil {
-		res.Add(KEYWORDS.meta, expr.meta.Dump(pos))
+		res.Add(criticalKeywords.meta, expr.meta.Dump(pos))
 	}
 	return res
 }
@@ -162,7 +162,7 @@ func (expr *VarRefExpr) InferType() *Type {
 
 func (expr *VarRefExpr) Dump(pos bool) Map {
 	res := exprArrayMap(expr, "var-ref", pos)
-	res.Add(KEYWORDS.var_, expr.vr)
+	res.Add(criticalKeywords.var_, expr.vr)
 	return res
 }
 
@@ -172,7 +172,7 @@ func (expr *SetMacroExpr) InferType() *Type {
 
 func (expr *SetMacroExpr) Dump(pos bool) Map {
 	res := exprArrayMap(expr, "set-macro", pos)
-	res.Add(KEYWORDS.var_, expr.vr)
+	res.Add(criticalKeywords.var_, expr.vr)
 	return res
 }
 
@@ -192,7 +192,7 @@ func (expr *MetaExpr) InferType() *Type {
 
 func (expr *MetaExpr) Dump(pos bool) Map {
 	res := exprArrayMap(expr, "meta", pos)
-	res.Add(KEYWORDS.meta, expr.meta.Dump(pos))
+	res.Add(criticalKeywords.meta, expr.meta.Dump(pos))
 	res.Add(MakeKeyword("expr"), expr.expr.Dump(pos))
 	return res
 }

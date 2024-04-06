@@ -334,11 +334,11 @@ func (expr *DefExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 		}
 	}
 	meta := EmptyArrayMap()
-	meta.Add(KEYWORDS.line, Int{I: expr.startLine})
-	meta.Add(KEYWORDS.column, Int{I: expr.startColumn})
-	meta.Add(KEYWORDS.file, String{S: *expr.filename})
-	meta.Add(KEYWORDS.ns, expr.vr.ns)
-	meta.Add(KEYWORDS.name, expr.vr.name)
+	meta.Add(criticalKeywords.line, Int{I: expr.startLine})
+	meta.Add(criticalKeywords.column, Int{I: expr.startColumn})
+	meta.Add(criticalKeywords.file, String{S: *expr.filename})
+	meta.Add(criticalKeywords.ns, expr.vr.ns)
+	meta.Add(criticalKeywords.name, expr.vr.name)
 	expr.vr.meta = meta
 	if expr.meta != nil {
 		v, err := Eval(genv, expr.meta, env)
@@ -352,7 +352,7 @@ func (expr *DefExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 	}
 	// isMacro can be set by set-macro__ during parse stage
 	if expr.vr.isMacro {
-		v, err := expr.vr.meta.Assoc(KEYWORDS.macro, Boolean{B: true})
+		v, err := expr.vr.meta.Assoc(criticalKeywords.macro, Boolean{B: true})
 		if err != nil {
 			return nil, err
 		}

@@ -4,7 +4,7 @@
 package core
 
 var (
-	KEYWORDS = Keywords{
+	criticalKeywords = Keywords{
 		tag:                MakeKeyword("tag"),
 		skipUnused:         MakeKeyword("skip-unused"),
 		private:            MakeKeyword("private"),
@@ -41,7 +41,7 @@ var (
 		name:               MakeKeyword("name"),
 		dynamic:            MakeKeyword("dynamic"),
 	}
-	SYMBOLS = Symbols{
+	criticalSymbols = Symbols{
 		lace_core:          MakeSymbol("lace.core"),
 		underscore:         MakeSymbol("_"),
 		catch:              MakeSymbol("catch"),
@@ -93,24 +93,4 @@ var (
 		try:          STRINGS.Intern("try"),
 		coreFilename: STRINGS.Intern("<lace.core>"),
 	}
-	SPECIAL_SYMBOLS = make(map[*string]bool)
 )
-
-func init() {
-	SPECIAL_SYMBOLS[SYMBOLS._if.name] = true
-	SPECIAL_SYMBOLS[SYMBOLS.quote.name] = true
-	SPECIAL_SYMBOLS[SYMBOLS.fn_.name] = true
-	SPECIAL_SYMBOLS[SYMBOLS.let_.name] = true
-	SPECIAL_SYMBOLS[SYMBOLS.letfn_.name] = true
-	SPECIAL_SYMBOLS[SYMBOLS.loop_.name] = true
-	SPECIAL_SYMBOLS[SYMBOLS.recur.name] = true
-	SPECIAL_SYMBOLS[SYMBOLS.setMacro_.name] = true
-	SPECIAL_SYMBOLS[SYMBOLS.def.name] = true
-	SPECIAL_SYMBOLS[SYMBOLS.defLinter.name] = true
-	SPECIAL_SYMBOLS[SYMBOLS._var.name] = true
-	SPECIAL_SYMBOLS[SYMBOLS.do.name] = true
-	SPECIAL_SYMBOLS[SYMBOLS.throw.name] = true
-	SPECIAL_SYMBOLS[SYMBOLS.try.name] = true
-	SPECIAL_SYMBOLS[SYMBOLS.catch.name] = true
-	SPECIAL_SYMBOLS[SYMBOLS.finally.name] = true
-}
