@@ -273,7 +273,7 @@ func (expr *MapExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 				return nil, err
 			}
 			if res.containsKey(key) {
-				panic(genv.RT.NewError("Duplicate key: " + key.ToString(false)))
+				return nil, genv.RT.NewError("Duplicate key: " + key.ToString(false))
 			}
 			v, err := Eval(genv, expr.values[i], env)
 			if err != nil {
@@ -298,7 +298,7 @@ func (expr *MapExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 			return nil, err
 		}
 		if !res.Add(key, v) {
-			panic(genv.RT.NewError("Duplicate key: " + key.ToString(false)))
+			return nil, genv.RT.NewError("Duplicate key: " + key.ToString(false))
 		}
 	}
 	return res, nil
@@ -316,7 +316,7 @@ func (expr *SetExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 			return nil, err
 		}
 		if !ok {
-			panic(genv.RT.NewError("Duplicate set element: " + el.ToString(false)))
+			return nil, genv.RT.NewError("Duplicate set element: " + el.ToString(false))
 		}
 	}
 	return res, nil
@@ -405,7 +405,7 @@ func (expr *CallExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 		}
 		return callable.Call(genv, args)
 	default:
-		panic(genv.RT.NewErrorWithPos(callable.ToString(false)+" is not a Fn", expr.callable.Pos()))
+		return nil, genv.RT.NewErrorWithPos(callable.ToString(false)+" is not a Fn", expr.callable.Pos())
 	}
 }
 
@@ -435,11 +435,11 @@ func (expr *ThrowExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 		return nil, err
 	}
 
-	switch e.(type) {
+	switch sv := e.(type) {
 	case Error:
-		panic(e)
+		return nil, sv
 	default:
-		panic(genv.RT.NewError("Cannot throw " + e.ToString(false)))
+		return nil, genv.RT.NewError("Cannot throw " + e.ToString(false))
 	}
 }
 
@@ -459,7 +459,9 @@ func (expr *TryExpr) Eval(genv *Env, env *LocalEnv) (obj Object, err error) {
 						return
 					}
 				}
-				panic(r)
+				err = r
+			case error:
+				err = r
 			default:
 				panic(r)
 			}

@@ -515,7 +515,7 @@ var procRegex = func(env *Env, args []Object) (Object, error) {
 	}
 	r, err := regexp.Compile(s.S)
 	if err != nil {
-		panic(env.RT.NewError("Invalid regex: " + err.Error()))
+		return nil, env.RT.NewError("Invalid regex: " + err.Error())
 	}
 	return &Regex{R: r}, nil
 }
@@ -614,10 +614,10 @@ var procSubs = func(env *Env, args []Object) (Object, error) {
 		end = x.I
 	}
 	if start.I < 0 || start.I > slen {
-		panic(env.RT.NewError(fmt.Sprintf("String index out of range: %d", start.I)))
+		return nil, env.RT.NewError(fmt.Sprintf("String index out of range: %d", start.I))
 	}
 	if end < 0 || end > slen {
-		panic(env.RT.NewError(fmt.Sprintf("String index out of range: %d", end)))
+		return nil, env.RT.NewError(fmt.Sprintf("String index out of range: %d", end))
 	}
 	return String{S: string([]rune(s.S)[start.I:end])}, nil
 }
@@ -851,7 +851,7 @@ var procConj = func(env *Env, args []Object) (Object, error) {
 	case Seq:
 		return c.Cons(args[1]), nil
 	default:
-		panic(env.RT.NewError("conj's first argument must be a collection, got " + c.GetType().ToString(false)))
+		return nil, env.RT.NewError("conj's first argument must be a collection, got " + c.GetType().ToString(false))
 	}
 }
 
@@ -918,7 +918,7 @@ var procSubvec = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 	if start.I > end.I {
-		panic(env.RT.NewError(fmt.Sprintf("subvec's start index (%d) is greater than end index (%d)", start.I, end.I)))
+		return nil, env.RT.NewError(fmt.Sprintf("subvec's start index (%d) is greater than end index (%d)", start.I, end.I))
 	}
 	subv := make([]Object, 0, end.I-start.I)
 	for i := start.I; i < end.I; i++ {
@@ -937,7 +937,7 @@ var procCast = func(env *Env, args []Object) (Object, error) {
 		args[1].GetType().reflectType == t.reflectType {
 		return args[1], nil
 	}
-	panic(env.RT.NewError("Cannot cast " + args[1].GetType().ToString(false) + " to " + t.ToString(false)))
+	return nil, env.RT.NewError("Cannot cast " + args[1].GetType().ToString(false) + " to " + t.ToString(false))
 }
 
 var procVec = func(env *Env, args []Object) (Object, error) {
@@ -950,7 +950,7 @@ var procVec = func(env *Env, args []Object) (Object, error) {
 
 var procHashMap = func(env *Env, args []Object) (Object, error) {
 	if len(args)%2 != 0 {
-		panic(env.RT.NewError("No value supplied for key " + args[len(args)-1].ToString(false)))
+		return nil, env.RT.NewError("No value supplied for key " + args[len(args)-1].ToString(false))
 	}
 	return NewHashMap(args...)
 }
@@ -1102,7 +1102,7 @@ var procCompare = func(env *Env, args []Object) (Object, error) {
 	case Comparable:
 		return Int{I: k1.Compare(k2)}, nil
 	}
-	panic(env.RT.NewError(fmt.Sprintf("%s (type: %s) is not a Comparable", k1.ToString(true), k1.GetType().ToString(false))))
+	return nil, env.RT.NewError(fmt.Sprintf("%s (type: %s) is not a Comparable", k1.ToString(true), k1.GetType().ToString(false)))
 }
 
 var procInt = func(env *Env, args []Object) (Object, error) {
@@ -1112,7 +1112,7 @@ var procInt = func(env *Env, args []Object) (Object, error) {
 	case Number:
 		return obj.Int(), nil
 	default:
-		panic(env.RT.NewError(fmt.Sprintf("Cannot cast %s (type: %s) to Int", obj.ToString(true), obj.GetType().ToString(false))))
+		return nil, env.RT.NewError(fmt.Sprintf("Cannot cast %s (type: %s) to Int", obj.ToString(true), obj.GetType().ToString(false)))
 	}
 }
 
@@ -1135,11 +1135,11 @@ var procChar = func(env *Env, args []Object) (Object, error) {
 	case Number:
 		i := c.Int().I
 		if i < MIN_RUNE || i > MAX_RUNE {
-			panic(env.RT.NewError(fmt.Sprintf("Value out of range for char: %d", i)))
+			return nil, env.RT.NewError(fmt.Sprintf("Value out of range for char: %d", i))
 		}
 		return Char{Ch: rune(i)}, nil
 	default:
-		panic(env.RT.NewError(fmt.Sprintf("Cannot cast %s (type: %s) to Char", c.ToString(true), c.GetType().ToString(false))))
+		return nil, env.RT.NewError(fmt.Sprintf("Cannot cast %s (type: %s) to Char", c.ToString(true), c.GetType().ToString(false)))
 	}
 }
 
@@ -1172,9 +1172,9 @@ var procBigInt = func(env *Env, args []Object) (Object, error) {
 		if _, ok := bi.SetString(n.S, 10); ok {
 			return &BigInt{b: bi}, nil
 		}
-		panic(env.RT.NewError("Invalid number format " + n.S))
+		return nil, env.RT.NewError("Invalid number format " + n.S)
 	default:
-		panic(env.RT.NewError(fmt.Sprintf("Cannot cast %s (type: %s) to BigInt", n.ToString(true), n.GetType().ToString(false))))
+		return nil, env.RT.NewError(fmt.Sprintf("Cannot cast %s (type: %s) to BigInt", n.ToString(true), n.GetType().ToString(false)))
 	}
 }
 
@@ -1187,9 +1187,9 @@ var procBigFloat = func(env *Env, args []Object) (Object, error) {
 		if _, ok := b.SetString(n.S); ok {
 			return &BigFloat{b: b}, nil
 		}
-		panic(env.RT.NewError("Invalid number format " + n.S))
+		return nil, env.RT.NewError("Invalid number format " + n.S)
 	default:
-		panic(env.RT.NewError(fmt.Sprintf("Cannot cast %s (type: %s) to BigFloat", n.ToString(true), n.GetType().ToString(false))))
+		return nil, env.RT.NewError(fmt.Sprintf("Cannot cast %s (type: %s) to BigFloat", n.ToString(true), n.GetType().ToString(false)))
 	}
 }
 
@@ -1215,10 +1215,10 @@ var procNth = func(env *Env, args []Object) (Object, error) {
 			if len(args) == 3 {
 				return SeqTryNth(coll.Seq(), n, args[2]), nil
 			}
-			return SeqNth(coll.Seq(), n), nil
+			return SeqNth(coll.Seq(), n)
 		}
 	}
-	panic(env.RT.NewError("nth not supported on this type: " + args[0].GetType().ToString(false)))
+	return nil, env.RT.NewError("nth not supported on this type: " + args[0].GetType().ToString(false))
 }
 
 var procLt = func(env *Env, args []Object) (Object, error) {
@@ -1366,7 +1366,7 @@ var procContains = func(env *Env, args []Object) (Object, error) {
 		}
 		return Boolean{B: false}, nil
 	}
-	panic(env.RT.NewError("contains? not supported on type " + args[0].GetType().ToString(false)))
+	return nil, env.RT.NewError("contains? not supported on type " + args[0].GetType().ToString(false))
 }
 
 var procGet = func(env *Env, args []Object) (Object, error) {
@@ -1464,7 +1464,7 @@ var procFindVar = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 	if sym.ns == nil {
-		panic(env.RT.NewError("find-var argument must be namespace-qualified symbol"))
+		return nil, env.RT.NewError("find-var argument must be namespace-qualified symbol")
 	}
 	if v, ok := env.Resolve(sym); ok {
 		return v, nil
@@ -1666,7 +1666,7 @@ var procLoadString = func(env *Env, args []Object) (Object, error) {
 	}
 	obj, err := loadReader(env, NewReader(strings.NewReader(s.S), "<string>"))
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	return obj, nil
 }
@@ -1761,7 +1761,7 @@ var procNamespaceUnmap = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 	if sym.ns != nil {
-		panic(env.RT.NewError("Can't unintern namespace-qualified symbol"))
+		return nil, env.RT.NewError("Can't unintern namespace-qualified symbol")
 	}
 	delete(ns.mappings, sym.name)
 	return NIL, nil
@@ -1832,7 +1832,7 @@ var procNamespaceUnalias = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 	if sym.ns != nil {
-		panic(env.RT.NewError("Alias can't be namespace-qualified"))
+		return nil, env.RT.NewError("Alias can't be namespace-qualified")
 	}
 	delete(ns.aliases, sym.name)
 	return NIL, nil
@@ -1875,7 +1875,7 @@ var procNsResolve = func(env *Env, args []Object) (Object, error) {
 
 var procArrayMap = func(env *Env, args []Object) (Object, error) {
 	if len(args)%2 == 1 {
-		panic(env.RT.NewError("No value supplied for key " + args[len(args)-1].ToString(false)))
+		return nil, env.RT.NewError("No value supplied for key " + args[len(args)-1].ToString(false))
 	}
 	res := EmptyArrayMap()
 	for i := 0; i < len(args); i += 2 {
@@ -1902,7 +1902,7 @@ var procBufferedReader = func(env *Env, args []Object) (Object, error) {
 	case io.Reader:
 		return MakeBufferedReader(rdr), nil
 	default:
-		panic(env.RT.NewArgTypeError(0, args[0], "IOReader"))
+		return nil, env.RT.NewArgTypeError(0, args[0], "IOReader")
 	}
 }
 
@@ -2079,7 +2079,7 @@ var procIndexOf = func(env *Env, args []Object) (Object, error) {
 	return Int{I: -1}, nil
 }
 
-func libExternalPath(env *Env, sym Symbol) (path string, ok bool) {
+func libExternalPath(env *Env, sym Symbol) (path string, ok bool, err error) {
 	nsSourcesVar, _ := env.Resolve(MakeSymbol("joker.core/*ns-sources*"))
 	nsSources := ToSlice(nsSourcesVar.Value.(*Vector).Seq())
 
@@ -2096,9 +2096,13 @@ func libExternalPath(env *Env, sym Symbol) (path string, ok bool) {
 	if sourceMap != nil {
 		ok, url := sourceMap.Get(MakeKeyword("url"))
 		if !ok {
-			panic(env.RT.NewError("Key :url not found in ns-sources for: " + sourceKey))
+			return "", false, env.RT.NewError("Key :url not found in ns-sources for: " + sourceKey)
 		} else {
-			return externalSourceToPath(env, sym.Name(), url.ToString(false)), true
+			path, err := externalSourceToPath(env, sym.Name(), url.ToString(false))
+			if err != nil {
+				return "", false, err
+			}
+			return path, true, nil
 		}
 	}
 	return
@@ -2111,7 +2115,10 @@ var procLibPath = func(env *Env, args []Object) (Object, error) {
 	}
 	var path string
 
-	path, ok := libExternalPath(env, sym)
+	path, ok, err := libExternalPath(env, sym)
+	if err != nil {
+		return nil, err
+	}
 
 	if !ok {
 		var file string
@@ -2210,7 +2217,7 @@ var procSend = func(env *Env, args []Object) (Object, error) {
 	}
 	v := args[1]
 	if v.Equals(NIL) {
-		panic(env.RT.NewError("Can't put nil on channel"))
+		return nil, env.RT.NewError("Can't put nil on channel")
 	}
 	if ch.isClosed {
 		return MakeBoolean(false), nil
@@ -2408,8 +2415,10 @@ func processInEnv(env *Env, data []byte) error {
 	ns := env.CurrentNamespace()
 	env.SetCurrentNamespace(env.CoreNamespace)
 	defer func() { env.SetCurrentNamespace(ns) }()
-	header, p := UnpackHeader(data, env)
-	var err error
+	header, p, err := UnpackHeader(data, env)
+	if err != nil {
+		return err
+	}
 	for len(p) > 0 {
 		var expr Expr
 		expr, p, err = UnpackExpr(env, p, header)
@@ -2459,7 +2468,7 @@ var procIsNamespaceInitialized = func(env *Env, args []Object) (Object, error) {
 	}
 
 	if sym.ns != nil {
-		panic(env.RT.NewError("Can't ask for namespace info on namespace-qualified symbol"))
+		return nil, env.RT.NewError("Can't ask for namespace info on namespace-qualified symbol")
 	}
 	// First look for registered (e.g. std) libs
 	ns, found := env.Namespaces[sym.name]

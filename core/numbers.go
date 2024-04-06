@@ -366,7 +366,7 @@ func (ops BigFloatOps) Divide(x, y Number) (Number, error) {
 
 func (ops RatioOps) Divide(x, y Number) (Number, error) {
 	if y.Ratio().Num().Int64() == 0 {
-		panic(StubNewError("Division by zero"))
+		return nil, StubNewError("Division by zero")
 	}
 	r := big.Rat{}
 	r.Quo(x.Ratio(), y.Ratio())

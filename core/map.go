@@ -45,13 +45,13 @@ func mapConj(m Map, obj Object) (Conjable, error) {
 	switch obj := obj.(type) {
 	case *Vector:
 		if obj.count != 2 {
-			panic(StubNewError("Vector argument to map's conj must be a vector with two elements"))
+			return nil, StubNewError("Vector argument to map's conj must be a vector with two elements")
 		}
 		return m.Assoc(obj.at(0), obj.at(1))
 	case Map:
 		return m.Merge(obj)
 	default:
-		panic(StubNewError("Argument to map's conj must be a vector with two elements or a map"))
+		return nil, StubNewError("Argument to map's conj must be a vector with two elements or a map")
 	}
 }
 

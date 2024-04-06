@@ -677,16 +677,16 @@ func parseSet(s *MapSet, pos Position, ctx *ParseContext) (Expr, error) {
 	return res, nil
 }
 
-func checkForm(obj Object, min int, max int) int {
+func checkForm(obj Object, min int, max int) (int, error) {
 	seq := obj.(Seq)
 	c := SeqCount(seq)
 	if c < min {
-		panic(&ParseError{obj: obj, msg: "Too few arguments to " + seq.First().ToString(false)})
+		return 0, &ParseError{obj: obj, msg: "Too few arguments to " + seq.First().ToString(false)}
 	}
 	if c > max {
-		panic(&ParseError{obj: obj, msg: "Too many arguments to " + seq.First().ToString(false)})
+		return 0, &ParseError{obj: obj, msg: "Too many arguments to " + seq.First().ToString(false)}
 	}
-	return c
+	return c, nil
 }
 
 func GetPosition(obj Object) Position {
@@ -717,7 +717,10 @@ func isCreatedByMacro(formSeq Seq) bool {
 }
 
 func parseDef(obj Object, ctx *ParseContext, isForLinter bool) (*DefExpr, error) {
-	count := checkForm(obj, 2, 4)
+	count, err := checkForm(obj, 2, 4)
+	if err != nil {
+		return nil, err
+	}
 	seq := obj.(Seq)
 	s := Second(seq)
 	var meta Map
@@ -776,7 +779,7 @@ func parseDef(obj Object, ctx *ParseContext, isForLinter bool) (*DefExpr, error)
 					return nil, err
 				}
 			default:
-				panic(&ParseError{obj: docstring, msg: "Docstring must be a string"})
+				return nil, &ParseError{obj: docstring, msg: "Docstring must be a string"}
 			}
 		}
 		updateVar(vr, obj.GetInfo(), res.value, sym)
@@ -788,7 +791,7 @@ func parseDef(obj Object, ctx *ParseContext, isForLinter bool) (*DefExpr, error)
 		}
 		return res, nil
 	default:
-		panic(&ParseError{obj: s, msg: "First argument to def must be a Symbol"})
+		return nil, &ParseError{obj: s, msg: "First argument to def must be a Symbol"}
 	}
 }
 
@@ -805,7 +808,7 @@ func parseBody(seq Seq, ctx *ParseContext) ([]Expr, error) {
 		}
 		seq = seq.Rest()
 		if ctx.recur && !seq.IsEmpty() && !LINTER_MODE {
-			panic(&ParseError{obj: ro, msg: "Can only recur from tail position"})
+			return nil, &ParseError{obj: ro, msg: "Can only recur from tail position"}
 		}
 		res = append(res, expr)
 		if LINTER_MODE {
@@ -819,7 +822,7 @@ func parseBody(seq Seq, ctx *ParseContext) ([]Expr, error) {
 	return res, nil
 }
 
-func parseParams(params Object) (bindings []Symbol, isVariadic bool) {
+func parseParams(params Object) ([]Symbol, bool, error) {
 	res := make([]Symbol, 0)
 	v := params.(*Vector)
 	for i := 0; i < v.count; i++ {
@@ -829,13 +832,13 @@ func parseParams(params Object) (bindings []Symbol, isVariadic bool) {
 			if LINTER_MODE {
 				sym = generateSymbol("linter")
 			} else {
-				panic(&ParseError{obj: ro, msg: "Unsupported binding form: " + sym.ToString(false)})
+				return nil, false, &ParseError{obj: ro, msg: "Unsupported binding form: " + sym.ToString(false)}
 			}
 		}
 		if SYMBOLS.amp.Equals(sym) {
 			if v.count > i+2 {
 				ro := v.at(i + 2)
-				panic(&ParseError{obj: ro, msg: "Unexpected parameter: " + ro.ToString(false)})
+				return nil, false, &ParseError{obj: ro, msg: "Unexpected parameter: " + ro.ToString(false)}
 			}
 			if v.count == i+2 {
 				variadic := v.at(i + 1)
@@ -843,18 +846,18 @@ func parseParams(params Object) (bindings []Symbol, isVariadic bool) {
 					if LINTER_MODE {
 						variadic = generateSymbol("linter")
 					} else {
-						panic(&ParseError{obj: variadic, msg: "Unsupported binding form: " + variadic.ToString(false)})
+						return nil, false, &ParseError{obj: variadic, msg: "Unsupported binding form: " + variadic.ToString(false)}
 					}
 				}
 				res = append(res, variadic.(Symbol))
-				return res, true
+				return res, true, nil
 			} else {
-				return res, false
+				return res, false, nil
 			}
 		}
 		res = append(res, sym.(Symbol))
 	}
-	return res, false
+	return res, false, nil
 }
 
 func needsUnusedWarning(b *Binding) bool {
@@ -868,7 +871,10 @@ func needsUnusedWarning(b *Binding) bool {
 func addArity(fn *FnExpr, sig Seq, ctx *ParseContext) error {
 	params := sig.First()
 	body := sig.Rest()
-	args, isVariadic := parseParams(params)
+	args, isVariadic, err := parseParams(params)
+	if err != nil {
+		return err
+	}
 	ctx.PushLocalFrame(args)
 	defer ctx.PopLocalFrame()
 	ctx.PushLoopBindings(args)
@@ -891,22 +897,22 @@ func addArity(fn *FnExpr, sig Seq, ctx *ParseContext) error {
 	}
 	if isVariadic {
 		if fn.variadic != nil {
-			panic(&ParseError{obj: params, msg: "Can't have more than 1 variadic overload"})
+			return &ParseError{obj: params, msg: "Can't have more than 1 variadic overload"}
 		}
 		for _, arity := range fn.arities {
 			if len(arity.args) >= len(args) {
-				panic(&ParseError{obj: params, msg: "Can't have fixed arity function with more params than variadic function"})
+				return &ParseError{obj: params, msg: "Can't have fixed arity function with more params than variadic function"}
 			}
 		}
 		fn.variadic = &arity
 	} else {
 		for _, arity := range fn.arities {
 			if len(arity.args) == len(args) {
-				panic(&ParseError{obj: params, msg: "Can't have 2 overloads with same arity"})
+				return &ParseError{obj: params, msg: "Can't have 2 overloads with same arity"}
 			}
 		}
 		if fn.variadic != nil && len(args) >= len(fn.variadic.args) {
-			panic(&ParseError{obj: params, msg: "Can't have fixed arity function with more params than variadic function"})
+			return &ParseError{obj: params, msg: "Can't have fixed arity function with more params than variadic function"}
 		}
 		fn.arities = append(fn.arities, arity)
 	}
@@ -974,7 +980,7 @@ func parseFn(obj Object, ctx *ParseContext) (Expr, error) {
 	}
 	// multiple arities
 	if bodies.IsEmpty() {
-		panic(&ParseError{obj: p, msg: "Parameter declaration missing"})
+		return nil, &ParseError{obj: p, msg: "Parameter declaration missing"}
 	}
 	for !bodies.IsEmpty() {
 		body := bodies.First()
@@ -982,11 +988,11 @@ func parseFn(obj Object, ctx *ParseContext) (Expr, error) {
 		case Seq:
 			params := s.First()
 			if !IsVector(params) {
-				panic(&ParseError{obj: params, msg: "Parameter declaration must be a vector. Got: " + params.ToString(false)})
+				return nil, &ParseError{obj: params, msg: "Parameter declaration must be a vector. Got: " + params.ToString(false)}
 			}
 			addArity(res, s, ctx)
 		default:
-			panic(&ParseError{obj: body, msg: "Function body must be a list. Got: " + s.ToString(false)})
+			return nil, &ParseError{obj: body, msg: "Function body must be a list. Got: " + s.ToString(false)}
 		}
 		bodies = bodies.Rest()
 	}
@@ -1017,13 +1023,13 @@ func resolveType(obj Object, ctx *ParseContext) (*Type, error) {
 	if LINTER_MODE {
 		return TYPE.Error, nil
 	}
-	panic(&ParseError{obj: obj, msg: "Unable to resolve type: " + obj.ToString(false)})
+	return nil, &ParseError{obj: obj, msg: "Unable to resolve type: " + obj.ToString(false)}
 }
 
 func parseCatch(obj Object, ctx *ParseContext) (*CatchExpr, error) {
 	seq := obj.(Seq).Rest()
 	if seq.IsEmpty() || seq.Rest().IsEmpty() {
-		panic(&ParseError{obj: obj, msg: "catch requires at least two arguments: type symbol and binding symbol"})
+		return nil, &ParseError{obj: obj, msg: "catch requires at least two arguments: type symbol and binding symbol"}
 	}
 	excSymbol := Second(seq)
 	excType, err := resolveType(seq.First(), ctx)
@@ -1032,7 +1038,7 @@ func parseCatch(obj Object, ctx *ParseContext) (*CatchExpr, error) {
 	}
 
 	if !IsSymbol(excSymbol) {
-		panic(&ParseError{obj: excSymbol, msg: "Bad binding form, expected symbol, got: " + excSymbol.ToString(false)})
+		return nil, &ParseError{obj: excSymbol, msg: "Bad binding form, expected symbol, got: " + excSymbol.ToString(false)}
 	}
 	ctx.PushLocalFrame([]Symbol{excSymbol.(Symbol)})
 	defer ctx.PopLocalFrame()
@@ -1070,7 +1076,7 @@ func parseTry(obj Object, ctx *ParseContext) (*TryExpr, error) {
 	for !seq.IsEmpty() {
 		obj = seq.First()
 		if lastType == Finally {
-			panic(&ParseError{obj: obj, msg: "finally clause must be last in try expression"})
+			return nil, &ParseError{obj: obj, msg: "finally clause must be last in try expression"}
 		}
 		if isCatch(obj) {
 			c, err := parseCatch(obj, ctx)
@@ -1087,7 +1093,7 @@ func parseTry(obj Object, ctx *ParseContext) (*TryExpr, error) {
 			lastType = Finally
 		} else {
 			if lastType == Catch {
-				panic(&ParseError{obj: obj, msg: "Only catch or finally clause can follow catch in try expression"})
+				return nil, &ParseError{obj: obj, msg: "Only catch or finally clause can follow catch in try expression"}
 			}
 			b, err := Parse(obj, ctx)
 			if err != nil {
@@ -1148,7 +1154,7 @@ func parseLetLoop(obj Object, formName string, ctx *ParseContext) (*LetExpr, err
 	switch b := bindings.(type) {
 	case *Vector:
 		if b.count%2 != 0 {
-			panic(&ParseError{obj: bindings, msg: formName + " requires an even number of forms in binding vector"})
+			return nil, &ParseError{obj: bindings, msg: formName + " requires an even number of forms in binding vector"}
 		}
 		if LINTER_MODE && formName != "loop" && b.count == 0 {
 			pos := GetPosition(obj)
@@ -1171,7 +1177,7 @@ func parseLetLoop(obj Object, formName string, ctx *ParseContext) (*LetExpr, err
 					if LINTER_MODE {
 						printParseError(GetPosition(s), msg)
 					} else {
-						panic(&ParseError{obj: s, msg: msg})
+						return nil, &ParseError{obj: s, msg: msg}
 					}
 				}
 				res.names[i] = sym
@@ -1179,7 +1185,7 @@ func parseLetLoop(obj Object, formName string, ctx *ParseContext) (*LetExpr, err
 				if LINTER_MODE {
 					res.names[i] = generateSymbol("linter")
 				} else {
-					panic(&ParseError{obj: s, msg: "Unsupported binding form: " + sym.ToString(false)})
+					return nil, &ParseError{obj: s, msg: "Unsupported binding form: " + sym.ToString(false)}
 				}
 			}
 			if formName != "letfn" {
@@ -1232,18 +1238,18 @@ func parseLetLoop(obj Object, formName string, ctx *ParseContext) (*LetExpr, err
 		}
 
 	default:
-		panic(&ParseError{obj: obj, msg: formName + " requires a vector for its bindings"})
+		return nil, &ParseError{obj: obj, msg: formName + " requires a vector for its bindings"}
 	}
 	return res, nil
 }
 
 func parseRecur(obj Object, ctx *ParseContext) (*RecurExpr, error) {
 	if ctx.noRecurAllowed {
-		panic(&ParseError{obj: obj, msg: "Cannot recur across try"})
+		return nil, &ParseError{obj: obj, msg: "Cannot recur across try"}
 	}
 	loopBindings := ctx.GetLoopBindings()
 	if loopBindings == nil && !LINTER_MODE {
-		panic(&ParseError{obj: obj, msg: "No recursion point for recur"})
+		return nil, &ParseError{obj: obj, msg: "No recursion point for recur"}
 	}
 	seq := obj.(Seq)
 	args, err := parseSeq(seq.Rest(), ctx)
@@ -1251,7 +1257,7 @@ func parseRecur(obj Object, ctx *ParseContext) (*RecurExpr, error) {
 		return nil, err
 	}
 	if len(loopBindings) != len(args) && !LINTER_MODE {
-		panic(&ParseError{obj: obj, msg: fmt.Sprintf("Mismatched argument count to recur, expected: %d args, got: %d", len(loopBindings), len(args))})
+		return nil, &ParseError{obj: obj, msg: fmt.Sprintf("Mismatched argument count to recur, expected: %d args, got: %d", len(loopBindings), len(args))}
 	}
 	ctx.recur = true
 	return &RecurExpr{
@@ -1492,7 +1498,7 @@ func parseSetMacro(env *Env, obj Object, ctx *ParseContext) (Expr, error) {
 			return res, err
 		}
 	}
-	panic(&ParseError{obj: obj, msg: "set-macro__ argument must be a var"})
+	return nil, &ParseError{obj: obj, msg: "set-macro__ argument must be a var"}
 }
 
 func isKnownMacros(env *Env, sym Symbol) (bool, Seq) {
@@ -1696,7 +1702,7 @@ func parseList(env *Env, obj Object, ctx *ParseContext) (Expr, error) {
 				vr, ok := ctx.Env.Resolve(sym)
 				if !ok {
 					if !LINTER_MODE {
-						panic(&ParseError{obj: obj, msg: "Unable to resolve var " + sym.ToString(false) + " in this context"})
+						return nil, &ParseError{obj: obj, msg: "Unable to resolve var " + sym.ToString(false) + " in this context"}
 					}
 					symNs := ctx.Env.NamespaceFor(ctx.Env.CurrentNamespace(), sym)
 					if !ctx.isUnknownCallableScope {
@@ -1715,7 +1721,7 @@ func parseList(env *Env, obj Object, ctx *ParseContext) (Expr, error) {
 					Position: pos,
 				}, nil
 			default:
-				panic(&ParseError{obj: obj, msg: "var's argument must be a symbol"})
+				return nil, &ParseError{obj: obj, msg: "var's argument must be a symbol"}
 			}
 		case STR.do:
 			body, err := parseBody(seq.Rest(), ctx)
@@ -1871,7 +1877,7 @@ func MakeVarRefExpr(vr *Var, obj Object) *VarRefExpr {
 	}
 }
 
-func parseSymbol(obj Object, ctx *ParseContext) Expr {
+func parseSymbol(obj Object, ctx *ParseContext) (Expr, error) {
 	sym := obj.(Symbol)
 	b := ctx.GetLocalBinding(sym)
 	if b != nil {
@@ -1879,19 +1885,19 @@ func parseSymbol(obj Object, ctx *ParseContext) Expr {
 		return &BindingExpr{
 			binding:  b,
 			Position: GetPosition(obj),
-		}
+		}, nil
 	}
 	if vr, ok := ctx.Env.Resolve(sym); ok {
-		return MakeVarRefExpr(vr, obj)
+		return MakeVarRefExpr(vr, obj), nil
 	}
 	if sym.ns == nil && TYPES[sym.name] != nil {
 		return &LiteralExpr{
 			Position: GetPosition(obj),
 			obj:      TYPES[sym.name],
-		}
+		}, nil
 	}
 	if !LINTER_MODE {
-		panic(&ParseError{obj: obj, msg: "Unable to resolve symbol: " + sym.ToString(false)})
+		return nil, &ParseError{obj: obj, msg: "Unable to resolve symbol: " + sym.ToString(false)}
 	}
 	if DIALECT == CLJS && sym.ns == nil {
 		// Check if this is a "callable namespace"
@@ -1902,7 +1908,7 @@ func parseSymbol(obj Object, ctx *ParseContext) Expr {
 		if ns != nil {
 			ns.isUsed = true
 			ns.isGloballyUsed = true
-			return NewSurrogateExpr(obj)
+			return NewSurrogateExpr(obj), nil
 		}
 		// See if this is a JS interop (i.e. Math.PI)
 		parts := strings.Split(sym.Name(), ".")
@@ -1912,14 +1918,14 @@ func parseSymbol(obj Object, ctx *ParseContext) Expr {
 		// Check if this is a constructor call
 		if len(parts) == 2 && parts[0] != "" && parts[len(parts)-1] == "" {
 			if vr, ok := ctx.Env.Resolve(MakeSymbol(parts[0])); ok {
-				return MakeVarRefExpr(vr, obj)
+				return MakeVarRefExpr(vr, obj), nil
 			}
 		}
 	}
 	symNs := ctx.Env.NamespaceFor(ctx.Env.CurrentNamespace(), sym)
 	if symNs == nil || symNs == ctx.Env.CurrentNamespace() {
 		if isInteropSymbol(sym) || isJavaSymbol(sym) {
-			return NewSurrogateExpr(sym)
+			return NewSurrogateExpr(sym), nil
 		}
 		if !ctx.isUnknownCallableScope {
 			if ctx.linterBindings.GetBinding(sym) == nil {
@@ -1927,7 +1933,7 @@ func parseSymbol(obj Object, ctx *ParseContext) Expr {
 			}
 		}
 	}
-	return MakeVarRefExpr(InternFakeSymbol(ctx.Env, symNs, sym), obj)
+	return MakeVarRefExpr(InternFakeSymbol(ctx.Env, symNs, sym), obj), nil
 }
 
 func Parse(obj Object, ctx *ParseContext) (Expr, error) {
@@ -1950,9 +1956,9 @@ func Parse(obj Object, ctx *ParseContext) (Expr, error) {
 	case Seq:
 		res, err = parseList(ctx.Env, obj, ctx)
 	case Symbol:
-		res = parseSymbol(obj, ctx)
+		res, err = parseSymbol(obj, ctx)
 	default:
-		panic(&ParseError{obj: obj, msg: "Cannot parse form: " + obj.ToString(false)})
+		return nil, &ParseError{obj: obj, msg: "Cannot parse form: " + obj.ToString(false)}
 	}
 
 	if err != nil {
@@ -1980,13 +1986,15 @@ func TryParse(obj Object, ctx *ParseContext) (expr Expr, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			PROBLEM_COUNT++
-			switch r.(type) {
+			switch sv := r.(type) {
 			case *ParseError:
 				err = r.(error)
 			case *EvalError:
 				err = r.(error)
 			case *ExInfo:
 				err = r.(error)
+			case error:
+				err = sv
 			default:
 				panic(r)
 			}

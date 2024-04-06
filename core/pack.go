@@ -58,8 +58,11 @@ func (b *Binding) Pack(p []byte, env *PackEnv) []byte {
 	return p
 }
 
-func unpackBinding(env *Env, p []byte, header *PackHeader) (Binding, []byte) {
-	name, p := unpackSymbol(env, p, header)
+func unpackBinding(env *Env, p []byte, header *PackHeader) (Binding, []byte, error) {
+	name, p, err := unpackSymbol(env, p, header)
+	if err != nil {
+		return Binding{}, nil, err
+	}
 	index, p := extractInt(p)
 	frame, p := extractInt(p)
 	isUsed, p := extractBool(p)
@@ -68,7 +71,7 @@ func unpackBinding(env *Env, p []byte, header *PackHeader) (Binding, []byte) {
 		index:  index,
 		frame:  frame,
 		isUsed: isUsed,
-	}, p
+	}, p, nil
 }
 
 func NewPackEnv(env *Env) *PackEnv {
@@ -100,7 +103,7 @@ func (env *PackEnv) Pack(p []byte) []byte {
 	return p
 }
 
-func UnpackHeader(p []byte, env *Env) (*PackHeader, []byte) {
+func UnpackHeader(p []byte, env *Env) (*PackHeader, []byte, error) {
 	stringCount, p := extractInt(p)
 	strs := make([]*string, stringCount)
 	for i := 0; i < stringCount; i++ {
@@ -119,17 +122,21 @@ func UnpackHeader(p []byte, env *Env) (*PackHeader, []byte) {
 		GlobalEnv: env,
 		Strings:   strs,
 	}
+	var err error
 	bindingCount, p := extractInt(p)
 	bindings := make([]Binding, bindingCount)
 	for i := 0; i < bindingCount; i++ {
 		var index int
 		var b Binding
 		index, p = extractInt(p)
-		b, p = unpackBinding(env, p, header)
+		b, p, err = unpackBinding(env, p, header)
+		if err != nil {
+			return nil, nil, err
+		}
 		bindings[index] = b
 	}
 	header.Bindings = bindings
-	return header, p
+	return header, p, nil
 }
 
 func (env *PackEnv) stringIndex(s *string) uint16 {
@@ -245,9 +252,9 @@ func PackObjectOrNull(obj Object, p []byte, env *PackEnv) []byte {
 	return packObject(obj, p, env)
 }
 
-func UnpackObjectOrNull(env *Env, p []byte, header *PackHeader) (Object, []byte) {
+func UnpackObjectOrNull(env *Env, p []byte, header *PackHeader) (Object, []byte, error) {
 	if p[0] == NULL {
-		return nil, p[1:]
+		return nil, p[1:], nil
 	}
 	return unpackObject(env, p[1:], header)
 }
@@ -261,9 +268,12 @@ func (s Symbol) Pack(p []byte, env *PackEnv) []byte {
 	return p
 }
 
-func unpackSymbol(env *Env, p []byte, header *PackHeader) (Symbol, []byte) {
+func unpackSymbol(env *Env, p []byte, header *PackHeader) (Symbol, []byte, error) {
 	info, p := unpackObjectInfo(p, header)
-	meta, p := UnpackObjectOrNull(env, p, header)
+	meta, p, err := UnpackObjectOrNull(env, p, header)
+	if err != nil {
+		return Symbol{}, nil, err
+	}
 	iname, p := extractUInt16(p)
 	ins, p := extractUInt16(p)
 	hash, p := extractUInt32(p)
@@ -276,7 +286,7 @@ func unpackSymbol(env *Env, p []byte, header *PackHeader) (Symbol, []byte) {
 	if meta != nil {
 		res.meta = meta.(Map)
 	}
-	return res, p
+	return res, p, nil
 }
 
 func (t *Type) Pack(p []byte, env *PackEnv) []byte {
@@ -284,9 +294,12 @@ func (t *Type) Pack(p []byte, env *PackEnv) []byte {
 	return s.Pack(p, env)
 }
 
-func unpackType(env *Env, p []byte, header *PackHeader) (*Type, []byte) {
-	s, p := unpackSymbol(env, p, header)
-	return TYPES[s.name], p
+func unpackType(env *Env, p []byte, header *PackHeader) (*Type, []byte, error) {
+	s, p, err := unpackSymbol(env, p, header)
+	if err != nil {
+		return nil, nil, err
+	}
+	return TYPES[s.name], p, nil
 }
 
 func packObject(obj Object, p []byte, env *PackEnv) []byte {
@@ -313,7 +326,7 @@ func packObject(obj Object, p []byte, env *PackEnv) []byte {
 	}
 }
 
-func unpackObject(env *Env, p []byte, header *PackHeader) (Object, []byte) {
+func unpackObject(env *Env, p []byte, header *PackHeader) (Object, []byte, error) {
 	switch p[0] {
 	case SYMBOL_OBJ:
 		return unpackSymbol(env, p[1:], header)
@@ -325,9 +338,9 @@ func unpackObject(env *Env, p []byte, header *PackHeader) (Object, []byte) {
 		var size int
 		size, p = extractInt(p[1:])
 		obj := readFromReader(env, bytes.NewReader(p[:size]))
-		return obj, p[size:]
+		return obj, p[size:], nil
 	default:
-		panic(env.RT.NewError(fmt.Sprintf("Unknown object tag: %d", p[0])))
+		return nil, nil, env.RT.NewError(fmt.Sprintf("Unknown object tag: %d", p[0]))
 	}
 }
 
@@ -343,7 +356,10 @@ func unpackLiteralExpr(env *Env, p []byte, header *PackHeader) (*LiteralExpr, []
 	p = p[1:]
 	pos, p := unpackPosition(p, header)
 	isSurrogate, p := extractBool(p)
-	obj, p := unpackObject(env, p, header)
+	obj, p, err := unpackObject(env, p, header)
+	if err != nil {
+		return nil, nil, err
+	}
 	res := &LiteralExpr{
 		obj:         obj,
 		Position:    pos,
@@ -381,13 +397,17 @@ func packSymbolSeq(p []byte, s []Symbol, env *PackEnv) []byte {
 	return p
 }
 
-func unpackSymbolSeq(env *Env, p []byte, header *PackHeader) ([]Symbol, []byte) {
+func unpackSymbolSeq(env *Env, p []byte, header *PackHeader) ([]Symbol, []byte, error) {
 	c, p := extractInt(p)
 	res := make([]Symbol, c)
+	var err error
 	for i := 0; i < c; i++ {
-		res[i], p = unpackSymbol(env, p, header)
+		res[i], p, err = unpackSymbol(env, p, header)
+		if err != nil {
+			return nil, nil, err
+		}
 	}
-	return res, p
+	return res, p, nil
 }
 
 func packFnArityExprSeq(p []byte, s []FnArityExpr, env *PackEnv) []byte {
@@ -547,7 +567,10 @@ func (expr *DefExpr) Pack(p []byte, env *PackEnv) []byte {
 func unpackDefExpr(env *Env, p []byte, header *PackHeader) (*DefExpr, []byte, error) {
 	p = p[1:]
 	pos, p := unpackPosition(p, header)
-	name, p := unpackSymbol(env, p, header)
+	name, p, err := unpackSymbol(env, p, header)
+	if err != nil {
+		return nil, nil, err
+	}
 	varName := name
 	varName.ns = nil
 	ns := header.GlobalEnv.CurrentNamespace()
@@ -626,14 +649,20 @@ func (vr *Var) Pack(p []byte, env *PackEnv) []byte {
 	return p
 }
 
-func unpackVar(env *Env, p []byte, header *PackHeader) (*Var, []byte) {
-	nsName, p := unpackSymbol(env, p, header)
-	name, p := unpackSymbol(env, p, header)
+func unpackVar(env *Env, p []byte, header *PackHeader) (*Var, []byte, error) {
+	nsName, p, err := unpackSymbol(env, p, header)
+	if err != nil {
+		return nil, nil, err
+	}
+	name, p, err := unpackSymbol(env, p, header)
+	if err != nil {
+		return nil, nil, err
+	}
 	vr := env.FindNamespace(nsName).mappings[name.name]
 	if vr == nil {
-		panic(env.RT.NewError("Error unpacking var: cannot find var " + *nsName.name + "/" + *name.name))
+		return nil, nil, env.RT.NewError("Error unpacking var: cannot find var " + *nsName.name + "/" + *name.name)
 	}
-	return vr, p
+	return vr, p, nil
 }
 
 func (expr *VarRefExpr) Pack(p []byte, env *PackEnv) []byte {
@@ -646,7 +675,10 @@ func (expr *VarRefExpr) Pack(p []byte, env *PackEnv) []byte {
 func unpackVarRefExpr(env *Env, p []byte, header *PackHeader) (*VarRefExpr, []byte, error) {
 	p = p[1:]
 	pos, p := unpackPosition(p, header)
-	vr, p := unpackVar(env, p, header)
+	vr, p, err := unpackVar(env, p, header)
+	if err != nil {
+		return nil, nil, err
+	}
 	res := &VarRefExpr{
 		Position: pos,
 		vr:       vr,
@@ -664,7 +696,10 @@ func (expr *SetMacroExpr) Pack(p []byte, env *PackEnv) []byte {
 func unpackSetMacroExpr(env *Env, p []byte, header *PackHeader) (*SetMacroExpr, []byte, error) {
 	p = p[1:]
 	pos, p := unpackPosition(p, header)
-	vr, p := unpackVar(env, p, header)
+	vr, p, err := unpackVar(env, p, header)
+	if err != nil {
+		return nil, nil, err
+	}
 	res := &SetMacroExpr{
 		Position: pos,
 		vr:       vr,
@@ -755,7 +790,10 @@ func (expr *FnArityExpr) Pack(p []byte, env *PackEnv) []byte {
 func unpackFnArityExpr(env *Env, p []byte, header *PackHeader) (*FnArityExpr, []byte, error) {
 	p = p[1:]
 	pos, p := unpackPosition(p, header)
-	args, p := unpackSymbolSeq(env, p, header)
+	args, p, err := unpackSymbolSeq(env, p, header)
+	if err != nil {
+		return nil, nil, err
+	}
 	body, p, err := unpackSeq(env, p, header)
 	if err != nil {
 		return nil, nil, err
@@ -809,7 +847,10 @@ func unpackFnExpr(env *Env, p []byte, header *PackHeader) (*FnExpr, []byte, erro
 			return nil, nil, err
 		}
 	}
-	self, p := unpackSymbol(env, p, header)
+	self, p, err := unpackSymbol(env, p, header)
+	if err != nil {
+		return nil, nil, err
+	}
 	res := &FnExpr{
 		Position: pos,
 		arities:  arities,
@@ -831,7 +872,10 @@ func (expr *LetExpr) Pack(p []byte, env *PackEnv) []byte {
 func unpackLetExpr(env *Env, p []byte, header *PackHeader) (*LetExpr, []byte, error) {
 	p = p[1:]
 	pos, p := unpackPosition(p, header)
-	names, p := unpackSymbolSeq(env, p, header)
+	names, p, err := unpackSymbolSeq(env, p, header)
+	if err != nil {
+		return nil, nil, err
+	}
 	values, p, err := unpackSeq(env, p, header)
 	if err != nil {
 		return nil, nil, err
@@ -861,7 +905,10 @@ func (expr *LoopExpr) Pack(p []byte, env *PackEnv) []byte {
 func unpackLoopExpr(env *Env, p []byte, header *PackHeader) (*LoopExpr, []byte, error) {
 	p = p[1:]
 	pos, p := unpackPosition(p, header)
-	names, p := unpackSymbolSeq(env, p, header)
+	names, p, err := unpackSymbolSeq(env, p, header)
+	if err != nil {
+		return nil, nil, err
+	}
 	values, p, err := unpackSeq(env, p, header)
 	if err != nil {
 		return nil, nil, err
@@ -914,7 +961,10 @@ func unpackCatchExpr(env *Env, p []byte, header *PackHeader) (*CatchExpr, []byte
 	pos, p := unpackPosition(p, header)
 	i, p := extractUInt16(p)
 	typeName := header.Strings[i]
-	excSymbol, p := unpackSymbol(env, p, header)
+	excSymbol, p, err := unpackSymbol(env, p, header)
+	if err != nil {
+		return nil, nil, err
+	}
 	body, p, err := unpackSeq(env, p, header)
 	if err != nil {
 		return nil, nil, err
@@ -1019,6 +1069,6 @@ func UnpackExpr(env *Env, p []byte, header *PackHeader) (Expr, []byte, error) {
 	case BINDING_EXPR:
 		return unpackBindingExpr(p, header)
 	default:
-		panic(env.RT.NewError(fmt.Sprintf("Unknown pack tag: %d", p[0])))
+		return nil, nil, env.RT.NewError(fmt.Sprintf("Unknown pack tag: %d", p[0]))
 	}
 }

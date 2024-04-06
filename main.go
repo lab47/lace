@@ -42,7 +42,10 @@ type replayable struct {
 }
 
 func (r *replayable) ReadRune() (ch rune, size int, err error) {
-	ch = r.reader.Get()
+	ch, err = r.reader.Get()
+	if err != nil {
+		return 0, 0, err
+	}
 	if ch == EOF {
 		err = io.EOF
 		size = 0
@@ -112,11 +115,15 @@ func processFile(env *Env, filename string, phase Phase) error {
 	return ProcessReader(env, reader, filename, phase)
 }
 
-func skipRestOfLine(reader *Reader) {
+func skipRestOfLine(reader *Reader) error {
 	for {
-		switch reader.Get() {
+		c, err := reader.Get()
+		if err != nil {
+			return err
+		}
+		switch c {
 		case EOF, '\n':
-			return
+			return nil
 		}
 	}
 }
@@ -149,7 +156,11 @@ func processReplCommand(env *Env, reader *Reader, phase Phase, parseContext *Par
 	}
 	if err != nil {
 		fmt.Fprintln(Stderr, err)
-		skipRestOfLine(reader)
+		err = skipRestOfLine(reader)
+		if err != nil {
+			fmt.Printf("error: %s\n", err)
+			return
+		}
 		return
 	}
 

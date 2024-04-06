@@ -399,7 +399,7 @@ func doAssoc(level uint, node []interface{}, i int, val Object) []interface{} {
 
 func (v *Vector) assocN(i int, val Object) (*Vector, error) {
 	if i < 0 || i > v.count {
-		panic(StubNewError((fmt.Sprintf("Index %d is out of bounds [0..%d]", i, v.count))))
+		return nil, StubNewError((fmt.Sprintf("Index %d is out of bounds [0..%d]", i, v.count)))
 	}
 	if i == v.count {
 		return v.Conjoin(val)

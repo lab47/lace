@@ -27,12 +27,15 @@ func NewReader(runeReader io.RuneReader, filename string) *Reader {
 	}
 }
 
-func (reader *Reader) Get() rune {
+func (reader *Reader) Get() (rune, error) {
 	if reader.isEof {
-		return EOF
+		return EOF, nil
 	}
 	if reader.rewind > -1 {
-		r := top(reader.rw, reader.rewind)
+		r, err := top(reader.rw, reader.rewind)
+		if err != nil {
+			return 0, err
+		}
 		reader.rewind--
 		if r == '\n' {
 			reader.line++
@@ -41,25 +44,25 @@ func (reader *Reader) Get() rune {
 		} else {
 			reader.column++
 		}
-		return r
+		return r, nil
 	}
 	r, _, err := reader.runeReader.ReadRune()
 	switch {
 	case err == io.EOF:
 		reader.isEof = true
-		return EOF
+		return EOF, nil
 	case err != nil:
-		panic(err)
+		return 0, err
 	case r == '\n':
 		reader.line++
 		reader.prevLineLength = reader.column
 		reader.column = 0
 		add(reader.rw, r)
-		return r
+		return r, nil
 	default:
 		reader.column++
 		add(reader.rw, r)
-		return r
+		return r, nil
 	}
 }
 
@@ -80,7 +83,10 @@ func (reader *Reader) Peek() rune {
 	if reader.isEof {
 		return EOF
 	}
-	r := reader.Get()
+	r, err := reader.Get()
+	if err != nil {
+		return 0
+	}
 	reader.Unget()
 	return r
 }

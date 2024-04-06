@@ -385,19 +385,19 @@ func SeqCount(seq Seq) int {
 	return c
 }
 
-func SeqNth(seq Seq, n int) Object {
+func SeqNth(seq Seq, n int) (Object, error) {
 	if n < 0 {
-		panic(StubNewError(fmt.Sprintf("Negative index: %d", n)))
+		return nil, StubNewError(fmt.Sprintf("Negative index: %d", n))
 	}
 	i := n
 	for !seq.IsEmpty() {
 		if i == 0 {
-			return seq.First()
+			return seq.First(), nil
 		}
 		seq = seq.Rest()
 		i--
 	}
-	panic(StubNewError(fmt.Sprintf("Index %d exceeds seq's length %d", n, (n - i))))
+	return nil, StubNewError(fmt.Sprintf("Index %d exceeds seq's length %d", n, (n - i)))
 }
 
 func SeqTryNth(seq Seq, n int, d Object) Object {

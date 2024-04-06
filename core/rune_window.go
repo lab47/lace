@@ -1,5 +1,7 @@
 package core
 
+import "errors"
+
 type (
 	RuneWindow struct {
 		arr   [5]rune
@@ -29,13 +31,13 @@ func size(rw *RuneWindow) int {
 	return len(rw.arr) - (rw.start - rw.end)
 }
 
-func top(rw *RuneWindow, i int) rune {
+func top(rw *RuneWindow, i int) (rune, error) {
 	if i >= size(rw) {
-		panic("RuneWindow: index out of range")
+		return 0, errors.New("RuneWindow: index out of range")
 	}
 	index := rw.end - i
 	if index < 0 {
 		index += len(rw.arr)
 	}
-	return rw.arr[index]
+	return rw.arr[index], nil
 }
