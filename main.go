@@ -106,7 +106,9 @@ func processFile(env *Env, filename string, phase Phase) error {
 	}
 	if filename != "" {
 		f, err := filepath.Abs(filename)
-		PanicOnErr(err)
+		if err != nil {
+			return err
+		}
 		env.SetMainFilename(f)
 	}
 	if saveForRepl {

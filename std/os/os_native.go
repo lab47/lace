@@ -20,7 +20,9 @@ func env() (Object, error) {
 
 func setEnv(key string, value string) (Object, error) {
 	err := os.Setenv(key, value)
-	PanicOnErr(err)
+	if err != nil {
+		return nil, err
+	}
 	return NIL, nil
 }
 
@@ -126,7 +128,9 @@ func mkdir(name string, perm int) (Object, error) {
 
 func readDir(dirname string) (Object, error) {
 	files, err := ioutil.ReadDir(dirname)
-	PanicOnErr(err)
+	if err != nil {
+		return nil, err
+	}
 	res := EmptyVector()
 	name := MakeKeyword("name")
 	size := MakeKeyword("size")

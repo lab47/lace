@@ -11,7 +11,9 @@ func fileSeq(root string) (*Vector, error) {
 	res := EmptyVector()
 	var err error
 	err = filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-		PanicOnErr(err)
+		if err != nil {
+			return err
+		}
 		m := FileInfoMap(path, info)
 		res, err = res.Conjoin(m)
 		return err

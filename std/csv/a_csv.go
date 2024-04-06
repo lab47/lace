@@ -27,7 +27,7 @@ func __csv_seq_(_env *Env, _args []Object) (Object, error) {
 		return _res, err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -54,7 +54,7 @@ func __write_(_env *Env, _args []Object) (Object, error) {
 		return _res, err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -79,7 +79,7 @@ func __write_string_(_env *Env, _args []Object) (Object, error) {
 		return MakeString(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }

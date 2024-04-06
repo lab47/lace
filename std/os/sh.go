@@ -30,7 +30,9 @@ func sh(dir string, stdin io.Reader, stdout io.Writer, stderr io.Writer, name st
 	}
 
 	err := cmd.Start()
-	PanicOnErr(err)
+	if err != nil {
+		return nil, err
+	}
 
 	err = cmd.Wait()
 

@@ -590,9 +590,3 @@ func TryEval(env *Env, expr Expr) (obj Object, err error) {
 
 	return Eval(env, expr, nil)
 }
-
-func PanicOnErr(err error) {
-	if err != nil {
-		panic(StubNewError(err.Error()))
-	}
-}

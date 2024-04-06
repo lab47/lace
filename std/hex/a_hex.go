@@ -22,7 +22,7 @@ func __decode_string_(_env *Env, _args []Object) (Object, error) {
 		return MakeString(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -40,7 +40,7 @@ func __encode_string_(_env *Env, _args []Object) (Object, error) {
 		return MakeString(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }

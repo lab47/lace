@@ -21,7 +21,7 @@ func __close_(_env *Env, _args []Object) (Object, error) {
 		return _res, err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -37,12 +37,11 @@ func __copy_(_env *Env, _args []Object) (Object, error) {
 		dst, err := ExtractIOWriter(_env, _args, 0); if err != nil { return nil, err }
 		src, err := ExtractIOReader(_env, _args, 1); if err != nil { return nil, err }
 		 n, err := io.Copy(dst, src)
-		PanicOnErr(err)
 		_res := int(n)
 		return MakeInt(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -59,7 +58,7 @@ func __pipe_(_env *Env, _args []Object) (Object, error) {
 		return _res, err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }

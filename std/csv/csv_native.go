@@ -14,7 +14,9 @@ func csvLazySeq(rdr *csv.Reader) (*LazySeq, error) {
 		if err == io.EOF {
 			return EmptyList, nil
 		}
-		PanicOnErr(err)
+		if err != nil {
+			return nil, err
+		}
 		l, err := csvLazySeq(rdr)
 		if err != nil {
 			return nil, err

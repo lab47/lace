@@ -18,12 +18,11 @@ func __abs_(_env *Env, _args []Object) (Object, error) {
 	case _c == 1:
 		var err error
 		path, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
-		 _res, err := filepath.Abs(path)
-		PanicOnErr(err)
+		_res, err := filepath.Abs(path)
 		return MakeString(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -41,7 +40,7 @@ func __isabs_(_env *Env, _args []Object) (Object, error) {
 		return MakeBoolean(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -59,7 +58,7 @@ func __base_(_env *Env, _args []Object) (Object, error) {
 		return MakeString(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -77,7 +76,7 @@ func __clean_(_env *Env, _args []Object) (Object, error) {
 		return MakeString(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -95,7 +94,7 @@ func __dir_(_env *Env, _args []Object) (Object, error) {
 		return MakeString(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -109,12 +108,11 @@ func __eval_symlinks_(_env *Env, _args []Object) (Object, error) {
 	case _c == 1:
 		var err error
 		path, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
-		 _res, err := filepath.EvalSymlinks(path)
-		PanicOnErr(err)
+		_res, err := filepath.EvalSymlinks(path)
 		return MakeString(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -132,7 +130,7 @@ func __ext_(_env *Env, _args []Object) (Object, error) {
 		return MakeString(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -150,7 +148,7 @@ func __file_seq_(_env *Env, _args []Object) (Object, error) {
 		return _res, err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -168,7 +166,7 @@ func __from_slash_(_env *Env, _args []Object) (Object, error) {
 		return MakeString(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -182,12 +180,11 @@ func __glob_(_env *Env, _args []Object) (Object, error) {
 	case _c == 1:
 		var err error
 		pattern, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
-		 _res, err := filepath.Glob(pattern)
-		PanicOnErr(err)
+		_res, err := filepath.Glob(pattern)
 		return MakeStringVector(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -200,13 +197,13 @@ func __join_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case true:
 		var err error
-		CheckArity(_env, _args, 0, 999)
+		if err := CheckArity(_env, _args, 0, 999); err != nil { return nil, err }
 		elems, err := ExtractStrings(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := filepath.Join(elems...), nil
 		return MakeString(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -221,12 +218,11 @@ func __ismatches_(_env *Env, _args []Object) (Object, error) {
 		var err error
 		pattern, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
 		name, err := ExtractString(_env, _args, 1); if err != nil { return nil, err }
-		 _res, err := filepath.Match(pattern, name)
-		PanicOnErr(err)
+		_res, err := filepath.Match(pattern, name)
 		return MakeBoolean(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -241,12 +237,11 @@ func __rel_(_env *Env, _args []Object) (Object, error) {
 		var err error
 		basepath, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
 		targpath, err := ExtractString(_env, _args, 1); if err != nil { return nil, err }
-		 _res, err := filepath.Rel(basepath, targpath)
-		PanicOnErr(err)
+		_res, err := filepath.Rel(basepath, targpath)
 		return MakeString(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -265,7 +260,7 @@ func __split_(_env *Env, _args []Object) (Object, error) {
 		return _res, err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -283,7 +278,7 @@ func __split_list_(_env *Env, _args []Object) (Object, error) {
 		return MakeStringVector(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -301,7 +296,7 @@ func __to_slash_(_env *Env, _args []Object) (Object, error) {
 		return MakeString(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -319,7 +314,7 @@ func __volume_name_(_env *Env, _args []Object) (Object, error) {
 		return MakeString(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }

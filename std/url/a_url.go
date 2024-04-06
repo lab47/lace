@@ -21,7 +21,7 @@ func __path_escape_(_env *Env, _args []Object) (Object, error) {
 		return MakeString(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -39,7 +39,7 @@ func __path_unescape_(_env *Env, _args []Object) (Object, error) {
 		return MakeString(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -57,7 +57,7 @@ func __query_escape_(_env *Env, _args []Object) (Object, error) {
 		return MakeString(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -75,7 +75,7 @@ func __query_unescape_(_env *Env, _args []Object) (Object, error) {
 		return MakeString(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }

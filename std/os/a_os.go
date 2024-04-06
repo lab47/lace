@@ -20,7 +20,7 @@ func __args_(_env *Env, _args []Object) (Object, error) {
 		return _res, err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -38,7 +38,7 @@ func __chdir_(_env *Env, _args []Object) (Object, error) {
 		return _res, err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -52,13 +52,11 @@ func __close_(_env *Env, _args []Object) (Object, error) {
 	case _c == 1:
 		var err error
 		f, err := ExtractFile(_env, _args, 0); if err != nil { return nil, err }
-		 err = f.Close()
-		PanicOnErr(err)
-		_res := NIL
+		_res, err := NIL, f.Close()
 		return _res, err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -72,12 +70,11 @@ func __create_(_env *Env, _args []Object) (Object, error) {
 	case _c == 1:
 		var err error
 		name, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
-		 _res, err := os.Create(name)
-		PanicOnErr(err)
+		_res, err := os.Create(name)
 		return MakeFile(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -94,7 +91,7 @@ func __cwd_(_env *Env, _args []Object) (Object, error) {
 		return MakeString(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -111,7 +108,7 @@ func __env_(_env *Env, _args []Object) (Object, error) {
 		return _res, err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -130,7 +127,7 @@ func __exec_(_env *Env, _args []Object) (Object, error) {
 		return _res, err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -148,7 +145,7 @@ func __isexists_(_env *Env, _args []Object) (Object, error) {
 		return MakeBoolean(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -167,7 +164,7 @@ func __exit_(_env *Env, _args []Object) (Object, error) {
 		return _res, err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -185,7 +182,7 @@ func __get_env_(_env *Env, _args []Object) (Object, error) {
 		return _res, err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -203,7 +200,7 @@ func __ls_(_env *Env, _args []Object) (Object, error) {
 		return _res, err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -222,7 +219,7 @@ func __mkdir_(_env *Env, _args []Object) (Object, error) {
 		return _res, err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -236,12 +233,11 @@ func __open_(_env *Env, _args []Object) (Object, error) {
 	case _c == 1:
 		var err error
 		name, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
-		 _res, err := os.Open(name)
-		PanicOnErr(err)
+		_res, err := os.Open(name)
 		return MakeFile(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -259,7 +255,7 @@ func __remove_(_env *Env, _args []Object) (Object, error) {
 		return _res, err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -277,7 +273,7 @@ func __remove_all_(_env *Env, _args []Object) (Object, error) {
 		return _res, err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -296,7 +292,7 @@ func __set_env_(_env *Env, _args []Object) (Object, error) {
 		return _res, err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -309,14 +305,14 @@ func __sh_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case true:
 		var err error
-		CheckArity(_env, _args, 1, 999)
+		if err := CheckArity(_env, _args, 1, 999); err != nil { return nil, err }
 		name, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
 		arguments, err := ExtractStrings(_env, _args, 1); if err != nil { return nil, err }
 		_res, err := sh("", nil, nil, nil, name, arguments)
 		return _res, err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -329,7 +325,7 @@ func __sh_from_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case true:
 		var err error
-		CheckArity(_env, _args, 2, 999)
+		if err := CheckArity(_env, _args, 2, 999); err != nil { return nil, err }
 		dir, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
 		name, err := ExtractString(_env, _args, 1); if err != nil { return nil, err }
 		arguments, err := ExtractStrings(_env, _args, 2); if err != nil { return nil, err }
@@ -337,7 +333,7 @@ func __sh_from_(_env *Env, _args []Object) (Object, error) {
 		return _res, err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -355,7 +351,7 @@ func __stat_(_env *Env, _args []Object) (Object, error) {
 		return _res, err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }

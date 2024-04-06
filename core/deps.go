@@ -26,7 +26,9 @@ func externalHttpSourceToPath(env *Env, lib string, url string) (string, error) 
 			url = url + libBase
 		}
 		resp, err := http.Get(url)
-		PanicOnErr(err)
+		if err != nil {
+			return "", err
+		}
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
@@ -35,10 +37,14 @@ func externalHttpSourceToPath(env *Env, lib string, url string) (string, error) 
 
 		out, err := os.Create(libPath)
 		defer out.Close()
-		PanicOnErr(err)
+		if err != nil {
+			return "", err
+		}
 
 		_, err = io.Copy(out, resp.Body)
-		PanicOnErr(err)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	return libPath, nil

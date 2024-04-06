@@ -53,7 +53,9 @@ func mapToReq(env *Env, request Map) (*http.Request, error) {
 		reqBody = strings.NewReader(sv.S)
 	}
 	req, err := http.NewRequest(method, url, reqBody)
-	PanicOnErr(err)
+	if err != nil {
+		return nil, err
+	}
 	if ok, headers := request.Get(MakeKeyword("headers")); ok {
 		h, err := AssertMap(env, headers, "headers must be a map")
 		if err != nil {
@@ -190,7 +192,9 @@ func sendRequest(env *Env, request Map) (Map, error) {
 	//RT.GIL.Unlock()
 	resp, err := client.Do(req)
 	//RT.GIL.Lock()
-	PanicOnErr(err)
+	if err != nil {
+		return nil, err
+	}
 	return respToMap(resp)
 }
 
@@ -226,7 +230,9 @@ func startServer(env *Env, addr string, handler Callable) (Object, error) {
 		}
 		mapToResp(env, rm, w)
 	}))
-	PanicOnErr(err)
+	if err != nil {
+		return nil, err
+	}
 	return NIL, nil
 }
 

@@ -20,7 +20,7 @@ func __send_(_env *Env, _args []Object) (Object, error) {
 		return _res, err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -39,7 +39,7 @@ func __start_file_server_(_env *Env, _args []Object) (Object, error) {
 		return _res, err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -58,7 +58,7 @@ func __start_server_(_env *Env, _args []Object) (Object, error) {
 		return _res, err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }

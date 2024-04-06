@@ -1556,11 +1556,13 @@ var procFlush = func(env *Env, args []Object) (Object, error) {
 	return NIL, nil
 }
 
-func readFromReader(env *Env, reader io.RuneReader) Object {
+func readFromReader(env *Env, reader io.RuneReader) (Object, error) {
 	r := NewReader(reader, "<>")
 	obj, err := TryRead(env, r)
-	PanicOnErr(err)
-	return obj
+	if err != nil {
+		return nil, err
+	}
+	return obj, nil
 }
 
 var procRead = func(env *Env, args []Object) (Object, error) {
@@ -1568,7 +1570,7 @@ var procRead = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	return readFromReader(env, f), nil
+	return readFromReader(env, f)
 }
 
 var procReadString = func(env *Env, args []Object) (Object, error) {
@@ -1577,7 +1579,7 @@ var procReadString = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	return readFromReader(env, strings.NewReader(s.S)), nil
+	return readFromReader(env, strings.NewReader(s.S))
 }
 
 func readLine(r StringReader) (s string, e error) {
@@ -1912,7 +1914,9 @@ var procSlurp = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 	b, err := os.ReadFile(s.S)
-	PanicOnErr(err)
+	if err != nil {
+		return nil, err
+	}
 	return String{S: string(b)}, nil
 }
 
@@ -1940,10 +1944,14 @@ var procSpit = func(env *Env, args []Object) (Object, error) {
 		flags |= os.O_TRUNC
 	}
 	f, err := os.OpenFile(filename.S, flags, 0644)
-	PanicOnErr(err)
+	if err != nil {
+		return nil, err
+	}
 	defer f.Close()
 	_, err = f.WriteString(content.S)
-	PanicOnErr(err)
+	if err != nil {
+		return nil, err
+	}
 	return NIL, nil
 }
 
@@ -1982,13 +1990,15 @@ var procHash = func(env *Env, args []Object) (Object, error) {
 	return Int{I: int(args[0].Hash())}, nil
 }
 
-func loadFile(env *Env, filename string) Object {
+func loadFile(env *Env, filename string) (Object, error) {
 	var reader *Reader
 	f, err := os.Open(filename)
-	PanicOnErr(err)
+	if err != nil {
+		return nil, err
+	}
 	reader = NewReader(bufio.NewReader(f), filename)
 	ProcessReaderFromEval(env, reader, filename)
-	return NIL
+	return NIL, nil
 }
 
 var procLoadFile = func(env *Env, args []Object) (Object, error) {
@@ -1996,7 +2006,7 @@ var procLoadFile = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	return loadFile(env, filename.S), nil
+	return loadFile(env, filename.S)
 }
 
 var procLoadLibFromPath = func(env *Env, args []Object) (Object, error) {
@@ -2042,8 +2052,12 @@ var procLoadLibFromPath = func(env *Env, args []Object) (Object, error) {
 			canonicalErr = err
 		}
 	}
-	PanicOnErr(canonicalErr)
-	PanicOnErr(err)
+	if canonicalErr != nil {
+		return nil, canonicalErr
+	}
+	if err != nil {
+		return nil, err
+	}
 	reader := NewReader(bufio.NewReader(f), filename)
 	ProcessReaderFromEval(env, reader, filename)
 	return NIL, nil
@@ -2125,7 +2139,9 @@ var procLibPath = func(env *Env, args []Object) (Object, error) {
 		if env.file.Value == nil {
 			var err error
 			file, err = filepath.Abs("user")
-			PanicOnErr(err)
+			if err != nil {
+				return nil, err
+			}
 		} else {
 			filev, err := AssertString(env, env.file.Value, "")
 			if err != nil {
@@ -2305,7 +2321,9 @@ func PackReader(env *Env, reader *Reader, filename string) ([]byte, error) {
 			parseContext.Env.SetFilename(currentFilename)
 		}()
 		s, err := filepath.Abs(filename)
-		PanicOnErr(err)
+		if err != nil {
+			return nil, err
+		}
 		parseContext.Env.SetFilename(MakeString(s))
 	}
 	for {
@@ -2346,7 +2364,9 @@ func ProcessReader(env *Env, reader *Reader, filename string, phase Phase) error
 			parseContext.Env.SetFilename(currentFilename)
 		}()
 		s, err := filepath.Abs(filename)
-		PanicOnErr(err)
+		if err != nil {
+			return err
+		}
 		parseContext.Env.SetFilename(MakeString(s))
 	}
 	for {
@@ -2383,7 +2403,7 @@ func ProcessReader(env *Env, reader *Reader, filename string, phase Phase) error
 	}
 }
 
-func ProcessReaderFromEval(env *Env, reader *Reader, filename string) {
+func ProcessReaderFromEval(env *Env, reader *Reader, filename string) error {
 	parseContext := &ParseContext{Env: env}
 	if filename != "" {
 		currentFilename := parseContext.Env.file.Value
@@ -2391,19 +2411,27 @@ func ProcessReaderFromEval(env *Env, reader *Reader, filename string) {
 			parseContext.Env.SetFilename(currentFilename)
 		}()
 		s, err := filepath.Abs(filename)
-		PanicOnErr(err)
+		if err != nil {
+			return err
+		}
 		parseContext.Env.SetFilename(MakeString(s))
 	}
 	for {
 		obj, err := TryRead(env, reader)
 		if err == io.EOF {
-			return
+			return nil
 		}
-		PanicOnErr(err)
+		if err != nil {
+			return err
+		}
 		expr, err := TryParse(obj, parseContext)
-		PanicOnErr(err)
+		if err != nil {
+			return err
+		}
 		obj, err = TryEval(env, expr)
-		PanicOnErr(err)
+		if err != nil {
+			return err
+		}
 	}
 }
 
@@ -2426,7 +2454,9 @@ func processInEnv(env *Env, data []byte) error {
 			return err
 		}
 		_, err := TryEval(env, expr)
-		PanicOnErr(err)
+		if err != nil {
+			return err
+		}
 	}
 	if VerbosityLevel > 0 {
 		fmt.Fprintf(Stderr, "processData: Evaluated code for %s\n", env.CurrentNamespace().ToString(false))

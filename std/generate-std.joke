@@ -109,7 +109,7 @@
     (-> arity-template
         (rpl "{arity}" (if varargs? "true" (str "_c == " (count args))))
         (rpl "{arityCheck}" (if varargs?
-                              (str "CheckArity(_env, _args, " (dec cnt) ", " 999 ")")
+                              (str "if err := CheckArity(_env, _args, " (dec cnt) ", " 999 "); err != nil { return nil, err }")
                               "{blank}"))
         (rpl "{args}" (if (empty? args)
                         "{blank}"

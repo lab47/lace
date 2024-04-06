@@ -42,7 +42,7 @@ func __add_(_env *Env, _args []Object) (Object, error) {
 		return MakeTime(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -63,7 +63,7 @@ func __add_date_(_env *Env, _args []Object) (Object, error) {
 		return MakeTime(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -82,7 +82,7 @@ func __format_(_env *Env, _args []Object) (Object, error) {
 		return MakeString(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -101,7 +101,7 @@ func __from_unix_(_env *Env, _args []Object) (Object, error) {
 		return MakeTime(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -119,7 +119,7 @@ func __hours_(_env *Env, _args []Object) (Object, error) {
 		return MakeDouble(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -137,7 +137,7 @@ func __minutes_(_env *Env, _args []Object) (Object, error) {
 		return MakeDouble(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -154,7 +154,7 @@ func __now_(_env *Env, _args []Object) (Object, error) {
 		return MakeTime(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -173,7 +173,7 @@ func __parse_(_env *Env, _args []Object) (Object, error) {
 		return MakeTime(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -192,7 +192,7 @@ func __parse_duration_(_env *Env, _args []Object) (Object, error) {
 		return MakeInt(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -211,7 +211,7 @@ func __round_(_env *Env, _args []Object) (Object, error) {
 		return MakeInt(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -229,7 +229,7 @@ func __seconds_(_env *Env, _args []Object) (Object, error) {
 		return MakeDouble(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -247,7 +247,7 @@ func __since_(_env *Env, _args []Object) (Object, error) {
 		return MakeInt(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -266,7 +266,7 @@ func __sleep_(_env *Env, _args []Object) (Object, error) {
 		return _res, err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -284,7 +284,7 @@ func __string_(_env *Env, _args []Object) (Object, error) {
 		return MakeString(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -303,7 +303,7 @@ func __sub_(_env *Env, _args []Object) (Object, error) {
 		return MakeInt(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -322,7 +322,7 @@ func __truncate_(_env *Env, _args []Object) (Object, error) {
 		return MakeInt(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -340,7 +340,7 @@ func __unix_(_env *Env, _args []Object) (Object, error) {
 		return MakeInt(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -358,7 +358,7 @@ func __until_(_env *Env, _args []Object) (Object, error) {
 		return MakeInt(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }

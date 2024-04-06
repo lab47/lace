@@ -18,11 +18,10 @@ func __atoi_(_env *Env, _args []Object) (Object, error) {
 		var err error
 		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := strconv.Atoi(s)
-		PanicOnErr(err)
 		return MakeInt(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -40,7 +39,7 @@ func __iscan_backquote_(_env *Env, _args []Object) (Object, error) {
 		return MakeBoolean(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -58,7 +57,7 @@ func __format_bool_(_env *Env, _args []Object) (Object, error) {
 		return MakeString(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -79,7 +78,7 @@ func __format_double_(_env *Env, _args []Object) (Object, error) {
 		return MakeString(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -98,7 +97,7 @@ func __format_int_(_env *Env, _args []Object) (Object, error) {
 		return MakeString(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -116,7 +115,7 @@ func __isgraphic_(_env *Env, _args []Object) (Object, error) {
 		return MakeBoolean(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -134,7 +133,7 @@ func __itoa_(_env *Env, _args []Object) (Object, error) {
 		return MakeString(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -149,11 +148,10 @@ func __parse_bool_(_env *Env, _args []Object) (Object, error) {
 		var err error
 		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := strconv.ParseBool(s)
-		PanicOnErr(err)
 		return MakeBoolean(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -168,11 +166,10 @@ func __parse_double_(_env *Env, _args []Object) (Object, error) {
 		var err error
 		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := strconv.ParseFloat(s, 64)
-		PanicOnErr(err)
 		return MakeDouble(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -189,12 +186,11 @@ func __parse_int_(_env *Env, _args []Object) (Object, error) {
 		base, err := ExtractInt(_env, _args, 1); if err != nil { return nil, err }
 		bitSize, err := ExtractInt(_env, _args, 2); if err != nil { return nil, err }
 		t, err := strconv.ParseInt(s, base, bitSize)
-		PanicOnErr(err)
 		_res := int(t)
 		return MakeInt(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -212,7 +208,7 @@ func __isprintable_(_env *Env, _args []Object) (Object, error) {
 		return MakeBoolean(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -230,7 +226,7 @@ func __quote_(_env *Env, _args []Object) (Object, error) {
 		return MakeString(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -248,7 +244,7 @@ func __quote_char_(_env *Env, _args []Object) (Object, error) {
 		return MakeString(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -266,7 +262,7 @@ func __quote_char_to_ascii_(_env *Env, _args []Object) (Object, error) {
 		return MakeString(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -284,7 +280,7 @@ func __quote_char_to_graphic_(_env *Env, _args []Object) (Object, error) {
 		return MakeString(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -302,7 +298,7 @@ func __quote_to_ascii_(_env *Env, _args []Object) (Object, error) {
 		return MakeString(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -320,7 +316,7 @@ func __quote_to_graphic_(_env *Env, _args []Object) (Object, error) {
 		return MakeString(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -335,11 +331,10 @@ func __unquote_(_env *Env, _args []Object) (Object, error) {
 		var err error
 		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := strconv.Unquote(s)
-		PanicOnErr(err)
 		return MakeString(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }

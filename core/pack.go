@@ -337,7 +337,10 @@ func unpackObject(env *Env, p []byte, header *PackHeader) (Object, []byte, error
 	case NULL:
 		var size int
 		size, p = extractInt(p[1:])
-		obj := readFromReader(env, bytes.NewReader(p[:size]))
+		obj, err := readFromReader(env, bytes.NewReader(p[:size]))
+		if err != nil {
+			return nil, nil, err
+		}
 		return obj, p[size:], nil
 	default:
 		return nil, nil, env.RT.NewError(fmt.Sprintf("Unknown object tag: %d", p[0]))

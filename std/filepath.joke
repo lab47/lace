@@ -15,7 +15,7 @@
   The absolute path name for a given file is not guaranteed to be unique.
   Calls clean on the result."
   {:added "1.0"
-  :go "! _res, err := filepath.Abs(path); PanicOnErr(err)"}
+  :go "filepath.Abs(path)"}
   [^String path])
 
 (defn ^String base
@@ -60,7 +60,7 @@ If the result of this process is an empty string, returns the string \".\"."
   relative to the current directory, unless one of the components is an absolute symbolic link.
   Calls clean on the result."
   {:added "1.0"
-  :go "! _res, err := filepath.EvalSymlinks(path); PanicOnErr(err)"}
+  :go "filepath.EvalSymlinks(path)"}
   [^String path])
 
 (defn ^String ext
@@ -85,7 +85,7 @@ If the result of this process is an empty string, returns the string \".\"."
   Ignores file system errors such as I/O errors reading directories.
   Throws exception when pattern is malformed."
   {:added "1.0"
-  :go "! _res, err := filepath.Glob(pattern); PanicOnErr(err)"}
+  :go "filepath.Glob(pattern)"}
   [^String pattern])
 
 (defn ^Boolean abs?
@@ -108,7 +108,7 @@ If the result of this process is an empty string, returns the string \".\"."
   Throws exception if pattern is malformed.
   On Windows, escaping is disabled. Instead, '\\' is treated as path separator."
   {:added "1.0"
-  :go "! _res, err := filepath.Match(pattern, name); PanicOnErr(err)"}
+  :go "filepath.Match(pattern, name)"}
   [^String pattern ^String name])
 
 (defn ^String rel
@@ -118,7 +118,7 @@ If the result of this process is an empty string, returns the string \".\"."
   relative to basepath or if knowing the current working directory would be necessary to compute it.
   Calls clean on the result."
   {:added "1.0"
-  :go "! _res, err := filepath.Rel(basepath, targpath); PanicOnErr(err)"}
+  :go "filepath.Rel(basepath, targpath)"}
   [^String basepath ^String targpath])
 
 (defn split

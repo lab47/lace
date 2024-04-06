@@ -33,7 +33,7 @@ func __abs_(_env *Env, _args []Object) (Object, error) {
 		return MakeDouble(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -51,7 +51,7 @@ func __ceil_(_env *Env, _args []Object) (Object, error) {
 		return MakeDouble(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -70,7 +70,7 @@ func __copy_sign_(_env *Env, _args []Object) (Object, error) {
 		return MakeDouble(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -88,7 +88,7 @@ func __cos_(_env *Env, _args []Object) (Object, error) {
 		return MakeDouble(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -106,7 +106,7 @@ func __cube_root_(_env *Env, _args []Object) (Object, error) {
 		return MakeDouble(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -125,7 +125,7 @@ func __dim_(_env *Env, _args []Object) (Object, error) {
 		return MakeDouble(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -143,7 +143,7 @@ func __exp_(_env *Env, _args []Object) (Object, error) {
 		return MakeDouble(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -161,7 +161,7 @@ func __exp_2_(_env *Env, _args []Object) (Object, error) {
 		return MakeDouble(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -179,7 +179,7 @@ func __exp_minus_1_(_env *Env, _args []Object) (Object, error) {
 		return MakeDouble(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -197,7 +197,7 @@ func __floor_(_env *Env, _args []Object) (Object, error) {
 		return MakeDouble(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -216,7 +216,7 @@ func __hypot_(_env *Env, _args []Object) (Object, error) {
 		return MakeDouble(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -234,7 +234,7 @@ func __inf_(_env *Env, _args []Object) (Object, error) {
 		return MakeDouble(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -253,7 +253,7 @@ func __isinf_(_env *Env, _args []Object) (Object, error) {
 		return MakeBoolean(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -271,7 +271,7 @@ func __log_(_env *Env, _args []Object) (Object, error) {
 		return MakeDouble(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -289,7 +289,7 @@ func __log_10_(_env *Env, _args []Object) (Object, error) {
 		return MakeDouble(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -307,7 +307,7 @@ func __log_2_(_env *Env, _args []Object) (Object, error) {
 		return MakeDouble(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -325,7 +325,7 @@ func __log_binary_(_env *Env, _args []Object) (Object, error) {
 		return MakeDouble(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -343,7 +343,7 @@ func __log_plus_1_(_env *Env, _args []Object) (Object, error) {
 		return MakeDouble(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -361,7 +361,7 @@ func __modf_(_env *Env, _args []Object) (Object, error) {
 		return _res, err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -378,7 +378,7 @@ func __nan_(_env *Env, _args []Object) (Object, error) {
 		return MakeDouble(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -396,7 +396,7 @@ func __isnan_(_env *Env, _args []Object) (Object, error) {
 		return MakeBoolean(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -415,7 +415,7 @@ func __next_after_(_env *Env, _args []Object) (Object, error) {
 		return MakeDouble(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -434,7 +434,7 @@ func __pow_(_env *Env, _args []Object) (Object, error) {
 		return MakeDouble(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -452,7 +452,7 @@ func __pow_10_(_env *Env, _args []Object) (Object, error) {
 		return MakeDouble(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -470,7 +470,7 @@ func __round_(_env *Env, _args []Object) (Object, error) {
 		return MakeDouble(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -488,7 +488,7 @@ func __round_to_even_(_env *Env, _args []Object) (Object, error) {
 		return MakeDouble(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -506,7 +506,7 @@ func __sign_bit_(_env *Env, _args []Object) (Object, error) {
 		return MakeBoolean(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -524,7 +524,7 @@ func __sin_(_env *Env, _args []Object) (Object, error) {
 		return MakeDouble(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -542,7 +542,7 @@ func __sqrt_(_env *Env, _args []Object) (Object, error) {
 		return MakeDouble(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }
@@ -560,7 +560,7 @@ func __trunc_(_env *Env, _args []Object) (Object, error) {
 		return MakeDouble(_res), err
 
 	default:
-		PanicArity(_env, _c)
+		return nil, ErrorArity(_env, _c)
 	}
 	return NIL, nil
 }

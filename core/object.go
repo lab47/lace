@@ -386,9 +386,9 @@ func MakeKeyword(nsname string) Keyword {
 	}
 }
 
-func PanicArity(env *Env, n int) {
+func ErrorArity(env *Env, n int) error {
 	name := env.RT.currentExpr.(Traceable).Name()
-	panic(env.RT.NewError(fmt.Sprintf("Wrong number of args (%d) passed to %s", n, name)))
+	return env.RT.NewError(fmt.Sprintf("Wrong number of args (%d) passed to %s", n, name))
 }
 
 func rangeString(min, max int) string {
@@ -407,9 +407,9 @@ func rangeString(min, max int) string {
 	return "between " + strconv.Itoa(min) + " and " + strconv.Itoa(max) + ", inclusive"
 }
 
-func PanicArityMinMax(env *Env, n, min, max int) error {
+func ErrorArityMinMax(env *Env, n, min, max int) error {
 	name := env.RT.currentExpr.(Traceable).Name()
-	panic(env.RT.NewError(fmt.Sprintf("Wrong number of args (%d) passed to %s; expects %s", n, name, rangeString(min, max))))
+	return env.RT.NewError(fmt.Sprintf("Wrong number of args (%d) passed to %s; expects %s", n, name, rangeString(min, max)))
 }
 
 func ReturnArityMinMax(env *Env, n, min, max int) error {
@@ -472,12 +472,14 @@ func HashPtr(ptr uintptr) uint32 {
 	return h.Sum32()
 }
 
-func hashGobEncoder(e gob.GobEncoder) uint32 {
+func hashGobEncoder(e gob.GobEncoder) (uint32, error) {
 	h := getHash()
 	b, err := e.GobEncode()
-	PanicOnErr(err)
+	if err != nil {
+		return 0, err
+	}
 	h.Write(b)
-	return h.Sum32()
+	return h.Sum32(), nil
 }
 
 func equalsNumbers(x Number, y interface{}) bool {
@@ -725,7 +727,7 @@ func (fn *Fn) Call(env *Env, args []Object) (Object, error) {
 				max -= 2
 			}
 		}
-		PanicArityMinMax(env, c, min, max)
+		return nil, ErrorArityMinMax(env, c, min, max)
 	}
 	var restArgs Object = NIL
 	if len(v.args)-1 < len(args) {
@@ -1025,7 +1027,9 @@ func (rat *Ratio) GetType() *Type {
 }
 
 func (rat *Ratio) Hash() uint32 {
-	return hashGobEncoder(&rat.r)
+	h, _ := hashGobEncoder(&rat.r)
+
+	return h
 }
 
 func (rat *Ratio) Compare(env *Env, other Object) (int, error) {
@@ -1054,7 +1058,8 @@ func (bi *BigInt) GetType() *Type {
 }
 
 func (bi *BigInt) Hash() uint32 {
-	return hashGobEncoder(&bi.b)
+	h, _ := hashGobEncoder(&bi.b)
+	return h
 }
 
 func (bi *BigInt) Compare(env *Env, other Object) (int, error) {
@@ -1078,7 +1083,8 @@ func (bf *BigFloat) GetType() *Type {
 }
 
 func (bf *BigFloat) Hash() uint32 {
-	return hashGobEncoder(&bf.b)
+	h, _ := hashGobEncoder(&bf.b)
+	return h
 }
 
 func (bf *BigFloat) Compare(env *Env, other Object) (int, error) {
@@ -1283,7 +1289,8 @@ func (t Time) Native() interface{} {
 }
 
 func (t Time) Hash() uint32 {
-	return hashGobEncoder(t.T)
+	h, _ := hashGobEncoder(t.T)
+	return h
 }
 
 func (t Time) Compare(env *Env, other Object) (int, error) {
