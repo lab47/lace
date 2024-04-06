@@ -305,7 +305,10 @@ func (v *Vector) Compare(env *Env, other Object) (int, error) {
 		if err != nil {
 			return 0, err
 		}
-		c := v.Compare(v2.at(i))
+		c, err := v.Compare(env, v2.at(i))
+		if err != nil {
+			return 0, err
+		}
 		if c != 0 {
 			return c, nil
 		}

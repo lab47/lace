@@ -23,22 +23,8 @@ import (
 	"unsafe"
 )
 
+// interfaces
 type (
-	Position struct {
-		endLine     int
-		endColumn   int
-		startLine   int
-		startColumn int
-		filename    *string
-	}
-	Equality interface {
-		Equals(interface{}) bool
-	}
-	Type struct {
-		MetaHolder
-		name        string
-		reflectType reflect.Type
-	}
 	Object interface {
 		Equality
 		ToString(escape bool) string
@@ -46,6 +32,9 @@ type (
 		WithInfo(*ObjectInfo) Object
 		GetType() *Type
 		Hash() uint32
+	}
+	Equality interface {
+		Equals(interface{}) bool
 	}
 	Conjable interface {
 		Object
@@ -66,6 +55,83 @@ type (
 	Ref interface {
 		AlterMeta(env *Env, fn *Fn, args []Object) (Map, error)
 		ResetMeta(m Map) Map
+	}
+	Sequential interface {
+		sequential()
+	}
+	Comparable interface {
+		Compare(env *Env, other Object) (int, error)
+	}
+	Comparator interface {
+		Compare(env *Env, a, b Object) (int, error)
+	}
+	Indexed interface {
+		Nth(i int) Object
+		TryNth(i int, d Object) Object
+	}
+	Stack interface {
+		Peek() Object
+		Pop() Stack
+	}
+	Gettable interface {
+		Get(key Object) (bool, Object)
+	}
+	Associative interface {
+		Conjable
+		Gettable
+		EntryAt(key Object) (*Vector, error)
+		Assoc(key, val Object) (Associative, error)
+	}
+	Reversible interface {
+		Rseq() Seq
+	}
+	Named interface {
+		Name() string
+		Namespace() string
+	}
+	Printer interface {
+		Print(writer io.Writer, printReadably bool)
+	}
+	Pprinter interface {
+		Pprint(writer io.Writer, indent int) int
+	}
+	Collection interface {
+		Object
+		Counted
+		Seqable
+		Empty() Collection
+	}
+	Deref interface {
+		Deref(env *Env) (Object, error)
+	}
+	Native interface {
+		Native() interface{}
+	}
+	KVReduce interface {
+		kvreduce(env *Env, c Callable, init Object) (Object, error)
+	}
+	Pending interface {
+		IsRealized() bool
+	}
+)
+
+// implementations
+type (
+	Position struct {
+		endLine     int
+		endColumn   int
+		startLine   int
+		startColumn int
+		filename    *string
+	}
+	Atom struct {
+		MetaHolder
+		value Object
+	}
+	Type struct {
+		MetaHolder
+		name        string
+		reflectType reflect.Type
 	}
 	MetaHolder struct {
 		meta Map
@@ -169,70 +235,11 @@ type (
 		fn    Callable
 		value Object
 	}
-	Sequential interface {
-		sequential()
-	}
-	Comparable interface {
-		Compare(other Object) int
-	}
-	Indexed interface {
-		Nth(i int) Object
-		TryNth(i int, d Object) Object
-	}
-	Stack interface {
-		Peek() Object
-		Pop() Stack
-	}
-	Gettable interface {
-		Get(key Object) (bool, Object)
-	}
-	Associative interface {
-		Conjable
-		Gettable
-		EntryAt(key Object) (*Vector, error)
-		Assoc(key, val Object) (Associative, error)
-	}
-	Reversible interface {
-		Rseq() Seq
-	}
-	Named interface {
-		Name() string
-		Namespace() string
-	}
-	Comparator interface {
-		Compare(a, b Object) int
-	}
 	SortableSlice struct {
+		env *Env
 		s   []Object
 		cmp Comparator
-	}
-	Printer interface {
-		Print(writer io.Writer, printReadably bool)
-	}
-	Pprinter interface {
-		Pprint(writer io.Writer, indent int) int
-	}
-	Collection interface {
-		Object
-		Counted
-		Seqable
-		Empty() Collection
-	}
-	Atom struct {
-		MetaHolder
-		value Object
-	}
-	Deref interface {
-		Deref() (Object, error)
-	}
-	Native interface {
-		Native() interface{}
-	}
-	KVReduce interface {
-		kvreduce(c Callable, init Object) Object
-	}
-	Pending interface {
-		IsRealized() bool
+		err error
 	}
 	Types struct {
 		Associative    *Type
@@ -304,6 +311,129 @@ type (
 		VectorRSeq     *Type
 		VectorSeq      *Type
 	}
+)
+
+// interface checks
+var (
+	_ Conjable = &HashMap{}
+	_ Conjable = &Vector{}
+	_ Conjable = Nil{}
+	_ Conjable = &ArrayMap{}
+	_ Conjable = &MapSet{}
+	_ Conjable = &List{}
+
+	_ Counted = &Vector{}
+	_ Counted = &List{}
+	_ Counted = Nil{}
+	_ Counted = String{}
+	_ Counted = &HashMap{}
+	_ Counted = &ArrayMap{}
+	_ Counted = &MapSet{}
+
+	_ Meta = &Vector{}
+	_ Meta = &VectorSeq{}
+	_ Meta = &VectorRSeq{}
+	_ Meta = &Namespace{}
+	_ Meta = &List{}
+	_ Meta = &Atom{}
+	_ Meta = &Fn{}
+	_ Meta = Symbol{}
+	_ Meta = &ArrayNodeSeq{}
+	_ Meta = &NodeSeq{}
+	_ Meta = &HashMap{}
+	_ Meta = &MappingSeq{}
+	_ Meta = &LazySeq{}
+	_ Meta = &ArraySeq{}
+	_ Meta = &ConsSeq{}
+	_ Meta = &ArrayMapSeq{}
+	_ Meta = &ArrayMap{}
+	_ Meta = &MapSet{}
+
+	_ Ref = &Namespace{}
+	_ Ref = &Atom{}
+	_ Ref = &Var{}
+
+	_ Sequential = &VectorSeq{}
+	_ Sequential = &VectorRSeq{}
+	_ Sequential = &Vector{}
+	_ Sequential = &List{}
+	_ Sequential = &MappingSeq{}
+	_ Sequential = &LazySeq{}
+	_ Sequential = &ArraySeq{}
+	_ Sequential = &ConsSeq{}
+	_ Sequential = &ArrayMapSeq{}
+	_ Sequential = &ArrayNodeSeq{}
+	_ Sequential = &NodeSeq{}
+
+	_ Comparable = &Ratio{}
+	_ Comparable = &BigInt{}
+	_ Comparable = &BigFloat{}
+	_ Comparable = Char{}
+	_ Comparable = Double{}
+	_ Comparable = Int{}
+	_ Comparable = Boolean{}
+	_ Comparable = Time{}
+	_ Comparable = Keyword{}
+	_ Comparable = Symbol{}
+	_ Comparable = &Vector{}
+
+	_ Comparator = &Fn{}
+	_ Comparator = Proc{}
+
+	_ Indexed = String{}
+	_ Indexed = &Vector{}
+
+	_ Stack = &Vector{}
+	_ Stack = &List{}
+
+	_ Gettable = &HashMap{}
+	_ Gettable = Nil{}
+	_ Gettable = &Vector{}
+	_ Gettable = &ArrayMap{}
+	_ Gettable = &MapSet{}
+
+	_ Associative = Nil{}
+	_ Associative = &Vector{}
+	_ Associative = &HashMap{}
+	_ Associative = &ArrayMap{}
+
+	_ Reversible = &Vector{}
+
+	_ Named = Keyword{}
+	_ Named = Symbol{}
+
+	_ Printer = &Namespace{}
+	_ Printer = &Regex{}
+
+	_ Pprinter = &List{}
+	_ Pprinter = &VectorSeq{}
+	_ Pprinter = &VectorRSeq{}
+	_ Pprinter = &Vector{}
+	_ Pprinter = &ArrayNodeSeq{}
+	_ Pprinter = &NodeSeq{}
+	_ Pprinter = &HashMap{}
+	_ Pprinter = &MappingSeq{}
+	_ Pprinter = &LazySeq{}
+	_ Pprinter = &ArraySeq{}
+	_ Pprinter = &ConsSeq{}
+	_ Pprinter = &ArrayMapSeq{}
+	_ Pprinter = &ArrayMap{}
+	_ Pprinter = &MapSet{}
+
+	_ Collection = &Vector{}
+	_ Collection = &List{}
+	_ Collection = &HashMap{}
+	_ Collection = &ArrayMap{}
+	_ Collection = &MapSet{}
+
+	_ Deref = &Atom{}
+	_ Deref = &Delay{}
+	_ Deref = &Var{}
+
+	_ KVReduce = &Vector{}
+
+	_ Pending = &Delay{}
+	_ Pending = &LazySeq{}
 )
 
 func (pos Position) Filename() string {
@@ -443,16 +573,22 @@ func getMap(env *Env, k Object, args []Object) (Object, error) {
 	return NIL, nil
 }
 
-func (s SortableSlice) Len() int {
+func (s *SortableSlice) Len() int {
 	return len(s.s)
 }
 
-func (s SortableSlice) Swap(i, j int) {
+func (s *SortableSlice) Swap(i, j int) {
 	s.s[i], s.s[j] = s.s[j], s.s[i]
 }
 
-func (s SortableSlice) Less(i, j int) bool {
-	return s.cmp.Compare(s.s[i], s.s[j]) == -1
+func (s *SortableSlice) Less(i, j int) bool {
+	cmp, err := s.cmp.Compare(s.env, s.s[i], s.s[j])
+	if err != nil {
+		s.err = err
+		return false
+	}
+
+	return cmp == -1
 }
 
 func HashPtr(ptr uintptr) uint32 {
@@ -534,8 +670,8 @@ func (a *Atom) AlterMeta(env *Env, fn *Fn, args []Object) (Map, error) {
 	return AlterMeta(env, &a.MetaHolder, fn, args)
 }
 
-func (a *Atom) Deref() Object {
-	return a.value
+func (a *Atom) Deref(env *Env) (Object, error) {
+	return a.value, nil
 }
 
 func (d *Delay) ToString(escape bool) string {
@@ -925,8 +1061,8 @@ func (v *Var) Call(env *Env, args []Object) (Object, error) {
 
 var _ Callable = (*Var)(nil)
 
-func (v *Var) Deref() Object {
-	return v.Resolve()
+func (v *Var) Deref(env *Env) (Object, error) {
+	return v.Resolve(), nil
 }
 
 func (n Nil) ToString(escape bool) string {

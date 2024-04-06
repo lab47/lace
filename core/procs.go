@@ -676,7 +676,7 @@ var procDeref = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	return ed.Deref()
+	return ed.Deref(env)
 }
 
 var procSwap = func(env *Env, args []Object) (Object, error) {
@@ -1100,7 +1100,11 @@ var procCompare = func(env *Env, args []Object) (Object, error) {
 	case Nil:
 		return Int{I: -1}, nil
 	case Comparable:
-		return Int{I: k1.Compare(k2)}, nil
+		cmp, err := k1.Compare(env, k2)
+		if err != nil {
+			return nil, err
+		}
+		return Int{I: cmp}, nil
 	}
 	return nil, env.RT.NewError(fmt.Sprintf("%s (type: %s) is not a Comparable", k1.ToString(true), k1.GetType().ToString(false)))
 }
@@ -1482,10 +1486,14 @@ var procSort = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 	s := SortableSlice{
+		env: env,
 		s:   ToSlice(coll.Seq()),
 		cmp: cmp,
 	}
-	sort.Sort(s)
+	sort.Sort(&s)
+	if s.err != nil {
+		return nil, err
+	}
 	return &ArraySeq{arr: s.s}, nil
 }
 
@@ -2073,7 +2081,7 @@ var procReduceKv = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	return coll.kvreduce(f, init), err
+	return coll.kvreduce(env, f, init)
 }
 
 var procIndexOf = func(env *Env, args []Object) (Object, error) {
