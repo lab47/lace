@@ -9,7 +9,7 @@
 (ns ^{:doc "Set operations such as union/intersection."
        :author "Rich Hickey"
        :added "1.0"}
-       joker.set)
+       lace.set)
 
 (defn- bubble-max-key
   "Move a maximal element of coll according to fn k (which returns a

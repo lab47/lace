@@ -52,9 +52,9 @@ func InternsOrThunks() {
 		MakeMeta(
 			NewListFrom(NewVectorFrom(MakeSymbol("f"), MakeSymbol("data")), NewVectorFrom(MakeSymbol("f"), MakeSymbol("data"), MakeSymbol("opts"))),
 			`Writes records to a CSV encoded file.
-  f must be io.Writer (for example, as returned by joker.os/create).
+  f must be io.Writer (for example, as returned by lace.os/create).
   data must be Seqable, each element of which must be Seqable as well.
-  opts is as in joker.csv/write-string.`, "1.0"))
+  opts is as in lace.csv/write-string.`, "1.0"))
 
 	csvNamespace.InternVar("write-string", write_string_,
 		MakeMeta(

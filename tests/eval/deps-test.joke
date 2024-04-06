@@ -1,6 +1,6 @@
 (ns deps-test
   (:require
-    [joker.test :refer [deftest is are testing]]
+    [lace.test :refer [deftest is are testing]]
     [deps]
     [test-local.lib :as lib-local]))
 

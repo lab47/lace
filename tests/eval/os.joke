@@ -1,6 +1,6 @@
-(ns joker.test-joker.os
-  (:require [joker.os :as os]
-            [joker.test :refer [deftest is]]))
+(ns lace.test-lace.os
+  (:require [lace.os :as os]
+            [lace.test :refer [deftest is]]))
 
 (deftest exec-pipe
   (if (= (get (os/env) "TTY_TESTS") "1")

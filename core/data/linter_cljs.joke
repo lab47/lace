@@ -16,8 +16,8 @@
 
 (def default-data-readers
   (merge default-data-readers
-         {'js #'joker.core/identity
-          'queue #'joker.core/identity}))
+         {'js #'lace.core/identity
+          'queue #'lace.core/identity}))
 
 ;; Redefine some core functions with type hints
 
@@ -374,12 +374,12 @@
     'cljs.core.async.macros/alts! nil 'cljs.core.async.macros/alts!! nil 'this-as nil 'import-macros nil
     'goog-define nil 'specify! nil 'specify nil 'simple-benchmark nil 'use-macros nil
     'cljs.test/deftest nil 'cljs.test/is nil 'cljs.test/are nil}
-   (:known-macros joker.core/*linter-config*)))
+   (:known-macros lace.core/*linter-config*)))
 
 (defn- lib-name__
   [lib]
   (if (string? lib)
-    (derive-info__ (symbol (joker.string/replace lib "/" "_")) lib)
+    (derive-info__ (symbol (lace.string/replace lib "/" "_")) lib)
     lib))
 
 (defn- load-libs-options__
@@ -387,5 +387,5 @@
   #{:as :reload :reload-all :require :use :verbose :refer :default :refer-macros :exclude :only :rename :include-macros})
 
 (in-ns 'user)
-(joker.core/refer 'joker.core)
+(lace.core/refer 'lace.core)
 

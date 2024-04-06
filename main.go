@@ -66,10 +66,10 @@ type (
 )
 
 func NewReplContext(env *Env) *ReplContext {
-	first, _ := env.Resolve(MakeSymbol("joker.core/*1"))
-	second, _ := env.Resolve(MakeSymbol("joker.core/*2"))
-	third, _ := env.Resolve(MakeSymbol("joker.core/*3"))
-	exc, _ := env.Resolve(MakeSymbol("joker.core/*e"))
+	first, _ := env.Resolve(MakeSymbol("lace.core/*1"))
+	second, _ := env.Resolve(MakeSymbol("lace.core/*2"))
+	third, _ := env.Resolve(MakeSymbol("lace.core/*3"))
+	exc, _ := env.Resolve(MakeSymbol("lace.core/*e"))
 	first.Value = NIL
 	second.Value = NIL
 	third.Value = NIL
@@ -194,7 +194,7 @@ func processReplCommand(env *Env, reader *Reader, phase Phase, parseContext *Par
 
 func srepl(env *Env, port string, phase Phase) {
 	ProcessReplData()
-	env.FindNamespace(MakeSymbol("user")).ReferAll(env.FindNamespace(MakeSymbol("joker.repl")))
+	env.FindNamespace(MakeSymbol("user")).ReferAll(env.FindNamespace(MakeSymbol("lace.repl")))
 	l, err := net.Listen("tcp", replSocket)
 	if err != nil {
 		fmt.Fprintf(Stderr, "Cannot start srepl listening on %s: %s\n",
@@ -240,7 +240,7 @@ func srepl(env *Env, port string, phase Phase) {
 
 	reader := NewReader(runeReader, "<srepl>")
 
-	fmt.Fprintf(Stdout, "Welcome to joker %s, client at %s. Use '(joker.os/exit 0)', or close the connection, to exit.\n",
+	fmt.Fprintf(Stdout, "Welcome to lace %s, client at %s. Use '(lace.os/exit 0)', or close the connection, to exit.\n",
 		VERSION, conn.RemoteAddr())
 
 	for {
@@ -260,7 +260,7 @@ func makeDialectKeyword(dialect Dialect) Keyword {
 	case CLJS:
 		return MakeKeyword("cljs")
 	default:
-		return MakeKeyword("joker")
+		return MakeKeyword("lace")
 	}
 }
 
@@ -268,9 +268,9 @@ func configureLinterMode(env *Env, dialect Dialect, filename string, workingDir 
 	ProcessLinterFiles(env, dialect, filename, workingDir)
 	LINTER_MODE = true
 	DIALECT = dialect
-	lm, _ := env.Resolve(MakeSymbol("joker.core/*linter-mode*"))
+	lm, _ := env.Resolve(MakeSymbol("lace.core/*linter-mode*"))
 	lm.Value = Boolean{B: true}
-	f, err := env.Features.Disjoin(MakeKeyword("joker")).Conj(makeDialectKeyword(dialect))
+	f, err := env.Features.Disjoin(MakeKeyword("lace")).Conj(makeDialectKeyword(dialect))
 	if err != nil {
 		return err
 	}
@@ -367,7 +367,7 @@ func dialectFromArg(arg string) Dialect {
 		return CLJ
 	case "cljs":
 		return CLJS
-	case "joker":
+	case "lace":
 		return JOKER
 	case "edn":
 		return EDN
@@ -377,13 +377,13 @@ func dialectFromArg(arg string) Dialect {
 
 func usage(out io.Writer) {
 	fmt.Fprintf(out, "Joker - %s\n\n", VERSION)
-	fmt.Fprintln(out, "Usage: joker [args] [-- <repl-args>]                starts a repl")
-	fmt.Fprintln(out, "   or: joker [args] --repl [<socket>] [-- <repl-args>]")
+	fmt.Fprintln(out, "Usage: lace [args] [-- <repl-args>]                starts a repl")
+	fmt.Fprintln(out, "   or: lace [args] --repl [<socket>] [-- <repl-args>]")
 	fmt.Fprintln(out, "                                                    starts a repl (on optional network socket)")
-	fmt.Fprintln(out, "   or: joker [args] --eval <expr> [-- <expr-args>]  evaluate <expr>, print if non-nil")
-	fmt.Fprintln(out, "   or: joker [args] [--file] <filename> [<script-args>]")
+	fmt.Fprintln(out, "   or: lace [args] --eval <expr> [-- <expr-args>]  evaluate <expr>, print if non-nil")
+	fmt.Fprintln(out, "   or: lace [args] [--file] <filename> [<script-args>]")
 	fmt.Fprintln(out, "                                                    input from file")
-	fmt.Fprintln(out, "   or: joker [args] --lint <filename>               lint the code in file")
+	fmt.Fprintln(out, "   or: lace [args] --lint <filename>               lint the code in file")
 	fmt.Fprintln(out, "\nNotes:")
 	fmt.Fprintln(out, "  -e is a synonym for --eval.")
 	fmt.Fprintln(out, "  '-' for <filename> means read from standard input (stdin).")
@@ -414,7 +414,7 @@ func usage(out io.Writer) {
 	fmt.Fprintln(out, "  --report-globally-unused")
 	fmt.Fprintln(out, "    Report globally unused namespaces and public vars when linting directories (requires --lint and --working-dir).")
 	fmt.Fprintln(out, "  --dialect <dialect>")
-	fmt.Fprintln(out, "    Set input dialect (\"clj\", \"cljs\", \"joker\", \"edn\") for linting;")
+	fmt.Fprintln(out, "    Set input dialect (\"clj\", \"cljs\", \"lace\", \"edn\") for linting;")
 	fmt.Fprintln(out, "    default is inferred from <filename> suffix, if any.")
 	fmt.Fprintln(out, "  --hashmap-threshold <n>")
 	fmt.Fprintln(out, "    Set HASHMAP_THRESHOLD accordingly (internal magic of some sort).")
@@ -548,7 +548,7 @@ func parseArgs(args []string) {
 		case "--lintcljs":
 			lintFlag = true
 			dialect = CLJS
-		case "--lintjoker":
+		case "--lintlace":
 			lintFlag = true
 			dialect = JOKER
 		case "--lintedn":
@@ -711,7 +711,7 @@ func main() {
 
 	env.InitEnv(Stdin, Stdout, Stderr, os.Args[1:])
 
-	parseArgs(os.Args) // Do this early enough so --verbose can show joker.core being processed.
+	parseArgs(os.Args) // Do this early enough so --verbose can show lace.core being processed.
 
 	saveForRepl = saveForRepl && (exitToRepl || errorToRepl) // don't bother saving stuff if no repl
 

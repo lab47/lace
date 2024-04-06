@@ -125,13 +125,13 @@ func (ns *Namespace) Intern(sym Symbol) *Var {
 		return newVar
 	}
 	if existingVar.ns != ns {
-		if existingVar.ns.Name.Equals(SYMBOLS.joker_core) {
+		if existingVar.ns.Name.Equals(SYMBOLS.lace_core) {
 			newVar := &Var{
 				ns:   ns,
 				name: sym,
 			}
 			ns.mappings[sym.name] = newVar
-			if !strings.HasPrefix(ns.Name.Name(), "joker.") {
+			if !strings.HasPrefix(ns.Name.Name(), "lace.") {
 				printParseWarning(sym.GetInfo().Pos(), fmt.Sprintf("WARNING: %s already refers to: %s in namespace %s, being replaced by: %s\n",
 					sym.ToString(false), existingVar.ToString(false), ns.Name.ToString(false), newVar.ToString(false)))
 			}
@@ -140,7 +140,7 @@ func (ns *Namespace) Intern(sym Symbol) *Var {
 		panic(StubNewErrorWithPos(fmt.Sprintf("WARNING: %s already refers to: %s in namespace %s",
 			sym.ToString(false), existingVar.ToString(false), ns.ToString(false)), sym.GetInfo().Pos()))
 	}
-	if LINTER_MODE && existingVar.expr != nil && !existingVar.ns.Name.Equals(SYMBOLS.joker_core) {
+	if LINTER_MODE && existingVar.expr != nil && !existingVar.ns.Name.Equals(SYMBOLS.lace_core) {
 		printParseWarning(sym.GetInfo().Pos(), "Duplicate def of "+existingVar.ToString(false))
 	}
 	return existingVar

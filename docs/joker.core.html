@@ -4,7 +4,7 @@
 </head>
 <body>
   <div class="main">
-    <h1>Namespace: joker.core</h1>
+    <h1>Namespace: lace.core</h1>
     <span class="var-added">v1.0</span>
     <p class="var-docstr">Core library of Joker.</p>
     <h2>Index</h2>
@@ -46,7 +46,7 @@
   <a href="#*in*">*in*</a>
 </li>
 <li>
-  <a href="#*joker-version*">*joker-version*</a>
+  <a href="#*lace-version*">*lace-version*</a>
 </li>
 <li>
   <a href="#*linter-config*">*linter-config*</a>
@@ -550,7 +550,7 @@
   <a href="#iterate">iterate</a>
 </li>
 <li>
-  <a href="#joker-version">joker-version</a>
+  <a href="#lace-version">lace-version</a>
 </li>
 <li>
   <a href="#juxt">juxt</a>
@@ -1307,7 +1307,7 @@
   
 </li>
 <li>
-  <h3 id="*joker-version*">*joker-version*</h3>
+  <h3 id="*lace-version*">*lace-version*</h3>
   <span class="var-type ArrayMap">ArrayMap</span>
   <span class="var-added">v1.0</span>
   <pre class="var-usage"></pre>
@@ -2897,8 +2897,8 @@
 <br>
   Joker is single threaded and uses the GIL (Global Interpreter Lock) to make sure<br>
   only one goroutine (including the root one) executes at the same time.<br>
-  However, channel operations and some I/O functions (joker.http/send, joker.os/sh*, joker.os/exec,<br>
-  and joker.time/sleep) release the GIL and allow other goroutines to run.<br>
+  However, channel operations and some I/O functions (lace.http/send, lace.os/sh*, lace.os/exec,<br>
+  and lace.time/sleep) release the GIL and allow other goroutines to run.<br>
   So using goroutines only makes sense if you do I/O (specifically, calling the above functions)<br>
   inside them. Also, note that a goroutine may never have a chance to run if the root goroutine<br>
   (or another goroutine) doesn&#39;t do any I/O or channel operations (&lt;! or &gt;!).</p>
@@ -3139,12 +3139,12 @@
   <a href="https://github.com/lab47/lace/blob/master/core/data/core.joke#L1795">source</a>
 </li>
 <li>
-  <h3 id="joker-version">joker-version</h3>
+  <h3 id="lace-version">lace-version</h3>
   <span class="var-type Function">Function</span>
   <span class="var-added">v1.0</span>
-  <pre class="var-usage"><div><code>(joker-version)</code></div>
+  <pre class="var-usage"><div><code>(lace-version)</code></div>
 </pre>
-  <p class="var-docstr">Returns joker version as a printable string.</p>
+  <p class="var-docstr">Returns lace version as a printable string.</p>
   <a href="https://github.com/lab47/lace/blob/master/core/data/core.joke#L4340">source</a>
 </li>
 <li>
@@ -3805,7 +3805,7 @@
   Each value is itself a map containing (primarily) a :url key whose<br>
   value is the URL of the resource. Only http:// and https:// are<br>
   currently supported; everything else is treated as a local<br>
-  pathname. HTTP URLs are cached in $HOME/.jokerd/deps/.</p>
+  pathname. HTTP URLs are cached in $HOME/.laced/deps/.</p>
   <a href="https://github.com/lab47/lace/blob/master/core/data/core.joke#L3294">source</a>
 </li>
 <li>
@@ -4400,7 +4400,7 @@
   <span class="var-added">v1.0</span>
   <pre class="var-usage"><div><code>(refer-clojure & filters)</code></div>
 </pre>
-  <p class="var-docstr">Same as (refer &#39;joker.core &lt;filters&gt;)</p>
+  <p class="var-docstr">Same as (refer &#39;lace.core &lt;filters&gt;)</p>
   <a href="https://github.com/lab47/lace/blob/master/core/data/core.joke#L3210">source</a>
 </li>
 <li>
@@ -5142,12 +5142,12 @@
   <pre class="var-usage"><div><code>(use & args)</code></div>
 </pre>
   <p class="var-docstr">Like &#39;require, but also refers to each lib&#39;s namespace using<br>
-  joker.core/refer. Use :use in the ns macro in preference to calling<br>
+  lace.core/refer. Use :use in the ns macro in preference to calling<br>
   this directly.<br>
 <br>
   &#39;use accepts additional options in libspecs: :exclude, :only, :rename.<br>
   The arguments and semantics for :exclude, :only, and :rename are the same<br>
-  as those documented for joker.core/refer.</p>
+  as those documented for lace.core/refer.</p>
   <a href="https://github.com/lab47/lace/blob/master/core/data/core.joke#L3521">source</a>
 </li>
 <li>

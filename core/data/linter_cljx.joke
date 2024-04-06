@@ -1,6 +1,6 @@
 (defn ^:private conj-import*
   [v sym]
-  (let [parts (joker.string/split (name sym) #"\.")]
+  (let [parts (lace.string/split (name sym) #"\.")]
     (conj v (symbol (last parts)))))
 
 (defmacro import
@@ -14,7 +14,7 @@
                            (reduce conj-import* v (map #(symbol (str p "." %)) cs)))))
                      [] specs)]
     `(do nil nil
-       ~@(map #(list 'joker.core/require (list 'quote %)) syms)
+       ~@(map #(list 'lace.core/require (list 'quote %)) syms)
        ~@(map #(list 'def-linter__ %) (remove resolve syms)))))
 
 (def *known-macros*
@@ -27,9 +27,9 @@
 
 (def default-data-readers
   (apply merge
-   {'inst #'joker.core/identity
-    'uuid #'joker.core/identity}
-   (map (fn [sym] {sym #'joker.core/taggify__}) (:known-tags joker.core/*linter-config*))))
+   {'inst #'lace.core/identity
+    'uuid #'lace.core/identity}
+   (map (fn [sym] {sym #'lace.core/taggify__}) (:known-tags lace.core/*linter-config*))))
 
 
 (defn ^:private validate-fields__
@@ -174,7 +174,7 @@
   (let [impls (parse-impls__ specs)]
     `(extend__ ~t ~@(mapcat (partial emit-hinted-impl t) impls))))
 
-(doseq [sym (:known-namespaces joker.core/*linter-config*)]
+(doseq [sym (:known-namespaces lace.core/*linter-config*)]
   (inject-ns__ sym))
 
 
@@ -365,32 +365,32 @@
   (^Seq [xform coll])
   (^Seq [xform coll & colls]))
 
-(ns-unmap 'joker.core 'bigfloat?)
+(ns-unmap 'lace.core 'bigfloat?)
 (ns-unmap 'user 'bigfloat?)
-(ns-unmap 'joker.core 'bigfloat)
+(ns-unmap 'lace.core 'bigfloat)
 (ns-unmap 'user 'bigfloat)
-(ns-unmap 'joker.core 'joker-version)
-(ns-unmap 'user 'joker-version)
-(ns-unmap 'joker.core 'pprint)
+(ns-unmap 'lace.core 'lace-version)
+(ns-unmap 'user 'lace-version)
+(ns-unmap 'lace.core 'pprint)
 (ns-unmap 'user 'pprint)
-(ns-unmap 'joker.core 'pr-err)
+(ns-unmap 'lace.core 'pr-err)
 (ns-unmap 'user 'pr-err)
-(ns-unmap 'joker.core 'prn-err)
+(ns-unmap 'lace.core 'prn-err)
 (ns-unmap 'user 'prn-err)
-(ns-unmap 'joker.core 'print-err)
+(ns-unmap 'lace.core 'print-err)
 (ns-unmap 'user 'print-err)
-(ns-unmap 'joker.core 'println-err)
+(ns-unmap 'lace.core 'println-err)
 (ns-unmap 'user 'println-err)
-(ns-unmap 'joker.core 'ns-sources)
+(ns-unmap 'lace.core 'ns-sources)
 (ns-unmap 'user 'ns-sources)
-(ns-unmap 'joker.core '*main-file*)
-(ns-unmap 'joker.core 'go)
+(ns-unmap 'lace.core '*main-file*)
+(ns-unmap 'lace.core 'go)
 (ns-unmap 'user 'go)
-(ns-unmap 'joker.core '<!)
+(ns-unmap 'lace.core '<!)
 (ns-unmap 'user '<!)
-(ns-unmap 'joker.core '>!)
+(ns-unmap 'lace.core '>!)
 (ns-unmap 'user '>!)
-(ns-unmap 'joker.core 'close!)
+(ns-unmap 'lace.core 'close!)
 (ns-unmap 'user 'close!)
-(ns-unmap 'joker.core 'chan)
+(ns-unmap 'lace.core 'chan)
 (ns-unmap 'user 'chan)

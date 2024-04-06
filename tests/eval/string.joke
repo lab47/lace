@@ -1,6 +1,6 @@
-(ns joker.test-joker.string
-  (:require [joker.string :as str]
-            [joker.test :refer [deftest is]]))
+(ns lace.test-lace.string
+  (:require [lace.string :as str]
+            [lace.test :refer [deftest is]]))
 
 (deftest quoted
   (is (= (str #"a\.\(b\.c\)") (str (str/re-quote "a.(b.c)")))))

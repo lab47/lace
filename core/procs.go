@@ -1700,7 +1700,7 @@ var procCreateNamespace = func(env *Env, args []Object) (Object, error) {
 	}
 	res := env.EnsureNamespace(sym)
 	// In linter mode the latest create-ns call overrides position info.
-	// This is for the cases when (ns ...) is called in .jokerd/linter.clj file and alike.
+	// This is for the cases when (ns ...) is called in .laced/linter.clj file and alike.
 	// Also, isUsed needs to be reset in this case.
 	if LINTER_MODE {
 		res.Name = res.Name.WithInfo(sym.GetInfo()).(Symbol)
@@ -2102,7 +2102,7 @@ var procIndexOf = func(env *Env, args []Object) (Object, error) {
 }
 
 func libExternalPath(env *Env, sym Symbol) (path string, ok bool, err error) {
-	nsSourcesVar, _ := env.Resolve(MakeSymbol("joker.core/*ns-sources*"))
+	nsSourcesVar, _ := env.Resolve(MakeSymbol("lace.core/*ns-sources*"))
 	nsSources := ToSlice(nsSourcesVar.Value.(*Vector).Seq())
 
 	var sourceKey string
@@ -2188,7 +2188,7 @@ var procInternFakeVar = func(env *Env, args []Object) (Object, error) {
 }
 
 var procParse = func(env *Env, args []Object) (Object, error) {
-	lm, _ := env.Resolve(MakeSymbol("joker.core/*linter-mode*"))
+	lm, _ := env.Resolve(MakeSymbol("lace.core/*linter-mode*"))
 	lm.Value = Boolean{B: true}
 	LINTER_MODE = true
 	defer func() {
@@ -2475,7 +2475,7 @@ func processInEnv(env *Env, data []byte) error {
 
 func setCoreNamespaces(env *Env) error {
 	ns := env.CoreNamespace
-	ns.MaybeLazy("joker.core")
+	ns.MaybeLazy("lace.core")
 
 	vr := ns.Resolve("*core-namespaces*")
 	set := vr.Value.(*MapSet)
@@ -2488,7 +2488,7 @@ func setCoreNamespaces(env *Env) error {
 	}
 	vr.Value = set
 
-	// Add 'joker.core to *loaded-libs*, now that it's loaded.
+	// Add 'lace.core to *loaded-libs*, now that it's loaded.
 	vr = ns.Resolve("*loaded-libs*")
 	v, err := vr.Value.(*MapSet).Conj(ns.Name)
 	if err != nil {
@@ -2515,9 +2515,9 @@ var procIsNamespaceInitialized = func(env *Env, args []Object) (Object, error) {
 
 func findConfigFile(filename string, workingDir string, findDir bool) string {
 	var err error
-	configName := ".joker"
+	configName := ".lace"
 	if findDir {
-		configName = ".jokerd"
+		configName = ".laced"
 	}
 	if filename != "" {
 		filename, err = filepath.Abs(filename)
@@ -2705,7 +2705,7 @@ func ReadConfig(env *Env, filename string, workingDir string) error {
 
 func removeJokerNamespaces(env *Env) {
 	for k, ns := range env.Namespaces {
-		if ns != env.CoreNamespace && strings.HasPrefix(*k, "joker.") {
+		if ns != env.CoreNamespace && strings.HasPrefix(*k, "lace.") {
 			delete(env.Namespaces, k)
 		}
 	}
@@ -2713,7 +2713,7 @@ func removeJokerNamespaces(env *Env) {
 
 func markJokerNamespacesAsUsed(env *Env) {
 	for k, ns := range env.Namespaces {
-		if ns != env.CoreNamespace && strings.HasPrefix(*k, "joker.") {
+		if ns != env.CoreNamespace && strings.HasPrefix(*k, "lace.") {
 			ns.isUsed = true
 			ns.isGloballyUsed = true
 		}

@@ -64,7 +64,7 @@ func Init() {
 	InternsOrThunks()
 }
 
-var jsonNamespace = GLOBAL_ENV.EnsureNamespace(MakeSymbol("joker.json"))
+var jsonNamespace = GLOBAL_ENV.EnsureNamespace(MakeSymbol("lace.json"))
 
 func init() {
 	jsonNamespace.Lazy = Init

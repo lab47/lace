@@ -2,13 +2,13 @@
 
 ;;; Load all core namespaces. This pulls in any std namespaces upon which
 ;;; they depend. Then, set 'preloaded' to those std namespaces, forcing
-;;; complete evaluation so lazy evaluation wouldn't find joker.os due to
+;;; complete evaluation so lazy evaluation wouldn't find lace.os due to
 ;;; the subsequent require.
-(doseq [ns (remove #(= % 'user) joker.core/*core-namespaces*)] (require ns))
-(def preloaded (set (remove joker.core/*core-namespaces* (filter #(joker.core/ns-initialized? %) (map #(symbol (str %)) (all-ns))))))
+(doseq [ns (remove #(= % 'user) lace.core/*core-namespaces*)] (require ns))
+(def preloaded (set (remove lace.core/*core-namespaces* (filter #(lace.core/ns-initialized? %) (map #(symbol (str %)) (all-ns))))))
 
-(require '[joker.string :as s]
-         '[joker.os :as os])
+(require '[lace.string :as s]
+         '[lace.os :as os])
 
 (def rpl s/replace)
 
@@ -22,7 +22,7 @@
             (map #(rpl % #"[.]joke$" ""))
             (map symbol))))
 
-(apply require :reload namespaces) ; :reload in case namespaces become 'joker.base64 etc.
+(apply require :reload namespaces) ; :reload in case namespaces become 'lace.base64 etc.
 
 (def fn-template
   (slurp "fn.tmpl"))
@@ -185,7 +185,7 @@
   [name m]
   (let [type (type-name (:tag m))]
     (if (= type "Var")
-      (format "var %s *GoVar" name)  ; Not yet supported by this version of Joker (see https://github.com/jcburley/joker/)
+      (format "var %s *GoVar" name)  ; Not yet supported by this version of Joker (see https://github.com/jcburley/lace/)
       (format "var %s %s" name (go-return-type type)))))
 
 (defn generate-const-or-var-init
@@ -358,16 +358,16 @@
   (-> s
       (rpl #"[[:space:]]*{blank}" "")))
 
-(defn joker-ize
-  "Convert a single-element namespace symbol to joker.namespace"
+(defn lace-ize
+  "Convert a single-element namespace symbol to lace.namespace"
   ^Symbol [^Symbol s]
-  (symbol (str "joker." s)))
+  (symbol (str "lace." s)))
 
 (doseq [ns-sym namespaces]
   (let [ns-name (str ns-sym)
         dir (rpl ns-name "." "/")
         ns-name-final (rpl ns-name #".*[.]" "")
-        pre (preloaded (joker-ize ns-sym))]
+        pre (preloaded (lace-ize ns-sym))]
     (spit (ns-file-name dir ns-name-final)
           (remove-blanky-lines (generate-ns ns-sym ns-name ns-name-final)))
     (spit (ns-file-name-slow-init dir ns-name-final)

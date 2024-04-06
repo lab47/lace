@@ -4,20 +4,20 @@
   [output]
   (let [output (if (nil? output) "" output)]
     (->> output
-         (joker.string/split-lines)
-         (remove #(joker.string/starts-with? % "  "))
+         (lace.string/split-lines)
+         (remove #(lace.string/starts-with? % "  "))
          (remove #(= % ""))
-         (joker.string/join "\n"))))
+         (lace.string/join "\n"))))
 
 (defn test-flags
   [out description flags expected]
-  (let [pwd (get (joker.os/env) "PWD")
-        flag-parts (joker.string/split flags #"\s+")
+  (let [pwd (get (lace.os/env) "PWD")
+        flag-parts (lace.string/split flags #"\s+")
         stdin? (some #(= "<" %) flag-parts)
-        cmd (str pwd "/joker")
+        cmd (str pwd "/lace")
         output (if stdin?
-                 (out (joker.os/sh "sh" "-c" (str cmd " " flags)))
-                 (out (apply (partial joker.os/sh cmd) flag-parts)))
+                 (out (lace.os/sh "sh" "-c" (str cmd " " flags)))
+                 (out (apply (partial lace.os/sh cmd) flag-parts)))
         output (clean output)]
     (when-not (= output expected)
       (println "FAILED: testing" description "(" flags ")")
@@ -40,17 +40,17 @@
   "--lint tests/flags/input-warning.clj"
   "tests/flags/input-warning.clj:1:7: Parse warning: unused binding: a")
 
-(testing :err "specify joker dialect"
-  "--lintjoker tests/flags/input.joke"
+(testing :err "specify lace dialect"
+  "--lintlace tests/flags/input.joke"
   ""
 
-  "--lint --dialect joker tests/flags/input.joke"
+  "--lint --dialect lace tests/flags/input.joke"
   ""
 
-  "--lintjoker tests/flags/input.clj"
+  "--lintlace tests/flags/input.clj"
   "tests/flags/input.clj:1:2: Parse error: Unable to resolve symbol: clojure.string/split"
 
-  "--lint --dialect joker tests/flags/input.cljs"
+  "--lint --dialect lace tests/flags/input.cljs"
   "tests/flags/input.cljs:1:7: Parse error: Unable to resolve symbol: js/console")
 
 (testing :err "specify clj dialect"
@@ -95,10 +95,10 @@
   "--lint --dialect cljs - < tests/flags/input.cljs"
   ""
 
-  "--lint --dialect joker - < tests/flags/input.cljs"
+  "--lint --dialect lace - < tests/flags/input.cljs"
   "<stdin>:1:7: Parse error: Unable to resolve symbol: js/console"
 
-  "--lint --dialect joker - < tests/flags/input.joke"
+  "--lint --dialect lace - < tests/flags/input.joke"
   "")
 
 (testing :err "working directory override"
@@ -134,4 +134,4 @@
          "--hashmap-threshold -1 tests/flags/input.joke"
          "")
 
-(joker.os/exit exit-code)
+(lace.os/exit exit-code)

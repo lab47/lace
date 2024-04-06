@@ -1,6 +1,6 @@
 (create-ns 'test.test)
-(require 'joker.os)
-(alias 'os 'joker.os)
+(require 'lace.os)
+(alias 'os 'lace.os)
 (alias 't 'test.test)
 
 (os/sh "ls")

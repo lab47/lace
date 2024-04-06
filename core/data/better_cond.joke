@@ -1,4 +1,4 @@
-(ns joker.better-cond
+(ns lace.better-cond
   "A collection of variations on Clojure's core macros."
   {:author "Christophe Grand and Mark Engelberg"
    :added "1.0"}

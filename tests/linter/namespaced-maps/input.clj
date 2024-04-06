@@ -1,5 +1,5 @@
-(require 'joker.string)
-(alias 's 'joker.string)
+(require 'lace.string)
+(alias 's 'lace.string)
 ;; Should PASS
 #:t{:g 1}
 #::{:g 1}

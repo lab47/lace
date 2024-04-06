@@ -1,6 +1,6 @@
-(ns joker.test-joker.hash
+(ns lace.test-lace.hash
   (:require
-   [joker.test :refer [deftest is testing]]))
+   [lace.test :refer [deftest is testing]]))
 
 (deftest stable-hashes
   (testing "stable string hashes"
@@ -9,8 +9,8 @@
   (testing "stable symbol hashes"
     (is (= (hash 'hey) 3793824397))
     (is (= (hash 'there) 2940266537))
-    (is (= (hash 'joker.core/cond) 3232247079))
-    (is (= (hash 'joker.repl/doc) 3494663759))
+    (is (= (hash 'lace.core/cond) 3232247079))
+    (is (= (hash 'lace.repl/doc) 3494663759))
     (is (= (hash 'user/foo) 2980260858)))
   (testing "stable keyword hashes"
     (is (= (hash :hey) 819820356))

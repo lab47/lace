@@ -199,7 +199,7 @@ type (
 		dynamic            Keyword
 	}
 	Symbols struct {
-		joker_core         Symbol
+		lace_core          Symbol
 		underscore         Symbol
 		catch              Symbol
 		finally            Symbol
@@ -462,7 +462,7 @@ func WarnOnGloballyUnusedNamespaces(env *Env) {
 	for _, ns := range env.Namespaces {
 		if !ns.isGloballyUsed && !isIgnoredUnusedNamespace(ns) && !isEntryPointNs(ns) {
 			pos := ns.Name.GetInfo()
-			if pos != nil && pos.Filename() != "<joker.core>" && pos.Filename() != "<user>" {
+			if pos != nil && pos.Filename() != "<lace.core>" && pos.Filename() != "<user>" {
 				name := ns.Name.ToString(false)
 				names = append(names, name)
 				positions[name] = pos.Position
@@ -483,7 +483,7 @@ func WarnOnUnusedNamespaces(env *Env) {
 	for _, ns := range env.Namespaces {
 		if ns != env.CurrentNamespace() && !ns.isUsed && !isIgnoredUnusedNamespace(ns) {
 			pos := ns.Name.GetInfo()
-			if pos != nil && pos.Filename() != "<joker.core>" && pos.Filename() != "<user>" {
+			if pos != nil && pos.Filename() != "<lace.core>" && pos.Filename() != "<user>" {
 				name := ns.Name.ToString(false)
 				names = append(names, name)
 				positions[name] = pos.Position

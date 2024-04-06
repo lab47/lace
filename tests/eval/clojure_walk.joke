@@ -1,6 +1,6 @@
-(ns joker.test-clojure.clojure-walk
-  (:require [joker.walk :as w])
-  (:require [joker.test :refer [deftest is are testing]]))
+(ns lace.test-clojure.clojure-walk
+  (:require [lace.walk :as w])
+  (:require [lace.test :refer [deftest is are testing]]))
 
 (deftest t-prewalk-replace
   (is (= (w/prewalk-replace {:a :b} [:a {:a :a} (list 3 :c :a)])
@@ -61,7 +61,7 @@
                ))))
 
 (defn map-entry?
-  "Maybe this should go into joker.core?"
+  "Maybe this should go into lace.core?"
   [e]
   (vector? e))
 

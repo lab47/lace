@@ -452,7 +452,7 @@ func Init() {
 	InternsOrThunks()
 }
 
-var timeNamespace = GLOBAL_ENV.EnsureNamespace(MakeSymbol("joker.time"))
+var timeNamespace = GLOBAL_ENV.EnsureNamespace(MakeSymbol("lace.time"))
 
 func init() {
 	timeNamespace.Lazy = Init

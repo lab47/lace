@@ -11,8 +11,8 @@
 ;;  Created 30 October 2008
 ;;
 
-(ns joker.test-joker.numbers
-  (:require [joker.test :refer [deftest is are]]))
+(ns lace.test-lace.numbers
+  (:require [lace.test :refer [deftest is are]]))
 
 ;; *** Functions ***
 

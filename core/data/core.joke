@@ -484,7 +484,7 @@
             (second clauses)
             (throw (ex-info "cond requires an even number of forms" {:form (first clauses)})))
           (when (next (next clauses))
-            (cons 'joker.core/cond (next (next clauses)))))
+            (cons 'lace.core/cond (next (next clauses)))))
     (when *linter-mode*
       (println-linter__ (ex-info "Empty cond" {:form &form :_prefix "Parse warning"})))))
 
@@ -546,7 +546,7 @@
   seq calls. See also - realized?"
   {:added "1.0"}
   ^Seqable [& body]
-  (list 'joker.core/lazy-seq__ (list* 'fn [] body)))
+  (list 'lace.core/lazy-seq__ (list* 'fn [] body)))
 
 (defn chunked-seq?
   "Always returns false because chunked sequences are not supported"
@@ -583,7 +583,7 @@
   calls. See also - realized?"
   {:added "1.0"}
   ^Delay [& body]
-  (list 'joker.core/delay__ (list* 'fn [] body)))
+  (list 'lace.core/delay__ (list* 'fn [] body)))
 
 (defn delay?
   "returns true if x is a Delay created with delay"
@@ -3181,7 +3181,7 @@
   [name & references]
   (let [process-reference
         (fn [[kname & args]]
-          `(~(symbol "joker.core" (joker.core/name kname))
+          `(~(symbol "lace.core" (lace.core/name kname))
               ~@(map #(list 'quote %) args)))
         docstring  (when (string? (first references)) (first references))
         references (if docstring (next references) references)
@@ -3195,23 +3195,23 @@
                name)
         name-metadata (meta name)]
     `(do
-       (joker.core/in-ns '~name)
+       (lace.core/in-ns '~name)
        ~@(when name-metadata
-           `((reset-meta! (joker.core/find-ns '~name) ~name-metadata)))
-       ~@(when (and (not= name 'joker.core) (not-any? #(= :refer-clojure (first %)) references))
-           `((joker.core/refer '~'joker.core)))
+           `((reset-meta! (lace.core/find-ns '~name) ~name-metadata)))
+       ~@(when (and (not= name 'lace.core) (not-any? #(= :refer-clojure (first %)) references))
+           `((lace.core/refer '~'lace.core)))
        ~@(map process-reference references)
-       (if (= '~name 'joker.core)
+       (if (= '~name 'lace.core)
          nil
          (do
            (var-set #'*loaded-libs* (conj *loaded-libs* '~name))
            nil)))))
 
 (defmacro refer-clojure
-  "Same as (refer 'joker.core <filters>)"
+  "Same as (refer 'lace.core <filters>)"
   {:added "1.0"}
   [& filters]
-  `(joker.core/refer '~'joker.core ~@filters))
+  `(lace.core/refer '~'lace.core ~@filters))
 
 (defmacro defonce
   "defs name to have the value of the expr if the named var is not bound,
@@ -3231,18 +3231,18 @@
   "Sets *ns* to the namespace named by the symbol, creating it if needed."
   {:added "1.0"}
   ^Namespace [^Symbol name]
-  (let [new-ns (joker.core/create-ns name)]
+  (let [new-ns (lace.core/create-ns name)]
     (when *loading-verbosely*
-      (printf "joker.core/in-ns: changing from %s to %s\n" joker.core/*ns* new-ns) (flush))
-    (var-set #'joker.core/*ns* new-ns)))
+      (printf "lace.core/in-ns: changing from %s to %s\n" lace.core/*ns* new-ns) (flush))
+    (var-set #'lace.core/*ns* new-ns)))
 
 (defonce ^:dynamic
   ^{:private true
     :doc "A set of symbols representing currently loaded libs"}
-  *loaded-libs* #{'joker.base64 'joker.html 'joker.http 'joker.json 'joker.io
-                  'joker.math 'joker.os 'joker.string 'joker.time 'joker.url
-                  'joker.yaml 'joker.strconv 'joker.crypto 'joker.hex 'joker.filepath
-                  'joker.csv 'joker.uuid})
+  *loaded-libs* #{'lace.base64 'lace.html 'lace.http 'lace.json 'lace.io
+                  'lace.math 'lace.os 'lace.string 'lace.time 'lace.url
+                  'lace.yaml 'lace.strconv 'lace.crypto 'lace.hex 'lace.filepath
+                  'lace.csv 'lace.uuid})
 
 (defonce ^:dynamic
   ^{:private true
@@ -3302,7 +3302,7 @@
   Each value is itself a map containing (primarily) a :url key whose
   value is the URL of the resource. Only http:// and https:// are
   currently supported; everything else is treated as a local
-  pathname. HTTP URLs are cached in $HOME/.jokerd/deps/."
+  pathname. HTTP URLs are cached in $HOME/.laced/deps/."
   {:added "1.0"}
   ^Nil [^Map sources]
   (let [existing-source-keys (set (map first *ns-sources*))
@@ -3387,18 +3387,18 @@
                   lib
                   "namespace '%s' not found" lib))
       (when (and need-ns *loading-verbosely*)
-        (printf "(joker.core/in-ns '%s)\n" (ns-name *ns*)))
+        (printf "(lace.core/in-ns '%s)\n" (ns-name *ns*)))
       (when as
         (when *loading-verbosely*
-          (printf "(joker.core/alias '%s '%s)\n" as lib))
+          (printf "(lace.core/alias '%s '%s)\n" as lib))
         (alias as lib))
       (when default
         (when *loading-verbosely*
-          (printf "(joker.core/alias '%s '%s)\n" default lib))
+          (printf "(lace.core/alias '%s '%s)\n" default lib))
         (alias default lib))
       (when (or use (get-refer-opt filter-opts))
         (when *loading-verbosely*
-          (printf "(joker.core/refer '%s" lib)
+          (printf "(lace.core/refer '%s" lib)
           (doseq [opt filter-opts]
             (printf " %s '%s" (key opt) (print-str (val opt))))
           (printf ")\n"))
@@ -3520,12 +3520,12 @@
 
 (defn use
   "Like 'require, but also refers to each lib's namespace using
-  joker.core/refer. Use :use in the ns macro in preference to calling
+  lace.core/refer. Use :use in the ns macro in preference to calling
   this directly.
 
   'use accepts additional options in libspecs: :exclude, :only, :rename.
   The arguments and semantics for :exclude, :only, and :rename are the same
-  as those documented for joker.core/refer."
+  as those documented for lace.core/refer."
   {:added "1.0"}
   ^Nil [& args] (apply load-libs :require :use args))
 
@@ -3549,14 +3549,14 @@
   (doseq [^Symbol lib libs]
     (let [^String path (lib-path__ lib)]
       (when *loading-verbosely*
-        (printf "(joker.core/load %s from \"%s\")\n" lib path))
+        (printf "(lace.core/load %s from \"%s\")\n" lib path))
       (check-cyclic-dependency path lib)
       (when-not (= path (first *pending-paths*))
         (binding [*pending-paths* (conj *pending-paths* path)
                   *ns* *ns*]
           (if *linter-mode*
             (in-ns lib)
-            (when (not (joker.core/*core-namespaces* lib))
+            (when (not (lace.core/*core-namespaces* lib))
               (load-lib-from-path__ lib path))))))))
 
 (defn get-in
@@ -4337,11 +4337,11 @@
   overridden by binding *data-readers*."
   {})
 
-(defn joker-version
-  "Returns joker version as a printable string."
+(defn lace-version
+  "Returns lace version as a printable string."
   {:added "1.0"}
   ^String []
-  (joker-version__))
+  (lace-version__))
 
 (defn- check-valid-options
   "Throws an exception if the given option map contains keys not listed
@@ -4359,7 +4359,7 @@
 (defn- multimethod__
   [name dispatch-fn default hierarchy]
   (when hierarchy
-    (throw (ex-info ":hierarchy not yet supported by joker.core/defmulti" {})))
+    (throw (ex-info ":hierarchy not yet supported by lace.core/defmulti" {})))
   (let [mfatom (atom {})]
     (with-meta
       (fn [& args]
@@ -4456,14 +4456,14 @@
   "Removes the method of multimethod associated with dispatch-value."
   {:added "1.0"}
   [multifn dispatch-val]
-  (throw (ex-info "method removal not yet supported by joker.core" {})))
+  (throw (ex-info "method removal not yet supported by lace.core" {})))
 
 (defn prefer-method
   "Causes the multimethod to prefer matches of dispatch-val-x over dispatch-val-y
    when there is a conflict"
   {:added "1.0"}
   [multifn dispatch-val-x dispatch-val-y]
-  (throw (ex-info "method preference not yet supported by joker.core" {})))
+  (throw (ex-info "method preference not yet supported by lace.core" {})))
 
 (defn methods
   "Given a multimethod, returns a map of dispatch values -> dispatch fns"
@@ -4489,7 +4489,7 @@
   "Given a multimethod, returns a map of preferred value -> set of other values"
   {:added "1.0"}
   ^Map [multifn]
-  (throw (ex-info "method preference not yet supported by joker.core" {})))
+  (throw (ex-info "method preference not yet supported by lace.core" {})))
 
 (def ^{:private true
        :doc "Returns currently registered types as a map."
@@ -4506,8 +4506,8 @@
 
   Joker is single threaded and uses the GIL (Global Interpreter Lock) to make sure
   only one goroutine (including the root one) executes at the same time.
-  However, channel operations and some I/O functions (joker.http/send, joker.os/sh*, joker.os/exec,
-  and joker.time/sleep) release the GIL and allow other goroutines to run.
+  However, channel operations and some I/O functions (lace.http/send, lace.os/sh*, lace.os/exec,
+  and lace.time/sleep) release the GIL and allow other goroutines to run.
   So using goroutines only makes sense if you do I/O (specifically, calling the above functions)
   inside them. Also, note that a goroutine may never have a chance to run if the root goroutine
   (or another goroutine) doesn't do any I/O or channel operations (<! or >!)."

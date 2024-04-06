@@ -1,11 +1,11 @@
-(ns joker.hiccup
+(ns lace.hiccup
   "Renders HTML, XML, or XHTML markup to a string, based on prior work in Hiccup.
 
   https://github.com/weavejester/hiccup"
   {:added "1.0"}
   (:require
-   [joker.html :refer [escape]]
-   [joker.string :as str]))
+   [lace.html :refer [escape]]
+   [lace.string :as str]))
 
 (defn ^:private named?
   [v]

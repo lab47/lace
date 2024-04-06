@@ -1,7 +1,7 @@
 (ns
   ^{:doc "Utilities meant to be used interactively at the REPL."
     :added "1.0"}
-  joker.repl)
+  lace.repl)
 
 (def ^:private special-doc-map
   '{def {:forms [(def symbol doc-string? init?)]
@@ -99,7 +99,7 @@ str-or-pattern."
   [str-or-pattern]
   (let [matches? (if (instance? Regex str-or-pattern)
                    #(re-find str-or-pattern (str %))
-                   #(joker.string/includes? (str %) (str str-or-pattern)))]
+                   #(lace.string/includes? (str %) (str str-or-pattern)))]
     (sort (mapcat (fn [ns]
                     (let [ns-name (str ns)]
                       (map #(symbol ns-name (str %))

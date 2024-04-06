@@ -8,8 +8,8 @@
 
 ; Author: Frantisek Sodomka, Robert Lachlan
 
-(ns joker.test-joker.multimethods
-  (:require [joker.test :refer [deftest is are testing]]))
+(ns lace.test-lace.multimethods
+  (:require [lace.test :refer [deftest is are testing]]))
 
 ; http://clojure.org/multimethods
 

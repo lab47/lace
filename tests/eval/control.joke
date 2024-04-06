@@ -12,8 +12,8 @@
 ;;  Test "flow control" constructs.
 ;;
 
-(ns joker.test-clojure.control
-  (:require [joker.test :refer [deftest is are testing]]
+(ns lace.test-clojure.control
+  (:require [lace.test :refer [deftest is are testing]]
             [tests.test-helper :refer [exception]]))
 
 ;; *** Helper functions ***

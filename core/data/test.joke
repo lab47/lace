@@ -232,9 +232,9 @@
    For additional event types, see the examples in the code.
 "
 :added "1.0"}
-  joker.test
-  (:require [joker.template :as temp]
-            [joker.walk :as walk]))
+  lace.test
+  (:require [lace.template :as temp]
+            [lace.walk :as walk]))
 
 (defonce ^:dynamic
   ^{:doc "True by default.  If set to false, no test functions will

@@ -1,6 +1,6 @@
 <img src="https://user-images.githubusercontent.com/882970/48048842-a0224080-e151-11e8-8855-642cf5ef3fdd.png" width="117px"/>
 
-[![CircleCI](https://circleci.com/gh/candid82/joker.svg?style=svg)](https://circleci.com/gh/candid82/joker)
+[![CircleCI](https://circleci.com/gh/candid82/lace.svg?style=svg)](https://circleci.com/gh/candid82/lace)
 
 Joker is a small Clojure interpreter and linter written in Go.
 
@@ -9,17 +9,17 @@ Joker is a small Clojure interpreter and linter written in Go.
 On macOS, the easiest way to install Joker is via Homebrew:
 
 ```
-brew install candid82/brew/joker
+brew install candid82/brew/lace
 ```
 
 The same command can be used on Linux if you use [Linuxbrew](http://linuxbrew.sh/).
 
-If you use Arch Linux, there is [AUR package](https://aur.archlinux.org/packages/joker-bin/).
+If you use Arch Linux, there is [AUR package](https://aur.archlinux.org/packages/lace-bin/).
 
 If you use [Nix](https://nixos.org/nix/), then you can install Joker with
 
 ```
-nix-env -i joker
+nix-env -i lace
 ```
 
 On other platforms (or if you prefer manual installation), download a [precompiled binary](https://github.com/lab47/lace/releases) for your platform and put it on your PATH.
@@ -28,23 +28,23 @@ You can also [build](#building) Joker from the source code.
 
 ## Usage
 
-`joker` - launch REPL
+`lace` - launch REPL
 
-`joker <filename>` - execute a script. Joker uses `.joke` filename extension. For example: `joker foo.joke`. Normally exits after executing the script, unless `--exit-to-repl` is specified before `--file <filename>`
+`lace <filename>` - execute a script. Joker uses `.joke` filename extension. For example: `lace foo.joke`. Normally exits after executing the script, unless `--exit-to-repl` is specified before `--file <filename>`
 in which case drops into the REPL after the script is (successfully) executed. (Note use of `--file` in this case, to ensure `<filename>` is not treated as a `<socket>` specification for the repl.)
 
-`joker --eval <expression>` - execute an expression. For example: `joker -e '(println "Hello, world!")'`. Normally exits after executing the script, unless `--exit-to-repl` is specified before `--eval`,
+`lace --eval <expression>` - execute an expression. For example: `lace -e '(println "Hello, world!")'`. Normally exits after executing the script, unless `--exit-to-repl` is specified before `--eval`,
 in which case drops into the REPL after the expression is (successfully) executed.
 
-`joker --lint <filename>` - lint a source file. See [Linter mode](#linter-mode) for more details.
+`lace --lint <filename>` - lint a source file. See [Linter mode](#linter-mode) for more details.
 
-`joker --lint --working-dir <dirname>` - recursively lint all Clojure files in a directory.
+`lace --lint --working-dir <dirname>` - recursively lint all Clojure files in a directory.
 
-`joker -` - execute a script on standard input (os.Stdin).
+`lace -` - execute a script on standard input (os.Stdin).
 
 ## Documentation
 
-[Standard library reference](https://candid82.github.io/joker/)
+[Standard library reference](https://candid82.github.io/lace/)
 
 [Joker slack channel](https://clojurians.slack.com/messages/C9VURUUNL/)
 
@@ -61,7 +61,7 @@ These are high level goals of the project that guide design and implementation d
 - Provide some tooling for Clojure and its dialects. Joker has [linter mode](#linter-mode) which can be used for linting Joker, Clojure and ClojureScript code. It catches some basic errors. Joker can also be used for pretty printing EDN data structures (very basic algorithm at the moment). For example, the following command can be used to pretty print EDN data structure (read from stdin):
 
 ```
-joker --hashmap-threshold -1 -e "(pprint (read))"
+lace --hashmap-threshold -1 -e "(pprint (read))"
 ```
 
  There is [Sublime Text plugin](https://github.com/candid82/sublime-pretty-edn) that uses Joker for pretty printing EDN files. [Here](https://github.com/lab47/lace/releases/tag/v0.8.8) you can find the description of `--hashmap-threshold` parameter, if curious. Tooling is one of the primary Joker use cases for me, so I intend to improve and expand it.
@@ -105,10 +105,10 @@ joker --hashmap-threshold -1 -e "(pprint (read))"
   | Vector     | PersistentVector           |
 
 1. Joker doesn't have the same level of interoperability with the host language (Go) as Clojure does with Java or ClojureScript does with JavaScript. It doesn't have access to arbitrary Go types and functions. There is only a small fixed set of built-in types and interfaces. Dot notation for calling methods is not supported (as there are no methods). All Java/JVM specific functionality of Clojure is not implemented for obvious reasons.
-1. Joker is single-threaded with no support for parallelism. Therefore no refs, agents, futures, promises, locks, volatiles, transactions, `p*` functions that use multiple threads. Vars always have just one "root" binding. Joker does have core.async style support for concurrency. See `go` macro [documentation](https://candid82.github.io/joker/joker.core.html#go) for details.
+1. Joker is single-threaded with no support for parallelism. Therefore no refs, agents, futures, promises, locks, volatiles, transactions, `p*` functions that use multiple threads. Vars always have just one "root" binding. Joker does have core.async style support for concurrency. See `go` macro [documentation](https://candid82.github.io/lace/lace.core.html#go) for details.
 1. The following features are not implemented: protocols, records, structmaps, chunked seqs, transients, tagged literals, unchecked arithmetics, primitive arrays, custom data readers, transducers, validators and watch functions for vars and atoms, hierarchies, sorted maps and sets.
 1. Unrelated to the features listed above, the following function from clojure.core namespace are not currently implemented but will probably be implemented in some form in the future: `subseq`, `iterator-seq`, `reduced?`, `reduced`, `mix-collection-hash`, `definline`, `re-groups`, `hash-ordered-coll`, `enumeration-seq`, `compare-and-set!`, `rationalize`, `load-reader`, `find-keyword`, `comparator`, `resultset-seq`, `file-seq`, `sorted?`, `ensure-reduced`, `rsubseq`, `pr-on`, `seque`, `alter-var-root`, `hash-unordered-coll`, `re-matcher`, `unreduced`.
-1. Built-in namespaces have `joker` prefix. The core namespace is called `joker.core`. Other built-in namespaces include `joker.string`, `joker.json`, `joker.os`, `joker.base64` etc. See [standard library reference](https://candid82.github.io/joker/) for details.
+1. Built-in namespaces have `lace` prefix. The core namespace is called `lace.core`. Other built-in namespaces include `lace.string`, `lace.json`, `lace.os`, `lace.base64` etc. See [standard library reference](https://candid82.github.io/lace/) for details.
 1. Miscellaneous:
   - `case` is just a syntactic sugar on top of `condp` and doesn't require options to be constants. It scans all the options sequentially.
   - `slurp` only takes one argument - a filename (string). No options are supported.
@@ -118,11 +118,11 @@ joker --hashmap-threshold -1 -e "(pprint (read))"
 
 ## Linter mode
 
-To run Joker in linter mode pass `--lint --dialect <dialect>` flag, where `<dialect>` can be `clj`, `cljs`, `joker` or `edn`. If `--dialect <dialect>` is omitted, it will be set based on file extension. For example, `joker --lint foo.clj` will run linter for the file `foo.clj` using Clojure (as opposed to ClojureScript or Joker) dialect. `joker --lint --dialect cljs -` will run linter for standard input using ClojureScript dialect. Linter will read and parse all forms in the provided file (or read them from standard input) and output errors and warnings (if any) to standard output (for `edn` dialect it will only run read phase and won't parse anything). Let's say you have file `test.clj` with the following content:
+To run Joker in linter mode pass `--lint --dialect <dialect>` flag, where `<dialect>` can be `clj`, `cljs`, `lace` or `edn`. If `--dialect <dialect>` is omitted, it will be set based on file extension. For example, `lace --lint foo.clj` will run linter for the file `foo.clj` using Clojure (as opposed to ClojureScript or Joker) dialect. `lace --lint --dialect cljs -` will run linter for standard input using ClojureScript dialect. Linter will read and parse all forms in the provided file (or read them from standard input) and output errors and warnings (if any) to standard output (for `edn` dialect it will only run read phase and won't parse anything). Let's say you have file `test.clj` with the following content:
 ```clojure
 (let [a 1])
 ```
-Executing the following command `joker --lint test.clj` will produce the following output:
+Executing the following command `lace --lint test.clj` will produce the following output:
 ```
 test.clj:1:1: Parse warning: let form with empty body
 ```
@@ -130,14 +130,14 @@ The output format is as follows: `<filename>:<line>:<column>: <issue type>: <mes
 
 ### Integration with editors
 
-- Emacs: [flycheck syntax checker](https://github.com/candid82/flycheck-joker)
-- Sublime Text: [SublimeLinter plugin](https://github.com/candid82/SublimeLinter-contrib-joker)
-- Atom: [linter-joker](https://atom.io/packages/linter-joker)
-- Vim: [syntastic-joker](https://github.com/aclaimant/syntastic-joker), [ale](https://github.com/w0rp/ale)
-- VSCode: [VSCode Linter Plugin (alpha)](https://github.com/martinklepsch/vscode-joker-clojure-linter)
-- Kakoune: [clj-kakoune-joker](https://github.com/w33tmaricich/clj-kakoune-joker)
+- Emacs: [flycheck syntax checker](https://github.com/candid82/flycheck-lace)
+- Sublime Text: [SublimeLinter plugin](https://github.com/candid82/SublimeLinter-contrib-lace)
+- Atom: [linter-lace](https://atom.io/packages/linter-lace)
+- Vim: [syntastic-lace](https://github.com/aclaimant/syntastic-lace), [ale](https://github.com/w0rp/ale)
+- VSCode: [VSCode Linter Plugin (alpha)](https://github.com/martinklepsch/vscode-lace-clojure-linter)
+- Kakoune: [clj-kakoune-lace](https://github.com/w33tmaricich/clj-kakoune-lace)
 
-[Here](https://github.com/candid82/SublimeLinter-contrib-joker#reader-errors) are some examples of errors and warnings that the linter can output.
+[Here](https://github.com/candid82/SublimeLinter-contrib-lace#reader-errors) are some examples of errors and warnings that the linter can output.
 
 ### Reducing false positives
 
@@ -149,7 +149,7 @@ Joker lints the code in one file at a time and doesn't try to resolve symbols fr
 (def-something baz ...)
 ```
 
-Symbol `baz` is introduced inside `def-something` macro. The code is totally valid. However, the linter will output the following error: `Parse error: Unable to resolve symbol: baz`. This is because by default the linter assumes external vars (`bar/def-something` in this case) to hold functions, not macros. The good news is that you can tell Joker that `bar/def-something` is a macro and thus suppress the error message. To do that you need to add `bar/def-something` to the list of known macros in Joker configuration file. The configuration file is called `.joker` and should be in the same directory as the target file, or in its parent directory, or in its parent's parent directory etc up to the root directory. When reading from stdin Joker will look for a `.joker` file in the current working directory. The `--working-dir <path/to/file>` flag can be used to override the working directory that Joker starts looking in. Joker will also look for a `.joker` file in your home directory if it cannot find it in the above directories. The file should contain a single map with `:known-macros` key:
+Symbol `baz` is introduced inside `def-something` macro. The code is totally valid. However, the linter will output the following error: `Parse error: Unable to resolve symbol: baz`. This is because by default the linter assumes external vars (`bar/def-something` in this case) to hold functions, not macros. The good news is that you can tell Joker that `bar/def-something` is a macro and thus suppress the error message. To do that you need to add `bar/def-something` to the list of known macros in Joker configuration file. The configuration file is called `.lace` and should be in the same directory as the target file, or in its parent directory, or in its parent's parent directory etc up to the root directory. When reading from stdin Joker will look for a `.lace` file in the current working directory. The `--working-dir <path/to/file>` flag can be used to override the working directory that Joker starts looking in. Joker will also look for a `.lace` file in your home directory if it cannot find it in the above directories. The file should contain a single map with `:known-macros` key:
 
 ```clojure
 {:known-macros [bar/def-something foo/another-macro ...]}
@@ -165,7 +165,7 @@ Joker also allows you to specify symbols that are introduced by a macro:
 
 So each element in :known-macros vector can be either a symbol (as in the previous example) or a vector with two elements: macro's name and a list of symbols introduced by this macro. This allows to avoid symbol resolution warnings in macros that intern specific symbols implicitly.
 
-Additionally, if you want Joker to ignore some unused namespaces (for example, if they are required for their side effects) you can add the `:ignored-unused-namespaces` key to your `.joker` file:
+Additionally, if you want Joker to ignore some unused namespaces (for example, if they are required for their side effects) you can add the `:ignored-unused-namespaces` key to your `.lace` file:
 
 ```clojure
 {:ignored-unused-namespaces [foo.bar.baz]}
@@ -193,33 +193,33 @@ If you use `:refer :all` Joker won't be able to properly resolve symbols because
  (t/deftest ...)
  ```
 
-3. "Teach" Joker declarations from referred namespace. Joker executes the following files (if they exist) before linting your file: `.jokerd/linter.cljc` (for both Clojure and ClojureScript), `.jokerd/linter.clj` (Clojure only), `.jokerd/linter.cljs` (ClojureScript only). The rules for locating `.jokerd` directory are the same as for locating `.joker` file.
+3. "Teach" Joker declarations from referred namespace. Joker executes the following files (if they exist) before linting your file: `.laced/linter.cljc` (for both Clojure and ClojureScript), `.laced/linter.clj` (Clojure only), `.laced/linter.cljs` (ClojureScript only). The rules for locating `.laced` directory are the same as for locating `.lace` file.
 
-   *  :warning: Joker can be made aware of any additional declarations (like `deftest` and `is`) by providing them in `.jokerd/linter.clj[s|c]` files. However, this means Joker cannot check that the symbols really are declared in your namespace, so this feature should be used sparingly.
-   * If you really want some symbols to be considered declared *in any namespace no matter what*, you can add `(in-ns 'joker.core)` to your `linter.clj[s|c]` and then declare those symbols.
+   *  :warning: Joker can be made aware of any additional declarations (like `deftest` and `is`) by providing them in `.laced/linter.clj[s|c]` files. However, this means Joker cannot check that the symbols really are declared in your namespace, so this feature should be used sparingly.
+   * If you really want some symbols to be considered declared *in any namespace no matter what*, you can add `(in-ns 'lace.core)` to your `linter.clj[s|c]` and then declare those symbols.
     (see issues [52](https://github.com/lab47/lace/issues/52) and [50](https://github.com/lab47/lace/issues/50) for discussion).
 
 I generally prefer first option for `clojure.test` namespace.
 
 ### Linting directories
 
-To recursively lint all files in a directory pass `--working-dir <dirname>` parameter. Please note that if you also pass file argument (or `--file` parameter) Joker will lint that single file and will only use `--working-dir` to locate `.joker` config file. That is,
+To recursively lint all files in a directory pass `--working-dir <dirname>` parameter. Please note that if you also pass file argument (or `--file` parameter) Joker will lint that single file and will only use `--working-dir` to locate `.lace` config file. That is,
 
 ```bash
-joker --lint --working-dir my-project
+lace --lint --working-dir my-project
 ```
 
 lints all Clojure files in `my-project` directory, whereas
 
 ```bash
-joker --lint --working-dir my-project foo.clj
+lace --lint --working-dir my-project foo.clj
 ```
 
-lints single file `foo.clj` but uses `.joker` config file from `my-project` directory.
+lints single file `foo.clj` but uses `.lace` config file from `my-project` directory.
 
-When linting directories Joker lints all files with the extension corresponding to the selected dialect (`*.clj`, `*.cljs`, `*.joke`, or `*.edn`). To exclude certain files specify regex patterns in `:ignored-file-regexes` vector in `.joker` file, e.g. `:ignored-file-regexes [#".*user\.clj" #".*/dev/profiling\.clj"]`.
+When linting directories Joker lints all files with the extension corresponding to the selected dialect (`*.clj`, `*.cljs`, `*.joke`, or `*.edn`). To exclude certain files specify regex patterns in `:ignored-file-regexes` vector in `.lace` file, e.g. `:ignored-file-regexes [#".*user\.clj" #".*/dev/profiling\.clj"]`.
 
-When linting directories Joker can report globally unused namespaces and public vars. This is turned off by default but can be enabled with `--report-globally-unused` flag, e.g. `joker --lint --working-dir my-project --report-globally-unused`. This is useful for finding "dead" code. Some namespaces or vars are intended to be used by external systems (e.g. public API of a library or main function of a program). To exclude such namespaces and vars from being reported as globally unused list them in `:entry-points` vector in `.joker` file, which may contain the names of namespaces or fully qualified names of vars. For example:
+When linting directories Joker can report globally unused namespaces and public vars. This is turned off by default but can be enabled with `--report-globally-unused` flag, e.g. `lace --lint --working-dir my-project --report-globally-unused`. This is useful for finding "dead" code. Some namespaces or vars are intended to be used by external systems (e.g. public API of a library or main function of a program). To exclude such namespaces and vars from being reported as globally unused list them in `:entry-points` vector in `.lace` file, which may contain the names of namespaces or fully qualified names of vars. For example:
 
 ```clojure
 :entry-points [my-project.public-api
@@ -228,7 +228,7 @@ When linting directories Joker can report globally unused namespaces and public 
 
 ### Optional rules
 
-Joker supports a few configurable linting rules. To turn them on or off set their values to `true` or `false` in `:rules` map in `.joker` file. For example:
+Joker supports a few configurable linting rules. To turn them on or off set their values to `true` or `false` in `:rules` map in `.lace` file. For example:
 
 ```clojure
 :rules {:if-without-else true
@@ -282,7 +282,7 @@ See [`DEVELOPER.md`](https://github.com/lab47/lace/blob/master/DEVELOPER.md) for
 
 (Generated by [Hall-Of-Fame](https://github.com/sourcerer-io/hall-of-fame))
 
-[![](https://sourcerer.io/fame/candid82/candid82/joker/images/0)](https://sourcerer.io/fame/candid82/candid82/joker/links/0)[![](https://sourcerer.io/fame/candid82/candid82/joker/images/1)](https://sourcerer.io/fame/candid82/candid82/joker/links/1)[![](https://sourcerer.io/fame/candid82/candid82/joker/images/2)](https://sourcerer.io/fame/candid82/candid82/joker/links/2)[![](https://sourcerer.io/fame/candid82/candid82/joker/images/3)](https://sourcerer.io/fame/candid82/candid82/joker/links/3)[![](https://sourcerer.io/fame/candid82/candid82/joker/images/4)](https://sourcerer.io/fame/candid82/candid82/joker/links/4)[![](https://sourcerer.io/fame/candid82/candid82/joker/images/5)](https://sourcerer.io/fame/candid82/candid82/joker/links/5)[![](https://sourcerer.io/fame/candid82/candid82/joker/images/6)](https://sourcerer.io/fame/candid82/candid82/joker/links/6)[![](https://sourcerer.io/fame/candid82/candid82/joker/images/7)](https://sourcerer.io/fame/candid82/candid82/joker/links/7)
+[![](https://sourcerer.io/fame/candid82/candid82/lace/images/0)](https://sourcerer.io/fame/candid82/candid82/lace/links/0)[![](https://sourcerer.io/fame/candid82/candid82/lace/images/1)](https://sourcerer.io/fame/candid82/candid82/lace/links/1)[![](https://sourcerer.io/fame/candid82/candid82/lace/images/2)](https://sourcerer.io/fame/candid82/candid82/lace/links/2)[![](https://sourcerer.io/fame/candid82/candid82/lace/images/3)](https://sourcerer.io/fame/candid82/candid82/lace/links/3)[![](https://sourcerer.io/fame/candid82/candid82/lace/images/4)](https://sourcerer.io/fame/candid82/candid82/lace/links/4)[![](https://sourcerer.io/fame/candid82/candid82/lace/images/5)](https://sourcerer.io/fame/candid82/candid82/lace/links/5)[![](https://sourcerer.io/fame/candid82/candid82/lace/images/6)](https://sourcerer.io/fame/candid82/candid82/lace/links/6)[![](https://sourcerer.io/fame/candid82/candid82/lace/images/7)](https://sourcerer.io/fame/candid82/candid82/lace/links/7)
 
 ## License
 

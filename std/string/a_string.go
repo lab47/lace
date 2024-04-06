@@ -639,7 +639,7 @@ func Init() {
 	InternsOrThunks()
 }
 
-var stringNamespace = GLOBAL_ENV.EnsureNamespace(MakeSymbol("joker.string"))
+var stringNamespace = GLOBAL_ENV.EnsureNamespace(MakeSymbol("lace.string"))
 
 func init() {
 	stringNamespace.Lazy = Init

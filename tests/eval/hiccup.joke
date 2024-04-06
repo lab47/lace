@@ -1,7 +1,7 @@
-(ns joker.test-joker.hiccup
+(ns lace.test-lace.hiccup
   (:require
-   [joker.test :refer [deftest is testing]]
-   [joker.hiccup :refer [html raw-string]]))
+   [lace.test :refer [deftest is testing]]
+   [lace.hiccup :refer [html raw-string]]))
 
 ;; These tests are largely copied from the Hiccup source
 
@@ -66,10 +66,10 @@
     (is (= (html [:img {'id "foo"}]) "<img id=\"foo\" />"))
     (is (= (html [:xml {:a "1", 'b "2", "c" "3"}])
            "<xml a=\"1\" b=\"2\" c=\"3\"></xml>")))
-  ;; This logic differs from Clojure Hiccup, due to use of joker.html/escape
+  ;; This logic differs from Clojure Hiccup, due to use of lace.html/escape
   #_ (testing "attribute values are escaped"
        (is (= (html [:div {:id "\""}]) "<div id=\"&quot;\"></div>")))
-  (testing "attributes are escaped via joker.html/escape"
+  (testing "attributes are escaped via lace.html/escape"
     (is (= (html [:div {:id "<_&_>_\"_'"}])
            "<div id=\"&lt;_&amp;_&gt;_&#34;_&#39;\"></div>")))
   (testing "boolean attributes"

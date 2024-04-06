@@ -1,7 +1,7 @@
-(ns joker.test-clojure.tools-cli
-  (:require [joker.tools.cli :as cli :refer [get-default-options parse-opts summarize]]
-            [joker.string :refer [join]]
-            [joker.test :refer [deftest is testing]]))
+(ns lace.test-clojure.tools-cli
+  (:require [lace.tools.cli :as cli :refer [get-default-options parse-opts summarize]]
+            [lace.string :refer [join]]
+            [lace.test :refer [deftest is testing]]))
 
 ;; Refer private vars
 (def tokenize-args        #'cli/tokenize-args)
@@ -111,7 +111,7 @@
   #?(:clj  (Integer/parseInt x)
      :cljs (do (assert (re-seq #"^\d" x))
                (js/parseInt x))
-     :joker (do (assert (re-seq #"^\d+$" x))
+     :lace (do (assert (re-seq #"^\d+$" x))
                 (read-string x))))
 
 (deftest test-parse-option-tokens

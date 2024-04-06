@@ -8,17 +8,17 @@
 
 (def exit-code 0)
 
-(let [test-dirs (->> (joker.os/ls "tests/linter")
+(let [test-dirs (->> (lace.os/ls "tests/linter")
                      (filter :dir?)
                      (map :name))
-      pwd (get (joker.os/env) "PWD")
-      exe (str pwd "/joker")]
+      pwd (get (lace.os/env) "PWD")
+      exe (str pwd "/lace")]
   (doseq [test-dir test-dirs]
     (let [dir (str "tests/linter/" test-dir "/")
           filename (if (file-exists? (str dir "input.clj"))
                      (str dir "input.clj")
                      (str dir "input.cljs"))
-          res (joker.os/sh exe "--lint" filename)
+          res (lace.os/sh exe "--lint" filename)
           output (:err res)
           expected (slurp (str dir "output.txt"))]
       (when (and (not= "" output)
@@ -37,4 +37,4 @@
         (println output)
         (var-set #'exit-code 1)))))
 
-(joker.os/exit exit-code)
+(lace.os/exit exit-code)

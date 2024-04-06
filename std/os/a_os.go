@@ -412,7 +412,7 @@ func Init() {
 	InternsOrThunks()
 }
 
-var osNamespace = GLOBAL_ENV.EnsureNamespace(MakeSymbol("joker.os"))
+var osNamespace = GLOBAL_ENV.EnsureNamespace(MakeSymbol("lace.os"))
 
 func init() {
 	osNamespace.Lazy = Init

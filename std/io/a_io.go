@@ -74,7 +74,7 @@ func Init() {
 	InternsOrThunks()
 }
 
-var ioNamespace = GLOBAL_ENV.EnsureNamespace(MakeSymbol("joker.io"))
+var ioNamespace = GLOBAL_ENV.EnsureNamespace(MakeSymbol("lace.io"))
 
 func init() {
 	ioNamespace.Lazy = Init

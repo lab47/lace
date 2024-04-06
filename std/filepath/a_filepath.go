@@ -368,7 +368,7 @@ func Init() {
 	InternsOrThunks()
 }
 
-var filepathNamespace = GLOBAL_ENV.EnsureNamespace(MakeSymbol("joker.filepath"))
+var filepathNamespace = GLOBAL_ENV.EnsureNamespace(MakeSymbol("lace.filepath"))
 
 func init() {
 	filepathNamespace.Lazy = Init

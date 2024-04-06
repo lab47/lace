@@ -18,7 +18,7 @@ func InternsOrThunks() {
 	osNamespace.InternVar("args", args_,
 		MakeMeta(
 			NewListFrom(NewVectorFrom()),
-			`Returns a sequence of the command line arguments, starting with the program name (normally, joker).`, "1.0"))
+			`Returns a sequence of the command line arguments, starting with the program name (normally, lace).`, "1.0"))
 
 	osNamespace.InternVar("chdir", chdir_,
 		MakeMeta(
@@ -54,9 +54,9 @@ func InternsOrThunks() {
   :dir - if specified, working directory will be set to this value before executing the program,
   :stdin - if specified, provides stdin for the program. Can be either a string or an IOReader.
   If it's a string, the string's content will serve as stdin for the program. IOReader can be, for example,
-  *in* (in which case Joker's stdin will be redirected to the program's stdin) or the value returned by (joker.os/open).
+  *in* (in which case Joker's stdin will be redirected to the program's stdin) or the value returned by (lace.os/open).
   :stdout - if specified, must be an IOWriter. It can be, for example, *out* (in which case the program's stdout will be redirected
-  to Joker's stdout) or the value returned by (joker.os/create).
+  to Joker's stdout) or the value returned by (lace.os/create).
   :stderr - the same as :stdout, but for stderr.
   Returns a map with the following keys:
   :success - whether or not the execution was successful,

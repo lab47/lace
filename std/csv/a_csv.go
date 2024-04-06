@@ -118,7 +118,7 @@ func Init() {
 	InternsOrThunks()
 }
 
-var csvNamespace = GLOBAL_ENV.EnsureNamespace(MakeSymbol("joker.csv"))
+var csvNamespace = GLOBAL_ENV.EnsureNamespace(MakeSymbol("lace.csv"))
 
 func init() {
 	csvNamespace.Lazy = Init

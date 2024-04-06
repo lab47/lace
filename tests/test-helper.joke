@@ -7,7 +7,7 @@
 ;   You must not remove this notice, or any other, from this software.
 ;
 
-;;  joker.test-helper
+;;  lace.test-helper
 ;;
 ;;  Utility functions shared by various tests in the Clojure
 ;;  test suite
@@ -16,8 +16,8 @@
 ;;  Created 04 November 2010
 
 (ns tests.test-helper
-  (:require [joker.string :as s]
-            [joker.test :refer [is do-report]]))
+  (:require [lace.string :as s]
+            [lace.test :refer [is do-report]]))
 
 (let [nl (with-out-str (newline))]
   (defn platform-newlines [s] (s/replace s "\n" nl)))
@@ -27,13 +27,13 @@
   [& uses]
   (binding [*ns* *ns*]
     (in-ns (gensym))
-    (apply joker.core/use 'joker.core uses)
+    (apply lace.core/use 'lace.core uses)
     *ns*))
 
 (defmacro eval-in-temp-ns [& forms]
   `(binding [*ns* *ns*]
      (in-ns (gensym))
-     (joker.core/use 'joker.core)
+     (lace.core/use 'lace.core)
      (eval
       '(do ~@forms))))
 
@@ -134,7 +134,7 @@
 ;;      (is (nil? (re-find #"^Reflection warning" (with-err-string-writer (eval-in-temp-ns ~form)))))
 ;;      (is (nil? (re-find #"^Reflection warning" (with-err-print-writer (eval-in-temp-ns ~form)))))))
 
-(defmethod joker.test/assert-expr 'thrown-with-cause-msg? [msg form]
+(defmethod lace.test/assert-expr 'thrown-with-cause-msg? [msg form]
   ;; (is (thrown-with-cause-msg? c re expr))
   ;; Asserts that evaluating expr throws an exception of class c.
   ;; Also asserts that the message string of the *cause* exception matches

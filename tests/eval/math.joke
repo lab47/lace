@@ -1,7 +1,7 @@
 
-(ns joker.test-joker.math
-  (:require [joker.test :refer [deftest is are]]
-            [joker.math :as m]))
+(ns lace.test-lace.math
+  (:require [lace.test :refer [deftest is are]]
+            [lace.math :as m]))
 
 (deftest abs
   (are [x y] (= x y)

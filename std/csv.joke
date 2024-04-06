@@ -55,9 +55,9 @@
 
 (defn write
   "Writes records to a CSV encoded file.
-  f must be io.Writer (for example, as returned by joker.os/create).
+  f must be io.Writer (for example, as returned by lace.os/create).
   data must be Seqable, each element of which must be Seqable as well.
-  opts is as in joker.csv/write-string."
+  opts is as in lace.csv/write-string."
   {:added "1.0"
   :go {2 "write(_env, f, data, EmptyArrayMap())"
        3 "write(_env, f, data, opts)"}}

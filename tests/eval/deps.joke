@@ -1,7 +1,7 @@
 (ns deps
-  (:require [joker.os :as os]
-            [joker.filepath :as fp]
-            [joker.string :as str]))
+  (:require [lace.os :as os]
+            [lace.filepath :as fp]
+            [lace.string :as str]))
 
 (def lib-dir
   (-> *main-file*

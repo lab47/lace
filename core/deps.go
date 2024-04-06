@@ -12,7 +12,7 @@ import (
 
 func externalHttpSourceToPath(env *Env, lib string, url string) (string, error) {
 	home, _ := os.LookupEnv("HOME")
-	localBase := filepath.Join(home, ".jokerd", "deps", strings.SplitN(url, "//", 2)[1])
+	localBase := filepath.Join(home, ".laced", "deps", strings.SplitN(url, "//", 2)[1])
 	libBase := filepath.Join(strings.Split(lib, ".")...) + ".joke"
 	libPath := filepath.Join(localBase, libBase)
 	libPathDir := filepath.Dir(libPath)

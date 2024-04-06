@@ -1,6 +1,6 @@
-(ns joker.test.run-eval-tests
-  (require [joker.test :refer [run-tests]]
-           [joker.os :as os]))
+(ns lace.test.run-eval-tests
+  (require [lace.test :refer [run-tests]]
+           [lace.os :as os]))
 
 (let [res (os/exec "test" {:stdin *in* :args ["-t" "0"]})]
   (when (:success res)
@@ -19,13 +19,13 @@
   (some #(= opt %) *command-line-args*))
 
 (defn- run-forked-test
-  [joker-cmd test-dir verbose?]
+  [lace-cmd test-dir verbose?]
   (when verbose?
     (println (str "Running test in subdirectory " test-dir)))
   (let [dir (str "tests/eval/" test-dir "/")
         filename "input.joke"
         stdin (slurp-or (str dir "stdin.txt") *in*)
-        res (joker.os/exec joker-cmd {:dir dir :args [filename] :stdin stdin})
+        res (lace.os/exec lace-cmd {:dir dir :args [filename] :stdin stdin})
         out (:out res)
         err (:err res)
         rc (:exit res)
@@ -66,17 +66,17 @@
 (defn- run-forked-tests
   "Directories have input.joke files that are passed as input to a
   fork'ed instance of Joker.  Ths test harness is rudimentary but
-  handles more complicated cases than joker.test and can also catch
+  handles more complicated cases than lace.test and can also catch
   test failures in that and its dependencies (such as defmulti,
-  joker.template, and joker.walk) before a huge deluge of failures is
+  lace.template, and lace.walk) before a huge deluge of failures is
   reported by the per-file tests that are performed after these."
   [verbose?]
-  (let [test-dirs (->> (joker.os/ls "tests/eval")
+  (let [test-dirs (->> (lace.os/ls "tests/eval")
                        (filter :dir?)
                        (map :name)
-                       (remove #(joker.string/starts-with? % ".")))
-        pwd (get (joker.os/env) "PWD")
-        exe (str pwd "/joker")
+                       (remove #(lace.string/starts-with? % ".")))
+        pwd (get (lace.os/env) "PWD")
+        exe (str pwd "/lace")
         failures (->> test-dirs
                       (remove #(run-forked-test exe % verbose?))
                       (count))]
@@ -85,11 +85,11 @@
 (defn- run-internal-tests
   ([]
    ;; Run tests in all tests/eval/*.joke files:
-   (run-internal-tests (->> (joker.os/ls "tests/eval")
+   (run-internal-tests (->> (lace.os/ls "tests/eval")
                             (remove :dir?)
                             (map :name)
-                            (filter #(joker.string/ends-with? % ".joke"))
-                            (remove #(joker.string/starts-with? % ".")))))
+                            (filter #(lace.string/ends-with? % ".joke"))
+                            (remove #(lace.string/starts-with? % ".")))))
   ([test-files]
    (let [namespaces (for [test-file test-files]
                       (binding [*ns* *ns*]
@@ -102,7 +102,7 @@
 (defn- main
   []
   (let [verbose? (not (have-option "--no-verbose"))
-        filename (first (filter #(joker.string/ends-with? % ".joke") *command-line-args*))
+        filename (first (filter #(lace.string/ends-with? % ".joke") *command-line-args*))
         forked-failures (if filename 0 (run-forked-tests verbose?))
         internal-failures (if filename
                             (run-internal-tests [filename])
@@ -113,6 +113,6 @@
       (println "There were failures and/or errors in namespace tests; returning exit code 1"))
     (when (or (pos? forked-failures)
               (pos? internal-failures))
-      (joker.os/exit 1))))
+      (lace.os/exit 1))))
 
 (main)

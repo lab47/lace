@@ -8,8 +8,8 @@
 
 ;;Author: Frantisek Sodomka
 
-(ns joker.test-clojure.atoms
-  (:require [joker.test :refer [deftest is are testing]]))
+(ns lace.test-clojure.atoms
+  (:require [lace.test :refer [deftest is are testing]]))
 
 ; http://clojure.org/atoms
 

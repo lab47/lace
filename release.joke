@@ -1,5 +1,5 @@
-(alias 's 'joker.string)
-(alias 'os 'joker.os)
+(alias 's 'lace.string)
+(alias 'os 'lace.os)
 
 (def ^:private version-pattern "version\\s+\"(.*)\"")
 (def ^:private shasum-pattern "sha256\\s+\"(.*)\"")
@@ -7,7 +7,7 @@
 (defn- exit-err
   [& args]
   (apply println-err args)
-  (joker.os/exit 1))
+  (lace.os/exit 1))
 
 (defn- exec
   [& args]
@@ -35,8 +35,8 @@
         formula-file (get (os/env) "JOKER_FORMULA_PATH")
         formula (slurp formula-file)
         [_ current-version] (re-find (re-pattern version-pattern) formula)
-        linux-sha (shasum (str "joker-" version' "-linux-amd64.zip"))
-        mac-sha (shasum (str "joker-" version' "-mac-amd64.zip"))
+        linux-sha (shasum (str "lace-" version' "-linux-amd64.zip"))
+        mac-sha (shasum (str "lace-" version' "-mac-amd64.zip"))
         shasum-rex (re-pattern shasum-pattern)]
     (when-not current-version
       (exit-err "Could not find version number"))
@@ -44,8 +44,8 @@
                            (s/replace current-version version')
                            (s/replace shasum-rex (str "sha256 \"" mac-sha "\""))
                            (s/replace-first shasum-rex (str "sha256 \"" linux-sha "\""))))
-    (let [res (os/sh-from (s/replace formula-file "/joker.rb" "")
-                          "git" "commit" "-a" "-m" (str "joker-" version))]
+    (let [res (os/sh-from (s/replace formula-file "/lace.rb" "")
+                          "git" "commit" "-a" "-m" (str "lace-" version))]
       (when-not (:success res)
         (exit-err "git commit failed:" (:out res) (:err res))))))
 
@@ -67,12 +67,12 @@
   [version]
   (println "Building binaries...")
   (exec "./build-all.sh" (subs version 1))
-  (exec "rm" "-f" "joker.exe")
-  (exec "rm" "-f" "joker"))
+  (exec "rm" "-f" "lace.exe")
+  (exec "rm" "-f" "lace"))
 
 (defn- generate-docs
   []
-  (exec-from "docs" "../joker" "generate-docs.joke"))
+  (exec-from "docs" "../lace" "generate-docs.joke"))
 
 (defn- main
   [args]
@@ -86,4 +86,4 @@
     (build-binaries version)
     (update-brew-formula version)))
 
-(main (joker.os/args))
+(main (lace.os/args))

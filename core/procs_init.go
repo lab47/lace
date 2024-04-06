@@ -176,7 +176,7 @@ func initEnv(env *Env) {
 	intern(env, "shuffle__", procShuffle, "procShuffle")
 	intern(env, "realized?__", procIsRealized, "procIsRealized")
 	intern(env, "derive-info__", procDeriveInfo, "procDeriveInfo")
-	intern(env, "joker-version__", procJokerVersion, "procJokerVersion")
+	intern(env, "lace-version__", procJokerVersion, "procJokerVersion")
 
 	intern(env, "hash__", procHash, "procHash")
 

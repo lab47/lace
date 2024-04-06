@@ -1,5 +1,5 @@
-(ns joker.map-test
-  (:require [joker.test :refer [deftest is]]))
+(ns lace.map-test
+  (:require [lace.test :refer [deftest is]]))
 
 
 (deftest hash-map-conversion

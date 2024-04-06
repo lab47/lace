@@ -31,7 +31,7 @@
          created with sorted-map-by.  There is no (obvious) way to retrieve
          the sorting function."
          :added "1.0"}
-  joker.walk)
+  lace.walk)
 
 (defn walk
   "Traverses form, an arbitrary data structure.  inner and outer are

@@ -15,8 +15,8 @@ import (
 
 func repl(env *core.Env, phase core.Phase) {
 	core.ProcessReplData()
-	env.FindNamespace(core.MakeSymbol("user")).ReferAll(env.FindNamespace(core.MakeSymbol("joker.repl")))
-	fmt.Printf("Welcome to joker %s. Use EOF (Ctrl-D) or SIGINT (Ctrl-C) to exit.\n", core.VERSION)
+	env.FindNamespace(core.MakeSymbol("user")).ReferAll(env.FindNamespace(core.MakeSymbol("lace.repl")))
+	fmt.Printf("Welcome to lace %s. Use EOF (Ctrl-D) or SIGINT (Ctrl-C) to exit.\n", core.VERSION)
 	parseContext := &core.ParseContext{Env: env}
 	replContext := NewReplContext(parseContext.Env)
 

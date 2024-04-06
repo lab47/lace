@@ -4,7 +4,7 @@
 </head>
 <body>
   <div class="main">
-    <h1>Namespace: joker.os</h1>
+    <h1>Namespace: lace.os</h1>
     <span class="var-added">v1.0</span>
     <p class="var-docstr">Provides a platform-independent interface to operating system functionality.</p>
     <h2>Index</h2>
@@ -75,7 +75,7 @@
   <span class="var-added">v1.0</span>
   <pre class="var-usage"><div><code>(args)</code></div>
 </pre>
-  <p class="var-docstr">Returns a sequence of the command line arguments, starting with the program name (normally, joker).</p>
+  <p class="var-docstr">Returns a sequence of the command line arguments, starting with the program name (normally, lace).</p>
   
 </li>
 <li>
@@ -135,9 +135,9 @@
   :dir - if specified, working directory will be set to this value before executing the program,<br>
   :stdin - if specified, provides stdin for the program. Can be either a string or an IOReader.<br>
   If it&#39;s a string, the string&#39;s content will serve as stdin for the program. IOReader can be, for example,<br>
-  *in* (in which case Joker&#39;s stdin will be redirected to the program&#39;s stdin) or the value returned by (joker.os/open).<br>
+  *in* (in which case Joker&#39;s stdin will be redirected to the program&#39;s stdin) or the value returned by (lace.os/open).<br>
   :stdout - if specified, must be an IOWriter. It can be, for example, *out* (in which case the program&#39;s stdout will be redirected<br>
-  to Joker&#39;s stdout) or the value returned by (joker.os/create).<br>
+  to Joker&#39;s stdout) or the value returned by (lace.os/create).<br>
   :stderr - the same as :stdout, but for stderr.<br>
   Returns a map with the following keys:<br>
   :success - whether or not the execution was successful,<br>

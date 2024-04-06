@@ -1,1 +1,1 @@
-(doseq [ns (remove #(= % 'user) joker.core/*core-namespaces*)] (require ns))
+(doseq [ns (remove #(= % 'user) lace.core/*core-namespaces*)] (require ns))

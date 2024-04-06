@@ -1,7 +1,7 @@
-(ns joker.better-cond-test
+(ns lace.better-cond-test
   (:refer-clojure :exclude [cond if-let when-let if-some when-some])
-  (:require [joker.test :refer [deftest are]]
-            [joker.better-cond :refer [cond]]))
+  (:require [lace.test :refer [deftest are]]
+            [lace.better-cond :refer [cond]]))
 
 (deftest better-cond
   (are [x y] (= x y)

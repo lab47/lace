@@ -53,7 +53,7 @@ func Init() {
 	InternsOrThunks()
 }
 
-var htmlNamespace = GLOBAL_ENV.EnsureNamespace(MakeSymbol("joker.html"))
+var htmlNamespace = GLOBAL_ENV.EnsureNamespace(MakeSymbol("lace.html"))
 
 func init() {
 	htmlNamespace.Lazy = Init

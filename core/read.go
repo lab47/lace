@@ -850,7 +850,7 @@ func makeFnForm(args map[int]Symbol, body Object) (Object, error) {
 			return nil, err
 		}
 	}
-	return DeriveReadObject(body, NewListFrom(MakeSymbol("joker.core/fn"), argVector, body)), nil
+	return DeriveReadObject(body, NewListFrom(MakeSymbol("lace.core/fn"), argVector, body)), nil
 }
 
 func isTerminatingMacro(r rune) bool {

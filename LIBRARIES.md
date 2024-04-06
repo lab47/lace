@@ -2,7 +2,7 @@
 
 # Organizing Libraries (Namespaces)
 
-Joker is distributed with built-in namespaces. These include core namespaces (such as `joker.core` and `joker.math`) and Go-standard-library-wrapping namespaces (`joker.os`, `joker.http`, etc.). As they are built into the Joker executable itself, they need not be deployed separately from that executable. 
+Joker is distributed with built-in namespaces. These include core namespaces (such as `lace.core` and `lace.math`) and Go-standard-library-wrapping namespaces (`lace.os`, `lace.http`, etc.). As they are built into the Joker executable itself, they need not be deployed separately from that executable. 
 
 Currently, Joker does not include any additional Joker namespaces (library code) that is *not* built into the Joker executable. That makes the Joker executable "stand-alone" with respect to deployment.
 
@@ -12,7 +12,7 @@ This document provides a brief overview of these mechanisms and recommendations 
 
 ## Default Behavior
 
-Absent overriding behavior as defined by `joker.core/*classpath*` and `joker.core/*ns-sources*`, Joker normally relies on the local filesystem to locate source files for namespaces.
+Absent overriding behavior as defined by `lace.core/*classpath*` and `lace.core/*ns-sources*`, Joker normally relies on the local filesystem to locate source files for namespaces.
 
 Generally, namespaces are converted to relative pathnames ("subpaths") by treating each component as a directory, except for the last, to which `.joke` is appended.
 
@@ -28,7 +28,7 @@ For more information on this default behavior, see [Library Loader Behavior](htt
 
 Though `lib-path__` determines a potential pathname for a library's root file, `*classpath*` determines whether and when to use that pathname.
 
-The `joker.core/load-lib-from-path__` procedure, used to actually load library files, is called with the target namespace name and the pathname previously determined by `lib-path__`. It uses `*classpath*` to search for the `.joke` file representing the root source file for that namespace.
+The `lace.core/load-lib-from-path__` procedure, used to actually load library files, is called with the target namespace name and the pathname previously determined by `lib-path__`. It uses `*classpath*` to search for the `.joke` file representing the root source file for that namespace.
 
 Each component of `*classpath*` (separated by colons on most OSes, semicolons on Windows) is consulted, in order, until the `.joke` file is found.
 
@@ -36,7 +36,7 @@ Only if the component is empty is the `lib-path__` pathname used (as described a
 
 Non-empty components have the target namespace name, converted to pathname form and with `.joke` appended, appended to them, and the resulting paths are opened for reading. The first one that is successfully opened is used.
 
-For example, if a component contains `/usr/lib/joker`, and the target namespace is `biz.logic`, the resulting pathname for the root file would be `/usr/lib/joker/biz/logic.joke`.
+For example, if a component contains `/usr/lib/lace`, and the target namespace is `biz.logic`, the resulting pathname for the root file would be `/usr/lib/lace/biz/logic.joke`.
 
 (Since `.` refers to the current working directory, a component of `.` would result in `./biz/logic.joke`. This is more of an artifact of the implementation than an expected usage.)
 
@@ -50,7 +50,7 @@ Thus, `*classpath*` provides a rudimentary mechanism for loading pre-existing (d
 
 ## The \*ns-sources\* Variable
 
-To address the limitations of `*classpath*`, `joker.core/*ns-sources*` (and the related helper function, `joker.core/ns-sources`) is provided.
+To address the limitations of `*classpath*`, `lace.core/*ns-sources*` (and the related helper function, `lace.core/ns-sources`) is provided.
 
 `*ns-sources*` is intended as a next step in providing a best-in-class dependency management system, which should be:
 
@@ -86,12 +86,12 @@ This subpath is appended to either the HTTP URL or to "something else". In the l
 
 #### When :url Specifies HTTP Protocol
 
-In the HTTP case, the subpath is appended to `$HOME/.jokerd/deps/<url>`, where `<url>` is the portion of the `:url` value following the `//` (and `$HOME` is the value of the `HOME` environment variable at the time of lookup). This pathname will be used for the locally cached version of the HTTP file.
+In the HTTP case, the subpath is appended to `$HOME/.laced/deps/<url>`, where `<url>` is the portion of the `:url` value following the `//` (and `$HOME` is the value of the `HOME` environment variable at the time of lookup). This pathname will be used for the locally cached version of the HTTP file.
 
-For example, given a namespace of `a.b.c` and a `:url` of `https://example.com/joker/libs`, this becomes the pathname of the root source file of the namespace:
+For example, given a namespace of `a.b.c` and a `:url` of `https://example.com/lace/libs`, this becomes the pathname of the root source file of the namespace:
 
 ```
-$HOME/.jokerd/deps/example.com/joker/libs/a/b/c.joke
+$HOME/.laced/deps/example.com/lace/libs/a/b/c.joke
 ```
 
 (If necessary, the containing directory is created.)
@@ -101,10 +101,10 @@ If that file does not exist, Joker uses `net/http.Get()` to retrieve the target 
 In the above example, that means this URL is retrieved:
 
 ```
-https://example.com/joker/libs/a/b/c.joke
+https://example.com/lace/libs/a/b/c.joke
 ```
 
-Once retrieved, the contents are written to the (missing) file at the path shown above (in `$HOME/.jokerd`), so subsequent loads will use that cached file rather than repeatedly retrieving the contents via HTTP.
+Once retrieved, the contents are written to the (missing) file at the path shown above (in `$HOME/.laced`), so subsequent loads will use that cached file rather than repeatedly retrieving the contents via HTTP.
 
 Regardless of whether the locally cached file initially exists, it is neither *read* nor *evaluated* in the Joker sense. That is, it is not parsed nor validated in any way; its contents are simply copied over, without analysis. Joker-style reading and evaluation is deferred until after `*classpath*` is consulted to determine whether the (cached) file is to be used at all.
 
@@ -138,9 +138,9 @@ TBD.
 
 `(doc ns-sources)`
 
-`(doc joker.core/*ns-sources*)`
+`(doc lace.core/*ns-sources*)`
 
-`(doc joker.core/*classpath*)`
+`(doc lace.core/*classpath*)`
 
 [Library Loader Behavior](https://github.com/lab47/lace/blob/master/docs/misc/lib-loader.md)
 

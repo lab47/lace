@@ -15,69 +15,69 @@ type FileInfo struct {
 /*
 	The entries must be ordered such that a given namespace depends
 
-/* only upon namespaces loaded above it. E.g. joker.template depends
-/* on joker.walk, so is listed afterwards, not in alphabetical
+/* only upon namespaces loaded above it. E.g. lace.template depends
+/* on lace.walk, so is listed afterwards, not in alphabetical
 /* order.
 */
 var CoreSourceFiles []FileInfo = []FileInfo{
 	{
-		Name:     "<joker.core>",
+		Name:     "<lace.core>",
 		Filename: "core.joke",
 	},
 	{
-		Name:     "<joker.repl>",
+		Name:     "<lace.repl>",
 		Filename: "repl.joke",
 	},
 	{
-		Name:     "<joker.walk>",
+		Name:     "<lace.walk>",
 		Filename: "walk.joke",
 	},
 	{
-		Name:     "<joker.template>",
+		Name:     "<lace.template>",
 		Filename: "template.joke",
 	},
 	{
-		Name:     "<joker.test>",
+		Name:     "<lace.test>",
 		Filename: "test.joke",
 	},
 	{
-		Name:     "<joker.set>",
+		Name:     "<lace.set>",
 		Filename: "set.joke",
 	},
 	{
-		Name:     "<joker.tools.cli>",
+		Name:     "<lace.tools.cli>",
 		Filename: "tools_cli.joke",
 	},
 	{
-		Name:     "<joker.core>",
+		Name:     "<lace.core>",
 		Filename: "linter_all.joke",
 	},
 	{
-		Name:     "<joker.core>",
-		Filename: "linter_joker.joke",
+		Name:     "<lace.core>",
+		Filename: "linter_lace.joke",
 	},
 	{
-		Name:     "<joker.core>",
+		Name:     "<lace.core>",
 		Filename: "linter_cljx.joke",
 	},
 	{
-		Name:     "<joker.core>",
+		Name:     "<lace.core>",
 		Filename: "linter_clj.joke",
 	},
 	{
-		Name:     "<joker.core>",
+		Name:     "<lace.core>",
 		Filename: "linter_cljs.joke",
 	},
 	{
-		Name:     "<joker.hiccup>",
+		Name:     "<lace.hiccup>",
 		Filename: "hiccup.joke",
 	},
 	{
-		Name:     "<joker.pprint>",
+		Name:     "<lace.pprint>",
 		Filename: "pprint.joke",
 	},
 	{
-		Name:     "<joker.better-cond>",
+		Name:     "<lace.better-cond>",
 		Filename: "better_cond.joke",
 	},
 }

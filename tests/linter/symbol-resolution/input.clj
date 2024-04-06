@@ -46,11 +46,11 @@ uuu
 (defmethod u6 1 [] nil)
 #'g
 #'ns/gg
-(joker.string/split "1" #"2")
-(joker.os/env)
-(joker.time/sleep 10)
-(joker.json/read-string "")
-(joker.base64/decode-string "")
+(lace.string/split "1" #"2")
+(lace.os/env)
+(lace.time/sleep 10)
+(lace.json/read-string "")
+(lace.base64/decode-string "")
 (pprint 1)
 (pr-err 1)
 (prn-err 1)

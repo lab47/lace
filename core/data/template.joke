@@ -25,8 +25,8 @@
 (ns ^{:doc "Macros that expand to repeated copies of a template expression."
        :author "Stuart Sierra"
        :added "1.0"}
-  joker.template
-  (:require [joker.walk :as walk]))
+  lace.template
+  (:require [lace.walk :as walk]))
 
 (defn apply-template
   "For use in macros.  argv is an argument list, as in defn.  expr is

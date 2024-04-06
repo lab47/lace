@@ -1,4 +1,4 @@
-(ns joker.pprint
+(ns lace.pprint
   "Pretty printing utilities. Based on Clojure implementation."
   {:added "1.0"})
 

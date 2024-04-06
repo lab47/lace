@@ -1,8 +1,8 @@
-(doseq [ns (remove #(= % 'user) joker.core/*core-namespaces*)] (require ns))
+(doseq [ns (remove #(= % 'user) lace.core/*core-namespaces*)] (require ns))
 
-(alias 'cli 'joker.tools.cli)
-(alias 'os 'joker.os)
-(alias 's 'joker.string)
+(alias 'cli 'lace.tools.cli)
+(alias 'os 'lace.os)
+(alias 's 'lace.string)
 
 (def rpl s/replace)
 
@@ -74,7 +74,7 @@
         (s/replace "{name}" (str k))
         (s/replace "{type}" (type-name v))
         (s/replace "{usage}" (usage k m))
-        (s/replace "{docstring}" (s/replace (joker.html/escape (or (:doc m) "<<<MISSING DOCUMENTATION>>>")) "\n" "<br>\n"))
+        (s/replace "{docstring}" (s/replace (lace.html/escape (or (:doc m) "<<<MISSING DOCUMENTATION>>>")) "\n" "<br>\n"))
         (s/replace "{added}" (str (:added m)))
         (s/replace
          "{source}"
@@ -96,7 +96,7 @@
     (-> special-form-template
         (s/replace "{id}" name)
         (s/replace "{name}" name)
-        (s/replace "{docstring}" (s/replace (joker.html/escape (:doc meta)) "\n" "<br>\n"))
+        (s/replace "{docstring}" (s/replace (lace.html/escape (:doc meta)) "\n" "<br>\n"))
         (s/replace "{usage}" usage))))
 
 (defn namespace-doc
@@ -111,12 +111,12 @@
     (-> namespace-template
         (s/replace "{id}" k)
         (s/replace "{name}" k)
-        (s/replace "{docstring}" (s/replace (joker.html/escape (first-line (:doc m))) "\n" "<br>\n"))
+        (s/replace "{docstring}" (s/replace (lace.html/escape (first-line (:doc m))) "\n" "<br>\n"))
         (s/replace "{added}" (str (:added m))))))
 
 (defn type-doc
   [k]
-  (let [m (meta (get (joker.core/types__) k))]
+  (let [m (meta (get (lace.core/types__) k))]
     (when-not (:added m)
       (println "WARNING: type without added meta key: " k))
     (when-not (:doc m)
@@ -124,7 +124,7 @@
     (-> type-template
         (s/replace "{id}" k)
         (s/replace "{name}" k)
-        (s/replace "{docstring}" (s/replace (joker.html/escape (:doc m)) "\n" "<br>\n"))
+        (s/replace "{docstring}" (s/replace (lace.html/escape (:doc m)) "\n" "<br>\n"))
         (s/replace "{added}" (str (:added m))))))
 
 (defn ns-doc
@@ -142,7 +142,7 @@
     (-> ns-template
         (s/replace "{name}" (name ns-sym))
         (s/replace "{added}" (str (:added m)))
-        (s/replace "{docstring}" (s/replace (joker.html/escape (:doc m)) "\n" "<br>\n"))
+        (s/replace "{docstring}" (s/replace (lace.html/escape (:doc m)) "\n" "<br>\n"))
         (s/replace "{vars}" vars-doc)
         (s/replace "{index}" var-links-doc))))
 
@@ -187,10 +187,10 @@
                         (map ns-name)
                         (remove #(= 'user %))
                         (sort))
-        types (->> (joker.core/types__)
+        types (->> (lace.core/types__)
                    (map key)
                    (sort))
-        special-forms joker.repl/special-doc-map]
+        special-forms lace.repl/special-doc-map]
     (spit "index.html" (index-doc special-forms namespaces types))
     (doseq [ns namespaces]
       (spit (str ns ".html") (ns-doc ns ns-vars-fn)))))

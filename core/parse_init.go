@@ -43,7 +43,7 @@ var (
 		dynamic:            MakeKeyword("dynamic"),
 	}
 	SYMBOLS = Symbols{
-		joker_core:         MakeSymbol("joker.core"),
+		lace_core:          MakeSymbol("lace.core"),
 		underscore:         MakeSymbol("_"),
 		catch:              MakeSymbol("catch"),
 		finally:            MakeSymbol("finally"),
@@ -92,7 +92,7 @@ var (
 		do:           STRINGS.Intern("do"),
 		throw:        STRINGS.Intern("throw"),
 		try:          STRINGS.Intern("try"),
-		coreFilename: STRINGS.Intern("<joker.core>"),
+		coreFilename: STRINGS.Intern("<lace.core>"),
 	}
 	SPECIAL_SYMBOLS = make(map[*string]bool)
 )

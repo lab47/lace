@@ -13,12 +13,12 @@ Called by parse_init.go in an outer var block, this runs before any
 func NewEnv() *Env {
 	features := EmptySet()
 	features.Add(MakeKeyword("default"))
-	features.Add(MakeKeyword("joker"))
+	features.Add(MakeKeyword("lace"))
 	res := &Env{
 		Namespaces: make(map[*string]*Namespace),
 		Features:   features,
 	}
-	res.CoreNamespace = res.EnsureNamespace(SYMBOLS.joker_core)
+	res.CoreNamespace = res.EnsureNamespace(SYMBOLS.lace_core)
 	res.CoreNamespace.core = true
 	res.CoreNamespace.meta = MakeMeta(nil, "Core library of Joker.", "1.0")
 	res.NS_VAR = res.CoreNamespace.Intern(MakeSymbol("ns"))
@@ -29,7 +29,7 @@ func NewEnv() *Env {
 	res.stderr = res.CoreNamespace.Intern(MakeSymbol("*err*"))
 	res.file = res.CoreNamespace.Intern(MakeSymbol("*file*"))
 	res.MainFile = res.CoreNamespace.Intern(MakeSymbol("*main-file*"))
-	res.version = res.CoreNamespace.InternVar("*joker-version*", versionMap(),
+	res.version = res.CoreNamespace.InternVar("*lace-version*", versionMap(),
 		MakeMeta(nil, `The version info for Clojure core, as a map containing :major :minor
 			:incremental and :qualifier keys. Feature releases may increment
 			:minor and/or :major, bugfix releases will increment :incremental.`, "1.0"))

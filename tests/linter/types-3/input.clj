@@ -212,7 +212,7 @@
 (inc (distinct? 1))
 (inc (format ""))
 (inc (printf ""))
-(inc (in-ns 'joker.core))
+(inc (in-ns 'lace.core))
 (inc (require 'g))
 (inc (requiring-resolve 'f))
 (inc (use 'g))

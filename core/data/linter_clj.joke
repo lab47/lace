@@ -349,7 +349,7 @@
     'clojure.core.async/alt!! nil
     'clojure.core.async/alts! nil
     'clojure.core.async/alts!! nil}
-   (:known-macros joker.core/*linter-config*)))
+   (:known-macros lace.core/*linter-config*)))
 
 ;; Clojure core vars not supported by Joker
 
@@ -377,5 +377,5 @@
 (def char-name-string)
 
 (in-ns 'user)
-(joker.core/refer 'joker.core)
+(lace.core/refer 'lace.core)
 
