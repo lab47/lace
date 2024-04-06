@@ -3,7 +3,7 @@ package base64
 import (
 	"encoding/base64"
 
-	. "github.com/candid82/joker/core"
+	. "github.com/lab47/lace/core"
 )
 
 func decodeString(s string) (string, error) {

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	. "github.com/candid82/joker/core"
+	. "github.com/lab47/lace/core"
 )
 
 func repl(phase Phase) {

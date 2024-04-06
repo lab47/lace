@@ -7,7 +7,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	. "github.com/candid82/joker/core"
+	. "github.com/lab47/lace/core"
 )
 
 var newLine *regexp.Regexp

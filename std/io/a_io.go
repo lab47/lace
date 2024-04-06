@@ -3,10 +3,10 @@
 package io
 
 import (
-	. "github.com/candid82/joker/core"
 	"io"
-)
 
+	. "github.com/lab47/lace/core"
+)
 
 var __close__P ProcFn = __close_
 var close_ Proc = Proc{Fn: __close__P, Name: "close_", Package: "std/io"}
@@ -16,14 +16,16 @@ func __close_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		f, err := ExtractObject(_env, _args, 0); if err != nil { return nil, err }
+		f, err := ExtractObject(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := close(f)
 		return _res, err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __copy__P ProcFn = __copy_
@@ -34,16 +36,21 @@ func __copy_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 2:
 		var err error
-		dst, err := ExtractIOWriter(_env, _args, 0); if err != nil { return nil, err }
-		src, err := ExtractIOReader(_env, _args, 1); if err != nil { return nil, err }
-		 n, err := io.Copy(dst, src)
+		dst, err := ExtractIOWriter(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
+		src, err := ExtractIOReader(_env, _args, 1)
+		if err != nil {
+			return nil, err
+		}
+		n, err := io.Copy(dst, src)
 		_res := int(n)
 		return MakeInt(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __pipe__P ProcFn = __pipe_
@@ -60,7 +67,6 @@ func __pipe_(_env *Env, _args []Object) (Object, error) {
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 func Init() {

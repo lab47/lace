@@ -22,7 +22,7 @@ If you use [Nix](https://nixos.org/nix/), then you can install Joker with
 nix-env -i joker
 ```
 
-On other platforms (or if you prefer manual installation), download a [precompiled binary](https://github.com/candid82/joker/releases) for your platform and put it on your PATH.
+On other platforms (or if you prefer manual installation), download a [precompiled binary](https://github.com/lab47/lace/releases) for your platform and put it on your PATH.
 
 You can also [build](#building) Joker from the source code.
 
@@ -48,9 +48,9 @@ in which case drops into the REPL after the expression is (successfully) execute
 
 [Joker slack channel](https://clojurians.slack.com/messages/C9VURUUNL/)
 
-[Organizing Libraries (Namespaces)](https://github.com/candid82/joker/blob/master/LIBRARIES.md)
+[Organizing Libraries (Namespaces)](https://github.com/lab47/lace/blob/master/LIBRARIES.md)
 
-[Developer notes](https://github.com/candid82/joker/blob/master/DEVELOPER.md)
+[Developer notes](https://github.com/lab47/lace/blob/master/DEVELOPER.md)
 
 ## Project goals
 
@@ -64,7 +64,7 @@ These are high level goals of the project that guide design and implementation d
 joker --hashmap-threshold -1 -e "(pprint (read))"
 ```
 
- There is [Sublime Text plugin](https://github.com/candid82/sublime-pretty-edn) that uses Joker for pretty printing EDN files. [Here](https://github.com/candid82/joker/releases/tag/v0.8.8) you can find the description of `--hashmap-threshold` parameter, if curious. Tooling is one of the primary Joker use cases for me, so I intend to improve and expand it.
+ There is [Sublime Text plugin](https://github.com/candid82/sublime-pretty-edn) that uses Joker for pretty printing EDN files. [Here](https://github.com/lab47/lace/releases/tag/v0.8.8) you can find the description of `--hashmap-threshold` parameter, if curious. Tooling is one of the primary Joker use cases for me, so I intend to improve and expand it.
 - Be as close (syntactically and semantically) to Clojure as possible. Joker should truly be a dialect of Clojure, not a language inspired by Clojure. That said, there is a lot of Clojure features that Joker doesn't and will never have. Being close to Clojure only applies to features that Joker does have.
 
 ## Project Non-goals
@@ -197,7 +197,7 @@ If you use `:refer :all` Joker won't be able to properly resolve symbols because
 
    *  :warning: Joker can be made aware of any additional declarations (like `deftest` and `is`) by providing them in `.jokerd/linter.clj[s|c]` files. However, this means Joker cannot check that the symbols really are declared in your namespace, so this feature should be used sparingly.
    * If you really want some symbols to be considered declared *in any namespace no matter what*, you can add `(in-ns 'joker.core)` to your `linter.clj[s|c]` and then declare those symbols.
-    (see issues [52](https://github.com/candid82/joker/issues/52) and [50](https://github.com/candid82/joker/issues/50) for discussion).
+    (see issues [52](https://github.com/lab47/lace/issues/52) and [50](https://github.com/lab47/lace/issues/50) for discussion).
 
 I generally prefer first option for `clojure.test` namespace.
 
@@ -254,8 +254,8 @@ Joker requires Go v1.12 or later.
 Below commands should get you up and running.
 
 ```
-go get -d github.com/candid82/joker
-cd $GOPATH/src/github.com/candid82/joker
+go get -d github.com/lab47/lace
+cd $GOPATH/src/github.com/lab47/lace
 ./run.sh --version && go install
 ```
 
@@ -276,7 +276,7 @@ $ GOOS=linux GOARCH=arm GOARM=6 go build
 
 ## Developer Notes
 
-See [`DEVELOPER.md`](https://github.com/candid82/joker/blob/master/DEVELOPER.md) for information on Joker internals, such as adding new namespaces to the Joker executable.
+See [`DEVELOPER.md`](https://github.com/lab47/lace/blob/master/DEVELOPER.md) for information on Joker internals, such as adding new namespaces to the Joker executable.
 
 ## Contributors
 

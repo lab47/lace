@@ -3,7 +3,7 @@ package io
 import (
 	"io"
 
-	. "github.com/candid82/joker/core"
+	. "github.com/lab47/lace/core"
 )
 
 func pipe() (Object, error) {

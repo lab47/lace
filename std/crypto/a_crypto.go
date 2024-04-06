@@ -3,13 +3,13 @@
 package crypto
 
 import (
-	. "github.com/candid82/joker/core"
 	"crypto/md5"
 	"crypto/sha1"
 	"crypto/sha256"
 	"crypto/sha512"
-)
 
+	. "github.com/lab47/lace/core"
+)
 
 var __hmac__P ProcFn = __hmac_
 var hmac_ Proc = Proc{Fn: __hmac__P, Name: "hmac_", Package: "std/crypto"}
@@ -19,16 +19,24 @@ func __hmac_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 3:
 		var err error
-		algorithm, err := ExtractKeyword(_env, _args, 0); if err != nil { return nil, err }
-		message, err := ExtractString(_env, _args, 1); if err != nil { return nil, err }
-		key, err := ExtractString(_env, _args, 2); if err != nil { return nil, err }
+		algorithm, err := ExtractKeyword(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
+		message, err := ExtractString(_env, _args, 1)
+		if err != nil {
+			return nil, err
+		}
+		key, err := ExtractString(_env, _args, 2)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := hmacSum(algorithm, message, key)
 		return MakeString(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __md5__P ProcFn = __md5_
@@ -39,15 +47,17 @@ func __md5_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		data, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
-		 t := md5.Sum([]byte(data))
+		data, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
+		t := md5.Sum([]byte(data))
 		_res := string(t[:])
 		return MakeString(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __sha1__P ProcFn = __sha1_
@@ -58,15 +68,17 @@ func __sha1_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		data, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
-		 t := sha1.Sum([]byte(data))
+		data, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
+		t := sha1.Sum([]byte(data))
 		_res := string(t[:])
 		return MakeString(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __sha224__P ProcFn = __sha224_
@@ -77,15 +89,17 @@ func __sha224_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		data, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
-		 t := sha256.Sum224([]byte(data))
+		data, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
+		t := sha256.Sum224([]byte(data))
 		_res := string(t[:])
 		return MakeString(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __sha256__P ProcFn = __sha256_
@@ -96,15 +110,17 @@ func __sha256_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		data, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
-		 t := sha256.Sum256([]byte(data))
+		data, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
+		t := sha256.Sum256([]byte(data))
 		_res := string(t[:])
 		return MakeString(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __sha384__P ProcFn = __sha384_
@@ -115,15 +131,17 @@ func __sha384_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		data, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
-		 t := sha512.Sum384([]byte(data))
+		data, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
+		t := sha512.Sum384([]byte(data))
 		_res := string(t[:])
 		return MakeString(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __sha512__P ProcFn = __sha512_
@@ -134,15 +152,17 @@ func __sha512_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		data, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
-		 t := sha512.Sum512([]byte(data))
+		data, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
+		t := sha512.Sum512([]byte(data))
 		_res := string(t[:])
 		return MakeString(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __sha512_224__P ProcFn = __sha512_224_
@@ -153,15 +173,17 @@ func __sha512_224_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		data, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
-		 t := sha512.Sum512_224([]byte(data))
+		data, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
+		t := sha512.Sum512_224([]byte(data))
 		_res := string(t[:])
 		return MakeString(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __sha512_256__P ProcFn = __sha512_256_
@@ -172,15 +194,17 @@ func __sha512_256_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		data, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
-		 t := sha512.Sum512_256([]byte(data))
+		data, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
+		t := sha512.Sum512_256([]byte(data))
 		_res := string(t[:])
 		return MakeString(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 func Init() {

@@ -8,7 +8,7 @@ import (
 	"encoding/hex"
 	"io"
 
-	. "github.com/candid82/joker/core"
+	. "github.com/lab47/lace/core"
 )
 
 type UUID [16]byte

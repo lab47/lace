@@ -3,8 +3,9 @@
 package filepath
 
 import (
-	. "github.com/candid82/joker/core"
 	"path/filepath"
+
+	. "github.com/lab47/lace/core"
 )
 
 var list_separator_ String
@@ -17,14 +18,16 @@ func __abs_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		path, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		path, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := filepath.Abs(path)
 		return MakeString(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __isabs__P ProcFn = __isabs_
@@ -35,14 +38,16 @@ func __isabs_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		path, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		path, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := filepath.IsAbs(path), nil
 		return MakeBoolean(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __base__P ProcFn = __base_
@@ -53,14 +58,16 @@ func __base_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		path, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		path, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := filepath.Base(path), nil
 		return MakeString(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __clean__P ProcFn = __clean_
@@ -71,14 +78,16 @@ func __clean_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		path, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		path, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := filepath.Clean(path), nil
 		return MakeString(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __dir__P ProcFn = __dir_
@@ -89,14 +98,16 @@ func __dir_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		path, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		path, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := filepath.Dir(path), nil
 		return MakeString(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __eval_symlinks__P ProcFn = __eval_symlinks_
@@ -107,14 +118,16 @@ func __eval_symlinks_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		path, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		path, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := filepath.EvalSymlinks(path)
 		return MakeString(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __ext__P ProcFn = __ext_
@@ -125,14 +138,16 @@ func __ext_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		path, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		path, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := filepath.Ext(path), nil
 		return MakeString(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __file_seq__P ProcFn = __file_seq_
@@ -143,14 +158,16 @@ func __file_seq_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		root, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		root, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := fileSeq(root)
 		return _res, err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __from_slash__P ProcFn = __from_slash_
@@ -161,14 +178,16 @@ func __from_slash_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		path, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		path, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := filepath.FromSlash(path), nil
 		return MakeString(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __glob__P ProcFn = __glob_
@@ -179,14 +198,16 @@ func __glob_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		pattern, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		pattern, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := filepath.Glob(pattern)
 		return MakeStringVector(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __join__P ProcFn = __join_
@@ -197,15 +218,19 @@ func __join_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case true:
 		var err error
-		if err := CheckArity(_env, _args, 0, 999); err != nil { return nil, err }
-		elems, err := ExtractStrings(_env, _args, 0); if err != nil { return nil, err }
+		if err := CheckArity(_env, _args, 0, 999); err != nil {
+			return nil, err
+		}
+		elems, err := ExtractStrings(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := filepath.Join(elems...), nil
 		return MakeString(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __ismatches__P ProcFn = __ismatches_
@@ -216,15 +241,20 @@ func __ismatches_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 2:
 		var err error
-		pattern, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
-		name, err := ExtractString(_env, _args, 1); if err != nil { return nil, err }
+		pattern, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
+		name, err := ExtractString(_env, _args, 1)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := filepath.Match(pattern, name)
 		return MakeBoolean(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __rel__P ProcFn = __rel_
@@ -235,15 +265,20 @@ func __rel_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 2:
 		var err error
-		basepath, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
-		targpath, err := ExtractString(_env, _args, 1); if err != nil { return nil, err }
+		basepath, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
+		targpath, err := ExtractString(_env, _args, 1)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := filepath.Rel(basepath, targpath)
 		return MakeString(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __split__P ProcFn = __split_
@@ -254,15 +289,17 @@ func __split_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		path, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
-		 _dir, _file := filepath.Split(path)
+		path, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
+		_dir, _file := filepath.Split(path)
 		_res := NewVectorFrom(MakeString(_dir), MakeString(_file))
 		return _res, err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __split_list__P ProcFn = __split_list_
@@ -273,14 +310,16 @@ func __split_list_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		path, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		path, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := filepath.SplitList(path), nil
 		return MakeStringVector(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __to_slash__P ProcFn = __to_slash_
@@ -291,14 +330,16 @@ func __to_slash_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		path, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		path, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := filepath.ToSlash(path), nil
 		return MakeString(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __volume_name__P ProcFn = __volume_name_
@@ -309,14 +350,16 @@ func __volume_name_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		path, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		path, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := filepath.VolumeName(path), nil
 		return MakeString(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 func Init() {

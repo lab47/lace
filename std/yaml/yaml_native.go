@@ -5,7 +5,7 @@ import (
 
 	"gopkg.in/yaml.v2"
 
-	. "github.com/candid82/joker/core"
+	. "github.com/lab47/lace/core"
 )
 
 func fromObject(obj Object) interface{} {

@@ -3,10 +3,10 @@
 package url
 
 import (
-	. "github.com/candid82/joker/core"
 	"net/url"
-)
 
+	. "github.com/lab47/lace/core"
+)
 
 var __path_escape__P ProcFn = __path_escape_
 var path_escape_ Proc = Proc{Fn: __path_escape__P, Name: "path_escape_", Package: "std/url"}
@@ -16,14 +16,16 @@ func __path_escape_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		s, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := url.PathEscape(s), nil
 		return MakeString(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __path_unescape__P ProcFn = __path_unescape_
@@ -34,14 +36,16 @@ func __path_unescape_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		s, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := pathUnescape(s)
 		return MakeString(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __query_escape__P ProcFn = __query_escape_
@@ -52,14 +56,16 @@ func __query_escape_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		s, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := url.QueryEscape(s), nil
 		return MakeString(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __query_unescape__P ProcFn = __query_unescape_
@@ -70,14 +76,16 @@ func __query_unescape_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		s, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := queryUnescape(s)
 		return MakeString(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 func Init() {

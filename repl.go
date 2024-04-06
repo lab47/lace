@@ -9,8 +9,8 @@ import (
 	"io"
 	"strings"
 
-	"github.com/candid82/joker/core"
 	"github.com/chzyer/readline"
+	"github.com/lab47/lace/core"
 )
 
 func repl(env *core.Env, phase core.Phase) {

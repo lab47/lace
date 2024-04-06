@@ -3,8 +3,8 @@ package gen_common
 // Imports of std libraries required by core libraries go here, as
 // both gen_data and gen_code pull in this package.
 import (
-	_ "github.com/candid82/joker/std/html"
-	_ "github.com/candid82/joker/std/string"
+	_ "github.com/lab47/lace/std/html"
+	_ "github.com/lab47/lace/std/string"
 )
 
 type FileInfo struct {
@@ -12,10 +12,13 @@ type FileInfo struct {
 	Filename string
 }
 
-/* The entries must be ordered such that a given namespace depends
+/*
+	The entries must be ordered such that a given namespace depends
+
 /* only upon namespaces loaded above it. E.g. joker.template depends
 /* on joker.walk, so is listed afterwards, not in alphabetical
-/* order. */
+/* order.
+*/
 var CoreSourceFiles []FileInfo = []FileInfo{
 	{
 		Name:     "<joker.core>",

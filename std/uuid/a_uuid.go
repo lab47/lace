@@ -3,9 +3,8 @@
 package uuid
 
 import (
-	. "github.com/candid82/joker/core"
+	. "github.com/lab47/lace/core"
 )
-
 
 var __new__P ProcFn = __new_
 var new_ Proc = Proc{Fn: __new__P, Name: "new_", Package: "std/uuid"}
@@ -21,7 +20,6 @@ func __new_(_env *Env, _args []Object) (Object, error) {
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 func Init() {

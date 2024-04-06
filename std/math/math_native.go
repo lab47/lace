@@ -3,7 +3,7 @@ package math
 import (
 	"math"
 
-	. "github.com/candid82/joker/core"
+	. "github.com/lab47/lace/core"
 )
 
 func modf(x float64) (Object, error) {

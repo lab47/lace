@@ -3,10 +3,10 @@
 package os
 
 import (
-	. "github.com/candid82/joker/core"
 	"os"
-)
 
+	. "github.com/lab47/lace/core"
+)
 
 var __args__P ProcFn = __args_
 var args_ Proc = Proc{Fn: __args__P, Name: "args_", Package: "std/os"}
@@ -22,7 +22,6 @@ func __args_(_env *Env, _args []Object) (Object, error) {
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __chdir__P ProcFn = __chdir_
@@ -33,14 +32,16 @@ func __chdir_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		dirname, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		dirname, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := chdir(dirname)
 		return _res, err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __close__P ProcFn = __close_
@@ -51,14 +52,16 @@ func __close_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		f, err := ExtractFile(_env, _args, 0); if err != nil { return nil, err }
+		f, err := ExtractFile(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := NIL, f.Close()
 		return _res, err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __create__P ProcFn = __create_
@@ -69,14 +72,16 @@ func __create_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		name, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		name, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := os.Create(name)
 		return MakeFile(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __cwd__P ProcFn = __cwd_
@@ -93,7 +98,6 @@ func __cwd_(_env *Env, _args []Object) (Object, error) {
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __env__P ProcFn = __env_
@@ -110,7 +114,6 @@ func __env_(_env *Env, _args []Object) (Object, error) {
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __exec__P ProcFn = __exec_
@@ -121,15 +124,20 @@ func __exec_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 2:
 		var err error
-		name, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
-		opts, err := ExtractMap(_env, _args, 1); if err != nil { return nil, err }
+		name, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
+		opts, err := ExtractMap(_env, _args, 1)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := execute(_env, name, opts)
 		return _res, err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __isexists__P ProcFn = __isexists_
@@ -140,14 +148,16 @@ func __isexists_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		path, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		path, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := exists(path)
 		return MakeBoolean(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __exit__P ProcFn = __exit_
@@ -158,7 +168,10 @@ func __exit_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		code, err := ExtractInt(_env, _args, 0); if err != nil { return nil, err }
+		code, err := ExtractInt(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := NIL, nil
 		ExitJoker(code)
 		return _res, err
@@ -166,7 +179,6 @@ func __exit_(_env *Env, _args []Object) (Object, error) {
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __get_env__P ProcFn = __get_env_
@@ -177,14 +189,16 @@ func __get_env_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		key, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		key, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := getEnv(key)
 		return _res, err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __ls__P ProcFn = __ls_
@@ -195,14 +209,16 @@ func __ls_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		dirname, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		dirname, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := readDir(dirname)
 		return _res, err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __mkdir__P ProcFn = __mkdir_
@@ -213,15 +229,20 @@ func __mkdir_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 2:
 		var err error
-		name, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
-		perm, err := ExtractInt(_env, _args, 1); if err != nil { return nil, err }
+		name, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
+		perm, err := ExtractInt(_env, _args, 1)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := mkdir(name, perm)
 		return _res, err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __open__P ProcFn = __open_
@@ -232,14 +253,16 @@ func __open_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		name, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		name, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := os.Open(name)
 		return MakeFile(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __remove__P ProcFn = __remove_
@@ -250,14 +273,16 @@ func __remove_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		name, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		name, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := NIL, os.Remove(name)
 		return _res, err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __remove_all__P ProcFn = __remove_all_
@@ -268,14 +293,16 @@ func __remove_all_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		path, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		path, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := NIL, os.RemoveAll(path)
 		return _res, err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __set_env__P ProcFn = __set_env_
@@ -286,15 +313,20 @@ func __set_env_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 2:
 		var err error
-		key, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
-		value, err := ExtractString(_env, _args, 1); if err != nil { return nil, err }
+		key, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
+		value, err := ExtractString(_env, _args, 1)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := setEnv(key, value)
 		return _res, err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __sh__P ProcFn = __sh_
@@ -305,16 +337,23 @@ func __sh_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case true:
 		var err error
-		if err := CheckArity(_env, _args, 1, 999); err != nil { return nil, err }
-		name, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
-		arguments, err := ExtractStrings(_env, _args, 1); if err != nil { return nil, err }
+		if err := CheckArity(_env, _args, 1, 999); err != nil {
+			return nil, err
+		}
+		name, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
+		arguments, err := ExtractStrings(_env, _args, 1)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := sh("", nil, nil, nil, name, arguments)
 		return _res, err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __sh_from__P ProcFn = __sh_from_
@@ -325,17 +364,27 @@ func __sh_from_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case true:
 		var err error
-		if err := CheckArity(_env, _args, 2, 999); err != nil { return nil, err }
-		dir, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
-		name, err := ExtractString(_env, _args, 1); if err != nil { return nil, err }
-		arguments, err := ExtractStrings(_env, _args, 2); if err != nil { return nil, err }
+		if err := CheckArity(_env, _args, 2, 999); err != nil {
+			return nil, err
+		}
+		dir, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
+		name, err := ExtractString(_env, _args, 1)
+		if err != nil {
+			return nil, err
+		}
+		arguments, err := ExtractStrings(_env, _args, 2)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := sh(dir, nil, nil, nil, name, arguments)
 		return _res, err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __stat__P ProcFn = __stat_
@@ -346,14 +395,16 @@ func __stat_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		filename, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		filename, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := stat(filename)
 		return _res, err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 func Init() {

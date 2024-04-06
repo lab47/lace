@@ -3,9 +3,8 @@
 package http
 
 import (
-	. "github.com/candid82/joker/core"
+	. "github.com/lab47/lace/core"
 )
-
 
 var __send__P ProcFn = __send_
 var send_ Proc = Proc{Fn: __send__P, Name: "send_", Package: "std/http"}
@@ -15,14 +14,16 @@ func __send_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		request, err := ExtractMap(_env, _args, 0); if err != nil { return nil, err }
+		request, err := ExtractMap(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := sendRequest(_env, request)
 		return _res, err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __start_file_server__P ProcFn = __start_file_server_
@@ -33,15 +34,20 @@ func __start_file_server_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 2:
 		var err error
-		addr, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
-		root, err := ExtractString(_env, _args, 1); if err != nil { return nil, err }
+		addr, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
+		root, err := ExtractString(_env, _args, 1)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := startFileServer(addr, root)
 		return _res, err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __start_server__P ProcFn = __start_server_
@@ -52,15 +58,20 @@ func __start_server_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 2:
 		var err error
-		addr, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
-		handler, err := ExtractCallable(_env, _args, 1); if err != nil { return nil, err }
+		addr, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
+		handler, err := ExtractCallable(_env, _args, 1)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := startServer(_env, addr, handler)
 		return _res, err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 func Init() {

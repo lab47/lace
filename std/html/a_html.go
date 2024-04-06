@@ -3,10 +3,10 @@
 package html
 
 import (
-	. "github.com/candid82/joker/core"
 	"html"
-)
 
+	. "github.com/lab47/lace/core"
+)
 
 var __escape__P ProcFn = __escape_
 var escape_ Proc = Proc{Fn: __escape__P, Name: "escape_", Package: "std/html"}
@@ -16,14 +16,16 @@ func __escape_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		s, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := html.EscapeString(s), nil
 		return MakeString(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __unescape__P ProcFn = __unescape_
@@ -34,14 +36,16 @@ func __unescape_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		s, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := html.UnescapeString(s), nil
 		return MakeString(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 func Init() {

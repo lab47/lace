@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	. "github.com/candid82/joker/core"
+	. "github.com/lab47/lace/core"
 )
 
 func env() (Object, error) {

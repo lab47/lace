@@ -3,12 +3,12 @@
 package string
 
 import (
-	. "github.com/candid82/joker/core"
 	"regexp"
 	"strings"
 	"unicode"
-)
 
+	. "github.com/lab47/lace/core"
+)
 
 var __isblank__P ProcFn = __isblank_
 var isblank_ Proc = Proc{Fn: __isblank__P, Name: "isblank_", Package: "std/string"}
@@ -18,14 +18,16 @@ func __isblank_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		s, err := ExtractObject(_env, _args, 0); if err != nil { return nil, err }
+		s, err := ExtractObject(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := isBlank(_env, s)
 		return MakeBoolean(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __capitalize__P ProcFn = __capitalize_
@@ -36,14 +38,16 @@ func __capitalize_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		s, err := ExtractStringable(_env, _args, 0); if err != nil { return nil, err }
+		s, err := ExtractStringable(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := capitalize(s)
 		return MakeString(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __isends_with__P ProcFn = __isends_with_
@@ -54,15 +58,20 @@ func __isends_with_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 2:
 		var err error
-		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
-		substr, err := ExtractStringable(_env, _args, 1); if err != nil { return nil, err }
+		s, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
+		substr, err := ExtractStringable(_env, _args, 1)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := strings.HasSuffix(s, substr), nil
 		return MakeBoolean(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __escape__P ProcFn = __escape_
@@ -73,15 +82,20 @@ func __escape_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 2:
 		var err error
-		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
-		cmap, err := ExtractCallable(_env, _args, 1); if err != nil { return nil, err }
+		s, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
+		cmap, err := ExtractCallable(_env, _args, 1)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := escape(_env, s, cmap)
 		return MakeString(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __isincludes__P ProcFn = __isincludes_
@@ -92,15 +106,20 @@ func __isincludes_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 2:
 		var err error
-		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
-		substr, err := ExtractStringable(_env, _args, 1); if err != nil { return nil, err }
+		s, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
+		substr, err := ExtractStringable(_env, _args, 1)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := strings.Contains(s, substr), nil
 		return MakeBoolean(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __index_of__P ProcFn = __index_of_
@@ -111,23 +130,37 @@ func __index_of_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 2:
 		var err error
-		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
-		value, err := ExtractObject(_env, _args, 1); if err != nil { return nil, err }
+		s, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
+		value, err := ExtractObject(_env, _args, 1)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := indexOf(s, value, 0)
 		return _res, err
 
 	case _c == 3:
 		var err error
-		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
-		value, err := ExtractObject(_env, _args, 1); if err != nil { return nil, err }
-		from, err := ExtractInt(_env, _args, 2); if err != nil { return nil, err }
+		s, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
+		value, err := ExtractObject(_env, _args, 1)
+		if err != nil {
+			return nil, err
+		}
+		from, err := ExtractInt(_env, _args, 2)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := indexOf(s, value, from)
 		return _res, err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __join__P ProcFn = __join_
@@ -138,21 +171,29 @@ func __join_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		coll, err := ExtractSeqable(_env, _args, 0); if err != nil { return nil, err }
+		coll, err := ExtractSeqable(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := join("", coll)
 		return MakeString(_res), err
 
 	case _c == 2:
 		var err error
-		separator, err := ExtractStringable(_env, _args, 0); if err != nil { return nil, err }
-		coll, err := ExtractSeqable(_env, _args, 1); if err != nil { return nil, err }
+		separator, err := ExtractStringable(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
+		coll, err := ExtractSeqable(_env, _args, 1)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := join(separator, coll)
 		return MakeString(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __last_index_of__P ProcFn = __last_index_of_
@@ -163,23 +204,37 @@ func __last_index_of_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 2:
 		var err error
-		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
-		value, err := ExtractObject(_env, _args, 1); if err != nil { return nil, err }
+		s, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
+		value, err := ExtractObject(_env, _args, 1)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := lastIndexOf(s, value, 0)
 		return _res, err
 
 	case _c == 3:
 		var err error
-		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
-		value, err := ExtractObject(_env, _args, 1); if err != nil { return nil, err }
-		from, err := ExtractInt(_env, _args, 2); if err != nil { return nil, err }
+		s, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
+		value, err := ExtractObject(_env, _args, 1)
+		if err != nil {
+			return nil, err
+		}
+		from, err := ExtractInt(_env, _args, 2)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := lastIndexOf(s, value, from)
 		return _res, err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __lower_case__P ProcFn = __lower_case_
@@ -190,14 +245,16 @@ func __lower_case_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		s, err := ExtractStringable(_env, _args, 0); if err != nil { return nil, err }
+		s, err := ExtractStringable(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := strings.ToLower(s), nil
 		return MakeString(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __pad_left__P ProcFn = __pad_left_
@@ -208,16 +265,24 @@ func __pad_left_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 3:
 		var err error
-		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
-		pad, err := ExtractStringable(_env, _args, 1); if err != nil { return nil, err }
-		n, err := ExtractInt(_env, _args, 2); if err != nil { return nil, err }
+		s, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
+		pad, err := ExtractStringable(_env, _args, 1)
+		if err != nil {
+			return nil, err
+		}
+		n, err := ExtractInt(_env, _args, 2)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := padLeft(s, pad, n)
 		return MakeString(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __pad_right__P ProcFn = __pad_right_
@@ -228,16 +293,24 @@ func __pad_right_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 3:
 		var err error
-		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
-		pad, err := ExtractStringable(_env, _args, 1); if err != nil { return nil, err }
-		n, err := ExtractInt(_env, _args, 2); if err != nil { return nil, err }
+		s, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
+		pad, err := ExtractStringable(_env, _args, 1)
+		if err != nil {
+			return nil, err
+		}
+		n, err := ExtractInt(_env, _args, 2)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := padRight(s, pad, n)
 		return MakeString(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __re_quote__P ProcFn = __re_quote_
@@ -248,14 +321,16 @@ func __re_quote_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		s, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := regexp.Compile(regexp.QuoteMeta(s))
 		return MakeRegex(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __replace__P ProcFn = __replace_
@@ -266,16 +341,24 @@ func __replace_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 3:
 		var err error
-		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
-		match, err := ExtractObject(_env, _args, 1); if err != nil { return nil, err }
-		repl, err := ExtractStringable(_env, _args, 2); if err != nil { return nil, err }
+		s, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
+		match, err := ExtractObject(_env, _args, 1)
+		if err != nil {
+			return nil, err
+		}
+		repl, err := ExtractStringable(_env, _args, 2)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := replace(s, match, repl)
 		return MakeString(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __replace_first__P ProcFn = __replace_first_
@@ -286,16 +369,24 @@ func __replace_first_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 3:
 		var err error
-		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
-		match, err := ExtractObject(_env, _args, 1); if err != nil { return nil, err }
-		repl, err := ExtractStringable(_env, _args, 2); if err != nil { return nil, err }
+		s, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
+		match, err := ExtractObject(_env, _args, 1)
+		if err != nil {
+			return nil, err
+		}
+		repl, err := ExtractStringable(_env, _args, 2)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := replaceFirst(s, match, repl)
 		return MakeString(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __reverse__P ProcFn = __reverse_
@@ -306,14 +397,16 @@ func __reverse_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		s, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := reverse(s)
 		return MakeString(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __split__P ProcFn = __split_
@@ -324,23 +417,37 @@ func __split_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 2:
 		var err error
-		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
-		sep, err := ExtractObject(_env, _args, 1); if err != nil { return nil, err }
+		s, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
+		sep, err := ExtractObject(_env, _args, 1)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := splitOnStringOrRegex(s, sep, 0)
 		return _res, err
 
 	case _c == 3:
 		var err error
-		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
-		sep, err := ExtractObject(_env, _args, 1); if err != nil { return nil, err }
-		n, err := ExtractInt(_env, _args, 2); if err != nil { return nil, err }
+		s, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
+		sep, err := ExtractObject(_env, _args, 1)
+		if err != nil {
+			return nil, err
+		}
+		n, err := ExtractInt(_env, _args, 2)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := splitOnStringOrRegex(s, sep, n)
 		return _res, err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __split_lines__P ProcFn = __split_lines_
@@ -351,14 +458,16 @@ func __split_lines_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		s, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := split(s, newLine, 0)
 		return _res, err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __isstarts_with__P ProcFn = __isstarts_with_
@@ -369,15 +478,20 @@ func __isstarts_with_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 2:
 		var err error
-		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
-		substr, err := ExtractStringable(_env, _args, 1); if err != nil { return nil, err }
+		s, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
+		substr, err := ExtractStringable(_env, _args, 1)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := strings.HasPrefix(s, substr), nil
 		return MakeBoolean(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __trim__P ProcFn = __trim_
@@ -388,14 +502,16 @@ func __trim_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		s, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := strings.TrimSpace(s), nil
 		return MakeString(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __trim_left__P ProcFn = __trim_left_
@@ -406,14 +522,16 @@ func __trim_left_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		s, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := strings.TrimLeftFunc(s, unicode.IsSpace), nil
 		return MakeString(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __trim_newline__P ProcFn = __trim_newline_
@@ -424,14 +542,16 @@ func __trim_newline_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		s, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := strings.TrimRight(s, "\n\r"), nil
 		return MakeString(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __trim_right__P ProcFn = __trim_right_
@@ -442,14 +562,16 @@ func __trim_right_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		s, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := strings.TrimRightFunc(s, unicode.IsSpace), nil
 		return MakeString(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __triml__P ProcFn = __triml_
@@ -460,14 +582,16 @@ func __triml_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		s, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := strings.TrimLeftFunc(s, unicode.IsSpace), nil
 		return MakeString(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __trimr__P ProcFn = __trimr_
@@ -478,14 +602,16 @@ func __trimr_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		s, err := ExtractString(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := strings.TrimRightFunc(s, unicode.IsSpace), nil
 		return MakeString(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 var __upper_case__P ProcFn = __upper_case_
@@ -496,14 +622,16 @@ func __upper_case_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		s, err := ExtractStringable(_env, _args, 0); if err != nil { return nil, err }
+		s, err := ExtractStringable(_env, _args, 0)
+		if err != nil {
+			return nil, err
+		}
 		_res, err := strings.ToUpper(s), nil
 		return MakeString(_res), err
 
 	default:
 		return nil, ErrorArity(_env, _c)
 	}
-	return NIL, nil
 }
 
 func Init() {
