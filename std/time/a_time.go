@@ -3,9 +3,8 @@
 package time
 
 import (
-	"time"
-
 	. "github.com/lab47/lace/core"
+	"time"
 )
 
 var ansi_c_ String

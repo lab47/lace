@@ -4,9 +4,8 @@ package base64
 
 import (
 	"fmt"
-	"os"
-
 	. "github.com/lab47/lace/core"
+	"os"
 )
 
 func InternsOrThunks() {

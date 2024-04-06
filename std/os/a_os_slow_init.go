@@ -4,9 +4,8 @@ package os
 
 import (
 	"fmt"
-	"os"
-
 	. "github.com/lab47/lace/core"
+	"os"
 )
 
 func InternsOrThunks() {

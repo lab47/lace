@@ -3,9 +3,8 @@
 package math
 
 import (
-	"math"
-
 	. "github.com/lab47/lace/core"
+	"math"
 )
 
 var e_ Double

@@ -3,9 +3,8 @@
 package os
 
 import (
-	"os"
-
 	. "github.com/lab47/lace/core"
+	"os"
 )
 
 var __args__P ProcFn = __args_

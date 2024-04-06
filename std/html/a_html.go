@@ -3,9 +3,8 @@
 package html
 
 import (
-	"html"
-
 	. "github.com/lab47/lace/core"
+	"html"
 )
 
 var __escape__P ProcFn = __escape_

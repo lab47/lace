@@ -4,7 +4,6 @@ package hex
 
 import (
 	"encoding/hex"
-
 	. "github.com/lab47/lace/core"
 )
 

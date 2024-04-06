@@ -3,9 +3,8 @@
 package io
 
 import (
-	"io"
-
 	. "github.com/lab47/lace/core"
+	"io"
 )
 
 var __close__P ProcFn = __close_

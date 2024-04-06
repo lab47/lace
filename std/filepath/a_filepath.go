@@ -3,9 +3,8 @@
 package filepath
 
 import (
-	"path/filepath"
-
 	. "github.com/lab47/lace/core"
+	"path/filepath"
 )
 
 var list_separator_ String

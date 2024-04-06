@@ -3,11 +3,10 @@
 package string
 
 import (
+	. "github.com/lab47/lace/core"
 	"regexp"
 	"strings"
 	"unicode"
-
-	. "github.com/lab47/lace/core"
 )
 
 var __isblank__P ProcFn = __isblank_

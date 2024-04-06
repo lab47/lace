@@ -3,9 +3,8 @@
 package url
 
 import (
-	"net/url"
-
 	. "github.com/lab47/lace/core"
+	"net/url"
 )
 
 var __path_escape__P ProcFn = __path_escape_

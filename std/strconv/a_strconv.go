@@ -3,9 +3,8 @@
 package strconv
 
 import (
-	"strconv"
-
 	. "github.com/lab47/lace/core"
+	"strconv"
 )
 
 var __atoi__P ProcFn = __atoi_
