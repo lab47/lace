@@ -17,7 +17,7 @@ if [ "$1" == "-v" ]; then
 fi
 
 SUM256="$(go run tools/sum256dir/main.go std)"
-OUT="$(cd std; ../lace generate-std.joke 2>&1 | grep -v 'WARNING:.*already refers' | grep '.')" || : # grep returns non-zero if no lines match
+OUT="$(cd std; ../lace generate-std.clj 2>&1 | grep -v 'WARNING:.*already refers' | grep '.')" || : # grep returns non-zero if no lines match
 if [ -n "$OUT" ]; then
     echo "$OUT"
     echo >&2 "Unable to generate fresh library files; exiting."

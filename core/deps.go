@@ -13,7 +13,7 @@ import (
 func externalHttpSourceToPath(env *Env, lib string, url string) (string, error) {
 	home, _ := os.LookupEnv("HOME")
 	localBase := filepath.Join(home, ".laced", "deps", strings.SplitN(url, "//", 2)[1])
-	libBase := filepath.Join(strings.Split(lib, ".")...) + ".joke"
+	libBase := filepath.Join(strings.Split(lib, ".")...) + ".clj"
 	libPath := filepath.Join(localBase, libBase)
 	libPathDir := filepath.Dir(libPath)
 
@@ -22,7 +22,7 @@ func externalHttpSourceToPath(env *Env, lib string, url string) (string, error) 
 	}
 
 	if _, err := os.Stat(libPath); os.IsNotExist(err) {
-		if !strings.HasSuffix(url, ".joke") {
+		if !strings.HasSuffix(url, ".clj") {
 			url = url + libBase
 		}
 		resp, err := http.Get(url)
@@ -55,6 +55,6 @@ func externalSourceToPath(env *Env, lib string, url string) (string, error) {
 	if httpPath {
 		return externalHttpSourceToPath(env, lib, url)
 	} else {
-		return filepath.Join(append([]string{url}, strings.Split(lib, ".")...)...) + ".joke", nil
+		return filepath.Join(append([]string{url}, strings.Split(lib, ".")...)...) + ".clj", nil
 	}
 }

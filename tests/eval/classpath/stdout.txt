@@ -1,6 +1,6 @@
-this is a/b/c.joke
-this is g/h/i.joke
-this is d/e/f.joke
-this is b/c.joke
-this is x/y/z.joke
-this is x/y/q/r/s.joke
+this is a/b/c.clj
+this is g/h/i.clj
+this is d/e/f.clj
+this is b/c.clj
+this is x/y/z.clj
+this is x/y/q/r/s.clj

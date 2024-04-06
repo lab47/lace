@@ -1,1 +1,1 @@
-(try (load-file "parse-error.joke") (catch Error e (println "Caught parse error")))
+(try (load-file "parse-error.clj") (catch Error e (println "Caught parse error")))

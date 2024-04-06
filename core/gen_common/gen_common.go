@@ -22,62 +22,62 @@ type FileInfo struct {
 var CoreSourceFiles []FileInfo = []FileInfo{
 	{
 		Name:     "<lace.core>",
-		Filename: "core.joke",
+		Filename: "core.clj",
 	},
 	{
 		Name:     "<lace.repl>",
-		Filename: "repl.joke",
+		Filename: "repl.clj",
 	},
 	{
 		Name:     "<lace.walk>",
-		Filename: "walk.joke",
+		Filename: "walk.clj",
 	},
 	{
 		Name:     "<lace.template>",
-		Filename: "template.joke",
+		Filename: "template.clj",
 	},
 	{
 		Name:     "<lace.test>",
-		Filename: "test.joke",
+		Filename: "test.clj",
 	},
 	{
 		Name:     "<lace.set>",
-		Filename: "set.joke",
+		Filename: "set.clj",
 	},
 	{
 		Name:     "<lace.tools.cli>",
-		Filename: "tools_cli.joke",
+		Filename: "tools_cli.clj",
 	},
 	{
 		Name:     "<lace.core>",
-		Filename: "linter_all.joke",
+		Filename: "linter_all.clj",
 	},
 	{
 		Name:     "<lace.core>",
-		Filename: "linter_lace.joke",
+		Filename: "linter_lace.clj",
 	},
 	{
 		Name:     "<lace.core>",
-		Filename: "linter_cljx.joke",
+		Filename: "linter_cljx.clj",
 	},
 	{
 		Name:     "<lace.core>",
-		Filename: "linter_clj.joke",
+		Filename: "linter_clj.clj",
 	},
 	{
 		Name:     "<lace.core>",
-		Filename: "linter_cljs.joke",
+		Filename: "linter_cljs.clj",
 	},
 	{
 		Name:     "<lace.hiccup>",
-		Filename: "hiccup.joke",
+		Filename: "hiccup.clj",
 	},
 	{
 		Name:     "<lace.pprint>",
-		Filename: "pprint.joke",
+		Filename: "pprint.clj",
 	},
 	{
 		Name:     "<lace.better-cond>",
-		Filename: "better_cond.joke",
+		Filename: "better_cond.clj",
 	},
 }

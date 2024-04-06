@@ -41,10 +41,10 @@
   "tests/flags/input-warning.clj:1:7: Parse warning: unused binding: a")
 
 (testing :err "specify lace dialect"
-  "--lintlace tests/flags/input.joke"
+  "--lintlace tests/flags/input.clj"
   ""
 
-  "--lint --dialect lace tests/flags/input.joke"
+  "--lint --dialect lace tests/flags/input.clj"
   ""
 
   "--lintlace tests/flags/input.clj"
@@ -98,7 +98,7 @@
   "--lint --dialect lace - < tests/flags/input.cljs"
   "<stdin>:1:7: Parse error: Unable to resolve symbol: js/console"
 
-  "--lint --dialect lace - < tests/flags/input.joke"
+  "--lint --dialect lace - < tests/flags/input.clj"
   "")
 
 (testing :err "working directory override"
@@ -109,29 +109,29 @@
   "")
 
 (testing :out "script args don't cause errors"
-  "tests/flags/script-flags.joke -go-style-flag -otherflag"
+  "tests/flags/script-flags.clj -go-style-flag -otherflag"
   "[-go-style-flag -otherflag]"
 
-  "tests/flags/script-flags.joke --unix-style-flag --otherflag"
+  "tests/flags/script-flags.clj --unix-style-flag --otherflag"
   "[--unix-style-flag --otherflag]"
 
-  "tests/flags/script-flags.joke --unix-style-flag-with-value foobar"
+  "tests/flags/script-flags.clj --unix-style-flag-with-value foobar"
   "[--unix-style-flag-with-value foobar]"
 
-  "tests/flags/script-flags.joke --unix-style-flag-with-value=foobar"
+  "tests/flags/script-flags.clj --unix-style-flag-with-value=foobar"
   "[--unix-style-flag-with-value=foobar]"
 
-  "tests/flags/script-flags.joke --short-hand-flags -a -b -c"
+  "tests/flags/script-flags.clj --short-hand-flags -a -b -c"
   "[--short-hand-flags -a -b -c]"
 
-  "tests/flags/script-flags.joke --short-hand-flags -abc"
+  "tests/flags/script-flags.clj --short-hand-flags -abc"
   "[--short-hand-flags -abc]"
 
-  "tests/flags/script-flags.joke -- something that is not a flag"
+  "tests/flags/script-flags.clj -- something that is not a flag"
   "[-- something that is not a flag]")
 
 (testing :err "negative numbers parsed correctly"
-         "--hashmap-threshold -1 tests/flags/input.joke"
+         "--hashmap-threshold -1 tests/flags/input.clj"
          "")
 
 (lace.os/exit exit-code)

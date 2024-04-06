@@ -12,14 +12,14 @@
 
 (def rpl s/replace)
 
-;;; Discover namespaces dynamically by finding *.joke files.
+;;; Discover namespaces dynamically by finding *.clj files.
 (def namespaces
   (vec (->> (os/ls ".")
             (remove :dir?)
             (map :name)
-            (remove #(= "generate-std.joke" %))
-            (filter #(s/ends-with? % ".joke"))
-            (map #(rpl % #"[.]joke$" ""))
+            (remove #(= "generate-std.clj" %))
+            (filter #(s/ends-with? % ".clj"))
+            (map #(rpl % #"[.]clj$" ""))
             (map symbol))))
 
 (apply require :reload namespaces) ; :reload in case namespaces become 'lace.base64 etc.

@@ -43,7 +43,7 @@ But the namespace itself hasn't yet necessarily been initialized. Only when that
 
 When actually needed, via a `:require` clause in an `(ns ...)` specification, due to `(require ...)`, or (for an already-mapped namespace) directly as a symbol qualifier via e.g. `lace.some.namespace/somevar`, a namespace is _loaded_, meaning its internal code and data structures are fully initialized.
 
-For example, running Joker with the `--verbose` option to observe some of the pertinent transitions (and with a two-line Joker script in `a/b/c.joke` that does `(ns a.b.c)` and `(println "here i am!")`):
+For example, running Joker with the `--verbose` option to observe some of the pertinent transitions (and with a two-line Joker script in `a/b/c.clj` that does `(ns a.b.c)` and `(println "here i am!")`):
 
 ```
 $ lace --verbose
@@ -135,9 +135,9 @@ The mechanisms used to incorporate these namespaces into the Joker executable di
 
 Core namespaces, starting with `lace.core`, define the features (mostly macros and functions) that are necessary for even rudimentary Joker scripts to run.
 
-Their source code resides in the `core/data/` directory as `*.joke` files.
+Their source code resides in the `core/data/` directory as `*.clj` files.
 
-Not every such file corresponds to a single namespace; the `linter_*.joke` files modify the `lace.core` namespace, while the remaining files do correspond to namespaces, and are named by dropping the `lace.` prefix and changing all `.` characters to `_`. So, for example, the `lace.tools.cli` namespace is defined by `core/data/tools_cli.joke`.
+Not every such file corresponds to a single namespace; the `linter_*.clj` files modify the `lace.core` namespace, while the remaining files do correspond to namespaces, and are named by dropping the `lace.` prefix and changing all `.` characters to `_`. So, for example, the `lace.tools.cli` namespace is defined by `core/data/tools_cli.clj`.
 
 When Joker is built (via the `run.sh` script), `go generate ./...` is first run. Among other things, this causes the following source line (a Go comment) in `core/object.go` to be executed:
 
@@ -149,7 +149,7 @@ That builds and runs `core/gen_data/gen_data.go`, which finds, in the `CoreSourc
 
 As explained in the block comment just above the `var CoreSourceFiles []...` definition in `core/gen_common/gen_common.go`, the files must be ordered so any given file depends solely on files (namespaces) defined above it (earlier in the array).
 
-Processing a `.joke` file consists of reading the file via Joker's (Clojure-like) Reader, "packing" the results into a portable binary format, and encoding the resulting binary data as a Go source file named `core/a_*_data.go`, where `*` is the same as in `core/data/*.joke`.
+Processing a `.clj` file consists of reading the file via Joker's (Clojure-like) Reader, "packing" the results into a portable binary format, and encoding the resulting binary data as a Go source file named `core/a_*_data.go`, where `*` is the same as in `core/data/*.clj`.
 
 As this all occurs before the `go build` step performed by `run.sh`, the result is that that step includes those `core/a_*_data.go` source files. The binary data contained therein is, when needed, unpacked and the results used to construct the data structures into which Joker (Clojure) expressions are converted when read (aka the Abstract Syntax Tree, or "AST").
 
@@ -159,20 +159,20 @@ As this approach does *not* involve the normal Read phase at Joker startup time,
 
 A disadvantage of this approach is that it requires changes to `core/pack.go` when changes are made to certain aspects of the AST.
 
-The generated `core/a_*_data.go` files also cause namespaces (for files corresponding directly to libraries, i.e. not linter-related `.joke` files) to be mapped when Joker is run, and to set their lazy-initialization function (in the `.Lazy` field for the namespace) to point to a function that nulls out that `.Lazy` field and processes the binary data.
+The generated `core/a_*_data.go` files also cause namespaces (for files corresponding directly to libraries, i.e. not linter-related `.clj` files) to be mapped when Joker is run, and to set their lazy-initialization function (in the `.Lazy` field for the namespace) to point to a function that nulls out that `.Lazy` field and processes the binary data.
 
 #### Adding a Core Namespace
 
-Assuming one has determined it appropriate to add a new core namespace to the Joker executable (versus deploying it as a separate `*.joke` file), one must code it up (presumably as Joker code, though some Go code can be added to support it as well).
+Assuming one has determined it appropriate to add a new core namespace to the Joker executable (versus deploying it as a separate `*.clj` file), one must code it up (presumably as Joker code, though some Go code can be added to support it as well).
 
-Then, besides putting that source code in `core/data/*.joke`, one must:
+Then, besides putting that source code in `core/data/*.clj`, one must:
 
 * Add it to the **core/gen\_common/gen\_common.go** `CoreSourceFiles` array (after any core namespaces upon which it depends)
 
 Further, if the new namespace depends on any standard-library-wrapping namespaces:
 
 * Edit the **core/gen\_common/gen\_common.go** `import` statement to include each such library's Go code
-* Ensure that code has already been generated (that library's `std/*/a_*.go` files have already been created), perhaps by using an older version of Joker to run `generate-std.joke` from within the `std` subdirectory
+* Ensure that code has already been generated (that library's `std/*/a_*.go` files have already been created), perhaps by using an older version of Joker to run `generate-std.clj` from within the `std` subdirectory
 
 (Do not add the namespace to `*loaded-libs*`; that's for only libraries that have already been loaded. It will be automatically added to `*core-namespaces*` as an "available" library; and, upon being loaded, it will be added to `*loaded-libs*`.)
 
@@ -184,27 +184,27 @@ Note that core libraries (other than `lace.core` and, when running the Repl, `la
 
 ### Standard-library-wrapping (std) Namespaces
 
-These namespaces are also defined by Joker code, which resides in `std/*.joke` files.
+These namespaces are also defined by Joker code, which resides in `std/*.clj` files.
 
-(Note that, unlike with core namespaces, multi-level namespaces here would have pathnames reflecting multiple levels. E.g. a `lace.a.b` namespace would be defined by `std/a/b.joke`. However, such namespaces do not exist in Joker as of `v0.14.0`.)
+(Note that, unlike with core namespaces, multi-level namespaces here would have pathnames reflecting multiple levels. E.g. a `lace.a.b` namespace would be defined by `std/a/b.clj`. However, such namespaces do not exist in Joker as of `v0.14.0`.)
 
-These `*.joke` files, however, have code of a particular form that is processed by the `std/generate-std.joke` script (after an initial version of Joker is built). They cannot, as explained below, define arbitrary macros and functions for use by normal Joker code.
+These `*.clj` files, however, have code of a particular form that is processed by the `std/generate-std.clj` script (after an initial version of Joker is built). They cannot, as explained below, define arbitrary macros and functions for use by normal Joker code.
 
 #### The Joker Script That Writes Go Code
 
-The `std/generate-std.joke` script, which is run after the Joker executable is first built (by `run.sh`), reads in the pertinent namespaces, currently defined via `(def namespaces ...)` at the top of the script. This definition dynamically discovers all the `*.joke` files in `std/`.
+The `std/generate-std.clj` script, which is run after the Joker executable is first built (by `run.sh`), reads in the pertinent namespaces, currently defined via `(def namespaces ...)` at the top of the script. This definition dynamically discovers all the `*.clj` files in `std/`.
 
 `(apply require namespaces)` loads the target namespaces, then the script processes each namespace in `namespaces` by examining its public members and "compiling" them into Go code, which it stores in `std/*/a_*.go`, where `*` is the same name.
 
-For example, `std/math.joke` is processed such that the resulting Go code is written to `std/math/a_math.go`.
+For example, `std/math.clj` is processed such that the resulting Go code is written to `std/math/a_math.go`.
 
-*Note:* This processing does *not* handle arbitrary Joker code! In particular, "logic" (such as `(if ...)`) in function bodies is neither recognized nor handled; it's actually discarded, in that it does not appear (in any form) in the final Joker executable. Similarly, no macros (public or otherwise) appear at all; so, as with logic in functions, they're useful only insofar as they might affect how other public members are defined during the running of `std/generate-std.joke`.
+*Note:* This processing does *not* handle arbitrary Joker code! In particular, "logic" (such as `(if ...)`) in function bodies is neither recognized nor handled; it's actually discarded, in that it does not appear (in any form) in the final Joker executable. Similarly, no macros (public or otherwise) appear at all; so, as with logic in functions, they're useful only insofar as they might affect how other public members are defined during the running of `std/generate-std.clj`.
 
 Instead, the processing consists primarily of examining the metadata for each (public) member and emitting Go code that, when built into (the soon-to-be-rebuilt) Joker executable, creates the namespace (`lace.math` in the above example), "interns" the public symbols, and includes (attached to those symbols) both suitable metadata and Go-code "stubs" that handle Joker code referencing a given symbol and the underlying Go implementation (typically a standard-library API, such as `math.sin` for `lace.math/sin`).
 
 Those stubs handle arity, types, and results.
 
-Whether they call Go code directly, or call support code written in Go (typically included in a file named `std/*/*_native.go`, e.g. `std/math/math_native.go`) -- and the specific Go-code invocation used -- is determined via the `:go` metadata and return-type tags for the public member, as defined in the original `std/*.joke` file.
+Whether they call Go code directly, or call support code written in Go (typically included in a file named `std/*/*_native.go`, e.g. `std/math/math_native.go`) -- and the specific Go-code invocation used -- is determined via the `:go` metadata and return-type tags for the public member, as defined in the original `std/*.clj` file.
 
 The `a_*.go` files generated for _std_ namespaces cause the namespaces to be _mapped_ by the time the Joker executable has finished starting up. That's why they appear in `(all-ns)`, even when they haven't actually been loaded (lazily initialized).
 
@@ -216,36 +216,36 @@ However, any logic (such as conditionals, loops, and so on) to be performed by t
 
 Another advantage (besides performance) of this approach is that the resulting code that builds up the target namespace has no dependencies on any other Joker namespaces -- not even on `lace.core`.
 
-That means a *core* namespace may actually depend on one of these (standard-library-wrapping) namespaces, as long as `std/generate-std.joke` has been run and the resulting `std/*/a_*.go` file has been made available in the working directory (e.g. by being added to the Git repository).
+That means a *core* namespace may actually depend on one of these (standard-library-wrapping) namespaces, as long as `std/generate-std.clj` has been run and the resulting `std/*/a_*.go` file has been made available in the working directory (e.g. by being added to the Git repository).
 
 #### Optimizing Build Time
 
-The `run.sh` script includes an optimization that avoids building Joker a second (final) time after it runs `std/generate-std.joke` to generate the `std/*/a_*.joke` files.
+The `run.sh` script includes an optimization that avoids building Joker a second (final) time after it runs `std/generate-std.clj` to generate the `std/*/a_*.clj` files.
 
 That optimization starts by computing a hash of the contents of the `std/` directory *before* running the script, and another one *afterwards*.
 
-If the hashes are identical, `run.sh` assumes nothing has changed in the `std/*.joke` files with respect to the `std/*/a_*.joke` files present prior to running the script, and thus there's no need to rebuild the Joker executable.
+If the hashes are identical, `run.sh` assumes nothing has changed in the `std/*.clj` files with respect to the `std/*/a_*.clj` files present prior to running the script, and thus there's no need to rebuild the Joker executable.
 
-(Of course, even if a `std/*.joke` file hasn't changed, any changes to `std/generate-std.joke` or any of the `std/*/*.go` files, handwritten or autogenerated, will result in a different hash being computed and thus a rebuild.)
+(Of course, even if a `std/*.clj` file hasn't changed, any changes to `std/generate-std.clj` or any of the `std/*/*.go` files, handwritten or autogenerated, will result in a different hash being computed and thus a rebuild.)
 
 #### Adding a New Standard-library-wrapping Namespace
 
-Besides creating `std/foo.joke` with appropriate metadata (such as `:go`) for each public member (in `lace.foo`), one must:
+Besides creating `std/foo.clj` with appropriate metadata (such as `:go`) for each public member (in `lace.foo`), one must:
 
-* Add the namespace to `*loaded-libs*` by editing its `defonce` definition in `core/data/core.joke`
+* Add the namespace to `*loaded-libs*` by editing its `defonce` definition in `core/data/core.clj`
 * `mkdir -p std/foo`
-* `(cd std; ../lace generate-std.joke)` to create `std/foo/a_foo.go`
+* `(cd std; ../lace generate-std.clj)` to create `std/foo/a_foo.go`
 * If necessary, write supporting Go code, which goes in `std/foo/foo_native.go` and other Go files in `std/foo/*.go`
-* Add the resulting set of Go files, as well as `std/foo.joke`, to the repository
+* Add the resulting set of Go files, as well as `std/foo.clj`, to the repository
 * Add tests to `tests/eval/`
 * Rebuild the Joker executable (via `run.sh` or equivalent)
 * Run the tests (via `./all-tests.sh` or just `./eval-tests.sh`)
 
-While some might object to the inclusion of generated files (`std/*/a_*.joke`) in the repository, Joker currently depends on their presence in order to build, due to circular dependencies (related to the bootstrapping of Joker) as described below.
+While some might object to the inclusion of generated files (`std/*/a_*.clj`) in the repository, Joker currently depends on their presence in order to build, due to circular dependencies (related to the bootstrapping of Joker) as described below.
 
-#### Understanding the generate-std.joke Script
+#### Understanding the generate-std.clj Script
 
-This script generates `foo/a_foo*.go` files based on foo.joke files.
+This script generates `foo/a_foo*.go` files based on foo.clj files.
 
 Given:
 
@@ -333,7 +333,7 @@ func InternsOrThunks() {
 ```
 
 `NSDOCSTRING` comes from the `:doc` metadata in the `ns` invocation
-at the top of `foo.joke`; `VERSION` is currently hardcoded to
+at the top of `foo.clj`; `VERSION` is currently hardcoded to
 `"1.0"`. That's also where imports are specified; they're generated
 near the top of `foo/a_foo_slow_init.go`, just after the `package`
 specification.
@@ -361,15 +361,15 @@ arguments in `...`.
 There's actually a circular dependency between the two sets of namespaces:
 
 * `core/gen_common/gen_common.go` imports `std/string`, so the initialization code that adds the namespace is run
-* `std/string/a_string.go` is generated by `std/generate-std.joke`
-* `std/generate-std.joke` is run by the first Joker executable built by `run.sh`
+* `std/string/a_string.go` is generated by `std/generate-std.clj`
+* `std/generate-std.clj` is run by the first Joker executable built by `run.sh`
 * That Joker executable cannot be built until after `gen_data.go` has been run
 
 This circular dependency is avoided, in practice, by ensuring that any `std/*/a_*.go` files are already generated and present before any new dependencies upon them are added to `gen_data.go`.
 
-However, a `std/*.joke` file therefore cannot depend on any `core/data/*.joke`-defined namespace that, in turn, requires `gen_data.go` to import its `std/*/a_*.go` file.
+However, a `std/*.clj` file therefore cannot depend on any `core/data/*.clj`-defined namespace that, in turn, requires `gen_data.go` to import its `std/*/a_*.go` file.
 
-So, while `lace.repl` and `lace.tools.cli` currently depend on `lace.string`, `std/string.joke` does not depend on them, and preexisted their being added to the core namespaces.
+So, while `lace.repl` and `lace.tools.cli` currently depend on `lace.string`, `std/string.clj` does not depend on them, and preexisted their being added to the core namespaces.
 
 ## Debugging Tools
 

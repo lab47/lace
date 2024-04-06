@@ -72,7 +72,7 @@
 
 (defn- generate-docs
   []
-  (exec-from "docs" "../lace" "generate-docs.joke"))
+  (exec-from "docs" "../lace" "generate-docs.clj"))
 
 (defn- main
   [args]

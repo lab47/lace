@@ -1,5 +1,5 @@
 (ns y.z)
 
-(println "this is x/y/z.joke")
+(println "this is x/y/z.clj")
 
 (require 'q.r.s)

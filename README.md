@@ -30,7 +30,7 @@ You can also [build](#building) Joker from the source code.
 
 `lace` - launch REPL
 
-`lace <filename>` - execute a script. Joker uses `.joke` filename extension. For example: `lace foo.joke`. Normally exits after executing the script, unless `--exit-to-repl` is specified before `--file <filename>`
+`lace <filename>` - execute a script. Joker uses `.clj` filename extension. For example: `lace foo.clj`. Normally exits after executing the script, unless `--exit-to-repl` is specified before `--file <filename>`
 in which case drops into the REPL after the script is (successfully) executed. (Note use of `--file` in this case, to ensure `<filename>` is not treated as a `<socket>` specification for the repl.)
 
 `lace --eval <expression>` - execute an expression. For example: `lace -e '(println "Hello, world!")'`. Normally exits after executing the script, unless `--exit-to-repl` is specified before `--eval`,
@@ -217,7 +217,7 @@ lace --lint --working-dir my-project foo.clj
 
 lints single file `foo.clj` but uses `.lace` config file from `my-project` directory.
 
-When linting directories Joker lints all files with the extension corresponding to the selected dialect (`*.clj`, `*.cljs`, `*.joke`, or `*.edn`). To exclude certain files specify regex patterns in `:ignored-file-regexes` vector in `.lace` file, e.g. `:ignored-file-regexes [#".*user\.clj" #".*/dev/profiling\.clj"]`.
+When linting directories Joker lints all files with the extension corresponding to the selected dialect (`*.clj`, `*.cljs`, `*.clj`, or `*.edn`). To exclude certain files specify regex patterns in `:ignored-file-regexes` vector in `.lace` file, e.g. `:ignored-file-regexes [#".*user\.clj" #".*/dev/profiling\.clj"]`.
 
 When linting directories Joker can report globally unused namespaces and public vars. This is turned off by default but can be enabled with `--report-globally-unused` flag, e.g. `lace --lint --working-dir my-project --report-globally-unused`. This is useful for finding "dead" code. Some namespaces or vars are intended to be used by external systems (e.g. public API of a library or main function of a program). To exclude such namespaces and vars from being reported as globally unused list them in `:entry-points` vector in `.lace` file, which may contain the names of namespaces or fully qualified names of vars. For example:
 
@@ -271,7 +271,7 @@ $ GOOS=linux GOARCH=arm GOARM=6 go build
 
 ## Coding Guidelines
 
-- Dashes (`-`) in namespaces are not converted to underscores (`_`) by Joker, so (unlike with Clojure) there's no need to name `.joke` files accordingly.
+- Dashes (`-`) in namespaces are not converted to underscores (`_`) by Joker, so (unlike with Clojure) there's no need to name `.clj` files accordingly.
 - Avoid `:refer :all` and the `use` function, as that reduces the effectiveness of linting.
 
 ## Developer Notes

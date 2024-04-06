@@ -1,5 +1,5 @@
-(load-file "../core/data/linter_cljx.joke")
-(load-file "../core/data/linter_cljs.joke")
+(load-file "../core/data/linter_cljx.clj")
+(load-file "../core/data/linter_cljs.clj")
 (def interns (ns-interns 'lace.core))
 
 (defn exists?

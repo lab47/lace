@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-./lace tests/run-flag-tests.joke
+./lace tests/run-flag-tests.clj

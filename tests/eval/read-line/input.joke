@@ -1,4 +1,4 @@
-;;; Move this into core.joke?
+;;; Move this into core.clj?
 (defmacro while-let
  "Continue processing an expression as long as it is true"
  [binding & forms]

@@ -23,7 +23,7 @@
   (when verbose?
     (println (str "Running test in subdirectory " test-dir)))
   (let [dir (str "tests/eval/" test-dir "/")
-        filename "input.joke"
+        filename "input.clj"
         stdin (slurp-or (str dir "stdin.txt") *in*)
         res (lace.os/exec lace-cmd {:dir dir :args [filename] :stdin stdin})
         out (:out res)
@@ -64,7 +64,7 @@
         false))))
 
 (defn- run-forked-tests
-  "Directories have input.joke files that are passed as input to a
+  "Directories have input.clj files that are passed as input to a
   fork'ed instance of Joker.  Ths test harness is rudimentary but
   handles more complicated cases than lace.test and can also catch
   test failures in that and its dependencies (such as defmulti,
@@ -84,11 +84,11 @@
 
 (defn- run-internal-tests
   ([]
-   ;; Run tests in all tests/eval/*.joke files:
+   ;; Run tests in all tests/eval/*.clj files:
    (run-internal-tests (->> (lace.os/ls "tests/eval")
                             (remove :dir?)
                             (map :name)
-                            (filter #(lace.string/ends-with? % ".joke"))
+                            (filter #(lace.string/ends-with? % ".clj"))
                             (remove #(lace.string/starts-with? % ".")))))
   ([test-files]
    (let [namespaces (for [test-file test-files]
@@ -102,7 +102,7 @@
 (defn- main
   []
   (let [verbose? (not (have-option "--no-verbose"))
-        filename (first (filter #(lace.string/ends-with? % ".joke") *command-line-args*))
+        filename (first (filter #(lace.string/ends-with? % ".clj") *command-line-args*))
         forked-failures (if filename 0 (run-forked-tests verbose?))
         internal-failures (if filename
                             (run-internal-tests [filename])

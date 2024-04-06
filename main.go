@@ -285,7 +285,7 @@ func detectDialect(filename string) Dialect {
 		return EDN
 	case strings.HasSuffix(filename, ".cljs"):
 		return CLJS
-	case strings.HasSuffix(filename, ".joke"):
+	case strings.HasSuffix(filename, ".clj"):
 		return JOKER
 	}
 	return CLJ
@@ -310,7 +310,7 @@ func matchesDialect(path string, dialect Dialect) bool {
 	case CLJS:
 		ext = ".cljs"
 	case JOKER:
-		ext = ".joke"
+		ext = ".clj"
 	case EDN:
 		ext = ".edn"
 	}

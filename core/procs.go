@@ -2049,7 +2049,7 @@ var procLoadLibFromPath = func(env *Env, args []Object) (Object, error) {
 		if s == "" {
 			filename = pathname
 		} else {
-			filename = filepath.Join(s, filepath.Join(strings.Split(libname, ".")...)) + ".joke" // could cache inner join....
+			filename = filepath.Join(s, filepath.Join(strings.Split(libname, ".")...)) + ".clj" // could cache inner join....
 		}
 		f, err = os.Open(filename)
 		if err == nil {
@@ -2167,7 +2167,7 @@ var procLibPath = func(env *Env, args []Object) (Object, error) {
 			file, _ = filepath.Split(file)
 			file = file[:len(file)-1]
 		}
-		path = filepath.Join(append([]string{file}, strings.Split(sym.Name(), ".")...)...) + ".joke"
+		path = filepath.Join(append([]string{file}, strings.Split(sym.Name(), ".")...)...) + ".clj"
 	}
 	return String{S: path}, nil
 }

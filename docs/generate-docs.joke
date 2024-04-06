@@ -79,7 +79,7 @@
         (s/replace
          "{source}"
          (if (:line m)
-           (format "<a href=\"https://github.com/lab47/lace/blob/master/core/data/%s.joke#L%s\">source</a>"
+           (format "<a href=\"https://github.com/lab47/lace/blob/master/core/data/%s.clj#L%s\">source</a>"
                    (source-file (:ns m))
                    (str (:line m)))
            "")))))
