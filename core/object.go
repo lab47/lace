@@ -316,7 +316,7 @@ func (pos Position) Filename() string {
 var hasher hash.Hash32 = fnv.New32a()
 
 func newIteratorError() error {
-	return errors.New("Iterator reached the end of collection")
+	return errors.New("iterator reached the end of collection")
 }
 
 func uint32ToBytes(i uint32) []byte {
@@ -349,7 +349,7 @@ func MakeSymbol(nsname string) Symbol {
 	}
 	return Symbol{
 		ns:   STRINGS.Intern(nsname[0:index]),
-		name: STRINGS.Intern(nsname[index+1 : len(nsname)]),
+		name: STRINGS.Intern(nsname[index+1:]),
 	}
 }
 
@@ -378,7 +378,7 @@ func MakeKeyword(nsname string) Keyword {
 		}
 	}
 	ns := STRINGS.Intern(nsname[0:index])
-	name := STRINGS.Intern(nsname[index+1 : len(nsname)])
+	name := STRINGS.Intern(nsname[index+1:])
 	return Keyword{
 		ns:   ns,
 		name: name,
