@@ -2707,7 +2707,7 @@ func ReadConfig(env *Env, filename string, workingDir string) error {
 	return nil
 }
 
-func removeJokerNamespaces(env *Env) {
+func removeLaceNamespaces(env *Env) {
 	for k, ns := range env.Namespaces {
 		if ns != env.CoreNamespace && strings.HasPrefix(*k, "lace.") {
 			delete(env.Namespaces, k)
@@ -2715,7 +2715,7 @@ func removeJokerNamespaces(env *Env) {
 	}
 }
 
-func markJokerNamespacesAsUsed(env *Env) {
+func markLaceNamespacesAsUsed(env *Env) {
 	for k, ns := range env.Namespaces {
 		if ns != env.CoreNamespace && strings.HasPrefix(*k, "lace.") {
 			ns.isUsed = true

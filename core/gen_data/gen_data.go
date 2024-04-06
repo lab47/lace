@@ -41,7 +41,6 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Printf("%s (%s)\n", f.Name, f.Filename)
 		content, err = core.PackReader(env, core.NewReader(bytes.NewReader(content), f.Name), "")
 		if err != nil {
 			panic(err)

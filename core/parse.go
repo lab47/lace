@@ -1190,6 +1190,9 @@ func parseLetLoop(obj Object, formName string, ctx *ParseContext) (*LetExpr, err
 			}
 			if formName != "letfn" {
 				res.values[i], err = Parse(b.at(i*2+1), ctx)
+				if err != nil {
+					return nil, err
+				}
 			}
 			ctx.localBindings.AddBinding(res.names[i], i, skipUnused)
 		}

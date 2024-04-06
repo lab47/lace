@@ -275,8 +275,7 @@ func configureLinterMode(env *Env, dialect Dialect, filename string, workingDir 
 		return err
 	}
 	env.Features = f.(Set)
-	ProcessLinterData(dialect)
-	return nil
+	return ProcessLinterData(env, dialect)
 }
 
 func detectDialect(filename string) Dialect {

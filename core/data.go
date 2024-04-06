@@ -3,40 +3,40 @@
 
 package core
 
-var haveSetCoreNamespaces bool
-
-func SetupGlobalEnvCoreData(env *Env) {
-	// Let MaybeLazy() handle initialization.
-	if !haveSetCoreNamespaces {
-		setCoreNamespaces(env)
-		haveSetCoreNamespaces = true
-	}
-}
-
 func ProcessReplData() {
 	// Let MaybeLazy() handle initialization.
 }
 
-func ProcessLinterData(dialect Dialect) {
-	/*
-		if dialect == EDN {
-			markJokerNamespacesAsUsed(GLOBAL_ENV)
-			return
+func ProcessLinterData(env *Env, dialect Dialect) error {
+	if dialect == EDN {
+		markLaceNamespacesAsUsed(env)
+		return nil
+	}
+
+	ns := env.CoreNamespace
+
+	if err := processInEnvInNS(env, ns, linter_allData); err != nil {
+		return err
+	}
+
+	ns.Resolve("*loaded-libs*").Value = EmptySet()
+	if dialect == JOKER {
+		markLaceNamespacesAsUsed(env)
+		return processInEnvInNS(env, ns, linter_laceData)
+	}
+	if err := processInEnvInNS(env, ns, linter_cljxData); err != nil {
+		return err
+	}
+	switch dialect {
+	case CLJ:
+		if err := processInEnvInNS(env, ns, linter_cljData); err != nil {
+			return err
 		}
-		processData(linter_allData)
-		GLOBAL_ENV.CoreNamespace.Resolve("*loaded-libs*").Value = EmptySet()
-		if dialect == JOKER {
-			markJokerNamespacesAsUsed(GLOBAL_ENV)
-			processData(linter_laceData)
-			return
+	case CLJS:
+		if err := processInEnvInNS(env, ns, linter_cljsData); err != nil {
+			return err
 		}
-		processData(linter_cljxData)
-		switch dialect {
-		case CLJ:
-			processData(linter_cljData)
-		case CLJS:
-			processData(linter_cljsData)
-		}
-		removeJokerNamespaces(GLOBAL_ENV)
-	*/
+	}
+	removeLaceNamespaces(env)
+	return nil
 }
