@@ -6,6 +6,7 @@ import (
 	. "github.com/lab47/lace/core"
 )
 
+
 var __read_string__P ProcFn = __read_string_
 var read_string_ Proc = Proc{Fn: __read_string__P, Name: "read_string_", Package: "std/yaml"}
 
@@ -14,10 +15,7 @@ func __read_string_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		s, err := ExtractString(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := readString(s)
 		return _res, err
 
@@ -34,10 +32,7 @@ func __write_string_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		v, err := ExtractObject(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		v, err := ExtractObject(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := writeString(v)
 		return _res, err
 
@@ -46,13 +41,15 @@ func __write_string_(_env *Env, _args []Object) (Object, error) {
 	}
 }
 
-func Init() {
+func Init(env *Env, ns *Namespace) {
 
-	InternsOrThunks()
+	InternsOrThunks(env, ns)
 }
 
-var yamlNamespace = GLOBAL_ENV.EnsureNamespace(MakeSymbol("lace.yaml"))
-
 func init() {
-	yamlNamespace.Lazy = Init
+	AddNativeNamespace("yaml", func(env *Env) error {
+		ns := env.EnsureNamespace(MakeSymbol("lace.yaml"))
+		Init(env, ns)
+		return nil
+	})
 }

@@ -6,6 +6,7 @@ import (
 	. "github.com/lab47/lace/core"
 )
 
+
 var __new__P ProcFn = __new_
 var new_ Proc = Proc{Fn: __new__P, Name: "new_", Package: "std/uuid"}
 
@@ -22,13 +23,15 @@ func __new_(_env *Env, _args []Object) (Object, error) {
 	}
 }
 
-func Init() {
+func Init(env *Env, ns *Namespace) {
 
-	InternsOrThunks()
+	InternsOrThunks(env, ns)
 }
 
-var uuidNamespace = GLOBAL_ENV.EnsureNamespace(MakeSymbol("lace.uuid"))
-
 func init() {
-	uuidNamespace.Lazy = Init
+	AddNativeNamespace("uuid", func(env *Env) error {
+		ns := env.EnsureNamespace(MakeSymbol("lace.uuid"))
+		Init(env, ns)
+		return nil
+	})
 }

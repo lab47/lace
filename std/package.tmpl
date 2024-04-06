@@ -8,13 +8,15 @@ import (
 
 {non-fn-decls}
 {fn-decls}
-func Init() {
+func Init(env *Env, ns *Namespace) {
 {non-fn-inits}
-	InternsOrThunks()
+	InternsOrThunks(env, ns)
 }
 
-var {nsName}Namespace = GLOBAL_ENV.EnsureNamespace(MakeSymbol("lace.{nsFullName}"))
-
 func init() {
-	{nsName}Namespace.Lazy = Init
+	AddNativeNamespace("{nsName}", func(env *Env) error {
+		ns := env.EnsureNamespace(MakeSymbol("lace.{nsFullName}"))
+		Init(env, ns)
+		return nil
+	})
 }

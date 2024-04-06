@@ -28,10 +28,7 @@ func __abs_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		x, err := ExtractNumber(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		x, err := ExtractNumber(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := math.Abs(x.Double().D), nil
 		return MakeDouble(_res), err
 
@@ -48,10 +45,7 @@ func __ceil_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		x, err := ExtractNumber(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		x, err := ExtractNumber(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := math.Ceil(x.Double().D), nil
 		return MakeDouble(_res), err
 
@@ -68,14 +62,8 @@ func __copy_sign_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 2:
 		var err error
-		x, err := ExtractNumber(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
-		y, err := ExtractNumber(_env, _args, 1)
-		if err != nil {
-			return nil, err
-		}
+		x, err := ExtractNumber(_env, _args, 0); if err != nil { return nil, err }
+		y, err := ExtractNumber(_env, _args, 1); if err != nil { return nil, err }
 		_res, err := math.Copysign(x.Double().D, y.Double().D), nil
 		return MakeDouble(_res), err
 
@@ -92,10 +80,7 @@ func __cos_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		x, err := ExtractNumber(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		x, err := ExtractNumber(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := math.Cos(x.Double().D), nil
 		return MakeDouble(_res), err
 
@@ -112,10 +97,7 @@ func __cube_root_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		x, err := ExtractNumber(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		x, err := ExtractNumber(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := math.Cbrt(x.Double().D), nil
 		return MakeDouble(_res), err
 
@@ -132,14 +114,8 @@ func __dim_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 2:
 		var err error
-		x, err := ExtractNumber(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
-		y, err := ExtractNumber(_env, _args, 1)
-		if err != nil {
-			return nil, err
-		}
+		x, err := ExtractNumber(_env, _args, 0); if err != nil { return nil, err }
+		y, err := ExtractNumber(_env, _args, 1); if err != nil { return nil, err }
 		_res, err := math.Dim(x.Double().D, y.Double().D), nil
 		return MakeDouble(_res), err
 
@@ -156,10 +132,7 @@ func __exp_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		x, err := ExtractNumber(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		x, err := ExtractNumber(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := math.Exp(x.Double().D), nil
 		return MakeDouble(_res), err
 
@@ -176,10 +149,7 @@ func __exp_2_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		x, err := ExtractNumber(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		x, err := ExtractNumber(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := math.Exp2(x.Double().D), nil
 		return MakeDouble(_res), err
 
@@ -196,10 +166,7 @@ func __exp_minus_1_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		x, err := ExtractNumber(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		x, err := ExtractNumber(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := math.Expm1(x.Double().D), nil
 		return MakeDouble(_res), err
 
@@ -216,10 +183,7 @@ func __floor_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		x, err := ExtractNumber(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		x, err := ExtractNumber(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := math.Floor(x.Double().D), nil
 		return MakeDouble(_res), err
 
@@ -236,14 +200,8 @@ func __hypot_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 2:
 		var err error
-		p, err := ExtractNumber(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
-		q, err := ExtractNumber(_env, _args, 1)
-		if err != nil {
-			return nil, err
-		}
+		p, err := ExtractNumber(_env, _args, 0); if err != nil { return nil, err }
+		q, err := ExtractNumber(_env, _args, 1); if err != nil { return nil, err }
 		_res, err := math.Hypot(p.Double().D, q.Double().D), nil
 		return MakeDouble(_res), err
 
@@ -260,10 +218,7 @@ func __inf_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		sign, err := ExtractInt(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		sign, err := ExtractInt(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := math.Inf(sign), nil
 		return MakeDouble(_res), err
 
@@ -280,14 +235,8 @@ func __isinf_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 2:
 		var err error
-		x, err := ExtractNumber(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
-		sign, err := ExtractInt(_env, _args, 1)
-		if err != nil {
-			return nil, err
-		}
+		x, err := ExtractNumber(_env, _args, 0); if err != nil { return nil, err }
+		sign, err := ExtractInt(_env, _args, 1); if err != nil { return nil, err }
 		_res, err := math.IsInf(x.Double().D, sign), nil
 		return MakeBoolean(_res), err
 
@@ -304,10 +253,7 @@ func __log_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		x, err := ExtractNumber(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		x, err := ExtractNumber(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := math.Log(x.Double().D), nil
 		return MakeDouble(_res), err
 
@@ -324,10 +270,7 @@ func __log_10_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		x, err := ExtractNumber(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		x, err := ExtractNumber(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := math.Log10(x.Double().D), nil
 		return MakeDouble(_res), err
 
@@ -344,10 +287,7 @@ func __log_2_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		x, err := ExtractNumber(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		x, err := ExtractNumber(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := math.Log2(x.Double().D), nil
 		return MakeDouble(_res), err
 
@@ -364,10 +304,7 @@ func __log_binary_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		x, err := ExtractNumber(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		x, err := ExtractNumber(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := math.Logb(x.Double().D), nil
 		return MakeDouble(_res), err
 
@@ -384,10 +321,7 @@ func __log_plus_1_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		x, err := ExtractNumber(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		x, err := ExtractNumber(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := math.Log1p(x.Double().D), nil
 		return MakeDouble(_res), err
 
@@ -404,10 +338,7 @@ func __modf_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		x, err := ExtractNumber(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		x, err := ExtractNumber(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := modf(x.Double().D)
 		return _res, err
 
@@ -440,10 +371,7 @@ func __isnan_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		x, err := ExtractNumber(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		x, err := ExtractNumber(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := math.IsNaN(x.Double().D), nil
 		return MakeBoolean(_res), err
 
@@ -460,14 +388,8 @@ func __next_after_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 2:
 		var err error
-		x, err := ExtractNumber(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
-		y, err := ExtractNumber(_env, _args, 1)
-		if err != nil {
-			return nil, err
-		}
+		x, err := ExtractNumber(_env, _args, 0); if err != nil { return nil, err }
+		y, err := ExtractNumber(_env, _args, 1); if err != nil { return nil, err }
 		_res, err := math.Nextafter(x.Double().D, y.Double().D), nil
 		return MakeDouble(_res), err
 
@@ -484,14 +406,8 @@ func __pow_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 2:
 		var err error
-		x, err := ExtractNumber(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
-		y, err := ExtractNumber(_env, _args, 1)
-		if err != nil {
-			return nil, err
-		}
+		x, err := ExtractNumber(_env, _args, 0); if err != nil { return nil, err }
+		y, err := ExtractNumber(_env, _args, 1); if err != nil { return nil, err }
 		_res, err := math.Pow(x.Double().D, y.Double().D), nil
 		return MakeDouble(_res), err
 
@@ -508,10 +424,7 @@ func __pow_10_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		x, err := ExtractInt(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		x, err := ExtractInt(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := math.Pow10(x), nil
 		return MakeDouble(_res), err
 
@@ -528,10 +441,7 @@ func __round_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		x, err := ExtractNumber(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		x, err := ExtractNumber(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := math.Round(x.Double().D), nil
 		return MakeDouble(_res), err
 
@@ -548,10 +458,7 @@ func __round_to_even_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		x, err := ExtractNumber(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		x, err := ExtractNumber(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := math.RoundToEven(x.Double().D), nil
 		return MakeDouble(_res), err
 
@@ -568,10 +475,7 @@ func __sign_bit_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		x, err := ExtractNumber(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		x, err := ExtractNumber(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := math.Signbit(x.Double().D), nil
 		return MakeBoolean(_res), err
 
@@ -588,10 +492,7 @@ func __sin_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		x, err := ExtractNumber(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		x, err := ExtractNumber(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := math.Sin(x.Double().D), nil
 		return MakeDouble(_res), err
 
@@ -608,10 +509,7 @@ func __sqrt_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		x, err := ExtractNumber(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		x, err := ExtractNumber(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := math.Sqrt(x.Double().D), nil
 		return MakeDouble(_res), err
 
@@ -628,10 +526,7 @@ func __trunc_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		x, err := ExtractNumber(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		x, err := ExtractNumber(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := math.Trunc(x.Double().D), nil
 		return MakeDouble(_res), err
 
@@ -640,7 +535,7 @@ func __trunc_(_env *Env, _args []Object) (Object, error) {
 	}
 }
 
-func Init() {
+func Init(env *Env, ns *Namespace) {
 	e_ = MakeDouble(math.E)
 	ln_of_10_ = MakeDouble(math.Ln10)
 	ln_of_2_ = MakeDouble(math.Ln2)
@@ -654,11 +549,13 @@ func Init() {
 	sqrt_of_e_ = MakeDouble(math.SqrtE)
 	sqrt_of_phi_ = MakeDouble(math.SqrtPhi)
 	sqrt_of_pi_ = MakeDouble(math.SqrtPi)
-	InternsOrThunks()
+	InternsOrThunks(env, ns)
 }
 
-var mathNamespace = GLOBAL_ENV.EnsureNamespace(MakeSymbol("lace.math"))
-
 func init() {
-	mathNamespace.Lazy = Init
+	AddNativeNamespace("math", func(env *Env) error {
+		ns := env.EnsureNamespace(MakeSymbol("lace.math"))
+		Init(env, ns)
+		return nil
+	})
 }

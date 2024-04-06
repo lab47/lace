@@ -7,6 +7,7 @@ import (
 	"net/url"
 )
 
+
 var __path_escape__P ProcFn = __path_escape_
 var path_escape_ Proc = Proc{Fn: __path_escape__P, Name: "path_escape_", Package: "std/url"}
 
@@ -15,10 +16,7 @@ func __path_escape_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		s, err := ExtractString(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := url.PathEscape(s), nil
 		return MakeString(_res), err
 
@@ -35,10 +33,7 @@ func __path_unescape_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		s, err := ExtractString(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := pathUnescape(s)
 		return MakeString(_res), err
 
@@ -55,10 +50,7 @@ func __query_escape_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		s, err := ExtractString(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := url.QueryEscape(s), nil
 		return MakeString(_res), err
 
@@ -75,10 +67,7 @@ func __query_unescape_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		s, err := ExtractString(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := queryUnescape(s)
 		return MakeString(_res), err
 
@@ -87,13 +76,15 @@ func __query_unescape_(_env *Env, _args []Object) (Object, error) {
 	}
 }
 
-func Init() {
+func Init(env *Env, ns *Namespace) {
 
-	InternsOrThunks()
+	InternsOrThunks(env, ns)
 }
 
-var urlNamespace = GLOBAL_ENV.EnsureNamespace(MakeSymbol("lace.url"))
-
 func init() {
-	urlNamespace.Lazy = Init
+	AddNativeNamespace("url", func(env *Env) error {
+		ns := env.EnsureNamespace(MakeSymbol("lace.url"))
+		Init(env, ns)
+		return nil
+	})
 }

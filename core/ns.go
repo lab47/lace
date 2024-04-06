@@ -10,7 +10,7 @@ type (
 	Namespace struct {
 		MetaHolder
 		Name           Symbol
-		Lazy           func()
+		Lazy           func(env *Env, ns *Namespace)
 		mappings       map[*string]*Var
 		aliases        map[*string]*Namespace
 		isUsed         bool
@@ -68,11 +68,11 @@ func (ns *Namespace) Hash() uint32 {
 	return ns.hash
 }
 
-func (ns *Namespace) MaybeLazy(doc string) {
+func (ns *Namespace) MaybeLazy(env *Env, doc string) {
 	if ns.Lazy != nil {
 		lazyFn := ns.Lazy
 		ns.Lazy = nil
-		lazyFn()
+		lazyFn(env, ns)
 		if VerbosityLevel > 0 {
 			fmt.Fprintf(Stderr, "NamespaceFor: Lazily initialized %s for %s\n", *ns.Name.name, doc)
 		}

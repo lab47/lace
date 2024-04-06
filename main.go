@@ -707,7 +707,7 @@ func main() {
 		os.Exit(code)
 	})
 
-	env := GLOBAL_ENV
+	env := NewEnv()
 
 	env.InitEnv(Stdin, Stdout, Stderr, os.Args[1:])
 
@@ -715,7 +715,7 @@ func main() {
 
 	saveForRepl = saveForRepl && (exitToRepl || errorToRepl) // don't bother saving stuff if no repl
 
-	SetupGlobalEnvCoreData()
+	// SetupGlobalEnvCoreData()
 
 	env.ReferCoreToUser()
 	env.SetEnvArgs(remainingArgs)

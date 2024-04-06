@@ -28,56 +28,58 @@ var CoreSourceFiles []FileInfo = []FileInfo{
 		Name:     "<lace.repl>",
 		Filename: "repl.clj",
 	},
-	{
-		Name:     "<lace.walk>",
-		Filename: "walk.clj",
-	},
-	{
-		Name:     "<lace.template>",
-		Filename: "template.clj",
-	},
-	{
-		Name:     "<lace.test>",
-		Filename: "test.clj",
-	},
-	{
-		Name:     "<lace.set>",
-		Filename: "set.clj",
-	},
-	{
-		Name:     "<lace.tools.cli>",
-		Filename: "tools_cli.clj",
-	},
-	{
-		Name:     "<lace.core>",
-		Filename: "linter_all.clj",
-	},
-	{
-		Name:     "<lace.core>",
-		Filename: "linter_lace.clj",
-	},
-	{
-		Name:     "<lace.core>",
-		Filename: "linter_cljx.clj",
-	},
-	{
-		Name:     "<lace.core>",
-		Filename: "linter_clj.clj",
-	},
-	{
-		Name:     "<lace.core>",
-		Filename: "linter_cljs.clj",
-	},
-	{
-		Name:     "<lace.hiccup>",
-		Filename: "hiccup.clj",
-	},
-	{
-		Name:     "<lace.pprint>",
-		Filename: "pprint.clj",
-	},
-	{
-		Name:     "<lace.better-cond>",
-		Filename: "better_cond.clj",
-	},
+	/*
+		{
+			Name:     "<lace.walk>",
+			Filename: "walk.clj",
+		},
+		{
+			Name:     "<lace.template>",
+			Filename: "template.clj",
+		},
+		{
+			Name:     "<lace.test>",
+			Filename: "test.clj",
+		},
+		{
+			Name:     "<lace.set>",
+			Filename: "set.clj",
+		},
+		{
+			Name:     "<lace.tools.cli>",
+			Filename: "tools_cli.clj",
+		},
+		{
+			Name:     "<lace.core>",
+			Filename: "linter_all.clj",
+		},
+		{
+			Name:     "<lace.core>",
+			Filename: "linter_lace.clj",
+		},
+					{
+						Name:     "<lace.core>",
+						Filename: "linter_cljx.clj",
+					},
+				{
+					Name:     "<lace.core>",
+					Filename: "linter_clj.clj",
+				},
+				{
+					Name:     "<lace.core>",
+					Filename: "linter_cljs.clj",
+				},
+			{
+				Name:     "<lace.hiccup>",
+				Filename: "hiccup.clj",
+			},
+			{
+				Name:     "<lace.pprint>",
+				Filename: "pprint.clj",
+			},
+		{
+			Name:     "<lace.better-cond>",
+			Filename: "better_cond.clj",
+		},
+	*/
 }

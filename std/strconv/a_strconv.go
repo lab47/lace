@@ -7,6 +7,7 @@ import (
 	"strconv"
 )
 
+
 var __atoi__P ProcFn = __atoi_
 var atoi_ Proc = Proc{Fn: __atoi__P, Name: "atoi_", Package: "std/strconv"}
 
@@ -15,10 +16,7 @@ func __atoi_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		s, err := ExtractString(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := strconv.Atoi(s)
 		return MakeInt(_res), err
 
@@ -35,10 +33,7 @@ func __iscan_backquote_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		s, err := ExtractString(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := strconv.CanBackquote(s), nil
 		return MakeBoolean(_res), err
 
@@ -55,10 +50,7 @@ func __format_bool_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		b, err := ExtractBoolean(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		b, err := ExtractBoolean(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := strconv.FormatBool(b), nil
 		return MakeString(_res), err
 
@@ -75,22 +67,10 @@ func __format_double_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 4:
 		var err error
-		f, err := ExtractDouble(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
-		fmt, err := ExtractChar(_env, _args, 1)
-		if err != nil {
-			return nil, err
-		}
-		prec, err := ExtractInt(_env, _args, 2)
-		if err != nil {
-			return nil, err
-		}
-		bitSize, err := ExtractInt(_env, _args, 3)
-		if err != nil {
-			return nil, err
-		}
+		f, err := ExtractDouble(_env, _args, 0); if err != nil { return nil, err }
+		fmt, err := ExtractChar(_env, _args, 1); if err != nil { return nil, err }
+		prec, err := ExtractInt(_env, _args, 2); if err != nil { return nil, err }
+		bitSize, err := ExtractInt(_env, _args, 3); if err != nil { return nil, err }
 		_res, err := strconv.FormatFloat(f, byte(fmt), prec, bitSize), nil
 		return MakeString(_res), err
 
@@ -107,14 +87,8 @@ func __format_int_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 2:
 		var err error
-		i, err := ExtractInt(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
-		base, err := ExtractInt(_env, _args, 1)
-		if err != nil {
-			return nil, err
-		}
+		i, err := ExtractInt(_env, _args, 0); if err != nil { return nil, err }
+		base, err := ExtractInt(_env, _args, 1); if err != nil { return nil, err }
 		_res, err := strconv.FormatInt(int64(i), base), nil
 		return MakeString(_res), err
 
@@ -131,10 +105,7 @@ func __isgraphic_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		c, err := ExtractChar(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		c, err := ExtractChar(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := strconv.IsGraphic(c), nil
 		return MakeBoolean(_res), err
 
@@ -151,10 +122,7 @@ func __itoa_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		i, err := ExtractInt(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		i, err := ExtractInt(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := strconv.Itoa(i), nil
 		return MakeString(_res), err
 
@@ -171,10 +139,7 @@ func __parse_bool_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		s, err := ExtractString(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := strconv.ParseBool(s)
 		return MakeBoolean(_res), err
 
@@ -191,10 +156,7 @@ func __parse_double_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		s, err := ExtractString(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := strconv.ParseFloat(s, 64)
 		return MakeDouble(_res), err
 
@@ -211,18 +173,9 @@ func __parse_int_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 3:
 		var err error
-		s, err := ExtractString(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
-		base, err := ExtractInt(_env, _args, 1)
-		if err != nil {
-			return nil, err
-		}
-		bitSize, err := ExtractInt(_env, _args, 2)
-		if err != nil {
-			return nil, err
-		}
+		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		base, err := ExtractInt(_env, _args, 1); if err != nil { return nil, err }
+		bitSize, err := ExtractInt(_env, _args, 2); if err != nil { return nil, err }
 		t, err := strconv.ParseInt(s, base, bitSize)
 		_res := int(t)
 		return MakeInt(_res), err
@@ -240,10 +193,7 @@ func __isprintable_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		c, err := ExtractChar(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		c, err := ExtractChar(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := strconv.IsPrint(c), nil
 		return MakeBoolean(_res), err
 
@@ -260,10 +210,7 @@ func __quote_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		s, err := ExtractString(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := strconv.Quote(s), nil
 		return MakeString(_res), err
 
@@ -280,10 +227,7 @@ func __quote_char_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		c, err := ExtractChar(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		c, err := ExtractChar(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := strconv.QuoteRune(c), nil
 		return MakeString(_res), err
 
@@ -300,10 +244,7 @@ func __quote_char_to_ascii_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		c, err := ExtractChar(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		c, err := ExtractChar(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := strconv.QuoteRuneToASCII(c), nil
 		return MakeString(_res), err
 
@@ -320,10 +261,7 @@ func __quote_char_to_graphic_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		c, err := ExtractChar(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		c, err := ExtractChar(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := strconv.QuoteRuneToGraphic(c), nil
 		return MakeString(_res), err
 
@@ -340,10 +278,7 @@ func __quote_to_ascii_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		s, err := ExtractString(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := strconv.QuoteToASCII(s), nil
 		return MakeString(_res), err
 
@@ -360,10 +295,7 @@ func __quote_to_graphic_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		s, err := ExtractString(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := strconv.QuoteToGraphic(s), nil
 		return MakeString(_res), err
 
@@ -380,10 +312,7 @@ func __unquote_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		s, err := ExtractString(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := strconv.Unquote(s)
 		return MakeString(_res), err
 
@@ -392,13 +321,15 @@ func __unquote_(_env *Env, _args []Object) (Object, error) {
 	}
 }
 
-func Init() {
+func Init(env *Env, ns *Namespace) {
 
-	InternsOrThunks()
+	InternsOrThunks(env, ns)
 }
 
-var strconvNamespace = GLOBAL_ENV.EnsureNamespace(MakeSymbol("lace.strconv"))
-
 func init() {
-	strconvNamespace.Lazy = Init
+	AddNativeNamespace("strconv", func(env *Env) error {
+		ns := env.EnsureNamespace(MakeSymbol("lace.strconv"))
+		Init(env, ns)
+		return nil
+	})
 }

@@ -661,6 +661,7 @@ func unpackVar(env *Env, p []byte, header *PackHeader) (*Var, []byte, error) {
 	if err != nil {
 		return nil, nil, err
 	}
+
 	vr := env.FindNamespace(nsName).mappings[name.name]
 	if vr == nil {
 		return nil, nil, env.RT.NewError("Error unpacking var: cannot find var " + *nsName.name + "/" + *name.name)

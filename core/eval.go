@@ -31,12 +31,6 @@ type (
 	}
 )
 
-func init() {
-	GLOBAL_ENV.RT = &Runtime{
-		callstack: &Callstack{frames: make([]Frame, 0, 50)},
-	}
-}
-
 func (rt *Runtime) clone() *Runtime {
 	return &Runtime{
 		callstack:   rt.callstack.clone(),

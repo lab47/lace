@@ -3,13 +3,6 @@
 
 package core
 
-/*
-Called by parse_init.go in an outer var block, this runs before any
-
-	func init() as well as before func main(). InitEnv() and others are
-	called at runtime to set some of these Values based on the current
-	invocation.
-*/
 func NewEnv() *Env {
 	features := EmptySet()
 	features.Add(MakeKeyword("default"))
@@ -43,6 +36,23 @@ func NewEnv() *Env {
 		MakeMeta(nil, "true if Joker is running in linter mode", "1.0"))
 	res.CoreNamespace.InternVar("*linter-config*", EmptyArrayMap(),
 		MakeMeta(nil, "Map of configuration key/value pairs for linter mode", "1.0"))
+	res.SetCurrentNamespace(res.EnsureNamespace(MakeSymbol("user")))
+	res.RT = &Runtime{
+		callstack: &Callstack{frames: make([]Frame, 0, 50)},
+	}
+
+	initEnv(res)
+
+	builtinNS := []string{"core", "repl"}
+
+	for _, name := range builtinNS {
+		if fn, ok := builtinNSSetup[name]; ok {
+			err := fn(res)
+			if err != nil {
+				panic(err)
+			}
+		}
+	}
 	return res
 }
 

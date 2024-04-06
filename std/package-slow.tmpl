@@ -9,11 +9,11 @@ import (
 	"os"
 )
 
-func InternsOrThunks() {
+func InternsOrThunks(env *Env, ns *Namespace) {
 	if VerbosityLevel > 0 {
 		fmt.Fprintln(os.Stderr, "Lazily running slow version of {nsName}.InternsOrThunks().")
 	}
-	{nsName}Namespace.ResetMeta(MakeMeta(nil, {nsDocstring}, "1.0"))
+	ns.ResetMeta(MakeMeta(nil, {nsDocstring}, "1.0"))
 
 	{non-fn-interns}
 	{fn-interns}

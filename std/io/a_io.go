@@ -7,6 +7,7 @@ import (
 	"io"
 )
 
+
 var __close__P ProcFn = __close_
 var close_ Proc = Proc{Fn: __close__P, Name: "close_", Package: "std/io"}
 
@@ -15,10 +16,7 @@ func __close_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		f, err := ExtractObject(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		f, err := ExtractObject(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := close(f)
 		return _res, err
 
@@ -35,15 +33,9 @@ func __copy_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 2:
 		var err error
-		dst, err := ExtractIOWriter(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
-		src, err := ExtractIOReader(_env, _args, 1)
-		if err != nil {
-			return nil, err
-		}
-		n, err := io.Copy(dst, src)
+		dst, err := ExtractIOWriter(_env, _args, 0); if err != nil { return nil, err }
+		src, err := ExtractIOReader(_env, _args, 1); if err != nil { return nil, err }
+		 n, err := io.Copy(dst, src)
 		_res := int(n)
 		return MakeInt(_res), err
 
@@ -68,13 +60,15 @@ func __pipe_(_env *Env, _args []Object) (Object, error) {
 	}
 }
 
-func Init() {
+func Init(env *Env, ns *Namespace) {
 
-	InternsOrThunks()
+	InternsOrThunks(env, ns)
 }
 
-var ioNamespace = GLOBAL_ENV.EnsureNamespace(MakeSymbol("lace.io"))
-
 func init() {
-	ioNamespace.Lazy = Init
+	AddNativeNamespace("io", func(env *Env) error {
+		ns := env.EnsureNamespace(MakeSymbol("lace.io"))
+		Init(env, ns)
+		return nil
+	})
 }

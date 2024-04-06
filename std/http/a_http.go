@@ -6,6 +6,7 @@ import (
 	. "github.com/lab47/lace/core"
 )
 
+
 var __send__P ProcFn = __send_
 var send_ Proc = Proc{Fn: __send__P, Name: "send_", Package: "std/http"}
 
@@ -14,10 +15,7 @@ func __send_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		request, err := ExtractMap(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		request, err := ExtractMap(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := sendRequest(_env, request)
 		return _res, err
 
@@ -34,14 +32,8 @@ func __start_file_server_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 2:
 		var err error
-		addr, err := ExtractString(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
-		root, err := ExtractString(_env, _args, 1)
-		if err != nil {
-			return nil, err
-		}
+		addr, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		root, err := ExtractString(_env, _args, 1); if err != nil { return nil, err }
 		_res, err := startFileServer(addr, root)
 		return _res, err
 
@@ -58,14 +50,8 @@ func __start_server_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 2:
 		var err error
-		addr, err := ExtractString(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
-		handler, err := ExtractCallable(_env, _args, 1)
-		if err != nil {
-			return nil, err
-		}
+		addr, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		handler, err := ExtractCallable(_env, _args, 1); if err != nil { return nil, err }
 		_res, err := startServer(_env, addr, handler)
 		return _res, err
 
@@ -74,13 +60,15 @@ func __start_server_(_env *Env, _args []Object) (Object, error) {
 	}
 }
 
-func Init() {
+func Init(env *Env, ns *Namespace) {
 
-	InternsOrThunks()
+	InternsOrThunks(env, ns)
 }
 
-var httpNamespace = GLOBAL_ENV.EnsureNamespace(MakeSymbol("lace.http"))
-
 func init() {
-	httpNamespace.Lazy = Init
+	AddNativeNamespace("http", func(env *Env) error {
+		ns := env.EnsureNamespace(MakeSymbol("lace.http"))
+		Init(env, ns)
+		return nil
+	})
 }

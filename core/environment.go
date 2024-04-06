@@ -156,7 +156,7 @@ func (env *Env) NamespaceFor(ns *Namespace, s Symbol) *Namespace {
 		}
 	}
 	if res != nil {
-		res.MaybeLazy("NamespaceFor")
+		res.MaybeLazy(env, "NamespaceFor")
 	}
 	return res
 }
@@ -189,7 +189,7 @@ func (env *Env) FindNamespace(s Symbol) *Namespace {
 	}
 	ns := env.Namespaces[s.name]
 	if ns != nil {
-		ns.MaybeLazy("FindNameSpace")
+		ns.MaybeLazy(env, "FindNameSpace")
 	}
 	return ns
 }
@@ -246,8 +246,4 @@ func (env *Env) ResolveSymbol(s Symbol) (Symbol, error) {
 		name: vr.name.name,
 		ns:   vr.ns.Name.name,
 	}, nil
-}
-
-func init() {
-	GLOBAL_ENV.SetCurrentNamespace(GLOBAL_ENV.EnsureNamespace(MakeSymbol("user")))
 }

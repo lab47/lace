@@ -78,9 +78,9 @@ func execute(env *Env, name string, opts Map) (Object, error) {
 	}
 	if ok, stdinObj := opts.Get(MakeKeyword("stdin")); ok {
 		// Check if the intent was to pipe stdin into the program being called and
-		// use Stdin directly rather than GLOBAL_ENV.stdin.Value, which is a buffered wrapper.
-		// TODO: this won't work correctly if GLOBAL_ENV.stdin is bound to something other than Stdin
-		if GLOBAL_ENV.IsStdIn(stdinObj) {
+		// use Stdin directly rather than env.stdin.Value, which is a buffered wrapper.
+		// TODO: this won't work correctly if env.stdin is bound to something other than Stdin
+		if env.IsStdIn(stdinObj) {
 			stdin = Stdin
 		} else {
 			switch s := stdinObj.(type) {

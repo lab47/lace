@@ -2443,14 +2443,17 @@ func ProcessReaderFromEval(env *Env, reader *Reader, filename string) error {
 	}
 }
 
-func processData(data []byte) {
-	processInEnv(GLOBAL_ENV, data)
-}
-
 func processInEnv(env *Env, data []byte) error {
 	ns := env.CurrentNamespace()
-	env.SetCurrentNamespace(env.CoreNamespace)
-	defer func() { env.SetCurrentNamespace(ns) }()
+
+	return processInEnvInNS(env, ns, data)
+}
+
+func processInEnvInNS(env *Env, ns *Namespace, data []byte) error {
+	cur := env.CurrentNamespace()
+	env.SetCurrentNamespace(ns)
+	defer func() { env.SetCurrentNamespace(cur) }()
+
 	header, p, err := UnpackHeader(data, env)
 	if err != nil {
 		return err
@@ -2461,6 +2464,7 @@ func processInEnv(env *Env, data []byte) error {
 		if err != nil {
 			return err
 		}
+
 		_, err := TryEval(env, expr)
 		if err != nil {
 			return err
@@ -2475,7 +2479,7 @@ func processInEnv(env *Env, data []byte) error {
 
 func setCoreNamespaces(env *Env) error {
 	ns := env.CoreNamespace
-	ns.MaybeLazy("lace.core")
+	ns.MaybeLazy(env, "lace.core")
 
 	vr := ns.Resolve("*core-namespaces*")
 	set := vr.Value.(*MapSet)

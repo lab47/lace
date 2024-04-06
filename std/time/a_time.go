@@ -36,14 +36,8 @@ func __add_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 2:
 		var err error
-		t, err := ExtractTime(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
-		d, err := ExtractInt(_env, _args, 1)
-		if err != nil {
-			return nil, err
-		}
+		t, err := ExtractTime(_env, _args, 0); if err != nil { return nil, err }
+		d, err := ExtractInt(_env, _args, 1); if err != nil { return nil, err }
 		_res, err := t.Add(time.Duration(d)), nil
 		return MakeTime(_res), err
 
@@ -60,22 +54,10 @@ func __add_date_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 4:
 		var err error
-		t, err := ExtractTime(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
-		years, err := ExtractInt(_env, _args, 1)
-		if err != nil {
-			return nil, err
-		}
-		months, err := ExtractInt(_env, _args, 2)
-		if err != nil {
-			return nil, err
-		}
-		days, err := ExtractInt(_env, _args, 3)
-		if err != nil {
-			return nil, err
-		}
+		t, err := ExtractTime(_env, _args, 0); if err != nil { return nil, err }
+		years, err := ExtractInt(_env, _args, 1); if err != nil { return nil, err }
+		months, err := ExtractInt(_env, _args, 2); if err != nil { return nil, err }
+		days, err := ExtractInt(_env, _args, 3); if err != nil { return nil, err }
 		_res, err := t.AddDate(years, months, days), nil
 		return MakeTime(_res), err
 
@@ -92,14 +74,8 @@ func __format_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 2:
 		var err error
-		t, err := ExtractTime(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
-		layout, err := ExtractString(_env, _args, 1)
-		if err != nil {
-			return nil, err
-		}
+		t, err := ExtractTime(_env, _args, 0); if err != nil { return nil, err }
+		layout, err := ExtractString(_env, _args, 1); if err != nil { return nil, err }
 		_res, err := t.Format(layout), nil
 		return MakeString(_res), err
 
@@ -116,14 +92,8 @@ func __from_unix_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 2:
 		var err error
-		sec, err := ExtractInt(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
-		nsec, err := ExtractInt(_env, _args, 1)
-		if err != nil {
-			return nil, err
-		}
+		sec, err := ExtractInt(_env, _args, 0); if err != nil { return nil, err }
+		nsec, err := ExtractInt(_env, _args, 1); if err != nil { return nil, err }
 		_res, err := time.Unix(int64(sec), int64(nsec)), nil
 		return MakeTime(_res), err
 
@@ -140,10 +110,7 @@ func __hours_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		d, err := ExtractInt(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		d, err := ExtractInt(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := time.Duration(d).Hours(), nil
 		return MakeDouble(_res), err
 
@@ -160,10 +127,7 @@ func __minutes_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		d, err := ExtractInt(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		d, err := ExtractInt(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := time.Duration(d).Minutes(), nil
 		return MakeDouble(_res), err
 
@@ -196,14 +160,8 @@ func __parse_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 2:
 		var err error
-		layout, err := ExtractString(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
-		value, err := ExtractString(_env, _args, 1)
-		if err != nil {
-			return nil, err
-		}
+		layout, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		value, err := ExtractString(_env, _args, 1); if err != nil { return nil, err }
 		_res, err := time.Parse(layout, value)
 		return MakeTime(_res), err
 
@@ -220,12 +178,9 @@ func __parse_duration_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		s, err := ExtractString(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
-		t, err := time.ParseDuration(s)
-		_res := int(t)
+		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
+		 t, err := time.ParseDuration(s)
+		_res := int(t);
 		return MakeInt(_res), err
 
 	default:
@@ -241,14 +196,8 @@ func __round_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 2:
 		var err error
-		d, err := ExtractInt(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
-		m, err := ExtractInt(_env, _args, 1)
-		if err != nil {
-			return nil, err
-		}
+		d, err := ExtractInt(_env, _args, 0); if err != nil { return nil, err }
+		m, err := ExtractInt(_env, _args, 1); if err != nil { return nil, err }
 		_res, err := int(time.Duration(d).Round(time.Duration(m))), nil
 		return MakeInt(_res), err
 
@@ -265,10 +214,7 @@ func __seconds_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		d, err := ExtractInt(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		d, err := ExtractInt(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := time.Duration(d).Seconds(), nil
 		return MakeDouble(_res), err
 
@@ -285,10 +231,7 @@ func __since_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		t, err := ExtractTime(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		t, err := ExtractTime(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := int(time.Since(t)), nil
 		return MakeInt(_res), err
 
@@ -305,11 +248,8 @@ func __sleep_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		d, err := ExtractInt(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
-		time.Sleep(time.Duration(d))
+		d, err := ExtractInt(_env, _args, 0); if err != nil { return nil, err }
+		 time.Sleep(time.Duration(d))
 		_res, err := NIL, nil
 		return _res, err
 
@@ -326,10 +266,7 @@ func __string_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		d, err := ExtractInt(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		d, err := ExtractInt(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := time.Duration(d).String(), nil
 		return MakeString(_res), err
 
@@ -346,14 +283,8 @@ func __sub_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 2:
 		var err error
-		t, err := ExtractTime(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
-		u, err := ExtractTime(_env, _args, 1)
-		if err != nil {
-			return nil, err
-		}
+		t, err := ExtractTime(_env, _args, 0); if err != nil { return nil, err }
+		u, err := ExtractTime(_env, _args, 1); if err != nil { return nil, err }
 		_res, err := int(t.Sub(u)), nil
 		return MakeInt(_res), err
 
@@ -370,14 +301,8 @@ func __truncate_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 2:
 		var err error
-		d, err := ExtractInt(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
-		m, err := ExtractInt(_env, _args, 1)
-		if err != nil {
-			return nil, err
-		}
+		d, err := ExtractInt(_env, _args, 0); if err != nil { return nil, err }
+		m, err := ExtractInt(_env, _args, 1); if err != nil { return nil, err }
 		_res, err := int(time.Duration(d).Truncate(time.Duration(m))), nil
 		return MakeInt(_res), err
 
@@ -394,10 +319,7 @@ func __unix_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		t, err := ExtractTime(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		t, err := ExtractTime(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := int(t.Unix()), nil
 		return MakeInt(_res), err
 
@@ -414,10 +336,7 @@ func __until_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		t, err := ExtractTime(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		t, err := ExtractTime(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := int(time.Until(t)), nil
 		return MakeInt(_res), err
 
@@ -426,7 +345,7 @@ func __until_(_env *Env, _args []Object) (Object, error) {
 	}
 }
 
-func Init() {
+func Init(env *Env, ns *Namespace) {
 	ansi_c_ = MakeString(time.ANSIC)
 	hour_ = MakeBigInt(int64(time.Hour))
 	kitchen_ = MakeString(time.Kitchen)
@@ -448,11 +367,13 @@ func Init() {
 	stamp_milli_ = MakeString(time.StampMilli)
 	stamp_nano_ = MakeString(time.StampNano)
 	unix_date_ = MakeString(time.UnixDate)
-	InternsOrThunks()
+	InternsOrThunks(env, ns)
 }
 
-var timeNamespace = GLOBAL_ENV.EnsureNamespace(MakeSymbol("lace.time"))
-
 func init() {
-	timeNamespace.Lazy = Init
+	AddNativeNamespace("time", func(env *Env) error {
+		ns := env.EnsureNamespace(MakeSymbol("lace.time"))
+		Init(env, ns)
+		return nil
+	})
 }

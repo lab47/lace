@@ -7,6 +7,7 @@ import (
 	"html"
 )
 
+
 var __escape__P ProcFn = __escape_
 var escape_ Proc = Proc{Fn: __escape__P, Name: "escape_", Package: "std/html"}
 
@@ -15,10 +16,7 @@ func __escape_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		s, err := ExtractString(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := html.EscapeString(s), nil
 		return MakeString(_res), err
 
@@ -35,10 +33,7 @@ func __unescape_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 1:
 		var err error
-		s, err := ExtractString(_env, _args, 0)
-		if err != nil {
-			return nil, err
-		}
+		s, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
 		_res, err := html.UnescapeString(s), nil
 		return MakeString(_res), err
 
@@ -47,13 +42,15 @@ func __unescape_(_env *Env, _args []Object) (Object, error) {
 	}
 }
 
-func Init() {
+func Init(env *Env, ns *Namespace) {
 
-	InternsOrThunks()
+	InternsOrThunks(env, ns)
 }
 
-var htmlNamespace = GLOBAL_ENV.EnsureNamespace(MakeSymbol("lace.html"))
-
 func init() {
-	htmlNamespace.Lazy = Init
+	AddNativeNamespace("html", func(env *Env) error {
+		ns := env.EnsureNamespace(MakeSymbol("lace.html"))
+		Init(env, ns)
+		return nil
+	})
 }
