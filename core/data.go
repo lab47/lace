@@ -20,7 +20,7 @@ func ProcessLinterData(env *Env, dialect Dialect) error {
 	}
 
 	ns.Resolve("*loaded-libs*").Value = EmptySet()
-	if dialect == JOKER {
+	if dialect == LACE {
 		markLaceNamespacesAsUsed(env)
 		return processInEnvInNS(env, ns, linter_laceData)
 	}

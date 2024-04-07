@@ -1,10 +1,13 @@
 package core
 
 import (
+	"bytes"
 	"fmt"
 	"reflect"
 	"regexp"
 	"sort"
+
+	"github.com/davecgh/go-spew/spew"
 )
 
 type NativeSetup func(env *Env) error
@@ -56,6 +59,10 @@ func NewNSBuilder(env *Env, name string) *NSBuilder {
 	}
 }
 
+func (b *NSBuilder) Namespace() *Namespace {
+	return b.ns
+}
+
 type DefnTag struct {
 	Name string
 	Tag  string
@@ -69,6 +76,7 @@ type ArityFn struct {
 type DefnInfo struct {
 	Name  string
 	Args  []string
+	Rest  bool
 	Doc   string
 	Added string
 	Tag   string
@@ -150,6 +158,28 @@ func convertStringIn(env *Env, index int, o Object) (reflect.Value, error) {
 	return reflect.ValueOf(ls.S), nil
 }
 
+// from Symbol to Symbol
+func convertSymbolIn(env *Env, index int, o Object) (reflect.Value, error) {
+	ls, ok := o.(Symbol)
+	if !ok {
+		spew.Dump(o)
+		return reflect.Value{}, env.RT.NewArgTypeError(index, o, "Symbol")
+	}
+
+	return reflect.ValueOf(ls), nil
+}
+
+// from Symbol to Symbol
+func convertKeywordIn(env *Env, index int, o Object) (reflect.Value, error) {
+	ls, ok := o.(Keyword)
+	if !ok {
+		spew.Dump(o)
+		return reflect.Value{}, env.RT.NewArgTypeError(index, o, "Symbol")
+	}
+
+	return reflect.ValueOf(ls), nil
+}
+
 // from String to []byte
 func convertBytesIn(env *Env, index int, o Object) (reflect.Value, error) {
 	ls, ok := o.(String)
@@ -215,12 +245,14 @@ func (n *NSBuilder) buildProc(fn any) (ProcFn, int, error) {
 	argIn := make([]inConv, t.NumIn())
 
 	var passed int
+	var envIn bool
 
 	for i := 0; i < t.NumIn(); i++ {
 		at := t.In(i)
 
 		switch at {
 		case reflect.TypeFor[*Env]():
+			envIn = true
 			argIn[i] = convertEnvIn
 			continue
 		case reflect.TypeFor[Object]():
@@ -231,6 +263,10 @@ func (n *NSBuilder) buildProc(fn any) (ProcFn, int, error) {
 			argIn[i] = convertCallableIn
 		case reflect.TypeFor[string]():
 			argIn[i] = convertStringIn
+		case reflect.TypeFor[Symbol]():
+			argIn[i] = convertSymbolIn
+		case reflect.TypeFor[Keyword]():
+			argIn[i] = convertKeywordIn
 		case reflect.TypeFor[[]byte]():
 			argIn[i] = convertBytesIn
 		case reflect.TypeFor[int]():
@@ -314,13 +350,19 @@ func (n *NSBuilder) buildProc(fn any) (ProcFn, int, error) {
 
 			dest := make([]reflect.Value, t.NumIn())
 
+			var destOffset int
+			if envIn {
+				dest[0] = reflect.ValueOf(env)
+				destOffset = 1
+			}
+
 			for i, a := range objArgs {
-				sub, err := argIn[i](env, i, a)
+				sub, err := argIn[destOffset+i](env, i, a)
 				if err != nil {
 					return []reflect.Value{reflect.Zero(reflect.TypeFor[Object]()), reflect.ValueOf(err)}
 				}
 
-				dest[i] = sub
+				dest[destOffset+i] = sub
 			}
 
 			output := make([]reflect.Value, 2)
@@ -408,6 +450,14 @@ func (n *NSBuilder) makeMeta(b *DefnInfo) *ArrayMap {
 	return m
 }
 
+func (b *NSBuilder) Def(name string, obj Object) {
+	m := MakeMeta(
+		NewListFrom(),
+		"", "x",
+	)
+	b.ns.InternVar(name, obj, m)
+}
+
 func (n *NSBuilder) Defn(b *DefnInfo) *NSBuilder {
 	if b.Fn != nil {
 		procFn, _, err := n.buildProc(b.Fn)
@@ -486,4 +536,21 @@ func (n *NSBuilder) Defn(b *DefnInfo) *NSBuilder {
 	}
 
 	return n
+}
+
+func (b *NSBuilder) Run(code []byte) error {
+	filename := fmt.Sprintf("<%s>", b.pkg)
+	reader := NewReader(bytes.NewReader(code), filename)
+	cur := b.env.CurrentNamespace()
+	defer func() {
+		b.env.SetCurrentNamespace(cur)
+	}()
+	b.env.SetCurrentNamespace(b.ns)
+	b.ns.ReferAll(b.env.CoreNamespace)
+	err := ProcessReader(b.env, reader, filename, EVAL)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

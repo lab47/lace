@@ -41,7 +41,7 @@ const VERSION = "v0.14.2"
 const (
 	CLJ Dialect = iota
 	CLJS
-	JOKER
+	LACE
 	EDN
 	UNKNOWN
 )
@@ -1993,7 +1993,7 @@ var procDeriveInfo = func(env *Env, args []Object) (Object, error) {
 	return dest.WithInfo(src.GetInfo()), nil
 }
 
-var procJokerVersion = func(env *Env, args []Object) (Object, error) {
+var procLaceVersion = func(env *Env, args []Object) (Object, error) {
 	return String{S: VERSION[1:]}, nil
 }
 
@@ -2760,7 +2760,7 @@ func ProcessLinterFile(env *Env, configDir string, filename string) {
 }
 
 func ProcessLinterFiles(env *Env, dialect Dialect, filename string, workingDir string) {
-	if dialect == EDN || dialect == JOKER {
+	if dialect == EDN || dialect == LACE {
 		return
 	}
 	configDir := findConfigFile(filename, workingDir, true)

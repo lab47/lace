@@ -293,6 +293,7 @@ type (
 		Keyword        *Type
 		LazySeq        *Type
 		List           *Type
+		Opaque         *Type
 		MappingSeq     *Type
 		Namespace      *Type
 		Nil            *Type

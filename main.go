@@ -196,11 +196,11 @@ func processReplCommand(env *core.Env, reader *core.Reader, phase core.Phase, pa
 func srepl(env *core.Env, port string, phase core.Phase) error {
 	core.ProcessReplData()
 	env.FindNamespace(core.MakeSymbol("user")).ReferAll(env.FindNamespace(core.MakeSymbol("lace.repl")))
-	l, err := net.Listen("tcp", replSocket)
+	l, err := net.Listen("tcp", port)
 	if err != nil {
 		fmt.Fprintf(core.Stderr, "Cannot start srepl listening on %s: %s\n",
 			replSocket, err.Error())
-		core.ExitJoker(12)
+		core.Exit(12)
 	}
 	defer l.Close()
 
@@ -209,7 +209,7 @@ func srepl(env *core.Env, port string, phase core.Phase) error {
 	if err != nil {
 		fmt.Fprintf(core.Stderr, "Cannot start repl accepting on %s: %s\n",
 			l.Addr(), err.Error())
-		core.ExitJoker(13)
+		core.Exit(13)
 	}
 
 	oldStdIn := core.Stdin
@@ -291,7 +291,7 @@ func detectDialect(filename string) core.Dialect {
 	case strings.HasSuffix(filename, ".cljs"):
 		return core.CLJS
 	case strings.HasSuffix(filename, ".clj"):
-		return core.JOKER
+		return core.LACE
 	}
 	return core.CLJ
 }
@@ -314,7 +314,7 @@ func matchesDialect(path string, dialect core.Dialect) bool {
 	switch dialect {
 	case core.CLJS:
 		ext = ".cljs"
-	case core.JOKER:
+	case core.LACE:
 		ext = ".clj"
 	case core.EDN:
 		ext = ".edn"
@@ -373,7 +373,7 @@ func dialectFromArg(arg string) core.Dialect {
 	case "cljs":
 		return core.CLJS
 	case "lace":
-		return core.JOKER
+		return core.LACE
 	case "edn":
 		return core.EDN
 	}
@@ -555,7 +555,7 @@ func parseArgs(args []string) {
 			dialect = core.CLJS
 		case "--lintlace":
 			lintFlag = true
-			dialect = core.JOKER
+			dialect = core.LACE
 		case "--lintedn":
 			lintFlag = true
 			dialect = core.EDN
@@ -675,7 +675,7 @@ func parseArgs(args []string) {
 		default:
 			if strings.HasPrefix(args[i], "-") {
 				fmt.Fprintf(core.Stderr, "Error: Unrecognized option '%s'\n", args[i])
-				core.ExitJoker(2)
+				core.Exit(2)
 			}
 			stop = true
 		}
@@ -685,7 +685,7 @@ func parseArgs(args []string) {
 	}
 	if missing {
 		fmt.Fprintf(core.Stderr, "Error: Missing argument for '%s' option\n", args[i])
-		core.ExitJoker(3)
+		core.Exit(3)
 	}
 	if i < length && !noFileFlag && filename == "" {
 		if debugOut != nil {
@@ -707,7 +707,7 @@ var runningProfile interface {
 }
 
 func main() {
-	core.SetExitJoker(func(code int) {
+	core.SetExit(func(code int) {
 		finish()
 		os.Exit(code)
 	})
@@ -761,11 +761,11 @@ func main() {
 	if len(remainingArgs) > 0 {
 		if lintFlag {
 			fmt.Fprintf(core.Stderr, "Error: Cannot provide arguments to code while linting it.\n")
-			core.ExitJoker(4)
+			core.Exit(4)
 		}
 		if phase != core.EVAL && phase != core.PRINT_IF_NOT_NIL {
 			fmt.Fprintf(core.Stderr, "Error: Cannot provide arguments to code without evaluating it.\n")
-			core.ExitJoker(5)
+			core.Exit(5)
 		}
 	}
 
@@ -782,7 +782,7 @@ func main() {
 				fmt.Fprintf(core.Stderr, "Error: Could not create CPU profile `%s': %v\n",
 					cpuProfileName, err)
 				cpuProfileName = ""
-				core.ExitJoker(96)
+				core.Exit(96)
 			}
 			if cpuProfileRateFlag {
 				runtime.SetCPUProfileRate(cpuProfileRate)
@@ -795,7 +795,7 @@ func main() {
 			fmt.Fprintf(core.Stderr,
 				"Unrecognized profiler: %s\n  Use 'pkg/profile' or 'runtime/pprof'.\n",
 				profilerType)
-			core.ExitJoker(96)
+			core.Exit(96)
 		}
 	} else if memProfileName != "" {
 		defer finish()
@@ -804,23 +804,23 @@ func main() {
 	if eval != "" {
 		if lintFlag {
 			fmt.Fprintf(core.Stderr, "Error: Cannot combine --eval/-e and --lint.\n")
-			core.ExitJoker(6)
+			core.Exit(6)
 		}
 		if replFlag {
 			fmt.Fprintf(core.Stderr, "Error: Cannot combine --eval/-e and --repl.\n")
-			core.ExitJoker(7)
+			core.Exit(7)
 		}
 		if workingDir != "" {
 			fmt.Fprintf(core.Stderr, "Error: Cannot combine --eval/-e and --working-dir.\n")
-			core.ExitJoker(8)
+			core.Exit(8)
 		}
 		if reportGloballyUnusedFlag {
 			fmt.Fprintf(core.Stderr, "Error: Cannot combine --eval/-e and --report-globally-unused.\n")
-			core.ExitJoker(17)
+			core.Exit(17)
 		}
 		if filename != "" {
 			fmt.Fprintf(core.Stderr, "Error: Cannot combine --eval/-e and a <filename> argument.\n")
-			core.ExitJoker(9)
+			core.Exit(9)
 		}
 		reader := core.NewReader(strings.NewReader(eval), "<expr>")
 		if saveForRepl {
@@ -828,7 +828,7 @@ func main() {
 		}
 		if err := core.ProcessReader(env, reader, "", phase); err != nil {
 			if !errorToRepl {
-				core.ExitJoker(1)
+				core.Exit(1)
 			}
 		} else {
 			if !exitToRepl {
@@ -840,15 +840,15 @@ func main() {
 	if lintFlag {
 		if replFlag {
 			fmt.Fprintf(core.Stderr, "Error: Cannot combine --lint and --repl.\n")
-			core.ExitJoker(10)
+			core.Exit(10)
 		}
 		if exitToRepl {
 			fmt.Fprintf(core.Stderr, "Error: Cannot combine --lint and --exit-to-repl.\n")
-			core.ExitJoker(14)
+			core.Exit(14)
 		}
 		if errorToRepl {
 			fmt.Fprintf(core.Stderr, "Error: Cannot combine --lint and --error-to-repl.\n")
-			core.ExitJoker(15)
+			core.Exit(15)
 		}
 		if dialect == core.UNKNOWN {
 			dialect = detectDialect(filename)
@@ -859,23 +859,23 @@ func main() {
 			lintDir(env, workingDir, dialect, reportGloballyUnusedFlag)
 		} else {
 			fmt.Fprintf(core.Stderr, "Error: Missing --file or --working-dir argument.\n")
-			core.ExitJoker(16)
+			core.Exit(16)
 		}
 		if core.PROBLEM_COUNT > 0 {
-			core.ExitJoker(1)
+			core.Exit(1)
 		}
 		return
 	}
 
 	if workingDir != "" {
 		fmt.Fprintf(core.Stderr, "Error: Cannot specify --working-dir option when not linting.\n")
-		core.ExitJoker(11)
+		core.Exit(11)
 	}
 
 	if filename != "" {
 		if err := processFile(env, filename, phase); err != nil {
 			if !errorToRepl {
-				core.ExitJoker(1)
+				core.Exit(1)
 			}
 		} else {
 			if !exitToRepl {

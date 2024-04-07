@@ -6,10 +6,10 @@ import (
 	"os"
 )
 
-var ExitJoker func(rc int)
+var Exit func(rc int)
 
-func SetExitJoker(fn func(rc int)) {
-	ExitJoker = fn
+func SetExit(fn func(rc int)) {
+	Exit = fn
 }
 
 func writeIndent(w io.Writer, n int) {
@@ -48,5 +48,20 @@ func ToBool(obj Object) bool {
 		return obj.B
 	default:
 		return true
+	}
+}
+
+func ToNative(obj Object) any {
+	switch sv := obj.(type) {
+	case Nil:
+		return nil
+	case Boolean:
+		return sv.B
+	case Int:
+		return sv.Int()
+	case String:
+		return sv.S
+	default:
+		return obj.ToString(false)
 	}
 }

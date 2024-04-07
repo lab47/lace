@@ -13,7 +13,7 @@ func NewEnv() *Env {
 	}
 	res.CoreNamespace = res.EnsureNamespace(criticalSymbols.lace_core)
 	res.CoreNamespace.core = true
-	res.CoreNamespace.meta = MakeMeta(nil, "Core library of Joker.", "1.0")
+	res.CoreNamespace.meta = MakeMeta(nil, "Core library of Lace.", "1.0")
 	res.NS_VAR = res.CoreNamespace.Intern(MakeSymbol("ns"))
 	res.IN_NS_VAR = res.CoreNamespace.Intern(MakeSymbol("in-ns"))
 	res.ns = res.CoreNamespace.Intern(MakeSymbol("*ns*"))
@@ -33,7 +33,7 @@ func NewEnv() *Env {
 	res.printReadably = res.CoreNamespace.Intern(MakeSymbol("*print-readably*"))
 	res.printReadably.Value = Boolean{B: true}
 	res.CoreNamespace.InternVar("*linter-mode*", Boolean{B: LINTER_MODE},
-		MakeMeta(nil, "true if Joker is running in linter mode", "1.0"))
+		MakeMeta(nil, "true if Lace is running in linter mode", "1.0"))
 	res.CoreNamespace.InternVar("*linter-config*", EmptyArrayMap(),
 		MakeMeta(nil, "Map of configuration key/value pairs for linter mode", "1.0"))
 	res.SetCurrentNamespace(res.EnsureNamespace(MakeSymbol("user")))
