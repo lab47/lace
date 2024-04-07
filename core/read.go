@@ -7,6 +7,7 @@ import (
 	"math/big"
 	"regexp"
 	"strconv"
+	"sync/atomic"
 	"unicode"
 	"unicode/utf8"
 )
@@ -34,21 +35,15 @@ var (
 	LINTER_CONFIG *Var
 )
 
-var (
-	ARGS   map[int]Symbol
-	GENSYM int
-)
-
 var NIL = Nil{}
-var posStack = make([]pos, 0, 8)
 
 func pushPos(reader *Reader) {
-	posStack = append(posStack, pos{line: reader.line, column: reader.column})
+	reader.posStack = append(reader.posStack, pos{line: reader.line, column: reader.column})
 }
 
-func popPos() pos {
-	p := posStack[len(posStack)-1]
-	posStack = posStack[:len(posStack)-1]
+func popPos(reader *Reader) pos {
+	p := reader.posStack[len(reader.posStack)-1]
+	reader.posStack = reader.posStack[:len(reader.posStack)-1]
 	return p
 }
 
@@ -108,7 +103,7 @@ func MakeReadError(reader *Reader, msg string) ReadError {
 }
 
 func MakeReadObject(reader *Reader, obj Object) Object {
-	p := popPos()
+	p := popPos(reader)
 	return obj.WithInfo(&ObjectInfo{Position: Position{
 		startColumn: p.column,
 		startLine:   p.line,
@@ -832,6 +827,7 @@ func fillInMissingArgs(args map[int]Symbol) {
 
 func makeFnForm(args map[int]Symbol, body Object) (Object, error) {
 	fillInMissingArgs(args)
+
 	a := make([]Symbol, len(args))
 	for key, value := range args {
 		if key != -1 {
@@ -862,38 +858,40 @@ func isTerminatingMacro(r rune) bool {
 	}
 }
 
+var genSymCounter = atomic.Int64{}
+
 func genSym(prefix string, postfix string) Symbol {
-	GENSYM++
-	return MakeSymbol(fmt.Sprintf("%s%d%s", prefix, GENSYM, postfix))
+	val := genSymCounter.Add(1)
+	return MakeSymbol(fmt.Sprintf("%s%d%s", prefix, val, postfix))
 }
 
 func generateSymbol(prefix string) Symbol {
 	return genSym(prefix, "#")
 }
 
-func registerArg(index int) Symbol {
-	if s, ok := ARGS[index]; ok {
+func registerArg(r *Reader, index int) Symbol {
+	if s, ok := r.args[index]; ok {
 		return s
 	}
-	ARGS[index] = generateSymbol("p__")
-	return ARGS[index]
+	r.args[index] = generateSymbol("p__")
+	return r.args[index]
 }
 
 func readArgSymbol(env *Env, reader *Reader) (Object, error) {
 	r := reader.Peek()
 	if isWhitespace(r) || isTerminatingMacro(r) {
-		return MakeReadObject(reader, registerArg(1)), nil
+		return MakeReadObject(reader, registerArg(reader, 1)), nil
 	}
 	obj, err := readFirst(env, reader)
 	if err != nil {
 		return nil, err
 	}
 	if obj.Equals(criticalSymbols.amp) {
-		return MakeReadObject(reader, registerArg(-1)), nil
+		return MakeReadObject(reader, registerArg(reader, -1)), nil
 	}
 	switch n := obj.(type) {
 	case Int:
-		return MakeReadObject(reader, registerArg(n.I)), nil
+		return MakeReadObject(reader, registerArg(reader, n.I)), nil
 	default:
 		return nil, MakeReadError(reader, "Arg literal must be %, %& or %integer")
 	}
@@ -1192,14 +1190,14 @@ func readDispatch(env *Env, reader *Reader) (Object, bool, error) {
 		}
 		return re, false, nil
 	case '\'':
-		popPos()
+		popPos(reader)
 		nextObj, err := readFirst(env, reader)
 		if err != nil {
 			return nil, false, err
 		}
 		return DeriveReadObject(nextObj, NewListFrom(DeriveReadObject(nextObj, criticalSymbols._var), nextObj)), false, nil
 	case '^':
-		popPos()
+		popPos(reader)
 		v, err := readWithMeta(env, reader)
 		if err != nil {
 			return nil, false, err
@@ -1212,18 +1210,19 @@ func readDispatch(env *Env, reader *Reader) (Object, bool, error) {
 		}
 		return s, false, nil
 	case '(':
-		popPos()
+		popPos(reader)
 		reader.Unget()
-		ARGS = make(map[int]Symbol)
+		old := reader.args
+		reader.args = make(map[int]Symbol)
 		fn, err := readFirst(env, reader)
 		if err != nil {
 			return nil, false, err
 		}
-		res, err := makeFnForm(ARGS, fn)
+		res, err := makeFnForm(reader.args, fn)
 		if err != nil {
 			return nil, false, err
 		}
-		ARGS = nil
+		reader.args = old
 		return res, false, nil
 	case '?':
 		return readConditional(env, reader)
@@ -1235,7 +1234,7 @@ func readDispatch(env *Env, reader *Reader) (Object, bool, error) {
 
 		return m, false, nil
 	}
-	popPos()
+	popPos(reader)
 	reader.Unget()
 	v, err := readTagged(env, reader)
 	if err != nil {
@@ -1316,7 +1315,7 @@ func Read(env *Env, reader *Reader) (Object, bool, error) {
 		}
 
 		return o, false, nil
-	case r == '%' && ARGS != nil:
+	case r == '%' && reader.args != nil:
 		v, err := readArgSymbol(env, reader)
 		if err != nil {
 			return nil, false, err
@@ -1355,21 +1354,21 @@ func Read(env *Env, reader *Reader) (Object, bool, error) {
 	case r == '/' && isDelimiter(reader.Peek()):
 		return MakeReadObject(reader, criticalSymbols.backslash), false, nil
 	case r == '\'':
-		popPos()
+		popPos(reader)
 		nextObj, err := readFirst(env, reader)
 		if err != nil {
 			return nil, false, err
 		}
 		return makeQuote(nextObj, criticalSymbols.quote), false, nil
 	case r == '@':
-		popPos()
+		popPos(reader)
 		nextObj, err := readFirst(env, reader)
 		if err != nil {
 			return nil, false, err
 		}
 		return DeriveReadObject(nextObj, NewListFrom(DeriveReadObject(nextObj, criticalSymbols.deref), nextObj)), false, nil
 	case r == '~':
-		popPos()
+		popPos(reader)
 		if reader.Peek() == '@' {
 			reader.Get()
 			nextObj, err := readFirst(env, reader)
@@ -1384,7 +1383,7 @@ func Read(env *Env, reader *Reader) (Object, bool, error) {
 		}
 		return makeQuote(nextObj, criticalSymbols.unquote), false, nil
 	case r == '`':
-		popPos()
+		popPos(reader)
 		nextObj, err := readFirst(env, reader)
 		if err != nil {
 			return nil, false, err
@@ -1395,7 +1394,7 @@ func Read(env *Env, reader *Reader) (Object, bool, error) {
 		}
 		return sq, false, nil
 	case r == '^':
-		popPos()
+		popPos(reader)
 		m, err := readWithMeta(env, reader)
 		if err != nil {
 			return nil, false, err

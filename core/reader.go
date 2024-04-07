@@ -14,6 +14,8 @@ type (
 		isEof          bool
 		rewind         int
 		filename       *string
+		args           map[int]Symbol
+		posStack       []pos
 	}
 )
 
@@ -24,6 +26,7 @@ func NewReader(runeReader io.RuneReader, filename string) *Reader {
 		rw:         &RuneWindow{},
 		rewind:     -1,
 		filename:   STRINGS.Intern(filename),
+		posStack:   make([]pos, 0, 8),
 	}
 }
 

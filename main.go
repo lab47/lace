@@ -13,7 +13,7 @@ import (
 	"strconv"
 	"strings"
 
-	. "github.com/lab47/lace/core"
+	"github.com/lab47/lace/core"
 	_ "github.com/lab47/lace/std-ng/all"
 	_ "github.com/lab47/lace/std/crypto"
 	_ "github.com/lab47/lace/std/csv"
@@ -36,7 +36,7 @@ var dataRead = []rune{}
 var saveForRepl = true
 
 type replayable struct {
-	reader *Reader
+	reader *core.Reader
 }
 
 func (r *replayable) ReadRune() (ch rune, size int, err error) {
@@ -44,7 +44,7 @@ func (r *replayable) ReadRune() (ch rune, size int, err error) {
 	if err != nil {
 		return 0, 0, err
 	}
-	if ch == EOF {
+	if ch == core.EOF {
 		err = io.EOF
 		size = 0
 	} else {
@@ -56,22 +56,22 @@ func (r *replayable) ReadRune() (ch rune, size int, err error) {
 
 type (
 	ReplContext struct {
-		first  *Var
-		second *Var
-		third  *Var
-		exc    *Var
+		first  *core.Var
+		second *core.Var
+		third  *core.Var
+		exc    *core.Var
 	}
 )
 
-func NewReplContext(env *Env) *ReplContext {
-	first, _ := env.Resolve(MakeSymbol("lace.core/*1"))
-	second, _ := env.Resolve(MakeSymbol("lace.core/*2"))
-	third, _ := env.Resolve(MakeSymbol("lace.core/*3"))
-	exc, _ := env.Resolve(MakeSymbol("lace.core/*e"))
-	first.Value = NIL
-	second.Value = NIL
-	third.Value = NIL
-	exc.Value = NIL
+func NewReplContext(env *core.Env) *ReplContext {
+	first, _ := env.Resolve(core.MakeSymbol("lace.core/*1"))
+	second, _ := env.Resolve(core.MakeSymbol("lace.core/*2"))
+	third, _ := env.Resolve(core.MakeSymbol("lace.core/*3"))
+	exc, _ := env.Resolve(core.MakeSymbol("lace.core/*e"))
+	first.Value = core.NIL
+	second.Value = core.NIL
+	third.Value = core.NIL
+	exc.Value = core.NIL
 	return &ReplContext{
 		first:  first,
 		second: second,
@@ -80,24 +80,24 @@ func NewReplContext(env *Env) *ReplContext {
 	}
 }
 
-func (ctx *ReplContext) PushValue(obj Object) {
+func (ctx *ReplContext) PushValue(obj core.Object) {
 	ctx.third.Value = ctx.second.Value
 	ctx.second.Value = ctx.first.Value
 	ctx.first.Value = obj
 }
 
-func (ctx *ReplContext) PushException(exc Object) {
+func (ctx *ReplContext) PushException(exc core.Object) {
 	ctx.exc.Value = exc
 }
 
-func processFile(env *Env, filename string, phase Phase) error {
-	var reader *Reader
+func processFile(env *core.Env, filename string, phase core.Phase) error {
+	var reader *core.Reader
 	if filename == "-" {
-		reader = NewReader(bufio.NewReader(Stdin), "<stdin>")
+		reader = core.NewReader(bufio.NewReader(core.Stdin), "<stdin>")
 		filename = ""
 	} else {
 		var err error
-		reader, err = NewReaderFromFile(filename)
+		reader, err = core.NewReaderFromFile(filename)
 		if err != nil {
 			return err
 		}
@@ -110,38 +110,38 @@ func processFile(env *Env, filename string, phase Phase) error {
 		env.SetMainFilename(f)
 	}
 	if saveForRepl {
-		reader = NewReader(&replayable{reader}, "<replay>")
+		reader = core.NewReader(&replayable{reader}, "<replay>")
 	}
-	return ProcessReader(env, reader, filename, phase)
+	return core.ProcessReader(env, reader, filename, phase)
 }
 
-func skipRestOfLine(reader *Reader) error {
+func skipRestOfLine(reader *core.Reader) error {
 	for {
 		c, err := reader.Get()
 		if err != nil {
 			return err
 		}
 		switch c {
-		case EOF, '\n':
+		case core.EOF, '\n':
 			return nil
 		}
 	}
 }
 
-func processReplCommand(env *Env, reader *Reader, phase Phase, parseContext *ParseContext, replContext *ReplContext) (bool, error) {
+func processReplCommand(env *core.Env, reader *core.Reader, phase core.Phase, parseContext *core.ParseContext, replContext *ReplContext) (bool, error) {
 
 	defer func() {
 		if r := recover(); r != nil {
 			switch r := r.(type) {
-			case *ParseError:
+			case *core.ParseError:
 				replContext.PushException(r)
-				fmt.Fprintln(Stderr, r)
-			case *EvalError:
+				fmt.Fprintln(core.Stderr, r)
+			case *core.EvalError:
 				replContext.PushException(r)
-				fmt.Fprintln(Stderr, r)
-			case Error:
+				fmt.Fprintln(core.Stderr, r)
+			case core.Error:
 				replContext.PushException(r)
-				fmt.Fprintln(Stderr, r)
+				fmt.Fprintln(core.Stderr, r)
 				// case *runtime.TypeAssertionError:
 				// 	fmt.Fprintln(Stderr, r)
 			default:
@@ -150,12 +150,12 @@ func processReplCommand(env *Env, reader *Reader, phase Phase, parseContext *Par
 		}
 	}()
 
-	obj, err := TryRead(env, reader)
+	obj, err := core.TryRead(env, reader)
 	if err == io.EOF {
 		return true, nil
 	}
 	if err != nil {
-		fmt.Fprintln(Stderr, err)
+		fmt.Fprintln(core.Stderr, err)
 		err = skipRestOfLine(reader)
 		if err != nil {
 			fmt.Printf("error: %s\n", err)
@@ -164,69 +164,69 @@ func processReplCommand(env *Env, reader *Reader, phase Phase, parseContext *Par
 		return false, nil
 	}
 
-	if phase == READ {
+	if phase == core.READ {
 		fmt.Println(obj.ToString(true))
 		return false, nil
 	}
 
-	expr, err := Parse(obj, parseContext)
+	expr, err := core.Parse(obj, parseContext)
 	if err != nil {
 		fmt.Printf("error: %s\n", err)
 		return false, nil
 	}
-	if phase == PARSE {
+	if phase == core.PARSE {
 		fmt.Println(expr)
 		return false, nil
 	}
 
-	res, err := Eval(env, expr, nil)
+	res, err := core.Eval(env, expr, nil)
 	if err != nil {
-		if _, ok := err.(*ExitError); ok {
+		if _, ok := err.(*core.ExitError); ok {
 			return true, err
 		}
 		fmt.Printf("error: %s\n", err)
 		return false, nil
 	}
 	replContext.PushValue(res)
-	PrintObject(env, res, Stdout)
-	fmt.Fprintln(Stdout, "")
+	core.PrintObject(env, res, core.Stdout)
+	fmt.Fprintln(core.Stdout, "")
 	return false, nil
 }
 
-func srepl(env *Env, port string, phase Phase) error {
-	ProcessReplData()
-	env.FindNamespace(MakeSymbol("user")).ReferAll(env.FindNamespace(MakeSymbol("lace.repl")))
+func srepl(env *core.Env, port string, phase core.Phase) error {
+	core.ProcessReplData()
+	env.FindNamespace(core.MakeSymbol("user")).ReferAll(env.FindNamespace(core.MakeSymbol("lace.repl")))
 	l, err := net.Listen("tcp", replSocket)
 	if err != nil {
-		fmt.Fprintf(Stderr, "Cannot start srepl listening on %s: %s\n",
+		fmt.Fprintf(core.Stderr, "Cannot start srepl listening on %s: %s\n",
 			replSocket, err.Error())
-		ExitJoker(12)
+		core.ExitJoker(12)
 	}
 	defer l.Close()
 
 	fmt.Printf("Joker repl listening at %s...\n", l.Addr())
 	conn, err := l.Accept() // Wait for a single connection
 	if err != nil {
-		fmt.Fprintf(Stderr, "Cannot start repl accepting on %s: %s\n",
+		fmt.Fprintf(core.Stderr, "Cannot start repl accepting on %s: %s\n",
 			l.Addr(), err.Error())
-		ExitJoker(13)
+		core.ExitJoker(13)
 	}
 
-	oldStdIn := Stdin
-	oldStdOut := Stdout
-	oldStdErr := Stderr
+	oldStdIn := core.Stdin
+	oldStdOut := core.Stdout
+	oldStdErr := core.Stderr
 	oldStdinValue, oldStdoutValue, oldStderrValue := env.StdIO()
-	Stdin = conn
-	Stdout = conn
-	Stderr = conn
-	newIn := MakeBufferedReader(conn)
-	newOut := MakeIOWriter(conn)
+	core.Stdin = conn
+	core.Stdout = conn
+	core.Stderr = conn
+	newIn := core.MakeBufferedReader(conn)
+	newOut := core.MakeIOWriter(conn)
 	env.SetStdIO(newIn, newOut, newOut)
 	defer func() {
 		conn.Close()
-		Stdin = oldStdIn
-		Stdout = oldStdOut
-		Stderr = oldStdErr
+		core.Stdin = oldStdIn
+		core.Stdout = oldStdOut
+		core.Stderr = oldStdErr
 		env.SetStdIO(oldStdinValue, oldStdoutValue, oldStderrValue)
 	}()
 
@@ -236,16 +236,16 @@ func srepl(env *Env, port string, phase Phase) error {
 
 	/* The rest of this code comes from repl(), below: */
 
-	parseContext := &ParseContext{Env: env}
+	parseContext := &core.ParseContext{Env: env}
 	replContext := NewReplContext(parseContext.Env)
 
-	reader := NewReader(runeReader, "<srepl>")
+	reader := core.NewReader(runeReader, "<srepl>")
 
-	fmt.Fprintf(Stdout, "Welcome to lace %s, client at %s. Use '(lace.os/exit 0)', or close the connection, to exit.\n",
-		VERSION, conn.RemoteAddr())
+	fmt.Fprintf(core.Stdout, "Welcome to lace %s, client at %s. Use '(lace.os/exit 0)', or close the connection, to exit.\n",
+		core.VERSION, conn.RemoteAddr())
 
 	for {
-		fmt.Fprint(Stdout, env.CurrentNamespace().Name.ToString(false)+"=> ")
+		fmt.Fprint(core.Stdout, env.CurrentNamespace().Name.ToString(false)+"=> ")
 		done, err := processReplCommand(env, reader, phase, parseContext, replContext)
 		if err != nil {
 			return err
@@ -257,73 +257,73 @@ func srepl(env *Env, port string, phase Phase) error {
 	}
 }
 
-func makeDialectKeyword(dialect Dialect) Keyword {
+func makeDialectKeyword(dialect core.Dialect) core.Keyword {
 	switch dialect {
-	case EDN:
-		return MakeKeyword("clj")
-	case CLJ:
-		return MakeKeyword("clj")
-	case CLJS:
-		return MakeKeyword("cljs")
+	case core.EDN:
+		return core.MakeKeyword("clj")
+	case core.CLJ:
+		return core.MakeKeyword("clj")
+	case core.CLJS:
+		return core.MakeKeyword("cljs")
 	default:
-		return MakeKeyword("lace")
+		return core.MakeKeyword("lace")
 	}
 }
 
-func configureLinterMode(env *Env, dialect Dialect, filename string, workingDir string) error {
-	ProcessLinterFiles(env, dialect, filename, workingDir)
-	LINTER_MODE = true
-	DIALECT = dialect
-	lm, _ := env.Resolve(MakeSymbol("lace.core/*linter-mode*"))
-	lm.Value = Boolean{B: true}
-	f, err := env.Features.Disjoin(MakeKeyword("lace")).Conj(makeDialectKeyword(dialect))
+func configureLinterMode(env *core.Env, dialect core.Dialect, filename string, workingDir string) error {
+	core.ProcessLinterFiles(env, dialect, filename, workingDir)
+	core.LINTER_MODE = true
+	core.DIALECT = dialect
+	lm, _ := env.Resolve(core.MakeSymbol("lace.core/*linter-mode*"))
+	lm.Value = core.Boolean{B: true}
+	f, err := env.Features.Disjoin(core.MakeKeyword("lace")).Conj(makeDialectKeyword(dialect))
 	if err != nil {
 		return err
 	}
-	env.Features = f.(Set)
-	return ProcessLinterData(env, dialect)
+	env.Features = f.(core.Set)
+	return core.ProcessLinterData(env, dialect)
 }
 
-func detectDialect(filename string) Dialect {
+func detectDialect(filename string) core.Dialect {
 	switch {
 	case strings.HasSuffix(filename, ".edn"):
-		return EDN
+		return core.EDN
 	case strings.HasSuffix(filename, ".cljs"):
-		return CLJS
+		return core.CLJS
 	case strings.HasSuffix(filename, ".clj"):
-		return JOKER
+		return core.JOKER
 	}
-	return CLJ
+	return core.CLJ
 }
 
-func lintFile(env *Env, filename string, dialect Dialect, workingDir string) {
-	phase := PARSE
-	if dialect == EDN {
-		phase = READ
+func lintFile(env *core.Env, filename string, dialect core.Dialect, workingDir string) {
+	phase := core.PARSE
+	if dialect == core.EDN {
+		phase = core.READ
 	}
-	ReadConfig(env, filename, workingDir)
+	core.ReadConfig(env, filename, workingDir)
 	configureLinterMode(env, dialect, filename, workingDir)
 	if processFile(env, filename, phase) == nil {
-		WarnOnUnusedNamespaces(env)
-		WarnOnUnusedVars(env)
+		core.WarnOnUnusedNamespaces(env)
+		core.WarnOnUnusedVars(env)
 	}
 }
 
-func matchesDialect(path string, dialect Dialect) bool {
+func matchesDialect(path string, dialect core.Dialect) bool {
 	ext := ".clj"
 	switch dialect {
-	case CLJS:
+	case core.CLJS:
 		ext = ".cljs"
-	case JOKER:
+	case core.JOKER:
 		ext = ".clj"
-	case EDN:
+	case core.EDN:
 		ext = ".edn"
 	}
 	return strings.HasSuffix(path, ext)
 }
 
 func isIgnored(path string) bool {
-	for _, r := range WARNINGS.IgnoredFileRegexes {
+	for _, r := range core.WARNINGS.IgnoredFileRegexes {
 		m := r.FindStringSubmatchIndex(path)
 		if len(m) > 0 {
 			if m[1]-m[0] == len(path) {
@@ -334,54 +334,54 @@ func isIgnored(path string) bool {
 	return false
 }
 
-func lintDir(env *Env, dirname string, dialect Dialect, reportGloballyUnused bool) {
+func lintDir(env *core.Env, dirname string, dialect core.Dialect, reportGloballyUnused bool) {
 	var processErr error
-	phase := PARSE
-	if dialect == EDN {
-		phase = READ
+	phase := core.PARSE
+	if dialect == core.EDN {
+		phase = core.READ
 	}
 	ns := env.CurrentNamespace()
-	ReadConfig(env, "", dirname)
+	core.ReadConfig(env, "", dirname)
 	configureLinterMode(env, dialect, "", dirname)
 	filepath.Walk(dirname, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			fmt.Fprintln(Stderr, "Error: ", err)
+			fmt.Fprintln(core.Stderr, "Error: ", err)
 			return nil
 		}
 		if !info.IsDir() && matchesDialect(path, dialect) && !isIgnored(path) {
-			env.CoreNamespace.Resolve("*loaded-libs*").Value = EmptySet()
+			env.CoreNamespace.Resolve("*loaded-libs*").Value = core.EmptySet()
 			processErr = processFile(env, path, phase)
 			if processErr == nil {
-				WarnOnUnusedNamespaces(env)
-				WarnOnUnusedVars(env)
+				core.WarnOnUnusedNamespaces(env)
+				core.WarnOnUnusedVars(env)
 			}
-			ResetUsage(env)
+			core.ResetUsage(env)
 			env.SetCurrentNamespace(ns)
 		}
 		return nil
 	})
 	if processErr == nil && reportGloballyUnused {
-		WarnOnGloballyUnusedNamespaces(env)
-		WarnOnGloballyUnusedVars(env)
+		core.WarnOnGloballyUnusedNamespaces(env)
+		core.WarnOnGloballyUnusedVars(env)
 	}
 }
 
-func dialectFromArg(arg string) Dialect {
+func dialectFromArg(arg string) core.Dialect {
 	switch strings.ToLower(arg) {
 	case "clj":
-		return CLJ
+		return core.CLJ
 	case "cljs":
-		return CLJS
+		return core.CLJS
 	case "lace":
-		return JOKER
+		return core.JOKER
 	case "edn":
-		return EDN
+		return core.EDN
 	}
-	return UNKNOWN
+	return core.UNKNOWN
 }
 
 func usage(out io.Writer) {
-	fmt.Fprintf(out, "Joker - %s\n\n", VERSION)
+	fmt.Fprintf(out, "Joker - %s\n\n", core.VERSION)
 	fmt.Fprintln(out, "Usage: lace [args] [-- <repl-args>]                starts a repl")
 	fmt.Fprintln(out, "   or: lace [args] --repl [<socket>] [-- <repl-args>]")
 	fmt.Fprintln(out, "                                                    starts a repl (on optional network socket)")
@@ -441,11 +441,11 @@ var (
 	debugOut                 io.Writer
 	helpFlag                 bool
 	versionFlag              bool
-	phase                    Phase = EVAL // --read, --parse, --evaluate
+	phase                    core.Phase = core.EVAL // --read, --parse, --evaluate
 	workingDir               string
 	lintFlag                 bool
 	reportGloballyUnusedFlag bool
-	dialect                  Dialect = UNKNOWN
+	dialect                  core.Dialect = core.UNKNOWN
 	eval                     string
 	replFlag                 bool
 	replSocket               string
@@ -476,9 +476,9 @@ func parseArgs(args []string) {
 		// peek to see if the first arg is "--debug*"
 		switch args[1] {
 		case "--debug", "--debug=stderr":
-			debugOut = Stderr
+			debugOut = core.Stderr
 		case "--debug=stdout":
-			debugOut = Stdout
+			debugOut = core.Stdout
 		}
 	}
 
@@ -504,26 +504,26 @@ func parseArgs(args []string) {
 			noFileFlag = true
 			i += 1 // do not include "--" in *command-line-args*
 		case "--debug":
-			debugOut = Stderr
+			debugOut = core.Stderr
 		case "--debug=stderr":
-			debugOut = Stderr
+			debugOut = core.Stderr
 		case "--debug=stdout":
-			debugOut = Stdout
+			debugOut = core.Stdout
 		case "--verbose":
 			if i < length-1 && notOption(args[i+1]) {
 				i += 1 // shift
 				verbosity, err := strconv.ParseInt(args[i], 10, 64)
 				if err != nil {
-					fmt.Fprintln(Stderr, "Error: ", err)
+					fmt.Fprintln(core.Stderr, "Error: ", err)
 					return
 				}
 				if verbosity <= 0 {
-					VerbosityLevel = 0
+					core.VerbosityLevel = 0
 				} else {
-					VerbosityLevel = int(verbosity)
+					core.VerbosityLevel = int(verbosity)
 				}
 			} else {
-				VerbosityLevel++
+				core.VerbosityLevel++
 			}
 		case "--help", "-h":
 			helpFlag = true
@@ -531,11 +531,11 @@ func parseArgs(args []string) {
 		case "--version", "-v":
 			versionFlag = true
 		case "--read":
-			phase = READ
+			phase = core.READ
 		case "--parse":
-			phase = PARSE
+			phase = core.PARSE
 		case "--evaluate":
-			phase = EVAL
+			phase = core.EVAL
 		case "--working-dir":
 			if i < length-1 && notOption(args[i+1]) {
 				i += 1 // shift
@@ -549,16 +549,16 @@ func parseArgs(args []string) {
 			lintFlag = true
 		case "--lintclj":
 			lintFlag = true
-			dialect = CLJ
+			dialect = core.CLJ
 		case "--lintcljs":
 			lintFlag = true
-			dialect = CLJS
+			dialect = core.CLJS
 		case "--lintlace":
 			lintFlag = true
-			dialect = JOKER
+			dialect = core.JOKER
 		case "--lintedn":
 			lintFlag = true
-			dialect = EDN
+			dialect = core.EDN
 		case "--dialect":
 			if i < length-1 && notOption(args[i+1]) {
 				i += 1 // shift
@@ -571,13 +571,13 @@ func parseArgs(args []string) {
 				i += 1 // shift
 				thresh, err := strconv.ParseInt(args[i], 10, 64)
 				if err != nil {
-					fmt.Fprintln(Stderr, "Error: ", err)
+					fmt.Fprintln(core.Stderr, "Error: ", err)
 					return
 				}
 				if thresh < 0 {
-					HASHMAP_THRESHOLD = math.MaxInt64
+					core.HASHMAP_THRESHOLD = math.MaxInt64
 				} else {
-					HASHMAP_THRESHOLD = thresh
+					core.HASHMAP_THRESHOLD = thresh
 				}
 			} else {
 				missing = true
@@ -586,7 +586,7 @@ func parseArgs(args []string) {
 			if i < length-1 && notOption(args[i+1]) {
 				i += 1 // shift
 				eval = args[i]
-				phase = PRINT_IF_NOT_NIL
+				phase = core.PRINT_IF_NOT_NIL
 			} else {
 				missing = true
 			}
@@ -641,7 +641,7 @@ func parseArgs(args []string) {
 				i += 1 // shift
 				rate, err := strconv.Atoi(args[i])
 				if err != nil {
-					fmt.Fprintln(Stderr, "Error: ", err)
+					fmt.Fprintln(core.Stderr, "Error: ", err)
 					return
 				}
 				if rate > 0 {
@@ -663,7 +663,7 @@ func parseArgs(args []string) {
 				i += 1 // shift
 				rate, err := strconv.Atoi(args[i])
 				if err != nil {
-					fmt.Fprintln(Stderr, "Error: ", err)
+					fmt.Fprintln(core.Stderr, "Error: ", err)
 					return
 				}
 				if rate > 0 {
@@ -674,8 +674,8 @@ func parseArgs(args []string) {
 			}
 		default:
 			if strings.HasPrefix(args[i], "-") {
-				fmt.Fprintf(Stderr, "Error: Unrecognized option '%s'\n", args[i])
-				ExitJoker(2)
+				fmt.Fprintf(core.Stderr, "Error: Unrecognized option '%s'\n", args[i])
+				core.ExitJoker(2)
 			}
 			stop = true
 		}
@@ -684,8 +684,8 @@ func parseArgs(args []string) {
 		}
 	}
 	if missing {
-		fmt.Fprintf(Stderr, "Error: Missing argument for '%s' option\n", args[i])
-		ExitJoker(3)
+		fmt.Fprintf(core.Stderr, "Error: Missing argument for '%s' option\n", args[i])
+		core.ExitJoker(3)
 	}
 	if i < length && !noFileFlag && filename == "" {
 		if debugOut != nil {
@@ -707,14 +707,14 @@ var runningProfile interface {
 }
 
 func main() {
-	SetExitJoker(func(code int) {
+	core.SetExitJoker(func(code int) {
 		finish()
 		os.Exit(code)
 	})
 
-	env := NewEnv()
+	env := core.NewEnv()
 
-	env.InitEnv(Stdin, Stdout, Stderr, os.Args[1:])
+	env.InitEnv(core.Stdin, core.Stdout, core.Stderr, os.Args[1:])
 
 	parseArgs(os.Args) // Do this early enough so --verbose can show lace.core being processed.
 
@@ -735,7 +735,7 @@ func main() {
 		fmt.Fprintf(debugOut, "reportGloballyUnusedFlag=%v\n", reportGloballyUnusedFlag)
 		fmt.Fprintf(debugOut, "dialect=%v\n", dialect)
 		fmt.Fprintf(debugOut, "workingDir=%v\n", workingDir)
-		fmt.Fprintf(debugOut, "HASHMAP_THRESHOLD=%v\n", HASHMAP_THRESHOLD)
+		fmt.Fprintf(debugOut, "HASHMAP_THRESHOLD=%v\n", core.HASHMAP_THRESHOLD)
 		fmt.Fprintf(debugOut, "eval=%v\n", eval)
 		fmt.Fprintf(debugOut, "replFlag=%v\n", replFlag)
 		fmt.Fprintf(debugOut, "replSocket=%v\n", replSocket)
@@ -749,23 +749,23 @@ func main() {
 	}
 
 	if helpFlag {
-		usage(Stdout)
+		usage(core.Stdout)
 		return
 	}
 
 	if versionFlag {
-		println(VERSION)
+		println(core.VERSION)
 		return
 	}
 
 	if len(remainingArgs) > 0 {
 		if lintFlag {
-			fmt.Fprintf(Stderr, "Error: Cannot provide arguments to code while linting it.\n")
-			ExitJoker(4)
+			fmt.Fprintf(core.Stderr, "Error: Cannot provide arguments to code while linting it.\n")
+			core.ExitJoker(4)
 		}
-		if phase != EVAL && phase != PRINT_IF_NOT_NIL {
-			fmt.Fprintf(Stderr, "Error: Cannot provide arguments to code without evaluating it.\n")
-			ExitJoker(5)
+		if phase != core.EVAL && phase != core.PRINT_IF_NOT_NIL {
+			fmt.Fprintf(core.Stderr, "Error: Cannot provide arguments to code without evaluating it.\n")
+			core.ExitJoker(5)
 		}
 	}
 
@@ -779,23 +779,23 @@ func main() {
 		case "runtime/pprof":
 			f, err := os.Create(cpuProfileName)
 			if err != nil {
-				fmt.Fprintf(Stderr, "Error: Could not create CPU profile `%s': %v\n",
+				fmt.Fprintf(core.Stderr, "Error: Could not create CPU profile `%s': %v\n",
 					cpuProfileName, err)
 				cpuProfileName = ""
-				ExitJoker(96)
+				core.ExitJoker(96)
 			}
 			if cpuProfileRateFlag {
 				runtime.SetCPUProfileRate(cpuProfileRate)
 			}
 			pprof.StartCPUProfile(f)
-			fmt.Fprintf(Stderr, "Profiling started at rate=%d. See file `%s'.\n",
+			fmt.Fprintf(core.Stderr, "Profiling started at rate=%d. See file `%s'.\n",
 				cpuProfileRate, cpuProfileName)
 			defer finish()
 		default:
-			fmt.Fprintf(Stderr,
+			fmt.Fprintf(core.Stderr,
 				"Unrecognized profiler: %s\n  Use 'pkg/profile' or 'runtime/pprof'.\n",
 				profilerType)
-			ExitJoker(96)
+			core.ExitJoker(96)
 		}
 	} else if memProfileName != "" {
 		defer finish()
@@ -803,32 +803,32 @@ func main() {
 
 	if eval != "" {
 		if lintFlag {
-			fmt.Fprintf(Stderr, "Error: Cannot combine --eval/-e and --lint.\n")
-			ExitJoker(6)
+			fmt.Fprintf(core.Stderr, "Error: Cannot combine --eval/-e and --lint.\n")
+			core.ExitJoker(6)
 		}
 		if replFlag {
-			fmt.Fprintf(Stderr, "Error: Cannot combine --eval/-e and --repl.\n")
-			ExitJoker(7)
+			fmt.Fprintf(core.Stderr, "Error: Cannot combine --eval/-e and --repl.\n")
+			core.ExitJoker(7)
 		}
 		if workingDir != "" {
-			fmt.Fprintf(Stderr, "Error: Cannot combine --eval/-e and --working-dir.\n")
-			ExitJoker(8)
+			fmt.Fprintf(core.Stderr, "Error: Cannot combine --eval/-e and --working-dir.\n")
+			core.ExitJoker(8)
 		}
 		if reportGloballyUnusedFlag {
-			fmt.Fprintf(Stderr, "Error: Cannot combine --eval/-e and --report-globally-unused.\n")
-			ExitJoker(17)
+			fmt.Fprintf(core.Stderr, "Error: Cannot combine --eval/-e and --report-globally-unused.\n")
+			core.ExitJoker(17)
 		}
 		if filename != "" {
-			fmt.Fprintf(Stderr, "Error: Cannot combine --eval/-e and a <filename> argument.\n")
-			ExitJoker(9)
+			fmt.Fprintf(core.Stderr, "Error: Cannot combine --eval/-e and a <filename> argument.\n")
+			core.ExitJoker(9)
 		}
-		reader := NewReader(strings.NewReader(eval), "<expr>")
+		reader := core.NewReader(strings.NewReader(eval), "<expr>")
 		if saveForRepl {
-			reader = NewReader(&replayable{reader}, "<replay>")
+			reader = core.NewReader(&replayable{reader}, "<replay>")
 		}
-		if err := ProcessReader(env, reader, "", phase); err != nil {
+		if err := core.ProcessReader(env, reader, "", phase); err != nil {
 			if !errorToRepl {
-				ExitJoker(1)
+				core.ExitJoker(1)
 			}
 		} else {
 			if !exitToRepl {
@@ -839,18 +839,18 @@ func main() {
 
 	if lintFlag {
 		if replFlag {
-			fmt.Fprintf(Stderr, "Error: Cannot combine --lint and --repl.\n")
-			ExitJoker(10)
+			fmt.Fprintf(core.Stderr, "Error: Cannot combine --lint and --repl.\n")
+			core.ExitJoker(10)
 		}
 		if exitToRepl {
-			fmt.Fprintf(Stderr, "Error: Cannot combine --lint and --exit-to-repl.\n")
-			ExitJoker(14)
+			fmt.Fprintf(core.Stderr, "Error: Cannot combine --lint and --exit-to-repl.\n")
+			core.ExitJoker(14)
 		}
 		if errorToRepl {
-			fmt.Fprintf(Stderr, "Error: Cannot combine --lint and --error-to-repl.\n")
-			ExitJoker(15)
+			fmt.Fprintf(core.Stderr, "Error: Cannot combine --lint and --error-to-repl.\n")
+			core.ExitJoker(15)
 		}
-		if dialect == UNKNOWN {
+		if dialect == core.UNKNOWN {
 			dialect = detectDialect(filename)
 		}
 		if filename != "" {
@@ -858,24 +858,24 @@ func main() {
 		} else if workingDir != "" {
 			lintDir(env, workingDir, dialect, reportGloballyUnusedFlag)
 		} else {
-			fmt.Fprintf(Stderr, "Error: Missing --file or --working-dir argument.\n")
-			ExitJoker(16)
+			fmt.Fprintf(core.Stderr, "Error: Missing --file or --working-dir argument.\n")
+			core.ExitJoker(16)
 		}
-		if PROBLEM_COUNT > 0 {
-			ExitJoker(1)
+		if core.PROBLEM_COUNT > 0 {
+			core.ExitJoker(1)
 		}
 		return
 	}
 
 	if workingDir != "" {
-		fmt.Fprintf(Stderr, "Error: Cannot specify --working-dir option when not linting.\n")
-		ExitJoker(11)
+		fmt.Fprintf(core.Stderr, "Error: Cannot specify --working-dir option when not linting.\n")
+		core.ExitJoker(11)
 	}
 
 	if filename != "" {
 		if err := processFile(env, filename, phase); err != nil {
 			if !errorToRepl {
-				ExitJoker(1)
+				core.ExitJoker(1)
 			}
 		} else {
 			if !exitToRepl {
@@ -892,7 +892,7 @@ func main() {
 		err = repl(env, phase)
 	}
 
-	if ee, ok := err.(*ExitError); ok {
+	if ee, ok := err.(*core.ExitError); ok {
 		os.Exit(ee.Code)
 	}
 }
@@ -903,23 +903,23 @@ func finish() {
 		runningProfile = nil
 	} else if cpuProfileName != "" {
 		pprof.StopCPUProfile()
-		fmt.Fprintf(Stderr, "Profiling stopped. See file `%s'.\n", cpuProfileName)
+		fmt.Fprintf(core.Stderr, "Profiling stopped. See file `%s'.\n", cpuProfileName)
 		cpuProfileName = ""
 	}
 
 	if memProfileName != "" {
 		f, err := os.Create(memProfileName)
 		if err != nil {
-			fmt.Fprintf(Stderr, "Error: Could not create memory profile `%s': %v\n",
+			fmt.Fprintf(core.Stderr, "Error: Could not create memory profile `%s': %v\n",
 				memProfileName, err)
 		}
 		runtime.GC() // get up-to-date statistics
 		if err := pprof.WriteHeapProfile(f); err != nil {
-			fmt.Fprintf(Stderr, "Error: Could not write memory profile `%s': %v\n",
+			fmt.Fprintf(core.Stderr, "Error: Could not write memory profile `%s': %v\n",
 				memProfileName, err)
 		}
 		f.Close()
-		fmt.Fprintf(Stderr, "Memory profile rate=%d written to `%s'.\n",
+		fmt.Fprintf(core.Stderr, "Memory profile rate=%d written to `%s'.\n",
 			runtime.MemProfileRate, memProfileName)
 		memProfileName = ""
 	}
