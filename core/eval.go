@@ -128,21 +128,18 @@ func Eval(genv *Env, expr Expr, env *LocalEnv) (Object, error) {
 	genv.RT.currentExpr = expr
 	defer (func() { genv.RT.currentExpr = parentExpr })()
 
-	defer func() {
-		// Fixup an Stub errors created outside the lexical context of an env
-		if err := recover(); err != nil {
-			if ee, ok := err.(*EvalError); ok {
-				if ee.rt == nil {
-					ee.rt = genv.RT
-				}
-
-				ee.pos = expr.Pos()
+	obj, err := expr.Eval(genv, env)
+	if err != nil {
+		if ee, ok := err.(*EvalError); ok {
+			if ee.rt == nil {
+				ee.rt = genv.RT
 			}
 
-			panic(err)
+			ee.pos = expr.Pos()
 		}
-	}()
-	return expr.Eval(genv, env)
+	}
+
+	return obj, err
 }
 
 func (s *Callstack) pushFrame(frame Frame) {

@@ -6,4 +6,9 @@ require (
 	gopkg.in/yaml.v2 v2.2.2
 )
 
+require (
+	github.com/candid82/liner v1.4.0 // indirect
+	github.com/mattn/go-runewidth v0.0.3 // indirect
+)
+
 go 1.22

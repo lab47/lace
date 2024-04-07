@@ -3,8 +3,8 @@ package gen_common
 // Imports of std libraries required by core libraries go here, as
 // both gen_data and gen_code pull in this package.
 import (
+	_ "github.com/lab47/lace/std-ng/string"
 	_ "github.com/lab47/lace/std/html"
-	_ "github.com/lab47/lace/std/string"
 )
 
 type FileInfo struct {

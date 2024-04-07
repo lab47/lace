@@ -14,11 +14,10 @@ import (
 	"strings"
 
 	. "github.com/lab47/lace/core"
-	_ "github.com/lab47/lace/std/base64"
+	_ "github.com/lab47/lace/std-ng/all"
 	_ "github.com/lab47/lace/std/crypto"
 	_ "github.com/lab47/lace/std/csv"
 	_ "github.com/lab47/lace/std/filepath"
-	_ "github.com/lab47/lace/std/hex"
 	_ "github.com/lab47/lace/std/html"
 	_ "github.com/lab47/lace/std/http"
 	_ "github.com/lab47/lace/std/io"
@@ -26,7 +25,6 @@ import (
 	_ "github.com/lab47/lace/std/math"
 	_ "github.com/lab47/lace/std/os"
 	_ "github.com/lab47/lace/std/strconv"
-	_ "github.com/lab47/lace/std/string"
 	_ "github.com/lab47/lace/std/time"
 	_ "github.com/lab47/lace/std/url"
 	_ "github.com/lab47/lace/std/uuid"
@@ -161,7 +159,7 @@ func processReplCommand(env *Env, reader *Reader, phase Phase, parseContext *Par
 		err = skipRestOfLine(reader)
 		if err != nil {
 			fmt.Printf("error: %s\n", err)
-			return
+			return false
 		}
 		return
 	}
@@ -174,7 +172,7 @@ func processReplCommand(env *Env, reader *Reader, phase Phase, parseContext *Par
 	expr, err := Parse(obj, parseContext)
 	if err != nil {
 		fmt.Printf("error: %s\n", err)
-		return true
+		return false
 	}
 	if phase == PARSE {
 		fmt.Println(expr)
@@ -184,7 +182,7 @@ func processReplCommand(env *Env, reader *Reader, phase Phase, parseContext *Par
 	res, err := Eval(env, expr, nil)
 	if err != nil {
 		fmt.Printf("error: %s\n", err)
-		return true
+		return false
 	}
 	replContext.PushValue(res)
 	PrintObject(env, res, Stdout)

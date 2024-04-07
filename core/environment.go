@@ -190,6 +190,8 @@ func (env *Env) FindNamespace(s Symbol) *Namespace {
 	ns := env.Namespaces[s.name]
 	if ns != nil {
 		ns.MaybeLazy(env, "FindNameSpace")
+	} else {
+		PopulateNativeNamespaceToEnv(env, *s.name)
 	}
 	return ns
 }

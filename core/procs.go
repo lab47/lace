@@ -1524,6 +1524,8 @@ var procPprint = func(env *Env, args []Object) (Object, error) {
 func PrintObject(env *Env, obj Object, w io.Writer) {
 	printReadably := ToBool(env.printReadably.Value)
 	switch obj := obj.(type) {
+	case Pprinter:
+		obj.Pprint(w, 2)
 	case Printer:
 		obj.Print(w, printReadably)
 	default:
@@ -1686,6 +1688,7 @@ var procFindNamespace = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	ns := env.FindNamespace(s)
 	if ns == nil {
 		return NIL, nil
