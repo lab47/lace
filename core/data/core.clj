@@ -4337,6 +4337,28 @@
   overridden by binding *data-readers*."
   {})
 
+(defn update-keys
+  "m f => {(f k) v ...}
+  Given a map m and a function f of 1-argument, returns a new map whose
+  keys are the result of applying f to the keys of m, mapped to the
+  corresponding values of m.
+  f must return a unique key for each key of m, else the behavior is undefined."
+  {:added "1.1"}
+  ^Map [m ^Callable f]
+  (with-meta
+    (reduce-kv (fn [acc k v] (assoc acc (f k) v)) {} m)
+    (meta m)))
+
+(defn update-vals
+  "m f => {k (f v) ...}
+  Given a map m and a function f of 1-argument, returns a new map where the keys of m
+  are mapped to result of applying f to the corresponding values of m."
+  {:added "1.1"}
+  ^Map [m ^Callable f]
+  (with-meta
+    (reduce-kv (fn [acc k v] (assoc acc k (f v))) {} m)
+    (meta m)))
+
 (defn lace-version
   "Returns lace version as a printable string."
   {:added "1.0"}
@@ -4580,3 +4602,10 @@
   {:added "1.0"}
   ^Boolean [^Symbol s]
   (ns-initialized?__ s))
+
+(defn exit
+  "Causes the current program to exit with the given status code (defaults to 0)."
+  {:added "1.0"}
+  ([] (exit 0))
+  ([^Int code]
+   (exit__ code)))

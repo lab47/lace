@@ -581,3 +581,11 @@ func TryEval(env *Env, expr Expr) (obj Object, err error) {
 
 	return Eval(env, expr, nil)
 }
+
+type ExitError struct {
+	Code int
+}
+
+func (e *ExitError) Error() string {
+	return fmt.Sprintf("exiting with code: %d", e.Code)
+}

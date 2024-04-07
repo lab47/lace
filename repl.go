@@ -117,7 +117,7 @@ func saveReplHistory(rl *liner.State, filename string) {
 	}
 }
 
-func repl(env *core.Env, phase core.Phase) {
+func repl(env *core.Env, phase core.Phase) error {
 	core.ProcessReplData()
 	env.FindNamespace(core.MakeSymbol("user")).ReferAll(env.FindNamespace(core.MakeSymbol("lace.repl")))
 	fmt.Printf("Welcome to lace %s. Use '(exit)', %s to exit.\n", core.VERSION, "Contrl-D")
@@ -155,9 +155,15 @@ func repl(env *core.Env, phase core.Phase) {
 		} else {
 			runeReader.(*core.LineRuneReader).Prompt = (namespace + "=> ")
 		}
-		if processReplCommand(env, reader, phase, parseContext, replContext) {
+		done, err := processReplCommand(env, reader, phase, parseContext, replContext)
+
+		if err != nil {
+			return err
+		}
+
+		if done {
 			saveReplHistory(rl, historyFilename)
-			return
+			return nil
 		}
 	}
 }

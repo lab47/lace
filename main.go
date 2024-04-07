@@ -128,7 +128,7 @@ func skipRestOfLine(reader *Reader) error {
 	}
 }
 
-func processReplCommand(env *Env, reader *Reader, phase Phase, parseContext *ParseContext, replContext *ReplContext) (exit bool) {
+func processReplCommand(env *Env, reader *Reader, phase Phase, parseContext *ParseContext, replContext *ReplContext) (bool, error) {
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -152,45 +152,48 @@ func processReplCommand(env *Env, reader *Reader, phase Phase, parseContext *Par
 
 	obj, err := TryRead(env, reader)
 	if err == io.EOF {
-		return true
+		return true, nil
 	}
 	if err != nil {
 		fmt.Fprintln(Stderr, err)
 		err = skipRestOfLine(reader)
 		if err != nil {
 			fmt.Printf("error: %s\n", err)
-			return false
+			return false, nil
 		}
-		return
+		return false, nil
 	}
 
 	if phase == READ {
 		fmt.Println(obj.ToString(true))
-		return false
+		return false, nil
 	}
 
 	expr, err := Parse(obj, parseContext)
 	if err != nil {
 		fmt.Printf("error: %s\n", err)
-		return false
+		return false, nil
 	}
 	if phase == PARSE {
 		fmt.Println(expr)
-		return false
+		return false, nil
 	}
 
 	res, err := Eval(env, expr, nil)
 	if err != nil {
+		if _, ok := err.(*ExitError); ok {
+			return true, err
+		}
 		fmt.Printf("error: %s\n", err)
-		return false
+		return false, nil
 	}
 	replContext.PushValue(res)
 	PrintObject(env, res, Stdout)
 	fmt.Fprintln(Stdout, "")
-	return false
+	return false, nil
 }
 
-func srepl(env *Env, port string, phase Phase) {
+func srepl(env *Env, port string, phase Phase) error {
 	ProcessReplData()
 	env.FindNamespace(MakeSymbol("user")).ReferAll(env.FindNamespace(MakeSymbol("lace.repl")))
 	l, err := net.Listen("tcp", replSocket)
@@ -243,8 +246,13 @@ func srepl(env *Env, port string, phase Phase) {
 
 	for {
 		fmt.Fprint(Stdout, env.CurrentNamespace().Name.ToString(false)+"=> ")
-		if processReplCommand(env, reader, phase, parseContext, replContext) {
-			return
+		done, err := processReplCommand(env, reader, phase, parseContext, replContext)
+		if err != nil {
+			return err
+		}
+
+		if done {
+			return nil
 		}
 	}
 }
@@ -876,12 +884,17 @@ func main() {
 		}
 	}
 
+	var err error
+
 	if replSocket != "" {
-		srepl(env, replSocket, phase)
-		return
+		err = srepl(env, replSocket, phase)
+	} else {
+		err = repl(env, phase)
 	}
 
-	repl(env, phase)
+	if ee, ok := err.(*ExitError); ok {
+		os.Exit(ee.Code)
+	}
 }
 
 func finish() {

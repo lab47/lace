@@ -2322,6 +2322,20 @@ var procVerbosityLevel = func(env *Env, args []Object) (Object, error) {
 	return MakeInt(VerbosityLevel), nil
 }
 
+var procExit = func(env *Env, args []Object) (Object, error) {
+
+	if len(args) == 1 {
+		i, err := EnsureInt(env, args, 0)
+		if err != nil {
+			return nil, err
+		}
+
+		return nil, &ExitError{Code: i.I}
+	}
+
+	return nil, &ExitError{}
+}
+
 func PackReader(env *Env, reader *Reader, filename string) ([]byte, error) {
 	var p []byte
 	packEnv := NewPackEnv(env)

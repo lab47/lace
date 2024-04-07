@@ -194,6 +194,7 @@ func initEnv(env *Env) {
 
 	intern(env, "go-spew__", procGoSpew, "procGoSpew")
 	intern(env, "verbosity-level__", procVerbosityLevel, "procVerbosityLevel")
+	intern(env, "exit__", procExit, "procExit")
 }
 
 func lateInitializations() {
