@@ -391,30 +391,23 @@ func (expr *ThrowExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 }
 
 func (expr *TryExpr) Eval(genv *Env, env *LocalEnv) (obj Object, err error) {
-	defer func() {
+	if expr.finallyExpr != nil {
 		defer func() {
-			if expr.finallyExpr != nil {
-				_, err = evalBody(genv, expr.finallyExpr, env)
-			}
+			_, err = evalBody(genv, expr.finallyExpr, env)
 		}()
-		if r := recover(); r != nil {
-			switch r := r.(type) {
-			case Error:
-				for _, catchExpr := range expr.catches {
-					if IsInstance(catchExpr.excType, r) {
-						obj, err = evalBody(genv, catchExpr.body, env.addFrame([]Object{r}))
-						return
-					}
-				}
-				err = r
-			case error:
-				err = r
-			default:
-				panic(r)
+	}
+
+	obj, err = evalBody(genv, expr.body, env)
+	if r, ok := err.(Error); ok {
+		for _, catchExpr := range expr.catches {
+			if IsInstance(catchExpr.excType, r) {
+				obj, err = evalBody(genv, catchExpr.body, env.addFrame([]Object{r}))
+				break
 			}
 		}
-	}()
-	return evalBody(genv, expr.body, env)
+	}
+
+	return obj, err
 }
 
 func (expr *CatchExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
@@ -522,19 +515,6 @@ func (expr *MacroCallExpr) Name() string {
 }
 
 func TryEval(env *Env, expr Expr) (obj Object, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			switch r.(type) {
-			case *EvalError:
-				err = r.(error)
-			case *ExInfo:
-				err = r.(error)
-			default:
-				panic(r)
-			}
-		}
-	}()
-
 	return Eval(env, expr, nil)
 }
 
