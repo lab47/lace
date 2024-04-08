@@ -6,7 +6,7 @@
 (defn env
   "Returns a map representing the environment."
   {:added "1.0"
-  :go "env()"}
+   :go "env()"}
   [])
 
 (defn set-env
@@ -24,13 +24,13 @@
 (defn args
   "Returns a sequence of the command line arguments, starting with the program name (normally, lace)."
   {:added "1.0"
-  :go "commandArgs()"}
+   :go "commandArgs()"}
   [])
 
 (defn exit
   "Causes the current program to exit with the given status code."
   {:added "1.0"
-  :go "NIL, nil; ExitJoker(code)"}
+   :go "NIL, nil; ExitJoker(code)"}
   [^Int code])
 
 (defn sh
@@ -41,7 +41,7 @@
       :out - string capturing stdout of the program,
       :err - string capturing stderr of the program."
   {:added "1.0"
-  :go "sh(\"\", nil, nil, nil, name, arguments)"}
+   :go "sh(\"\", nil, nil, nil, name, arguments)"}
   [^String name & ^String arguments])
 
 (defn sh-from
@@ -53,7 +53,7 @@
       :out - string capturing stdout of the program,
       :err - string capturing stderr of the program."
   {:added "1.0"
-  :go "sh(dir, nil, nil, nil, name, arguments)"}
+   :go "sh(dir, nil, nil, nil, name, arguments)"}
   [^String dir ^String name & ^String arguments])
 
 (defn exec
@@ -73,32 +73,32 @@
   :out - string capturing stdout of the program (unless :stdout option was passed)
   :err - string capturing stderr of the program (unless :stderr option was passed)."
   {:added "1.0"
-  :go "execute(_env, name, opts)"}
+   :go "execute(_env, name, opts)"}
   [^String name ^Map opts])
 
 (defn mkdir
   "Creates a new directory with the specified name and permission bits."
   {:added "1.0"
-  :go "mkdir(name, perm)"}
+   :go "mkdir(name, perm)"}
   [^String name ^Int perm])
 
 (defn ls
   "Reads the directory named by dirname and returns a list of directory entries sorted by filename."
   {:added "1.0"
-  :go "readDir(dirname)"}
+   :go "readDir(dirname)"}
   [^String dirname])
 
 (defn ^String cwd
   "Returns a rooted path name corresponding to the current directory. If the current directory can
   be reached via multiple paths (due to symbolic links), cwd may return any one of them."
   {:added "1.0"
-  :go "getwd()"}
+   :go "getwd()"}
   [])
 
 (defn chdir
   "Chdir changes the current working directory to the named directory. If there is an error, an exception will be thrown. Returns nil."
   {:added "1.0"
-  :go "chdir(dirname)"}
+   :go "chdir(dirname)"}
   [^String dirname])
 
 (defn stat
@@ -109,32 +109,32 @@
   :modtime - modification time
   :dir? - true if file is a directory"
   {:added "1.0"
-  :go "stat(filename)"}
+   :go "stat(filename)"}
   [^String filename])
 
 (defn ^Boolean exists?
   "Returns true if file or directory with the given path exists. Otherwise returns false."
   {:added "1.0"
-  :go "exists(path)"}
+   :go "exists(path)"}
   [^String path])
 
 (defn ^File open
   "Opens the named file for reading. If successful, the file can be used for reading;
   the associated file descriptor has mode O_RDONLY."
   {:added "1.0"
-  :go "os.Open(name)"}
+   :go "os.Open(name)"}
   [^String name])
 
 (defn ^File create
   "Creates the named file with mode 0666 (before umask), truncating it if it already exists."
   {:added "1.0"
-  :go "os.Create(name)"}
+   :go "os.Create(name)"}
   [^String name])
 
 (defn close
   "Closes the file, rendering it unusable for I/O."
   {:added "1.0"
-  :go "NIL, f.Close()"}
+   :go "NIL, f.Close()"}
   [^File f])
 
 (defn remove

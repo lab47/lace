@@ -6,7 +6,7 @@
 (defn file-seq
   "Returns a seq of maps with info about files or directories under root."
   {:added "1.0"
-  :go "fileSeq(root)"}
+   :go "fileSeq(root)"}
   [^String root])
 
 (defn ^String abs
@@ -15,7 +15,7 @@
   The absolute path name for a given file is not guaranteed to be unique.
   Calls clean on the result."
   {:added "1.0"
-  :go "filepath.Abs(path)"}
+   :go "filepath.Abs(path)"}
   [^String path])
 
 (defn ^String base
@@ -23,7 +23,7 @@
   extracting the last element. If the path is empty, returns \".\". If the path consists
   entirely of separators, returns a single separator."
   {:added "1.0"
-  :go "filepath.Base(path), nil"}
+   :go "filepath.Base(path), nil"}
   [^String path])
 
 (defn ^String clean
@@ -43,7 +43,7 @@ Finally, any occurrences of slash are replaced by separator.
 
 If the result of this process is an empty string, returns the string \".\"."
   {:added "1.0"
-  :go "filepath.Clean(path), nil"}
+   :go "filepath.Clean(path), nil"}
   [^String path])
 
 (defn ^String dir
@@ -52,7 +52,7 @@ If the result of this process is an empty string, returns the string \".\"."
   If the path is empty, returns \".\". If the path consists entirely of separators,
   returns a single separator. The returned path does not end in a separator unless it is the root directory."
   {:added "1.0"
-  :go "filepath.Dir(path), nil"}
+   :go "filepath.Dir(path), nil"}
   [^String path])
 
 (defn ^String eval-symlinks
@@ -60,21 +60,21 @@ If the result of this process is an empty string, returns the string \".\"."
   relative to the current directory, unless one of the components is an absolute symbolic link.
   Calls clean on the result."
   {:added "1.0"
-  :go "filepath.EvalSymlinks(path)"}
+   :go "filepath.EvalSymlinks(path)"}
   [^String path])
 
 (defn ^String ext
   "Returns the file name extension used by path. The extension is the suffix beginning at the final dot
   in the final element of path; it is empty if there is no dot."
   {:added "1.0"
-  :go "filepath.Ext(path), nil"}
+   :go "filepath.Ext(path), nil"}
   [^String path])
 
 (defn ^String from-slash
   "Returns the result of replacing each slash ('/') character in path with a separator character.
   Multiple slashes are replaced by multiple separators."
   {:added "1.0"
-  :go "filepath.FromSlash(path), nil"}
+   :go "filepath.FromSlash(path), nil"}
   [^String path])
 
 (defn ^{:tag [String]} glob
@@ -85,13 +85,13 @@ If the result of this process is an empty string, returns the string \".\"."
   Ignores file system errors such as I/O errors reading directories.
   Throws exception when pattern is malformed."
   {:added "1.0"
-  :go "filepath.Glob(pattern)"}
+   :go "filepath.Glob(pattern)"}
   [^String pattern])
 
 (defn ^Boolean abs?
   "Reports whether the path is absolute."
   {:added "1.0"
-  :go "filepath.IsAbs(path), nil"}
+   :go "filepath.IsAbs(path), nil"}
   [^String path])
 
 (defn ^String join
@@ -99,7 +99,7 @@ If the result of this process is an empty string, returns the string \".\"."
   Calls clean on the result; in particular, all empty strings are ignored. On Windows,
   the result is a UNC path if and only if the first path element is a UNC path."
   {:added "1.0"
-  :go "filepath.Join(elems...), nil"}
+   :go "filepath.Join(elems...), nil"}
   [& ^String elems])
 
 (defn ^Boolean matches?
@@ -108,7 +108,7 @@ If the result of this process is an empty string, returns the string \".\"."
   Throws exception if pattern is malformed.
   On Windows, escaping is disabled. Instead, '\\' is treated as path separator."
   {:added "1.0"
-  :go "filepath.Match(pattern, name)"}
+   :go "filepath.Match(pattern, name)"}
   [^String pattern ^String name])
 
 (defn ^String rel
@@ -118,7 +118,7 @@ If the result of this process is an empty string, returns the string \".\"."
   relative to basepath or if knowing the current working directory would be necessary to compute it.
   Calls clean on the result."
   {:added "1.0"
-  :go "filepath.Rel(basepath, targpath)"}
+   :go "filepath.Rel(basepath, targpath)"}
   [^String basepath ^String targpath])
 
 (defn split
@@ -126,28 +126,28 @@ If the result of this process is an empty string, returns the string \".\"."
   If there is no separator in path, returns an empty dir and file set to path. The returned values have
   the property that path = dir+file."
   {:added "1.0"
-  :go "! _dir, _file := filepath.Split(path); _res := NewVectorFrom(MakeString(_dir), MakeString(_file))"}
+   :go "! _dir, _file := filepath.Split(path); _res := NewVectorFrom(MakeString(_dir), MakeString(_file))"}
   [^String path])
 
 (defn ^{:tag [String]} split-list
   "Splits a list of paths joined by the OS-specific list-separator, usually found in PATH or GOPATH environment variables.
   Returns an empty slice when passed an empty string."
   {:added "1.0"
-  :go "filepath.SplitList(path), nil"}
+   :go "filepath.SplitList(path), nil"}
   [^String path])
 
 (defn ^String to-slash
   "Returns the result of replacing each separator character in path with a slash ('/') character.
   Multiple separators are replaced by multiple slashes."
   {:added "1.0"
-  :go "filepath.ToSlash(path), nil"}
+   :go "filepath.ToSlash(path), nil"}
   [^String path])
 
 (defn ^String volume-name
   "Returns leading volume name. Given \"C:\\foo\\bar\" it returns \"C:\" on Windows. Given \"\\\\host\\share\\foo\"
   returns \"\\\\host\\share\". On other platforms it returns \"\"."
   {:added "1.0"
-  :go "filepath.VolumeName(path), nil"}
+   :go "filepath.VolumeName(path), nil"}
   [^String path])
 
 (def

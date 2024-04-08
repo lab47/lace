@@ -231,7 +231,7 @@
 
    For additional event types, see the examples in the code.
 "
-:added "1.0"}
+    :added "1.0"}
   lace.test
   (:require [lace.template :as temp]
             [lace.walk :as walk]))
@@ -337,7 +337,7 @@
   ;; (if (seq stacktrace)
   ;;   (let [^StackTraceElement s (first stacktrace)]
   ;;     {:file (.getFileName s) :line (.getLineNumber s)})
-    {:file nil :line nil})
+  {:file nil :line nil})
 
 (defn do-report
   "Add file and line information to a test result and call report.
@@ -438,9 +438,9 @@
            result# (apply ~pred values#)]
        (if result#
          (do-report {:type :pass, :message ~msg,
-                  :expected '~form, :actual (cons ~pred values#)})
+                     :expected '~form, :actual (cons ~pred values#)})
          (do-report {:type :fail, :message ~msg,
-                  :expected '~form, :actual (list '~'not (cons '~pred values#))}))
+                     :expected '~form, :actual (list '~'not (cons '~pred values#))}))
        result#)))
 
 (defn assert-any
@@ -451,9 +451,9 @@
   `(let [value# ~form]
      (if value#
        (do-report {:type :pass, :message ~msg,
-                :expected '~form, :actual value#})
+                   :expected '~form, :actual value#})
        (do-report {:type :fail, :message ~msg,
-                :expected '~form, :actual value#}))
+                   :expected '~form, :actual value#}))
      value#))
 
 
@@ -489,9 +489,9 @@
      (let [result# (instance? klass# object#)]
        (if result#
          (do-report {:type :pass, :message ~msg,
-                  :expected '~form, :actual (class object#)})
+                     :expected '~form, :actual (class object#)})
          (do-report {:type :fail, :message ~msg,
-                  :expected '~form, :actual (class object#)}))
+                     :expected '~form, :actual (class object#)}))
        result#)))
 
 (defmethod assert-expr 'thrown? [msg form]
@@ -502,10 +502,10 @@
         body (nthnext form 2)]
     `(try ~@body
           (do-report {:type :fail, :message ~msg,
-                   :expected '~form, :actual nil})
+                      :expected '~form, :actual nil})
           (catch ~klass e#
             (do-report {:type :pass, :message ~msg,
-                     :expected '~form, :actual e#})
+                        :expected '~form, :actual e#})
             e#))))
 
 (defmethod assert-expr 'thrown-with-msg? [msg form]
@@ -522,9 +522,9 @@
             (let [m# (:message e#)]
               (if (re-find ~re m#)
                 (do-report {:type :pass, :message ~msg,
-                         :expected '~form, :actual e#})
+                            :expected '~form, :actual e#})
                 (do-report {:type :fail, :message ~msg,
-                         :expected '~form, :actual e#})))
+                            :expected '~form, :actual e#})))
             e#))))
 
 
@@ -710,7 +710,7 @@
       (try (t)
            (catch Error e
              (do-report {:type :error, :message "Uncaught exception, not in assertion."
-                      :expected nil, :actual e})))
+                         :expected nil, :actual e})))
       (do-report {:type :end-test-var, :var v}))))
 
 (defn test-vars
@@ -765,10 +765,10 @@
   {:added "1.0"}
   ([] (run-tests *ns*))
   ([& namespaces]
-     (let [summary (assoc (apply merge-with + (map test-ns namespaces))
-                     :type :summary)]
-       (do-report summary)
-       summary)))
+   (let [summary (assoc (apply merge-with + (map test-ns namespaces))
+                   :type :summary)]
+     (do-report summary)
+     summary)))
 
 (defn run-all-tests
   "Runs all tests in all namespaces; prints results.

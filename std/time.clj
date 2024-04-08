@@ -7,39 +7,39 @@
   "Pauses the execution thread for at least the duration d (expressed in nanoseconds).
   A negative or zero duration causes sleep to return immediately."
   {:added "1.0"
-  :go "! time.Sleep(time.Duration(d)); _res, err := NIL, nil"}
+   :go "! time.Sleep(time.Duration(d)); _res, err := NIL, nil"}
   [^Int d])
 
 (defn ^Time now
   "Returns the current local time."
   {:added "1.0"
-  :go "time.Now(), nil"}
+   :go "time.Now(), nil"}
   [])
 
 (defn ^Time from-unix
   "Returns the local Time corresponding to the given Unix time, sec seconds and
   nsec nanoseconds since January 1, 1970 UTC. It is valid to pass nsec outside the range [0, 999999999]."
   {:added "1.0"
-  :go "time.Unix(int64(sec), int64(nsec)), nil"}
+   :go "time.Unix(int64(sec), int64(nsec)), nil"}
   [^Int sec ^Int nsec])
 
 (defn ^Int unix
   "Returns t as a Unix time, the number of seconds elapsed since January 1, 1970 UTC."
   {:added "1.0"
-  :go "int(t.Unix()), nil"}
+   :go "int(t.Unix()), nil"}
   [^Time t])
 
 (defn ^Int sub
   "Returns the duration t-u in nanoseconds."
   {:added "1.0"
   ;; TODO: 32-bit issue
-  :go "int(t.Sub(u)), nil"}
+   :go "int(t.Sub(u)), nil"}
   [^Time t ^Time u])
 
 (defn ^Time add
   "Returns the time t+d."
   {:added "1.0"
-  :go "t.Add(time.Duration(d)), nil"}
+   :go "t.Add(time.Duration(d)), nil"}
   [^Time t ^Int d])
 
 (defn ^Time add-date
@@ -60,21 +60,21 @@
   ns, us (or µs), ms, s, m, h."
   {:added "1.0"
   ;; TODO: 32-bit issue
-  :go "! t, err := time.ParseDuration(s); _res := int(t);"}
+   :go "! t, err := time.ParseDuration(s); _res := int(t);"}
   [^String s])
 
 (defn ^Int since
   "Returns the time in nanoseconds elapsed since t."
   {:added "1.0"
   ;; TODO: 32-bit issue
-  :go "int(time.Since(t)), nil"}
+   :go "int(time.Since(t)), nil"}
   [^Time t])
 
 (defn ^Int until
   "Returns the duration in nanoseconds until t."
   {:added "1.0"
   ;; TODO: 32-bit issue
-  :go "int(time.Until(t)), nil"}
+   :go "int(time.Until(t)), nil"}
   [^Time t])
 
 (defn ^String format
@@ -84,19 +84,19 @@
   would be displayed if it were the value; it serves as an example of the desired output.
   The same display rules will then be applied to the time value.."
   {:added "1.0"
-  :go "t.Format(layout), nil"}
+   :go "t.Format(layout), nil"}
   [^Time t ^String layout])
 
 (defn ^Double hours
   "Returns the duration (passed as a number of nanoseconds) as a floating point number of hours."
   {:added "1.0"
-  :go "time.Duration(d).Hours(), nil"}
+   :go "time.Duration(d).Hours(), nil"}
   [^Int d])
 
 (defn ^Double minutes
   "Returns the duration (passed as a number of nanoseconds) as a floating point number of minutes."
   {:added "1.0"
-  :go "time.Duration(d).Minutes(), nil"}
+   :go "time.Duration(d).Minutes(), nil"}
   [^Int d])
 
 (defn ^Int round
@@ -104,26 +104,26 @@
   The rounding behavior for halfway values is to round away from zero. If m <= 0, returns d unchanged."
   {:added "1.0"
   ;; TODO: 32-bit issue
-  :go "int(time.Duration(d).Round(time.Duration(m))), nil"}
+   :go "int(time.Duration(d).Round(time.Duration(m))), nil"}
   [^Int d ^Int m])
 
 (defn ^Double seconds
   "Returns the duration (passed as a number of nanoseconds) as a floating point number of seconds."
   {:added "1.0"
-  :go "time.Duration(d).Seconds(), nil"}
+   :go "time.Duration(d).Seconds(), nil"}
   [^Int d])
 
 (defn ^String string
   "Returns a string representing the duration in the form 72h3m0.5s."
   {:added "1.0"
-  :go "time.Duration(d).String(), nil"}
+   :go "time.Duration(d).String(), nil"}
   [^Int d])
 
 (defn ^Int truncate
   "Returns the result of rounding d toward zero to a multiple of m. If m <= 0, returns d unchanged."
   {:added "1.0"
   ;; TODO: 32-bit issue
-  :go "int(time.Duration(d).Truncate(time.Duration(m))), nil"}
+   :go "int(time.Duration(d).Truncate(time.Duration(m))), nil"}
   [^Int d ^Int m])
 
 (def
