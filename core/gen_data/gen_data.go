@@ -61,7 +61,7 @@ func {name}Setup(env *Env) error {
 }
 
 func init() {
-	builtinNSSetup["{name}"] = {name}Setup
+	builtinNSSetup["{ns}"] = {name}Setup
 }
 
 `[1:]

@@ -43,7 +43,7 @@ func NewEnv() *Env {
 
 	initEnv(res)
 
-	builtinNS := []string{"core", "repl"}
+	builtinNS := []string{"lace.core", "lace.repl"}
 
 	for _, name := range builtinNS {
 		if fn, ok := builtinNSSetup[name]; ok {

@@ -191,7 +191,14 @@ func (env *Env) FindNamespace(s Symbol) *Namespace {
 	if ns != nil {
 		ns.MaybeLazy(env, "FindNameSpace")
 	} else {
-		PopulateNativeNamespaceToEnv(env, *s.name)
+		if setup, ok := builtinNSSetup[*s.name]; ok {
+			err := setup(env)
+			if err != nil {
+				return nil
+			}
+		} else {
+			PopulateNativeNamespaceToEnv(env, *s.name)
+		}
 	}
 	return ns
 }
