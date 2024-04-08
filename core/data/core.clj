@@ -330,7 +330,7 @@
 (defn nil?
   "Returns true if x is nil, false otherwise."
   {:tag Boolean
-  :added "1.0"}
+   :added "1.0"}
   [x] (=__ x nil))
 
 (def
@@ -401,37 +401,37 @@
 (defn false?
   "Returns true if x is the value false, false otherwise."
   {:tag Boolean
-  :added "1.0"}
+   :added "1.0"}
   [x] (=__ x false))
 
 (defn true?
   "Returns true if x is the value true, false otherwise."
   {:tag Boolean
-  :added "1.0"}
+   :added "1.0"}
   [x] (=__ x true))
 
 (defn boolean?
   "Return true if x is a Boolean"
   {:tag Boolean
-  :added "1.0"}
+   :added "1.0"}
   [x] (instance? Boolean x))
 
 (defn any?
   "Returns true given any argument."
   {:tag Boolean
-  :added "1.0"}
+   :added "1.0"}
   [x] true)
 
 (defn not
   "Returns true if x is logical false, false otherwise."
   {:tag Boolean
-  :added "1.0"}
+   :added "1.0"}
   ^Boolean [x] (if x false true))
 
 (defn some?
   "Returns true if x is not nil, false otherwise."
   {:tag Boolean
-  :added "1.0"}
+   :added "1.0"}
   [x] (not (nil? x)))
 
 (def
@@ -492,7 +492,7 @@
   "Returns a Keyword with the given namespace and name.  Do not use :
   in the keyword strings, it will be added automatically."
   {:tag Keyword
-  :added "1.0"}
+   :added "1.0"}
   ;; TODO: types
   (^Keyword [name] (cond (keyword? name) name
                      (symbol? name) (keyword__ name)
@@ -1010,34 +1010,34 @@
 (defn int?
   "Return true if x is a fixed precision integer"
   {:tag Boolean
-  :added "1.0"}
+   :added "1.0"}
   ^Boolean [x] (instance? Int x))
 
 (defn pos-int?
   "Return true if x is a positive fixed precision integer"
   {:tag Boolean
-  :added "1.0"}
+   :added "1.0"}
   ^Boolean [x] (and (int? x)
                     (pos? x)))
 
 (defn neg-int?
   "Return true if x is a negative fixed precision integer"
   {:tag Boolean
-  :added "1.0"}
+   :added "1.0"}
   ^Boolean [x] (and (int? x)
                     (neg? x)))
 
 (defn nat-int?
   "Return true if x is a non-negative fixed precision integer"
   {:tag Boolean
-  :added "1.0"}
+   :added "1.0"}
   ^Boolean [x] (and (int? x)
                     (not (neg? x))))
 
 (defn double?
   "Return true if x is a Double"
   {:tag Boolean
-  :added "1.0"}
+   :added "1.0"}
   ^Boolean [x] (instance? Double x))
 
 (defn complement
@@ -1171,7 +1171,7 @@
 (defn name
   "Returns the name String of a string, symbol or keyword."
   {:tag String
-  :added "1.0"}
+   :added "1.0"}
   ;; TODO: types
   ^String [x]
   (if (string? x) x (name__ x)))
@@ -1179,7 +1179,7 @@
 (defn namespace
   "Returns the namespace String of a symbol or keyword, or nil if not present."
   {:tag String
-  :added "1.0"}
+   :added "1.0"}
   ^String [^Named x]
   (namespace__ x))
 
@@ -2664,7 +2664,7 @@
 
   Defines a function"
   {:added "1.0", :special-form true,
-  :forms '[(fn name? [params* ] exprs*) (fn name? ([params* ] exprs*)+)]}
+   :forms '[(fn name? [params* ] exprs*) (fn name? ([params* ] exprs*)+)]}
   [& sigs]
   (let [name (if (symbol? (first sigs)) (first sigs) nil)
         sigs (if name (next sigs) sigs)
@@ -3101,7 +3101,7 @@
                (if-let [e (find smap (nth v i))]
                  (assoc v i (val e))
                  v))
-             coll (range (count coll)))
+            coll (range (count coll)))
     (map #(if-let [e (find smap %)] (val e) %) coll)))
 
 (defn repeatedly
@@ -3177,12 +3177,12 @@
     (:require [my.lib1 :as lib1])
     (:use [my.lib2]))"
   {:arglists '([name docstring? attr-map? references*])
-  :added "1.0"}
+   :added "1.0"}
   [name & references]
   (let [process-reference
         (fn [[kname & args]]
           `(~(symbol "lace.core" (lace.core/name kname))
-              ~@(map #(list 'quote %) args)))
+             ~@(map #(list 'quote %) args)))
         docstring  (when (string? (first references)) (first references))
         references (if docstring (next references) references)
         name (if docstring
@@ -3261,8 +3261,8 @@
   Each such mapping is a two-element key/value vector. The key is a
   regular expression, matched against the namespace name; the value is
   a map specifying the source from which to load the external
-  dependency's root file (currently only the :url key is supported)."
-    }
+  dependency's root file (currently only the :url key is supported)."}
+    
   *ns-sources* [])
 
 (defn- throw-if
@@ -3862,8 +3862,8 @@
   bindings of functions to their names. All of the names are available
   in all of the definitions of the functions, as well as the body."
   {:added "1.0",
-  :forms '[(letfn [fnspecs*] exprs*)],
-  :special-form true}
+   :forms '[(letfn [fnspecs*] exprs*)],
+   :special-form true}
   [fnspecs & body]
   `(letfn* ~(vec (interleave (map first fnspecs)
                              (map #(cons `fn %) fnspecs)))
@@ -4455,7 +4455,7 @@
                         (fn? (deref v#))
                         (:method-table (meta (deref v#))))
            (let [fndef# (multimethod__ ~(name mm-name) ~dispatch-fn ~default ~hierarchy)]
-                 (def ~mm-name fndef#)))))))
+                (def ~mm-name fndef#)))))))
 
 (defmacro defmethod
   "Creates and installs a new method of multimethod associated with dispatch-value. "
