@@ -14,6 +14,7 @@ import (
 	"io"
 	"math"
 	"math/big"
+	"os"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -520,7 +521,7 @@ func MakeKeyword(nsname string) Keyword {
 }
 
 func ErrorArity(env *Env, n int) error {
-	name := env.RT.currentExpr.(Traceable).Name()
+	name := env.RT.topName()
 	return env.RT.NewError(fmt.Sprintf("Wrong number of args (%d) passed to %s", n, name))
 }
 
@@ -541,12 +542,12 @@ func rangeString(min, max int) string {
 }
 
 func ErrorArityMinMax(env *Env, n, min, max int) error {
-	name := env.RT.currentExpr.(Traceable).Name()
+	name := env.RT.topName()
 	return env.RT.NewError(fmt.Sprintf("Wrong number of args (%d) passed to %s; expects %s", n, name, rangeString(min, max)))
 }
 
 func ReturnArityMinMax(env *Env, n, min, max int) error {
-	name := env.RT.currentExpr.(Traceable).Name()
+	name := env.RT.topName()
 	return env.RT.NewError(fmt.Sprintf("Wrong number of args (%d) passed to %s; expects %s", n, name, rangeString(min, max)))
 }
 
@@ -841,8 +842,8 @@ func (fn *Fn) Call(env *Env, args []Object) (Object, error) {
 	for _, arity := range fn.fnExpr.arities {
 		a := len(arity.args)
 		if a == len(args) {
-			env.RT.pushFrame()
-			defer env.RT.popFrame()
+			//env.RT.pushFrame()
+			//defer env.RT.popFrame()
 			return evalLoop(env, arity.body, fn.env.addFrame(args))
 		}
 		if min > a {
@@ -877,8 +878,8 @@ func (fn *Fn) Call(env *Env, args []Object) (Object, error) {
 		vargs[i] = args[i]
 	}
 	vargs[len(vargs)-1] = restArgs
-	env.RT.pushFrame()
-	defer env.RT.popFrame()
+	//env.RT.pushFrame()
+	//defer env.RT.popFrame()
 	return evalLoop(env, v.body, fn.env.addFrame(vargs))
 }
 
@@ -923,6 +924,16 @@ func (fn *Fn) Compare(env *Env, a, b Object) (int, error) {
 }
 
 func (p Proc) Call(env *Env, args []Object) (Object, error) {
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Fprintf(os.Stderr,
+				"\nPanic from proc: %s at %s:%d\nerror: %s\n\n",
+				p.Name, p.File, p.Line, err,
+			)
+
+			panic(err)
+		}
+	}()
 	return p.Fn(env, args)
 }
 

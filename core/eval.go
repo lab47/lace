@@ -13,21 +13,20 @@ type (
 	}
 	Frame struct {
 		traceable Traceable
+		current   Position
 	}
 	Callstack struct {
 		frames []Frame
 	}
 	Runtime struct {
-		callstack   *Callstack
-		currentExpr Expr
+		callstack *Callstack
 		// GIL         sync.Mutex
 	}
 )
 
 func (rt *Runtime) clone() *Runtime {
 	return &Runtime{
-		callstack:   rt.callstack.clone(),
-		currentExpr: rt.currentExpr,
+		callstack: rt.callstack.clone(),
 	}
 }
 
@@ -38,13 +37,20 @@ func StubNewError(msg string) *EvalError {
 	return res
 }
 
-func (rt *Runtime) NewError(msg string) *EvalError {
+func (rt *Runtime) NewErrorFlushed(expr Expr, msg string) *EvalError {
+	rt.setTopPosition(expr.Pos())
+
 	res := &EvalError{
 		msg: msg,
 		rt:  rt.clone(),
 	}
-	if rt.currentExpr != nil {
-		res.pos = rt.currentExpr.Pos()
+	return res
+}
+
+func (rt *Runtime) NewError(msg string) *EvalError {
+	res := &EvalError{
+		msg: msg,
+		rt:  rt.clone(),
 	}
 	return res
 }
@@ -54,79 +60,77 @@ func StubNewArgTypeError(index int, obj Object, expectedType string) *EvalError 
 }
 
 func (rt *Runtime) NewArgTypeError(index int, obj Object, expectedType string) *EvalError {
-	name := rt.currentExpr.(Traceable).Name()
+	name := rt.topName()
 	return rt.NewError(fmt.Sprintf("Arg[%d] of %s must have type %s, got %s", index, name, expectedType, obj.GetType().ToString(false)))
-}
-
-func StubNewErrorWithPos(msg string, pos Position) *EvalError {
-	return &EvalError{
-		msg: msg,
-		pos: pos,
-	}
-}
-
-func (rt *Runtime) NewErrorWithPos(msg string, pos Position) *EvalError {
-	return &EvalError{
-		msg: msg,
-		pos: pos,
-		rt:  rt.clone(),
-	}
 }
 
 func (rt *Runtime) topName() string {
 	if len(rt.callstack.frames) == 0 {
 		return ""
 	}
-	return rt.callstack.frames[len(rt.callstack.frames)-1].traceable.Name()
+	fr := &rt.callstack.frames[len(rt.callstack.frames)-1]
+
+	if fr.traceable == nil {
+		return ""
+	}
+
+	return fr.traceable.Name()
+}
+
+func (rt *Runtime) topPos() Position {
+	if len(rt.callstack.frames) == 0 {
+		return Position{}
+	}
+	fr := &rt.callstack.frames[len(rt.callstack.frames)-1]
+
+	if fr.traceable == nil {
+		return Position{}
+	}
+
+	return fr.current
 }
 
 func (rt *Runtime) stacktrace() string {
 	var b bytes.Buffer
-	pos := Position{}
-	if rt.currentExpr != nil {
-		pos = rt.currentExpr.Pos()
-	}
-	name := "global"
 	for _, f := range rt.callstack.frames {
-		framePos := f.traceable.Pos()
-		b.WriteString(fmt.Sprintf("  %s %s:%d:%d\n", name, framePos.Filename(), framePos.startLine, framePos.startColumn))
-		name = f.traceable.Name()
-		if strings.HasPrefix(name, "#'") {
-			name = name[2:]
+		framePos := f.current
+		name := "global"
+		if f.traceable != nil {
+			name = f.traceable.Name()
 		}
+		name = strings.TrimPrefix(name, "#'")
+
+		b.WriteString(fmt.Sprintf("  %s %s:%d:%d\n", name, framePos.Filename(), framePos.startLine, framePos.startColumn))
 	}
-	b.WriteString(fmt.Sprintf("  %s %s:%d:%d", name, pos.Filename(), pos.startLine, pos.startColumn))
 	return b.String()
 }
 
-func (rt *Runtime) pushFrame() {
-	// TODO: this is all wrong. We cannot rely on
-	// currentExpr for stacktraces. Instead, each Callable
-	// should know it's name / position.
-	var tr Traceable
-	if rt.currentExpr != nil {
-		tr = rt.currentExpr.(Traceable)
-	} else {
-		tr = &CallExpr{}
-	}
-	rt.callstack.pushFrame(Frame{traceable: tr})
+func (rt *Runtime) setTopPosition(pos Position) {
+	fr := &rt.callstack.frames[len(rt.callstack.frames)-1]
+	fr.current = pos
 }
 
 func (rt *Runtime) popFrame() {
 	rt.callstack.popFrame()
 }
 
-func Eval(genv *Env, expr Expr, env *LocalEnv) (Object, error) {
-	parentExpr := genv.RT.currentExpr
-	genv.RT.currentExpr = expr
-	defer (func() { genv.RT.currentExpr = parentExpr })()
+func TopEval(genv *Env, expr Expr, env *LocalEnv) (Object, error) {
+	tr, _ := expr.(Traceable)
 
+	genv.RT.callstack.pushFrame(Frame{
+		traceable: tr,
+		current:   expr.Pos(),
+	})
+
+	return expr.Eval(genv, env)
+}
+
+func Eval(genv *Env, expr Expr, env *LocalEnv) (Object, error) {
 	obj, err := expr.Eval(genv, env)
 	if err != nil {
 		if ee, ok := err.(*EvalError); ok {
 			if ee.rt == nil {
 				ee.rt = genv.RT.clone()
-				ee.pos = expr.Pos()
 			}
 		}
 	}
@@ -206,7 +210,7 @@ func (expr *MapExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 				return nil, err
 			}
 			if res.containsKey(key) {
-				return nil, genv.RT.NewError("Duplicate key: " + key.ToString(false))
+				return nil, genv.RT.NewErrorFlushed(expr, "Duplicate key: "+key.ToString(false))
 			}
 			v, err := Eval(genv, expr.values[i], env)
 			if err != nil {
@@ -231,7 +235,7 @@ func (expr *MapExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 			return nil, err
 		}
 		if !res.Add(key, v) {
-			return nil, genv.RT.NewError("Duplicate key: " + key.ToString(false))
+			return nil, genv.RT.NewErrorFlushed(expr, "Duplicate key: "+key.ToString(false))
 		}
 	}
 	return res, nil
@@ -249,7 +253,7 @@ func (expr *SetExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 			return nil, err
 		}
 		if !ok {
-			return nil, genv.RT.NewError("Duplicate set element: " + el.ToString(false))
+			return nil, genv.RT.NewErrorFlushed(expr, "Duplicate set element: "+el.ToString(false))
 		}
 	}
 	return res, nil
@@ -325,20 +329,30 @@ func evalSeq(genv *Env, exprs []Expr, env *LocalEnv) ([]Object, error) {
 }
 
 func (expr *CallExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
-	callable, err := Eval(genv, expr.callable, env)
+	genv.RT.setTopPosition(expr.Position)
+
+	obj, err := Eval(genv, expr.callable, env)
 	if err != nil {
 		return nil, err
 	}
 
-	switch callable := callable.(type) {
+	switch callable := obj.(type) {
 	case Callable:
 		args, err := evalSeq(genv, expr.args, env)
 		if err != nil {
 			return nil, err
 		}
+
+		genv.RT.callstack.pushFrame(Frame{
+			traceable: expr,
+			current:   expr.callable.Pos(),
+		})
+
+		defer genv.RT.popFrame()
+
 		return callable.Call(genv, args)
 	default:
-		return nil, genv.RT.NewErrorWithPos(callable.ToString(false)+" is not a Fn", expr.callable.Pos())
+		return nil, genv.RT.NewErrorFlushed(expr, callable.ToString(false)+" is not a Fn")
 	}
 }
 
@@ -372,7 +386,7 @@ func (expr *ThrowExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 	case Error:
 		return nil, sv
 	default:
-		return nil, genv.RT.NewError("Cannot throw " + e.ToString(false))
+		return nil, genv.RT.NewErrorFlushed(expr, "Cannot throw "+e.ToString(false))
 	}
 }
 
@@ -404,7 +418,7 @@ func (expr *TryExpr) Eval(genv *Env, env *LocalEnv) (obj Object, err error) {
 }
 
 func (expr *CatchExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
-	return nil, genv.RT.NewError("This should never happen!")
+	return nil, genv.RT.NewErrorFlushed(expr, "This should never happen!")
 }
 
 func evalBody(genv *Env, body []Expr, env *LocalEnv) (Object, error) {
@@ -464,7 +478,7 @@ func (expr *FnExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 }
 
 func (expr *FnArityExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
-	return nil, genv.RT.NewError("This should never happen!")
+	return nil, genv.RT.NewErrorFlushed(expr, "This should never happen!")
 }
 
 func (expr *LetExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {

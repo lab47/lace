@@ -734,7 +734,10 @@ func parseDef(obj Object, ctx *ParseContext, isForLinter bool) (*DefExpr, error)
 		}
 		symWithoutNs := sym
 		symWithoutNs.ns = nil
-		vr := ctx.Env.CurrentNamespace().Intern(symWithoutNs)
+		vr, err := ctx.Env.CurrentNamespace().Intern(ctx.Env, symWithoutNs)
+		if err != nil {
+			return nil, err
+		}
 		if isForLinter {
 			vr.isGloballyUsed = true
 		}
@@ -745,7 +748,6 @@ func parseDef(obj Object, ctx *ParseContext, isForLinter bool) (*DefExpr, error)
 			Position:         GetPosition(obj),
 			isCreatedByMacro: isCreatedByMacro(seq),
 		}
-		var err error
 		meta = sym.GetMeta()
 		if count == 3 {
 			res.value, err = Parse(Third(seq), ctx)
@@ -1713,7 +1715,10 @@ func parseList(env *Env, obj Object, ctx *ParseContext) (Expr, error) {
 							printParseError(obj.GetInfo().Pos(), "Unable to resolve symbol: "+sym.ToString(false))
 						}
 					}
-					vr = InternFakeSymbol(ctx.Env, symNs, sym)
+					vr, err = InternFakeSymbol(ctx.Env, symNs, sym)
+					if err != nil {
+						return nil, err
+					}
 				}
 				vr.isUsed = true
 				vr.isGloballyUsed = true
@@ -1836,19 +1841,19 @@ func parseList(env *Env, obj Object, ctx *ParseContext) (Expr, error) {
 	return res, nil
 }
 
-func InternFakeSymbol(env *Env, ns *Namespace, sym Symbol) *Var {
+func InternFakeSymbol(env *Env, ns *Namespace, sym Symbol) (*Var, error) {
 	if ns != nil {
 		fakeSym := Symbol{
 			ns:   nil,
 			name: sym.name,
 		}
-		return ns.Intern(fakeSym)
+		return ns.Intern(env, fakeSym)
 	}
 	fakeSym := Symbol{
 		ns:   nil,
 		name: STRINGS.Intern(sym.ToString(false)),
 	}
-	return env.CurrentNamespace().Intern(fakeSym)
+	return env.CurrentNamespace().Intern(env, fakeSym)
 }
 
 func isInteropSymbol(sym Symbol) bool {
@@ -1936,7 +1941,11 @@ func parseSymbol(obj Object, ctx *ParseContext) (Expr, error) {
 			}
 		}
 	}
-	return MakeVarRefExpr(InternFakeSymbol(ctx.Env, symNs, sym), obj), nil
+	vr, err := InternFakeSymbol(ctx.Env, symNs, sym)
+	if err != nil {
+		return nil, err
+	}
+	return MakeVarRefExpr(vr, obj), nil
 }
 
 func Parse(obj Object, ctx *ParseContext) (Expr, error) {

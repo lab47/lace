@@ -553,7 +553,7 @@ func Init(env *Env, ns *Namespace) {
 }
 
 func init() {
-	AddNativeNamespace("math", func(env *Env) error {
+	AddNativeNamespace("lace.math", func(env *Env) error {
 		ns := env.EnsureNamespace(MakeSymbol("lace.math"))
 		Init(env, ns)
 		return nil

@@ -66,7 +66,7 @@ func Init(env *Env, ns *Namespace) {
 }
 
 func init() {
-	AddNativeNamespace("io", func(env *Env) error {
+	AddNativeNamespace("lace.io", func(env *Env) error {
 		ns := env.EnsureNamespace(MakeSymbol("lace.io"))
 		Init(env, ns)
 		return nil

@@ -728,7 +728,10 @@ var procIntern = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	vr := ns.Intern(sym)
+	vr, err := ns.Intern(env, sym)
+	if err != nil {
+		return nil, err
+	}
 	if len(args) == 3 {
 		vr.Value = args[2]
 	}
@@ -2698,7 +2701,10 @@ var procInternFakeVar = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 	isMacro := ToBool(args[2])
-	res := InternFakeSymbol(env, env.FindNamespace(nsSym), sym)
+	res, err := InternFakeSymbol(env, env.FindNamespace(nsSym), sym)
+	if err != nil {
+		return nil, err
+	}
 	res.isMacro = isMacro
 	return res, nil
 }
@@ -2932,6 +2938,11 @@ func ProcessReader(env *Env, reader *Reader, filename string, phase Phase) error
 		}
 		parseContext.Env.SetFilename(MakeString(s))
 	}
+
+	// Set it up, we update it constantly below.
+	env.RT.callstack.pushFrame(Frame{})
+	defer env.RT.popFrame()
+
 	for {
 		obj, err := TryRead(env, reader)
 		if err == io.EOF {
@@ -2952,6 +2963,9 @@ func ProcessReader(env *Env, reader *Reader, filename string, phase Phase) error
 		if phase == PARSE {
 			continue
 		}
+
+		env.RT.setTopPosition(expr.Pos())
+
 		obj, err = TryEval(env, expr)
 		if err != nil {
 			fmt.Fprintln(Stderr, err)
@@ -3008,6 +3022,9 @@ func processInEnvInNS(env *Env, ns *Namespace, data []byte) error {
 	cur := env.CurrentNamespace()
 	env.SetCurrentNamespace(ns)
 	defer func() { env.SetCurrentNamespace(cur) }()
+
+	env.RT.callstack.pushFrame(Frame{})
+	defer env.RT.popFrame()
 
 	header, p, err := UnpackHeader(data, env)
 	if err != nil {
@@ -3152,7 +3169,11 @@ func knownMacrosToMap(km Object) (Map, error) {
 }
 
 func ReadConfig(env *Env, filename string, workingDir string) error {
-	LINTER_CONFIG = env.CoreNamespace.Intern(MakeSymbol("*linter-config*"))
+	var err error
+	LINTER_CONFIG, err = env.CoreNamespace.Intern(env, MakeSymbol("*linter-config*"))
+	if err != nil {
+		return err
+	}
 	LINTER_CONFIG.Value = EmptyArrayMap()
 	configFileName := findConfigFile(filename, workingDir, false)
 	if configFileName == "" {

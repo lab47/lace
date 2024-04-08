@@ -16,12 +16,12 @@ func InternsOrThunks(env *Env, ns *Namespace) {
 	ns.ResetMeta(MakeMeta(nil, `Implements hexadecimal encoding and decoding.`, "1.0"))
 
 	
-	ns.InternVar("decode-string", decode_string_,
+	ns.InternVar(env, "decode-string", decode_string_,
 		MakeMeta(
 			NewListFrom(NewVectorFrom(MakeSymbol("s"))),
 			`Returns the bytes represented by the hexadecimal string s.`, "1.0").Plus(MakeKeyword("tag"), String{S: "String"}))
 
-	ns.InternVar("encode-string", encode_string_,
+	ns.InternVar(env, "encode-string", encode_string_,
 		MakeMeta(
 			NewListFrom(NewVectorFrom(MakeSymbol("s"))),
 			`Returns the hexadecimal encoding of s.`, "1.0").Plus(MakeKeyword("tag"), String{S: "String"}))

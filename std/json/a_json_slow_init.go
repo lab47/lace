@@ -16,14 +16,14 @@ func InternsOrThunks(env *Env, ns *Namespace) {
 	ns.ResetMeta(MakeMeta(nil, `Implements encoding and decoding of JSON as defined in RFC 4627.`, "1.0"))
 
 	
-	ns.InternVar("read-string", read_string_,
+	ns.InternVar(env, "read-string", read_string_,
 		MakeMeta(
 			NewListFrom(NewVectorFrom(MakeSymbol("s")), NewVectorFrom(MakeSymbol("s"), MakeSymbol("opts"))),
 			`Parses the JSON-encoded data and return the result as a Joker value.
   Optional opts map may have the following keys:
   :keywords? - if true, JSON keys will be converted from strings to keywords.`, "1.0"))
 
-	ns.InternVar("write-string", write_string_,
+	ns.InternVar(env, "write-string", write_string_,
 		MakeMeta(
 			NewListFrom(NewVectorFrom(MakeSymbol("v"))),
 			`Returns the JSON encoding of v.`, "1.0"))

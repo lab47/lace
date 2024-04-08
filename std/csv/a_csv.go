@@ -87,7 +87,7 @@ func Init(env *Env, ns *Namespace) {
 }
 
 func init() {
-	AddNativeNamespace("csv", func(env *Env) error {
+	AddNativeNamespace("lace.csv", func(env *Env) error {
 		ns := env.EnsureNamespace(MakeSymbol("lace.csv"))
 		Init(env, ns)
 		return nil

@@ -47,7 +47,7 @@ func Init(env *Env, ns *Namespace) {
 }
 
 func init() {
-	AddNativeNamespace("base64", func(env *Env) error {
+	AddNativeNamespace("lace.base64", func(env *Env) error {
 		ns := env.EnsureNamespace(MakeSymbol("lace.base64"))
 		Init(env, ns)
 		return nil

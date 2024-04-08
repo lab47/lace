@@ -14,15 +14,25 @@ func init() {
 	privateMeta = v.(Map)
 }
 
-func intern(env *Env, name string, proc ProcFn, procName string) {
-	vr := env.CoreNamespace.Intern(MakeSymbol(name))
-	vr.Value = Proc{Fn: proc, Name: procName}
-	vr.isPrivate = true
-	vr.meta = privateMeta
-}
+func initEnv(env *Env) error {
+	var err error
+	intern := func(env *Env, name string, proc ProcFn, procName string) {
+		if err != nil {
+			return
+		}
 
-func initEnv(env *Env) {
-	env.CoreNamespace.InternVar("*assert*", Boolean{B: true},
+		var vr *Var
+		vr, err = env.CoreNamespace.Intern(env, MakeSymbol(name))
+		if err != nil {
+			return
+		}
+
+		vr.Value = Proc{Fn: proc, Name: procName}
+		vr.isPrivate = true
+		vr.meta = privateMeta
+	}
+
+	env.CoreNamespace.InternVar(env, "*assert*", Boolean{B: true},
 		MakeMeta(nil, "When set to logical false, assert is a noop. Defaults to true.", "1.0"))
 
 	intern(env, "list__", procList, "procList")
@@ -195,6 +205,8 @@ func initEnv(env *Env) {
 	intern(env, "go-spew__", procGoSpew, "procGoSpew")
 	intern(env, "verbosity-level__", procVerbosityLevel, "procVerbosityLevel")
 	intern(env, "exit__", procExit, "procExit")
+
+	return err
 }
 
 func lateInitializations() {

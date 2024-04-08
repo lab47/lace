@@ -49,7 +49,7 @@ func Init(env *Env, ns *Namespace) {
 }
 
 func init() {
-	AddNativeNamespace("hex", func(env *Env) error {
+	AddNativeNamespace("lace.hex", func(env *Env) error {
 		ns := env.EnsureNamespace(MakeSymbol("lace.hex"))
 		Init(env, ns)
 		return nil

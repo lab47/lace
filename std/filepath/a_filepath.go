@@ -309,7 +309,7 @@ func Init(env *Env, ns *Namespace) {
 }
 
 func init() {
-	AddNativeNamespace("filepath", func(env *Env) error {
+	AddNativeNamespace("lace.filepath", func(env *Env) error {
 		ns := env.EnsureNamespace(MakeSymbol("lace.filepath"))
 		Init(env, ns)
 		return nil

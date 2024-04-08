@@ -323,7 +323,7 @@ func (n *NSBuilder) buildProc(fn any) (ProcFn, int, error) {
 			objArgs := args[1].Interface().([]Object)
 
 			if len(objArgs) != 1 {
-				return []reflect.Value{nilObject, reflect.ValueOf(ErrorArity(env, 1))}
+				return []reflect.Value{nilObject, reflect.ValueOf(ErrorArityMinMax(env, len(objArgs), 1, 1))}
 			}
 
 			arg, err := argIn[0](env, 0, objArgs[0])
@@ -346,7 +346,7 @@ func (n *NSBuilder) buildProc(fn any) (ProcFn, int, error) {
 			objArgs := args[1].Interface().([]Object)
 
 			if len(objArgs) != passed {
-				return []reflect.Value{nilObject, reflect.ValueOf(ErrorArity(env, passed))}
+				return []reflect.Value{nilObject, reflect.ValueOf(ErrorArityMinMax(env, len(objArgs), passed, passed))}
 			}
 
 			dest := make([]reflect.Value, t.NumIn())
@@ -456,7 +456,7 @@ func (b *NSBuilder) Def(name string, obj Object) {
 		NewListFrom(),
 		"", "x",
 	)
-	b.ns.InternVar(name, obj, m)
+	b.ns.InternVar(b.env, name, obj, m)
 }
 
 func (n *NSBuilder) Defn(b *DefnInfo) *NSBuilder {
@@ -477,6 +477,10 @@ func (n *NSBuilder) Defn(b *DefnInfo) *NSBuilder {
 			file, line = rf.FileLine(rv.Pointer())
 		}
 
+		if file == "" {
+			_, file, line, _ = runtime.Caller(1)
+		}
+
 		p := Proc{
 			Fn:      procFn,
 			Name:    b.Name,
@@ -487,9 +491,9 @@ func (n *NSBuilder) Defn(b *DefnInfo) *NSBuilder {
 
 		meta := n.makeMeta(b)
 
-		n.ns.InternVar(b.Name, p, meta)
+		n.ns.InternVar(n.env, b.Name, p, meta)
 		for _, a := range b.Aliases {
-			n.ns.InternVar(a, p, meta)
+			n.ns.InternVar(n.env, a, p, meta)
 		}
 
 		return n
@@ -525,6 +529,8 @@ func (n *NSBuilder) Defn(b *DefnInfo) *NSBuilder {
 		return fns[i].arity < fns[j].arity
 	})
 
+	nilErr := reflect.Zero(reflect.TypeFor[error]())
+
 	dispatch := reflect.MakeFunc(reflect.TypeFor[ProcFn](), func(args []reflect.Value) (results []reflect.Value) {
 		env := args[0].Interface().(*Env)
 		objArgs := args[1].Interface().([]Object)
@@ -532,7 +538,11 @@ func (n *NSBuilder) Defn(b *DefnInfo) *NSBuilder {
 		for _, fn := range fns {
 			if fn.arity == len(objArgs) {
 				ret, err := fn.proc(env, objArgs)
-				return []reflect.Value{reflect.ValueOf(ret), reflect.ValueOf(err)}
+				if err == nil {
+					return []reflect.Value{reflect.ValueOf(ret), nilErr}
+				} else {
+					return []reflect.Value{reflect.ValueOf(ret), reflect.ValueOf(err)}
+				}
 			}
 		}
 
@@ -556,6 +566,10 @@ func (n *NSBuilder) Defn(b *DefnInfo) *NSBuilder {
 		file, line = rf.FileLine(rv.Pointer())
 	}
 
+	if file == "" {
+		_, file, line, _ = runtime.Caller(1)
+	}
+
 	p := Proc{
 		Fn:      procFn,
 		Name:    b.Name,
@@ -566,9 +580,9 @@ func (n *NSBuilder) Defn(b *DefnInfo) *NSBuilder {
 
 	meta := n.makeMeta(b)
 
-	n.ns.InternVar(b.Name, p, meta)
+	n.ns.InternVar(n.env, b.Name, p, meta)
 	for _, a := range b.Aliases {
-		n.ns.InternVar(a, p, meta)
+		n.ns.InternVar(n.env, a, p, meta)
 	}
 
 	return n

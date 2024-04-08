@@ -178,7 +178,7 @@ func processReplCommand(env *core.Env, reader *core.Reader, phase core.Phase, pa
 		return false, nil
 	}
 
-	res, err := core.Eval(env, expr, nil)
+	res, err := core.TopEval(env, expr, nil)
 	if err != nil {
 		if _, ok := err.(*core.ExitError); ok {
 			return true, err
@@ -711,7 +711,11 @@ func main() {
 		os.Exit(code)
 	})
 
-	env := core.NewEnv()
+	env, err := core.NewEnv()
+	if err != nil {
+		fmt.Printf("unable to initialize environment: %s", err)
+		os.Exit(1)
+	}
 
 	env.InitEnv(core.Stdin, core.Stdout, core.Stderr, os.Args[1:])
 
@@ -882,8 +886,6 @@ func main() {
 			}
 		}
 	}
-
-	var err error
 
 	if replSocket != "" {
 		err = srepl(env, replSocket, phase)

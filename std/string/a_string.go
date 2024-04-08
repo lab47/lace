@@ -487,7 +487,7 @@ func Init(env *Env, ns *Namespace) {
 }
 
 func init() {
-	AddNativeNamespace("string", func(env *Env) error {
+	AddNativeNamespace("lace.string", func(env *Env) error {
 		ns := env.EnsureNamespace(MakeSymbol("lace.string"))
 		Init(env, ns)
 		return nil

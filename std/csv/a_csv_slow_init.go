@@ -16,7 +16,7 @@ func InternsOrThunks(env *Env, ns *Namespace) {
 	ns.ResetMeta(MakeMeta(nil, `Reads and writes comma-separated values (CSV) files as defined in RFC 4180.`, "1.0"))
 
 	
-	ns.InternVar("csv-seq", csv_seq_,
+	ns.InternVar(env, "csv-seq", csv_seq_,
 		MakeMeta(
 			NewListFrom(NewVectorFrom(MakeSymbol("rdr")), NewVectorFrom(MakeSymbol("rdr"), MakeSymbol("opts"))),
 			`Returns the csv records from rdr as a lazy sequence.
@@ -49,7 +49,7 @@ func InternsOrThunks(env *Env, ns *Namespace) {
   This is done even if the field delimiter, comma, is white space.
   Default value is false.`, "1.0"))
 
-	ns.InternVar("write", write_,
+	ns.InternVar(env, "write", write_,
 		MakeMeta(
 			NewListFrom(NewVectorFrom(MakeSymbol("f"), MakeSymbol("data")), NewVectorFrom(MakeSymbol("f"), MakeSymbol("data"), MakeSymbol("opts"))),
 			`Writes records to a CSV encoded file.
@@ -57,7 +57,7 @@ func InternsOrThunks(env *Env, ns *Namespace) {
   data must be Seqable, each element of which must be Seqable as well.
   opts is as in lace.csv/write-string.`, "1.0"))
 
-	ns.InternVar("write-string", write_string_,
+	ns.InternVar(env, "write-string", write_string_,
 		MakeMeta(
 			NewListFrom(NewVectorFrom(MakeSymbol("data")), NewVectorFrom(MakeSymbol("data"), MakeSymbol("opts"))),
 			`Writes records to a string in CSV format and returns the string.

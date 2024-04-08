@@ -16,12 +16,12 @@ func InternsOrThunks(env *Env, ns *Namespace) {
 	ns.ResetMeta(MakeMeta(nil, `Provides basic interfaces to I/O primitives.`, "1.0"))
 
 	
-	ns.InternVar("close", close_,
+	ns.InternVar(env, "close", close_,
 		MakeMeta(
 			NewListFrom(NewVectorFrom(MakeSymbol("f"))),
 			`Closes f (IOWriter, IOReader, or File) if possible. Otherwise throws an error.`, "1.0"))
 
-	ns.InternVar("copy", copy_,
+	ns.InternVar(env, "copy", copy_,
 		MakeMeta(
 			NewListFrom(NewVectorFrom(MakeSymbol("dst"), MakeSymbol("src"))),
 			`Copies from src to dst until either EOF is reached on src or an error occurs.
@@ -29,7 +29,7 @@ func InternsOrThunks(env *Env, ns *Namespace) {
   src must be IOReader, e.g. as returned by lace.os/open.
   dst must be IOWriter, e.g. as returned by lace.os/create.`, "1.0").Plus(MakeKeyword("tag"), String{S: "Int"}))
 
-	ns.InternVar("pipe", pipe_,
+	ns.InternVar(env, "pipe", pipe_,
 		MakeMeta(
 			NewListFrom(NewVectorFrom()),
 			`Pipe creates a synchronous in-memory pipe. It can be used to connect code expecting an IOReader

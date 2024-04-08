@@ -54,7 +54,7 @@ func Init(env *Env, ns *Namespace) {
 }
 
 func init() {
-	AddNativeNamespace("json", func(env *Env) error {
+	AddNativeNamespace("lace.json", func(env *Env) error {
 		ns := env.EnsureNamespace(MakeSymbol("lace.json"))
 		Init(env, ns)
 		return nil

@@ -52,8 +52,8 @@
 (defn raw-quoted-string
   "Returns a Go-style backtick-quoted string with backticks handled by appending double-quoted backticks"
   [s]
-  (str "`" (rpl s "`" "` + \"`\" + `") "`")
-  )
+  (str "`" (rpl s "`" "` + \"`\" + `") "`"))
+  
 
 (defn go-name
   "Convert Clojure-style function name to unique Go-style name suitable as its internal implementation."
@@ -141,8 +141,8 @@
   [m]
   (let [m (dissoc m :doc :added :arglists :ns :name :file :line :column :go)]
     (s/join "" (map #(-> addmeta-template
-                    (rpl "{key}" (s/replace-first (str (key %)) ":" ""))
-                    (rpl "{value}" (make-value (val %)))) m))))
+                      (rpl "{key}" (s/replace-first (str (key %)) ":" ""))
+                      (rpl "{value}" (make-value (val %)))) m))))
 
 (defn generate-fn-decl
   [ns-name ns-name-final k v]
@@ -273,7 +273,7 @@
         go-non-fns (sort-by first (ns-public-go-non-fns ns))
         go-fns (sort-by first (ns-public-go-fns ns))
         fn-decls (for [[k v] go-fns]
-              (generate-fn-decl ns-name ns-name-final k v))
+                  (generate-fn-decl ns-name ns-name-final k v))
         non-fn-decls (for [[k v] go-non-fns]
                        (generate-non-fn-decl ns-name ns-name-final k v))
         non-fn-inits (for [[k v] go-non-fns]
@@ -303,7 +303,7 @@
         go-non-fns (sort-by first (ns-public-go-non-fns ns))
         go-fns (sort-by first (ns-public-go-fns ns))
         fn-decls (for [[k v] go-fns]
-              (generate-fn-decl ns-name ns-name-final k v))
+                  (generate-fn-decl ns-name ns-name-final k v))
         non-fn-decls (for [[k v] go-non-fns]
                        (generate-non-fn-decl ns-name ns-name-final k v))
         non-fn-inits (for [[k v] go-non-fns]

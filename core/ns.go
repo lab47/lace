@@ -110,9 +110,9 @@ func (ns *Namespace) ReferAll(other *Namespace) {
 	}
 }
 
-func (ns *Namespace) Intern(sym Symbol) *Var {
+func (ns *Namespace) Intern(env *Env, sym Symbol) (*Var, error) {
 	if sym.ns != nil {
-		panic(StubNewError("Can't intern namespace-qualified symbol " + sym.ToString(false)))
+		return nil, StubNewError("Can't intern namespace-qualified symbol " + sym.ToString(false))
 	}
 	sym.meta = nil
 	existingVar, ok := ns.mappings[sym.name]
@@ -122,7 +122,7 @@ func (ns *Namespace) Intern(sym Symbol) *Var {
 			name: sym,
 		}
 		ns.mappings[sym.name] = newVar
-		return newVar
+		return newVar, nil
 	}
 	if existingVar.ns != ns {
 		if existingVar.ns.Name.Equals(criticalSymbols.lace_core) {
@@ -135,24 +135,27 @@ func (ns *Namespace) Intern(sym Symbol) *Var {
 				printParseWarning(sym.GetInfo().Pos(), fmt.Sprintf("WARNING: %s already refers to: %s in namespace %s, being replaced by: %s\n",
 					sym.ToString(false), existingVar.ToString(false), ns.Name.ToString(false), newVar.ToString(false)))
 			}
-			return newVar
+			return newVar, nil
 		}
-		panic(StubNewErrorWithPos(fmt.Sprintf("WARNING: %s already refers to: %s in namespace %s",
-			sym.ToString(false), existingVar.ToString(false), ns.ToString(false)), sym.GetInfo().Pos()))
+		return nil, StubNewError(fmt.Sprintf("WARNING: %s already refers to: %s in namespace %s",
+			sym.ToString(false), existingVar.ToString(false), ns.ToString(false)))
 	}
 	if LINTER_MODE && existingVar.expr != nil && !existingVar.ns.Name.Equals(criticalSymbols.lace_core) {
 		printParseWarning(sym.GetInfo().Pos(), "Duplicate def of "+existingVar.ToString(false))
 	}
-	return existingVar
+	return existingVar, nil
 }
 
-func (ns *Namespace) InternVar(name string, val Object, meta *ArrayMap) *Var {
-	vr := ns.Intern(MakeSymbol(name))
+func (ns *Namespace) InternVar(env *Env, name string, val Object, meta *ArrayMap) (*Var, error) {
+	vr, err := ns.Intern(env, MakeSymbol(name))
+	if err != nil {
+		return nil, err
+	}
 	vr.Value = val
 	meta.Add(criticalKeywords.ns, ns)
 	meta.Add(criticalKeywords.name, vr.name)
 	vr.meta = meta
-	return vr
+	return vr, nil
 }
 
 func (ns *Namespace) AddAlias(alias Symbol, namespace *Namespace) {
@@ -179,6 +182,6 @@ func (ns *Namespace) Mappings() map[*string]*Var {
 	return ns.mappings
 }
 
-func (ns *Namespace) Aliases() map[*string]*Namespace {
-	return ns.aliases
+func (ns *Namespace) Aliases() map[*string]*Var {
+	return ns.mappings
 }

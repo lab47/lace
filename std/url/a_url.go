@@ -82,7 +82,7 @@ func Init(env *Env, ns *Namespace) {
 }
 
 func init() {
-	AddNativeNamespace("url", func(env *Env) error {
+	AddNativeNamespace("lace.url", func(env *Env) error {
 		ns := env.EnsureNamespace(MakeSymbol("lace.url"))
 		Init(env, ns)
 		return nil

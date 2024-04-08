@@ -4,7 +4,6 @@ import "fmt"
 
 type EvalError struct {
 	msg  string
-	pos  Position
 	rt   *Runtime
 	hash uint32
 }
@@ -38,7 +37,7 @@ func (err *EvalError) Message() Object {
 }
 
 func (err *EvalError) Error() string {
-	pos := err.pos
+	pos := err.rt.topPos()
 	if err.rt == nil {
 		return fmt.Sprintf("%s:%d:%d: Eval error: %s", pos.Filename(), pos.startLine, pos.startColumn, err.msg)
 	}

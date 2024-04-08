@@ -30,7 +30,7 @@
 (defn exit
   "Causes the current program to exit with the given status code."
   {:added "1.0"
-   :go "NIL, nil; ExitJoker(code)"}
+   :go "NIL, nil; Exit(code)"}
   [^Int code])
 
 (defn sh

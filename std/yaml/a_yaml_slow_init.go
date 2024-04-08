@@ -16,12 +16,12 @@ func InternsOrThunks(env *Env, ns *Namespace) {
 	ns.ResetMeta(MakeMeta(nil, `Implements encoding and decoding of YAML.`, "1.0"))
 
 	
-	ns.InternVar("read-string", read_string_,
+	ns.InternVar(env, "read-string", read_string_,
 		MakeMeta(
 			NewListFrom(NewVectorFrom(MakeSymbol("s"))),
 			`Parses the YAML-encoded data and return the result as a Joker value.`, "1.0"))
 
-	ns.InternVar("write-string", write_string_,
+	ns.InternVar(env, "write-string", write_string_,
 		MakeMeta(
 			NewListFrom(NewVectorFrom(MakeSymbol("v"))),
 			`Returns the YAML encoding of v.`, "1.0"))

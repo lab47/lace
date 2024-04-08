@@ -29,7 +29,7 @@ func Init(env *Env, ns *Namespace) {
 }
 
 func init() {
-	AddNativeNamespace("uuid", func(env *Env) error {
+	AddNativeNamespace("lace.uuid", func(env *Env) error {
 		ns := env.EnsureNamespace(MakeSymbol("lace.uuid"))
 		Init(env, ns)
 		return nil

@@ -577,7 +577,10 @@ func unpackDefExpr(env *Env, p []byte, header *PackHeader) (*DefExpr, []byte, er
 	varName := name
 	varName.ns = nil
 	ns := header.GlobalEnv.CurrentNamespace()
-	vr := ns.Intern(varName)
+	vr, err := ns.Intern(env, varName)
+	if err != nil {
+		return nil, nil, err
+	}
 	value, p, err := UnpackExprOrNull(env, p, header)
 	if err != nil {
 		return nil, nil, err

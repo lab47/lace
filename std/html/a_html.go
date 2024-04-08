@@ -48,7 +48,7 @@ func Init(env *Env, ns *Namespace) {
 }
 
 func init() {
-	AddNativeNamespace("html", func(env *Env) error {
+	AddNativeNamespace("lace.html", func(env *Env) error {
 		ns := env.EnsureNamespace(MakeSymbol("lace.html"))
 		Init(env, ns)
 		return nil

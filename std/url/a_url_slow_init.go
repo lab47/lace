@@ -16,12 +16,12 @@ func InternsOrThunks(env *Env, ns *Namespace) {
 	ns.ResetMeta(MakeMeta(nil, `Parses URLs and implements query escaping.`, "1.0"))
 
 	
-	ns.InternVar("path-escape", path_escape_,
+	ns.InternVar(env, "path-escape", path_escape_,
 		MakeMeta(
 			NewListFrom(NewVectorFrom(MakeSymbol("s"))),
 			`Escapes the string so it can be safely placed inside a URL path segment.`, "1.0").Plus(MakeKeyword("tag"), String{S: "String"}))
 
-	ns.InternVar("path-unescape", path_unescape_,
+	ns.InternVar(env, "path-unescape", path_unescape_,
 		MakeMeta(
 			NewListFrom(NewVectorFrom(MakeSymbol("s"))),
 			`Does the inverse transformation of path-escape, converting each 3-byte encoded
@@ -30,12 +30,12 @@ func InternsOrThunks(env *Env, ns *Namespace) {
 
   PathUnescape is identical to QueryUnescape except that it does not unescape '+' to ' ' (space).`, "1.0").Plus(MakeKeyword("tag"), String{S: "String"}))
 
-	ns.InternVar("query-escape", query_escape_,
+	ns.InternVar(env, "query-escape", query_escape_,
 		MakeMeta(
 			NewListFrom(NewVectorFrom(MakeSymbol("s"))),
 			`Escapes the string so it can be safely placed inside a URL query.`, "1.0").Plus(MakeKeyword("tag"), String{S: "String"}))
 
-	ns.InternVar("query-unescape", query_unescape_,
+	ns.InternVar(env, "query-unescape", query_unescape_,
 		MakeMeta(
 			NewListFrom(NewVectorFrom(MakeSymbol("s"))),
 			`Does the inverse transformation of query-escape, converting each 3-byte encoded

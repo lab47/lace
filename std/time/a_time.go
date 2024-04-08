@@ -371,7 +371,7 @@ func Init(env *Env, ns *Namespace) {
 }
 
 func init() {
-	AddNativeNamespace("time", func(env *Env) error {
+	AddNativeNamespace("lace.time", func(env *Env) error {
 		ns := env.EnsureNamespace(MakeSymbol("lace.time"))
 		Init(env, ns)
 		return nil

@@ -327,7 +327,7 @@ func Init(env *Env, ns *Namespace) {
 }
 
 func init() {
-	AddNativeNamespace("strconv", func(env *Env) error {
+	AddNativeNamespace("lace.strconv", func(env *Env) error {
 		ns := env.EnsureNamespace(MakeSymbol("lace.strconv"))
 		Init(env, ns)
 		return nil
