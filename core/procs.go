@@ -165,6 +165,10 @@ func ExtractIOWriter(env *Env, args []Object, index int) (io.Writer, error) {
 }
 
 var procMeta = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	switch obj := args[0].(type) {
 	case Meta:
 		meta := obj.GetMeta()
@@ -181,7 +185,9 @@ var procMeta = func(env *Env, args []Object) (Object, error) {
 }
 
 var procWithMeta = func(env *Env, args []Object) (Object, error) {
-	CheckArity(env, args, 2, 2)
+	if err := CheckArity(env, args, 2, 2); err != nil {
+		return nil, err
+	}
 	m, err := EnsureMeta(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -198,6 +204,10 @@ var procWithMeta = func(env *Env, args []Object) (Object, error) {
 }
 
 var procIsZero = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	n, err := EnsureNumber(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -207,6 +217,10 @@ var procIsZero = func(env *Env, args []Object) (Object, error) {
 }
 
 var procIsPos = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	n, err := EnsureNumber(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -216,6 +230,10 @@ var procIsPos = func(env *Env, args []Object) (Object, error) {
 }
 
 var procIsNeg = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	n, err := EnsureNumber(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -225,6 +243,10 @@ var procIsNeg = func(env *Env, args []Object) (Object, error) {
 }
 
 var procAdd = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 2, 2); err != nil {
+		return nil, err
+	}
+
 	x, err := AssertNumber(env, args[0], "")
 	if err != nil {
 		return nil, err
@@ -238,6 +260,10 @@ var procAdd = func(env *Env, args []Object) (Object, error) {
 }
 
 var procAddEx = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 2, 2); err != nil {
+		return nil, err
+	}
+
 	x, err := AssertNumber(env, args[0], "")
 	if err != nil {
 		return nil, err
@@ -251,6 +277,10 @@ var procAddEx = func(env *Env, args []Object) (Object, error) {
 }
 
 var procMultiply = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 2, 2); err != nil {
+		return nil, err
+	}
+
 	x, err := AssertNumber(env, args[0], "")
 	if err != nil {
 		return nil, err
@@ -264,6 +294,10 @@ var procMultiply = func(env *Env, args []Object) (Object, error) {
 }
 
 var procMultiplyEx = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 2, 2); err != nil {
+		return nil, err
+	}
+
 	x, err := AssertNumber(env, args[0], "")
 	if err != nil {
 		return nil, err
@@ -277,6 +311,10 @@ var procMultiplyEx = func(env *Env, args []Object) (Object, error) {
 }
 
 var procSubtract = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 2); err != nil {
+		return nil, err
+	}
+
 	var a, b Object
 	if len(args) == 1 {
 		a = Int{I: 0}
@@ -298,6 +336,10 @@ var procSubtract = func(env *Env, args []Object) (Object, error) {
 }
 
 var procSubtractEx = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 2); err != nil {
+		return nil, err
+	}
+
 	var a, b Object
 	if len(args) == 1 {
 		a = Int{I: 0}
@@ -319,6 +361,10 @@ var procSubtractEx = func(env *Env, args []Object) (Object, error) {
 }
 
 var procDivide = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 2, 2); err != nil {
+		return nil, err
+	}
+
 	x, err := EnsureNumber(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -332,6 +378,10 @@ var procDivide = func(env *Env, args []Object) (Object, error) {
 }
 
 var procQuot = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 2, 2); err != nil {
+		return nil, err
+	}
+
 	x, err := EnsureNumber(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -345,6 +395,10 @@ var procQuot = func(env *Env, args []Object) (Object, error) {
 }
 
 var procRem = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 2, 2); err != nil {
+		return nil, err
+	}
+
 	x, err := EnsureNumber(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -358,6 +412,10 @@ var procRem = func(env *Env, args []Object) (Object, error) {
 }
 
 var procBitNot = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	x, err := AssertInt(env, args[0], "Bit operation not supported for "+args[0].GetType().ToString(false))
 	if err != nil {
 		return nil, err
@@ -366,6 +424,10 @@ var procBitNot = func(env *Env, args []Object) (Object, error) {
 }
 
 func AssertInts(env *Env, args []Object) (Int, Int, error) {
+	if err := CheckArity(env, args, 2, 2); err != nil {
+		return Int{}, Int{}, err
+	}
+
 	x, err := AssertInt(env, args[0], "Bit operation not supported for "+args[0].GetType().ToString(false))
 	if err != nil {
 		return Int{}, Int{}, err
@@ -466,7 +528,10 @@ var procUnsignedBitShiftRight = func(env *Env, args []Object) (Object, error) {
 }
 
 var procExInfo = func(env *Env, args []Object) (Object, error) {
-	CheckArity(env, args, 2, 3)
+	if err := CheckArity(env, args, 2, 3); err != nil {
+		return nil, err
+	}
+
 	res := &ExInfo{
 		rt: env.RT.clone(),
 	}
@@ -491,6 +556,10 @@ var procExInfo = func(env *Env, args []Object) (Object, error) {
 }
 
 var procExData = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	if ok, res := args[0].(*ExInfo).Get(criticalKeywords.data); ok {
 		return res, nil
 	}
@@ -498,6 +567,10 @@ var procExData = func(env *Env, args []Object) (Object, error) {
 }
 
 var procExCause = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	if ok, res := args[0].(*ExInfo).Get(criticalKeywords.cause); ok {
 		return res, nil
 	}
@@ -505,10 +578,18 @@ var procExCause = func(env *Env, args []Object) (Object, error) {
 }
 
 var procExMessage = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	return args[0].(Error).Message(), nil
 }
 
 var procRegex = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	s, err := EnsureString(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -550,6 +631,10 @@ func reGroups(s string, indexes []int) (Object, error) {
 }
 
 var procReSeq = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 2, 2); err != nil {
+		return nil, err
+	}
+
 	re, err := EnsureRegex(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -574,6 +659,10 @@ var procReSeq = func(env *Env, args []Object) (Object, error) {
 }
 
 var procReFind = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 2, 2); err != nil {
+		return nil, err
+	}
+
 	re, err := EnsureRegex(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -596,6 +685,10 @@ var procIsSpecialSymbol = func(env *Env, args []Object) (Object, error) {
 }
 
 var procSubs = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 2, 3); err != nil {
+		return nil, err
+	}
+
 	s, err := EnsureString(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -623,6 +716,10 @@ var procSubs = func(env *Env, args []Object) (Object, error) {
 }
 
 var procIntern = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 2, 3); err != nil {
+		return nil, err
+	}
+
 	ns, err := EnsureNamespace(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -639,6 +736,10 @@ var procIntern = func(env *Env, args []Object) (Object, error) {
 }
 
 var procSetMeta = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 2, 2); err != nil {
+		return nil, err
+	}
+
 	vr, err := EnsureVar(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -652,6 +753,10 @@ var procSetMeta = func(env *Env, args []Object) (Object, error) {
 }
 
 var procAtom = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 10000); err != nil {
+		return nil, err
+	}
+
 	res := &Atom{
 		value: args[0],
 	}
@@ -672,6 +777,10 @@ var procAtom = func(env *Env, args []Object) (Object, error) {
 }
 
 var procDeref = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	ed, err := EnsureDeref(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -680,6 +789,10 @@ var procDeref = func(env *Env, args []Object) (Object, error) {
 }
 
 var procSwap = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 2, 10000); err != nil {
+		return nil, err
+	}
+
 	a, err := EnsureAtom(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -699,6 +812,10 @@ var procSwap = func(env *Env, args []Object) (Object, error) {
 }
 
 var procSwapVals = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 2, 10000); err != nil {
+		return nil, err
+	}
+
 	a, err := EnsureAtom(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -718,6 +835,10 @@ var procSwapVals = func(env *Env, args []Object) (Object, error) {
 }
 
 var procReset = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 2, 2); err != nil {
+		return nil, err
+	}
+
 	a, err := EnsureAtom(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -727,6 +848,10 @@ var procReset = func(env *Env, args []Object) (Object, error) {
 }
 
 var procResetVals = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 2, 2); err != nil {
+		return nil, err
+	}
+
 	a, err := EnsureAtom(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -737,6 +862,10 @@ var procResetVals = func(env *Env, args []Object) (Object, error) {
 }
 
 var procAlterMeta = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 2, 10000); err != nil {
+		return nil, err
+	}
+
 	r, err := EnsureRef(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -749,6 +878,10 @@ var procAlterMeta = func(env *Env, args []Object) (Object, error) {
 }
 
 var procResetMeta = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 2, 2); err != nil {
+		return nil, err
+	}
+
 	r, err := EnsureRef(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -761,6 +894,10 @@ var procResetMeta = func(env *Env, args []Object) (Object, error) {
 }
 
 var procEmpty = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	switch c := args[0].(type) {
 	case Collection:
 		return c.Empty(), nil
@@ -770,6 +907,10 @@ var procEmpty = func(env *Env, args []Object) (Object, error) {
 }
 
 var procIsBound = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	vr, err := EnsureVar(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -787,6 +928,10 @@ func toNative(obj Object) interface{} {
 }
 
 var procFormat = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 10000); err != nil {
+		return nil, err
+	}
+
 	s, err := EnsureString(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -805,7 +950,9 @@ var procList = func(env *Env, args []Object) (Object, error) {
 }
 
 var procCons = func(env *Env, args []Object) (Object, error) {
-	CheckArity(env, args, 2, 2)
+	if err := CheckArity(env, args, 2, 2); err != nil {
+		return nil, err
+	}
 	s, err := EnsureSeqable(env, args, 1)
 	if err != nil {
 		return nil, err
@@ -814,7 +961,9 @@ var procCons = func(env *Env, args []Object) (Object, error) {
 }
 
 var procFirst = func(env *Env, args []Object) (Object, error) {
-	CheckArity(env, args, 1, 1)
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
 	s, err := EnsureSeqable(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -823,7 +972,9 @@ var procFirst = func(env *Env, args []Object) (Object, error) {
 }
 
 var procNext = func(env *Env, args []Object) (Object, error) {
-	CheckArity(env, args, 1, 1)
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
 	s, err := EnsureSeqable(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -836,7 +987,9 @@ var procNext = func(env *Env, args []Object) (Object, error) {
 }
 
 var procRest = func(env *Env, args []Object) (Object, error) {
-	CheckArity(env, args, 1, 1)
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
 	s, err := EnsureSeqable(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -845,6 +998,10 @@ var procRest = func(env *Env, args []Object) (Object, error) {
 }
 
 var procConj = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 2, 2); err != nil {
+		return nil, err
+	}
+
 	switch c := args[0].(type) {
 	case Conjable:
 		return c.Conj(args[1])
@@ -856,7 +1013,9 @@ var procConj = func(env *Env, args []Object) (Object, error) {
 }
 
 var procSeq = func(env *Env, args []Object) (Object, error) {
-	CheckArity(env, args, 1, 1)
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
 	s, err := EnsureSeqable(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -869,7 +1028,9 @@ var procSeq = func(env *Env, args []Object) (Object, error) {
 }
 
 var procIsInstance = func(env *Env, args []Object) (Object, error) {
-	CheckArity(env, args, 2, 2)
+	if err := CheckArity(env, args, 2, 2); err != nil {
+		return nil, err
+	}
 	t, err := EnsureType(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -878,6 +1039,10 @@ var procIsInstance = func(env *Env, args []Object) (Object, error) {
 }
 
 var procAssoc = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 3, 3); err != nil {
+		return nil, err
+	}
+
 	ea, err := EnsureAssociative(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -887,10 +1052,18 @@ var procAssoc = func(env *Env, args []Object) (Object, error) {
 }
 
 var procEquals = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 2, 2); err != nil {
+		return nil, err
+	}
+
 	return Boolean{B: args[0].Equals(args[1])}, nil
 }
 
 var procCount = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	switch obj := args[0].(type) {
 	case Counted:
 		return Int{I: obj.Count()}, nil
@@ -904,6 +1077,10 @@ var procCount = func(env *Env, args []Object) (Object, error) {
 }
 
 var procSubvec = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 3, 3); err != nil {
+		return nil, err
+	}
+
 	// TODO: implement proper Subvector structure
 	v, err := EnsureVector(env, args, 0)
 	if err != nil {
@@ -928,6 +1105,10 @@ var procSubvec = func(env *Env, args []Object) (Object, error) {
 }
 
 var procCast = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 2, 2); err != nil {
+		return nil, err
+	}
+
 	t, err := EnsureType(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -941,6 +1122,10 @@ var procCast = func(env *Env, args []Object) (Object, error) {
 }
 
 var procVec = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	sq, err := EnsureSeqable(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -977,6 +1162,10 @@ var procStr = func(env *Env, args []Object) (Object, error) {
 }
 
 var procSymbol = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 2); err != nil {
+		return nil, err
+	}
+
 	if len(args) == 1 {
 		s, err := EnsureString(env, args, 0)
 		if err != nil {
@@ -984,6 +1173,7 @@ var procSymbol = func(env *Env, args []Object) (Object, error) {
 		}
 		return MakeSymbol(s.S), nil
 	}
+
 	var ns *string = nil
 	if !args[0].Equals(NIL) {
 		se, err := EnsureString(env, args, 0)
@@ -1003,6 +1193,10 @@ var procSymbol = func(env *Env, args []Object) (Object, error) {
 }
 
 var procKeyword = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 2); err != nil {
+		return nil, err
+	}
+
 	if len(args) == 1 {
 		switch obj := args[0].(type) {
 		case String:
@@ -1017,6 +1211,7 @@ var procKeyword = func(env *Env, args []Object) (Object, error) {
 			return NIL, nil
 		}
 	}
+
 	var ns *string = nil
 	if !args[0].Equals(NIL) {
 		s, err := EnsureString(env, args, 0)
@@ -1038,6 +1233,10 @@ var procKeyword = func(env *Env, args []Object) (Object, error) {
 }
 
 var procGensym = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	s, err := EnsureString(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -1046,6 +1245,10 @@ var procGensym = func(env *Env, args []Object) (Object, error) {
 }
 
 var procApply = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 2, 2); err != nil {
+		return nil, err
+	}
+
 	// TODO:
 	// Stacktrace is broken. Need to somehow know
 	// the name of the function passed ...
@@ -1062,6 +1265,10 @@ var procApply = func(env *Env, args []Object) (Object, error) {
 }
 
 var procLazySeq = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	return &LazySeq{
 		env: env,
 		fn:  args[0].(*Fn),
@@ -1069,12 +1276,20 @@ var procLazySeq = func(env *Env, args []Object) (Object, error) {
 }
 
 var procDelay = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	return &Delay{
 		fn: args[0].(*Fn),
 	}, nil
 }
 
 var procForce = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	switch d := args[0].(type) {
 	case *Delay:
 		return d.Force(env)
@@ -1084,10 +1299,18 @@ var procForce = func(env *Env, args []Object) (Object, error) {
 }
 
 var procIdentical = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 2, 2); err != nil {
+		return nil, err
+	}
+
 	return Boolean{B: args[0] == args[1]}, nil
 }
 
 var procCompare = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 2, 2); err != nil {
+		return nil, err
+	}
+
 	k1, k2 := args[0], args[1]
 	if k1.Equals(k2) {
 		return Int{I: 0}, nil
@@ -1110,6 +1333,10 @@ var procCompare = func(env *Env, args []Object) (Object, error) {
 }
 
 var procInt = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	switch obj := args[0].(type) {
 	case Char:
 		return Int{I: int(obj.Ch)}, nil
@@ -1121,10 +1348,18 @@ var procInt = func(env *Env, args []Object) (Object, error) {
 }
 
 var procNumber = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	return AssertNumber(env, args[0], fmt.Sprintf("Cannot cast %s (type: %s) to Number", args[0].ToString(true), args[0].GetType().ToString(false)))
 }
 
 var procDouble = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	n, err := AssertNumber(env, args[0], fmt.Sprintf("Cannot cast %s (type: %s) to Double", args[0].ToString(true), args[0].GetType().ToString(false)))
 	if err != nil {
 		return nil, err
@@ -1133,6 +1368,10 @@ var procDouble = func(env *Env, args []Object) (Object, error) {
 }
 
 var procChar = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	switch c := args[0].(type) {
 	case Char:
 		return c, nil
@@ -1148,10 +1387,18 @@ var procChar = func(env *Env, args []Object) (Object, error) {
 }
 
 var procBoolean = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	return Boolean{B: ToBool(args[0])}, nil
 }
 
 var procNumerator = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	bi, err := EnsureRatio(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -1160,6 +1407,10 @@ var procNumerator = func(env *Env, args []Object) (Object, error) {
 }
 
 var procDenominator = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	bi, err := EnsureRatio(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -1168,6 +1419,10 @@ var procDenominator = func(env *Env, args []Object) (Object, error) {
 }
 
 var procBigInt = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	switch n := args[0].(type) {
 	case Number:
 		return &BigInt{b: *n.BigInt()}, nil
@@ -1183,6 +1438,10 @@ var procBigInt = func(env *Env, args []Object) (Object, error) {
 }
 
 var procBigFloat = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	switch n := args[0].(type) {
 	case Number:
 		return &BigFloat{b: *n.BigFloat()}, nil
@@ -1198,6 +1457,10 @@ var procBigFloat = func(env *Env, args []Object) (Object, error) {
 }
 
 var procNth = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 2, 3); err != nil {
+		return nil, err
+	}
+
 	ni, err := EnsureNumber(env, args, 1)
 	if err != nil {
 		return nil, err
@@ -1226,6 +1489,10 @@ var procNth = func(env *Env, args []Object) (Object, error) {
 }
 
 var procLt = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 2, 2); err != nil {
+		return nil, err
+	}
+
 	a, err := AssertNumber(env, args[0], "")
 	if err != nil {
 		return nil, err
@@ -1238,6 +1505,10 @@ var procLt = func(env *Env, args []Object) (Object, error) {
 }
 
 var procLte = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 2, 2); err != nil {
+		return nil, err
+	}
+
 	a, err := AssertNumber(env, args[0], "")
 	if err != nil {
 		return nil, err
@@ -1250,6 +1521,10 @@ var procLte = func(env *Env, args []Object) (Object, error) {
 }
 
 var procGt = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 2, 2); err != nil {
+		return nil, err
+	}
+
 	a, err := AssertNumber(env, args[0], "")
 	if err != nil {
 		return nil, err
@@ -1262,6 +1537,10 @@ var procGt = func(env *Env, args []Object) (Object, error) {
 }
 
 var procGte = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 2, 2); err != nil {
+		return nil, err
+	}
+
 	a, err := AssertNumber(env, args[0], "")
 	if err != nil {
 		return nil, err
@@ -1274,6 +1553,10 @@ var procGte = func(env *Env, args []Object) (Object, error) {
 }
 
 var procEq = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 2, 2); err != nil {
+		return nil, err
+	}
+
 	a, err := AssertNumber(env, args[0], "")
 	if err != nil {
 		return nil, err
@@ -1286,6 +1569,10 @@ var procEq = func(env *Env, args []Object) (Object, error) {
 }
 
 var procMax = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 2, 2); err != nil {
+		return nil, err
+	}
+
 	a, err := AssertNumber(env, args[0], "")
 	if err != nil {
 		return nil, err
@@ -1298,6 +1585,10 @@ var procMax = func(env *Env, args []Object) (Object, error) {
 }
 
 var procMin = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 2, 2); err != nil {
+		return nil, err
+	}
+
 	a, err := AssertNumber(env, args[0], "")
 	if err != nil {
 		return nil, err
@@ -1310,6 +1601,10 @@ var procMin = func(env *Env, args []Object) (Object, error) {
 }
 
 var procIncEx = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	x, err := EnsureNumber(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -1319,6 +1614,10 @@ var procIncEx = func(env *Env, args []Object) (Object, error) {
 }
 
 var procDecEx = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	x, err := EnsureNumber(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -1328,6 +1627,10 @@ var procDecEx = func(env *Env, args []Object) (Object, error) {
 }
 
 var procInc = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	x, err := EnsureNumber(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -1337,6 +1640,10 @@ var procInc = func(env *Env, args []Object) (Object, error) {
 }
 
 var procDec = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	x, err := EnsureNumber(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -1346,6 +1653,10 @@ var procDec = func(env *Env, args []Object) (Object, error) {
 }
 
 var procPeek = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	s, err := AssertStack(env, args[0], "")
 	if err != nil {
 		return nil, err
@@ -1354,6 +1665,10 @@ var procPeek = func(env *Env, args []Object) (Object, error) {
 }
 
 var procPop = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	s, err := AssertStack(env, args[0], "")
 	if err != nil {
 		return nil, err
@@ -1362,6 +1677,10 @@ var procPop = func(env *Env, args []Object) (Object, error) {
 }
 
 var procContains = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 2, 2); err != nil {
+		return nil, err
+	}
+
 	switch c := args[0].(type) {
 	case Gettable:
 		ok, _ := c.Get(args[1])
@@ -1374,6 +1693,10 @@ var procContains = func(env *Env, args []Object) (Object, error) {
 }
 
 var procGet = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 2, 3); err != nil {
+		return nil, err
+	}
+
 	switch c := args[0].(type) {
 	case Gettable:
 		ok, v := c.Get(args[1])
@@ -1388,6 +1711,10 @@ var procGet = func(env *Env, args []Object) (Object, error) {
 }
 
 var procDissoc = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 2, 2); err != nil {
+		return nil, err
+	}
+
 	m, err := EnsureMap(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -1396,6 +1723,10 @@ var procDissoc = func(env *Env, args []Object) (Object, error) {
 }
 
 var procDisj = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 2, 2); err != nil {
+		return nil, err
+	}
+
 	s, err := EnsureSet(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -1404,6 +1735,10 @@ var procDisj = func(env *Env, args []Object) (Object, error) {
 }
 
 var procFind = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 2, 2); err != nil {
+		return nil, err
+	}
+
 	a, err := EnsureAssociative(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -1419,6 +1754,10 @@ var procFind = func(env *Env, args []Object) (Object, error) {
 }
 
 var procKeys = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	m, err := EnsureMap(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -1427,6 +1766,10 @@ var procKeys = func(env *Env, args []Object) (Object, error) {
 }
 
 var procVals = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	m, err := EnsureMap(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -1443,6 +1786,10 @@ var procRseq = func(env *Env, args []Object) (Object, error) {
 }
 
 var procName = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	n, err := EnsureNamed(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -1451,6 +1798,10 @@ var procName = func(env *Env, args []Object) (Object, error) {
 }
 
 var procNamespace = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	n, err := EnsureNamed(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -1463,6 +1814,10 @@ var procNamespace = func(env *Env, args []Object) (Object, error) {
 }
 
 var procFindVar = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	sym, err := EnsureSymbol(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -1477,6 +1832,10 @@ var procFindVar = func(env *Env, args []Object) (Object, error) {
 }
 
 var procSort = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 2, 2); err != nil {
+		return nil, err
+	}
+
 	cmp, err := EnsureComparator(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -1498,6 +1857,10 @@ var procSort = func(env *Env, args []Object) (Object, error) {
 }
 
 var procEval = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	parseContext := &ParseContext{Env: env}
 	expr, err := Parse(args[0], parseContext)
 	if err != nil {
@@ -1507,10 +1870,18 @@ var procEval = func(env *Env, args []Object) (Object, error) {
 }
 
 var procType = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	return args[0].GetType(), nil
 }
 
 var procPprint = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	obj := args[0]
 	w, err := Assertio_Writer(env, env.stdout.Value, "")
 	if err != nil {
@@ -1559,6 +1930,10 @@ var procNewline = func(env *Env, args []Object) (Object, error) {
 }
 
 var procFlush = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	switch f := args[0].(type) {
 	case *File:
 		f.Sync()
@@ -1576,6 +1951,10 @@ func readFromReader(env *Env, reader io.RuneReader) (Object, error) {
 }
 
 var procRead = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	f, err := Ensureio_RuneReader(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -1584,7 +1963,9 @@ var procRead = func(env *Env, args []Object) (Object, error) {
 }
 
 var procReadString = func(env *Env, args []Object) (Object, error) {
-	CheckArity(env, args, 1, 1)
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
 	s, err := EnsureString(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -1610,7 +1991,9 @@ func readLine(r StringReader) (s string, e error) {
 }
 
 var procReadLine = func(env *Env, args []Object) (Object, error) {
-	CheckArity(env, args, 0, 0)
+	if err := CheckArity(env, args, 0, 0); err != nil {
+		return nil, err
+	}
 	f, err := AssertStringReader(env, env.stdin.Value, "")
 	if err != nil {
 		return nil, err
@@ -1623,7 +2006,9 @@ var procReadLine = func(env *Env, args []Object) (Object, error) {
 }
 
 var procReaderReadLine = func(env *Env, args []Object) (Object, error) {
-	CheckArity(env, args, 1, 1)
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
 	rdr, err := EnsureStringReader(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -1636,10 +2021,18 @@ var procReaderReadLine = func(env *Env, args []Object) (Object, error) {
 }
 
 var procNanoTime = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 0, 0); err != nil {
+		return nil, err
+	}
+
 	return &BigInt{b: *big.NewInt(time.Now().UnixNano())}, nil
 }
 
 var procMacroexpand1 = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	switch s := args[0].(type) {
 	case Seq:
 		parseContext := &ParseContext{Env: env}
@@ -1672,6 +2065,10 @@ func loadReader(env *Env, reader *Reader) (Object, error) {
 }
 
 var procLoadString = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	s, err := EnsureString(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -1684,6 +2081,10 @@ var procLoadString = func(env *Env, args []Object) (Object, error) {
 }
 
 var procFindNamespace = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	s, err := EnsureSymbol(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -1697,6 +2098,10 @@ var procFindNamespace = func(env *Env, args []Object) (Object, error) {
 }
 
 var procCreateNamespace = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	sym, err := EnsureSymbol(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -1713,6 +2118,10 @@ var procCreateNamespace = func(env *Env, args []Object) (Object, error) {
 }
 
 var procInjectNamespace = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	sym, err := EnsureSymbol(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -1724,6 +2133,10 @@ var procInjectNamespace = func(env *Env, args []Object) (Object, error) {
 }
 
 var procRemoveNamespace = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	s, err := EnsureSymbol(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -1736,6 +2149,10 @@ var procRemoveNamespace = func(env *Env, args []Object) (Object, error) {
 }
 
 var procAllNamespaces = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 0, 0); err != nil {
+		return nil, err
+	}
+
 	s := make([]Object, 0, len(env.Namespaces))
 	for _, ns := range env.Namespaces {
 		s = append(s, ns)
@@ -1744,6 +2161,10 @@ var procAllNamespaces = func(env *Env, args []Object) (Object, error) {
 }
 
 var procNamespaceName = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	ns, err := EnsureNamespace(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -1752,6 +2173,10 @@ var procNamespaceName = func(env *Env, args []Object) (Object, error) {
 }
 
 var procNamespaceMap = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	r := &ArrayMap{}
 
 	ns, err := EnsureNamespace(env, args, 0)
@@ -1765,6 +2190,10 @@ var procNamespaceMap = func(env *Env, args []Object) (Object, error) {
 }
 
 var procNamespaceUnmap = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 2, 2); err != nil {
+		return nil, err
+	}
+
 	ns, err := EnsureNamespace(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -1781,6 +2210,10 @@ var procNamespaceUnmap = func(env *Env, args []Object) (Object, error) {
 }
 
 var procVarNamespace = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	v, err := EnsureVar(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -1789,6 +2222,10 @@ var procVarNamespace = func(env *Env, args []Object) (Object, error) {
 }
 
 var procRefer = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 3, 3); err != nil {
+		return nil, err
+	}
+
 	ns, err := EnsureNamespace(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -1805,6 +2242,10 @@ var procRefer = func(env *Env, args []Object) (Object, error) {
 }
 
 var procAlias = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 3, 3); err != nil {
+		return nil, err
+	}
+
 	ns, err := EnsureNamespace(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -1824,6 +2265,10 @@ var procAlias = func(env *Env, args []Object) (Object, error) {
 }
 
 var procNamespaceAliases = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	r := &ArrayMap{}
 	ns, err := EnsureNamespace(env, args, 0)
 	if err != nil {
@@ -1836,6 +2281,10 @@ var procNamespaceAliases = func(env *Env, args []Object) (Object, error) {
 }
 
 var procNamespaceUnalias = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 2, 2); err != nil {
+		return nil, err
+	}
+
 	ns, err := EnsureNamespace(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -1852,6 +2301,10 @@ var procNamespaceUnalias = func(env *Env, args []Object) (Object, error) {
 }
 
 var procVarGet = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	v, err := EnsureVar(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -1860,6 +2313,10 @@ var procVarGet = func(env *Env, args []Object) (Object, error) {
 }
 
 var procVarSet = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 2, 2); err != nil {
+		return nil, err
+	}
+
 	v, err := EnsureVar(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -1869,6 +2326,10 @@ var procVarSet = func(env *Env, args []Object) (Object, error) {
 }
 
 var procNsResolve = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 2, 2); err != nil {
+		return nil, err
+	}
+
 	ns, err := EnsureNamespace(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -1911,6 +2372,10 @@ var procBuffer = func(env *Env, args []Object) (Object, error) {
 }
 
 var procBufferedReader = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	switch rdr := args[0].(type) {
 	case io.Reader:
 		return MakeBufferedReader(rdr), nil
@@ -1920,6 +2385,10 @@ var procBufferedReader = func(env *Env, args []Object) (Object, error) {
 }
 
 var procSlurp = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	s, err := EnsureString(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -1932,6 +2401,10 @@ var procSlurp = func(env *Env, args []Object) (Object, error) {
 }
 
 var procSpit = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 3, 3); err != nil {
+		return nil, err
+	}
+
 	filename, err := EnsureString(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -1967,6 +2440,10 @@ var procSpit = func(env *Env, args []Object) (Object, error) {
 }
 
 var procShuffle = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	seq, err := EnsureSeqable(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -1980,6 +2457,10 @@ var procShuffle = func(env *Env, args []Object) (Object, error) {
 }
 
 var procIsRealized = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	p, err := EnsurePending(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -1988,6 +2469,10 @@ var procIsRealized = func(env *Env, args []Object) (Object, error) {
 }
 
 var procDeriveInfo = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 2, 2); err != nil {
+		return nil, err
+	}
+
 	dest := args[0]
 	src := args[1]
 	return dest.WithInfo(src.GetInfo()), nil
@@ -1998,6 +2483,10 @@ var procLaceVersion = func(env *Env, args []Object) (Object, error) {
 }
 
 var procHash = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	return Int{I: int(args[0].Hash())}, nil
 }
 
@@ -2013,6 +2502,10 @@ func loadFile(env *Env, filename string) (Object, error) {
 }
 
 var procLoadFile = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	filename, err := EnsureString(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -2021,6 +2514,10 @@ var procLoadFile = func(env *Env, args []Object) (Object, error) {
 }
 
 var procLoadLibFromPath = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 2, 2); err != nil {
+		return nil, err
+	}
+
 	libnamev, err := EnsureSymbol(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -2075,6 +2572,10 @@ var procLoadLibFromPath = func(env *Env, args []Object) (Object, error) {
 }
 
 var procReduceKv = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 3, 3); err != nil {
+		return nil, err
+	}
+
 	f, err := EnsureCallable(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -2088,6 +2589,10 @@ var procReduceKv = func(env *Env, args []Object) (Object, error) {
 }
 
 var procIndexOf = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 2, 2); err != nil {
+		return nil, err
+	}
+
 	s, err := EnsureString(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -2134,6 +2639,10 @@ func libExternalPath(env *Env, sym Symbol) (path string, ok bool, err error) {
 }
 
 var procLibPath = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	sym, err := EnsureSymbol(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -2176,6 +2685,10 @@ var procLibPath = func(env *Env, args []Object) (Object, error) {
 }
 
 var procInternFakeVar = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 3, 3); err != nil {
+		return nil, err
+	}
+
 	nsSym, err := EnsureSymbol(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -2191,6 +2704,10 @@ var procInternFakeVar = func(env *Env, args []Object) (Object, error) {
 }
 
 var procParse = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	lm, _ := env.Resolve(MakeSymbol("lace.core/*linter-mode*"))
 	lm.Value = Boolean{B: true}
 	LINTER_MODE = true
@@ -2207,7 +2724,9 @@ var procParse = func(env *Env, args []Object) (Object, error) {
 }
 
 var procTypes = func(env *Env, args []Object) (Object, error) {
-	CheckArity(env, args, 0, 0)
+	if err := CheckArity(env, args, 0, 0); err != nil {
+		return nil, err
+	}
 	res := EmptyArrayMap()
 	for k, v := range TYPES {
 		res.Add(String{S: *k}, v)
@@ -2216,7 +2735,9 @@ var procTypes = func(env *Env, args []Object) (Object, error) {
 }
 
 var procCreateChan = func(env *Env, args []Object) (Object, error) {
-	CheckArity(env, args, 1, 1)
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
 	n, err := EnsureInt(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -2226,7 +2747,9 @@ var procCreateChan = func(env *Env, args []Object) (Object, error) {
 }
 
 var procCloseChan = func(env *Env, args []Object) (Object, error) {
-	CheckArity(env, args, 1, 1)
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
 	c, err := EnsureChannel(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -2237,7 +2760,9 @@ var procCloseChan = func(env *Env, args []Object) (Object, error) {
 }
 
 var procSend = func(env *Env, args []Object) (Object, error) {
-	CheckArity(env, args, 2, 2)
+	if err := CheckArity(env, args, 2, 2); err != nil {
+		return nil, err
+	}
 	ch, err := EnsureChannel(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -2263,7 +2788,9 @@ var procSend = func(env *Env, args []Object) (Object, error) {
 }
 
 var procReceive = func(env *Env, args []Object) (Object, error) {
-	CheckArity(env, args, 1, 1)
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
 	ch, err := EnsureChannel(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -2281,7 +2808,9 @@ var procReceive = func(env *Env, args []Object) (Object, error) {
 }
 
 var procGo = func(env *Env, args []Object) (Object, error) {
-	CheckArity(env, args, 1, 1)
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
 	f, err := EnsureCallable(env, args, 0)
 	if err != nil {
 		return nil, err
@@ -2318,11 +2847,16 @@ var procGo = func(env *Env, args []Object) (Object, error) {
 }
 
 var procVerbosityLevel = func(env *Env, args []Object) (Object, error) {
-	CheckArity(env, args, 0, 0)
+	if err := CheckArity(env, args, 0, 0); err != nil {
+		return nil, err
+	}
 	return MakeInt(VerbosityLevel), nil
 }
 
 var procExit = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 0, 1); err != nil {
+		return nil, err
+	}
 
 	if len(args) == 1 {
 		i, err := EnsureInt(env, args, 0)
@@ -2377,6 +2911,10 @@ func PackReader(env *Env, reader *Reader, filename string) ([]byte, error) {
 }
 
 var procIncProblemCount = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 0, 0); err != nil {
+		return nil, err
+	}
+
 	PROBLEM_COUNT++
 	return NIL, nil
 }
@@ -2521,6 +3059,10 @@ func setCoreNamespaces(env *Env) error {
 }
 
 var procIsNamespaceInitialized = func(env *Env, args []Object) (Object, error) {
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	sym, err := EnsureSymbol(env, args, 0)
 	if err != nil {
 		return nil, err

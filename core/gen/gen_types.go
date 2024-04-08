@@ -44,6 +44,11 @@ func Assert{{.Name}}(env *Env, obj Object, msg string) ({{.TypeName}}, error) {
 
 var ensureTemplate string = `
 func Ensure{{.Name}}(env *Env, args []Object, index int) ({{.TypeName}}, error) {
+	if len(args) <= index {
+		var t {{.TypeName}}
+		return t, ErrorArity(env, index)
+	}
+
 	switch c := args[index].(type) {
 	case {{.TypeName}}:
 		return c, nil
