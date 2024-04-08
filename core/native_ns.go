@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"runtime"
 	"sort"
 
 	"github.com/davecgh/go-spew/spew"
@@ -465,7 +466,24 @@ func (n *NSBuilder) Defn(b *DefnInfo) *NSBuilder {
 			panic(err)
 		}
 
-		p := Proc{Fn: procFn, Name: b.Name, Package: n.pkg}
+		var (
+			file string
+			line int
+		)
+
+		rv := reflect.ValueOf(b.Fn)
+		if rv.Kind() == reflect.Func {
+			rf := runtime.FuncForPC(rv.Pointer())
+			file, line = rf.FileLine(rv.Pointer())
+		}
+
+		p := Proc{
+			Fn:      procFn,
+			Name:    b.Name,
+			Package: n.pkg,
+			File:    file,
+			Line:    line,
+		}
 
 		meta := n.makeMeta(b)
 
@@ -526,7 +544,25 @@ func (n *NSBuilder) Defn(b *DefnInfo) *NSBuilder {
 
 	procFn := dispatch.Interface().(ProcFn)
 
-	p := Proc{Fn: procFn, Name: b.Name, Package: n.pkg}
+	// TODO we can do better than reporting the first function only as the location.
+	var (
+		file string
+		line int
+	)
+
+	rv := reflect.ValueOf(b.Fns[0])
+	if rv.Kind() == reflect.Func {
+		rf := runtime.FuncForPC(rv.Pointer())
+		file, line = rf.FileLine(rv.Pointer())
+	}
+
+	p := Proc{
+		Fn:      procFn,
+		Name:    b.Name,
+		Package: n.pkg,
+		File:    file,
+		Line:    line,
+	}
 
 	meta := n.makeMeta(b)
 

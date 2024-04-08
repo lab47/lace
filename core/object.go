@@ -218,6 +218,8 @@ type (
 		Fn      ProcFn
 		Name    string
 		Package string // "" for core (this package), else e.g. "std/string"
+		File    string
+		Line    int
 	}
 	Fn struct {
 		InfoHolder
@@ -936,7 +938,13 @@ func (p Proc) ToString(escape bool) string {
 	if pkg != "" {
 		pkg += "."
 	}
-	return fmt.Sprintf("#object[Proc:%s%s]", pkg, p.Name)
+
+	file := p.File
+	if file == "" {
+		file = "<unknown>"
+	}
+
+	return fmt.Sprintf("#object[Proc:%s%s %s:%d]", pkg, p.Name, file, p.Line)
 }
 
 func (p Proc) Equals(other interface{}) bool {
