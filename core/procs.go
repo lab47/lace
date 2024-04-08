@@ -2241,7 +2241,7 @@ var procRefer = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	return ns.Refer(sym, v), nil
+	return ns.Refer(env, sym, v)
 }
 
 var procAlias = func(env *Env, args []Object) (Object, error) {
@@ -2263,7 +2263,10 @@ var procAlias = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 
-	ns.AddAlias(sym, ns2)
+	err = ns.AddAlias(env, sym, ns2)
+	if err != nil {
+		return nil, err
+	}
 	return NIL, nil
 }
 

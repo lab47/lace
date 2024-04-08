@@ -94,12 +94,12 @@ func NewNamespace(sym Symbol) *Namespace {
 	}
 }
 
-func (ns *Namespace) Refer(sym Symbol, vr *Var) *Var {
+func (ns *Namespace) Refer(env *Env, sym Symbol, vr *Var) (*Var, error) {
 	if sym.ns != nil {
-		panic(StubNewError("Can't intern namespace-qualified symbol " + sym.ToString(false)))
+		return nil, env.RT.NewError("Can't intern namespace-qualified symbol " + sym.ToString(false))
 	}
 	ns.mappings[sym.name] = vr
-	return vr
+	return vr, nil
 }
 
 func (ns *Namespace) ReferAll(other *Namespace) {
@@ -158,20 +158,21 @@ func (ns *Namespace) InternVar(env *Env, name string, val Object, meta *ArrayMap
 	return vr, nil
 }
 
-func (ns *Namespace) AddAlias(alias Symbol, namespace *Namespace) {
+func (ns *Namespace) AddAlias(env *Env, alias Symbol, namespace *Namespace) error {
 	if alias.ns != nil {
-		panic(StubNewError("Alias can't be namespace-qualified"))
+		return env.RT.NewError("Alias can't be namespace-qualified")
 	}
 	existing := ns.aliases[alias.name]
 	if existing != nil && existing != namespace {
 		msg := "Alias " + alias.ToString(false) + " already exists in namespace " + ns.Name.ToString(false) + ", aliasing " + existing.Name.ToString(false)
 		if LINTER_MODE {
 			printParseError(GetPosition(alias), msg)
-			return
+			return nil
 		}
-		panic(StubNewError(msg))
+		return env.RT.NewError(msg)
 	}
 	ns.aliases[alias.name] = namespace
+	return nil
 }
 
 func (ns *Namespace) Resolve(name string) *Var {
