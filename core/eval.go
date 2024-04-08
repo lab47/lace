@@ -4,19 +4,12 @@ import (
 	"bytes"
 	"fmt"
 	"strings"
-	"unsafe"
 )
 
 type (
 	Traceable interface {
 		Name() string
 		Pos() Position
-	}
-	EvalError struct {
-		msg  string
-		pos  Position
-		rt   *Runtime
-		hash uint32
 	}
 	Frame struct {
 		traceable Traceable
@@ -132,10 +125,9 @@ func Eval(genv *Env, expr Expr, env *LocalEnv) (Object, error) {
 	if err != nil {
 		if ee, ok := err.(*EvalError); ok {
 			if ee.rt == nil {
-				ee.rt = genv.RT
+				ee.rt = genv.RT.clone()
+				ee.pos = expr.Pos()
 			}
-
-			ee.pos = expr.Pos()
 		}
 	}
 
@@ -166,56 +158,6 @@ func (s *Callstack) String() string {
 		b.Truncate(b.Len() - 1)
 	}
 	return b.String()
-}
-
-func MakeEvalError(msg string, pos Position, rt *Runtime) *EvalError {
-	res := &EvalError{msg, pos, rt, 0}
-	res.hash = HashPtr(uintptr(unsafe.Pointer(res)))
-	return res
-}
-
-func (err *EvalError) ToString(escape bool) string {
-	return err.Error()
-}
-
-func (err *EvalError) Equals(other interface{}) bool {
-	return err == other
-}
-
-func (err *EvalError) GetInfo() *ObjectInfo {
-	return nil
-}
-
-func (err *EvalError) GetType() *Type {
-	return TYPE.EvalError
-}
-
-func (err *EvalError) Hash() uint32 {
-	return err.hash
-}
-
-func (err *EvalError) WithInfo(info *ObjectInfo) Object {
-	return err
-}
-
-func (err *EvalError) Message() Object {
-	return MakeString(err.msg)
-}
-
-func (err *EvalError) Error() string {
-	pos := err.pos
-	if err.rt == nil {
-		return fmt.Sprintf("%s:%d:%d: Eval error: %s", pos.Filename(), pos.startLine, pos.startColumn, err.msg)
-	}
-
-	if len(err.rt.callstack.frames) > 0 && !LINTER_MODE {
-		return fmt.Sprintf("%s:%d:%d: Eval error: %s\nStacktrace:\n%s", pos.Filename(), pos.startLine, pos.startColumn, err.msg, err.rt.stacktrace())
-	} else {
-		if len(err.rt.callstack.frames) > 0 {
-			pos = err.rt.callstack.frames[0].traceable.Pos()
-		}
-		return fmt.Sprintf("%s:%d:%d: Eval error: %s", pos.Filename(), pos.startLine, pos.startColumn, err.msg)
-	}
 }
 
 func (expr *VarRefExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
