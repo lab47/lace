@@ -15,7 +15,6 @@ import (
 
 	"github.com/lab47/lace/core"
 	_ "github.com/lab47/lace/std-ng/all"
-	_ "github.com/lab47/lace/std/crypto"
 	_ "github.com/lab47/lace/std/csv"
 	_ "github.com/lab47/lace/std/filepath"
 	_ "github.com/lab47/lace/std/html"
