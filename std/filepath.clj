@@ -6,7 +6,7 @@
 (defn file-seq
   "Returns a seq of maps with info about files or directories under root."
   {:added "1.0"
-   :go "fileSeq(root)"}
+   :go "fileSeq(_env, root)"}
   [^String root])
 
 (defn ^String abs

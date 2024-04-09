@@ -17,17 +17,13 @@ import (
 	_ "github.com/lab47/lace/std-ng/all"
 	_ "github.com/lab47/lace/std/csv"
 	_ "github.com/lab47/lace/std/filepath"
-	_ "github.com/lab47/lace/std/html"
-	_ "github.com/lab47/lace/std/http"
 	_ "github.com/lab47/lace/std/io"
-	_ "github.com/lab47/lace/std/json"
 	_ "github.com/lab47/lace/std/math"
 	_ "github.com/lab47/lace/std/os"
 	_ "github.com/lab47/lace/std/strconv"
 	_ "github.com/lab47/lace/std/time"
 	_ "github.com/lab47/lace/std/url"
 	_ "github.com/lab47/lace/std/uuid"
-	_ "github.com/lab47/lace/std/yaml"
 	"github.com/pkg/profile"
 )
 
@@ -164,7 +160,11 @@ func processReplCommand(env *core.Env, reader *core.Reader, phase core.Phase, pa
 	}
 
 	if phase == core.READ {
-		fmt.Println(obj.ToString(true))
+		s, err := obj.ToString(env, true)
+		if err != nil {
+			return false, err
+		}
+		fmt.Println(s)
 		return false, nil
 	}
 
@@ -244,7 +244,7 @@ func srepl(env *core.Env, port string, phase core.Phase) error {
 		core.VERSION, conn.RemoteAddr())
 
 	for {
-		fmt.Fprint(core.Stdout, env.CurrentNamespace().Name.ToString(false)+"=> ")
+		fmt.Fprint(core.Stdout, env.CurrentNamespace().Name.Qual()+"=> ")
 		done, err := processReplCommand(env, reader, phase, parseContext, replContext)
 		if err != nil {
 			return err
@@ -275,7 +275,11 @@ func configureLinterMode(env *core.Env, dialect core.Dialect, filename string, w
 	core.DIALECT = dialect
 	lm, _ := env.Resolve(core.MakeSymbol("lace.core/*linter-mode*"))
 	lm.Value = core.Boolean{B: true}
-	f, err := env.Features.Disjoin(core.MakeKeyword("lace")).Conj(makeDialectKeyword(dialect))
+	mf, err := env.Features.Disjoin(env, core.MakeKeyword("lace"))
+	if err != nil {
+		return err
+	}
+	f, err := mf.Conj(env, makeDialectKeyword(dialect))
 	if err != nil {
 		return err
 	}

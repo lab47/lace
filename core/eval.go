@@ -56,12 +56,12 @@ func (rt *Runtime) NewError(msg string) *EvalError {
 }
 
 func StubNewArgTypeError(index int, obj Object, expectedType string) *EvalError {
-	return StubNewError(fmt.Sprintf("Arg[%d] of <<func_name>> must have type %s, got %s", index, expectedType, obj.GetType().ToString(false)))
+	return StubNewError(fmt.Sprintf("Arg[%d] of <<func_name>> must have type %s, got %s", index, expectedType, obj.GetType().Name()))
 }
 
 func (rt *Runtime) NewArgTypeError(index int, obj Object, expectedType string) *EvalError {
 	name := rt.topName()
-	return rt.NewError(fmt.Sprintf("Arg[%d] of %s must have type %s, got %s", index, name, expectedType, obj.GetType().ToString(false)))
+	return rt.NewError(fmt.Sprintf("Arg[%d] of %s must have type %s, got %s", index, name, expectedType, obj.GetType().Name()))
 }
 
 func (rt *Runtime) topName() string {
@@ -174,7 +174,7 @@ func (expr *SetMacroExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 	if fn, ok := expr.vr.Value.(*Fn); ok {
 		fn.isMacro = true
 	}
-	setMacroMeta(expr.vr)
+	setMacroMeta(genv, expr.vr)
 	return expr.vr, nil
 }
 
@@ -209,14 +209,18 @@ func (expr *MapExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 			if err != nil {
 				return nil, err
 			}
-			if res.containsKey(key) {
-				return nil, genv.RT.NewErrorFlushed(expr, "Duplicate key: "+key.ToString(false))
+			if res.containsKey(genv, key) {
+				s, err := key.ToString(genv, false)
+				if err != nil {
+					return nil, err
+				}
+				return nil, genv.RT.NewErrorFlushed(expr, "Duplicate key: "+s)
 			}
 			v, err := Eval(genv, expr.values[i], env)
 			if err != nil {
 				return nil, err
 			}
-			v, err = res.Assoc(key, v)
+			v, err = res.Assoc(genv, key, v)
 			if err != nil {
 				return nil, err
 			}
@@ -234,8 +238,13 @@ func (expr *MapExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 		if err != nil {
 			return nil, err
 		}
-		if !res.Add(key, v) {
-			return nil, genv.RT.NewErrorFlushed(expr, "Duplicate key: "+key.ToString(false))
+		if !res.Add(genv, key, v) {
+			s, err := key.ToString(genv, false)
+			if err != nil {
+				return nil, err
+			}
+
+			return nil, genv.RT.NewErrorFlushed(expr, "Duplicate key: "+s)
 		}
 	}
 	return res, nil
@@ -248,12 +257,17 @@ func (expr *SetExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 		if err != nil {
 			return nil, err
 		}
-		ok, err := res.Add(el)
+		ok, err := res.Add(genv, el)
 		if err != nil {
 			return nil, err
 		}
 		if !ok {
-			return nil, genv.RT.NewErrorFlushed(expr, "Duplicate set element: "+el.ToString(false))
+			s, err := el.ToString(genv, false)
+			if err != nil {
+				return nil, err
+			}
+
+			return nil, genv.RT.NewErrorFlushed(expr, "Duplicate set element: "+s)
 		}
 	}
 	return res, nil
@@ -277,25 +291,25 @@ func (expr *DefExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 		}
 	}
 	meta := EmptyArrayMap()
-	meta.Add(criticalKeywords.line, Int{I: expr.startLine})
-	meta.Add(criticalKeywords.column, Int{I: expr.startColumn})
-	meta.Add(criticalKeywords.file, String{S: *expr.filename})
-	meta.Add(criticalKeywords.ns, expr.vr.ns)
-	meta.Add(criticalKeywords.name, expr.vr.name)
+	meta.Add(genv, criticalKeywords.line, Int{I: expr.startLine})
+	meta.Add(genv, criticalKeywords.column, Int{I: expr.startColumn})
+	meta.Add(genv, criticalKeywords.file, String{S: *expr.filename})
+	meta.Add(genv, criticalKeywords.ns, expr.vr.ns)
+	meta.Add(genv, criticalKeywords.name, expr.vr.name)
 	expr.vr.meta = meta
 	if expr.meta != nil {
 		v, err := Eval(genv, expr.meta, env)
 		if err != nil {
 			return nil, err
 		}
-		expr.vr.meta, err = expr.vr.meta.Merge(v.(Map))
+		expr.vr.meta, err = expr.vr.meta.Merge(genv, v.(Map))
 		if err != nil {
 			return nil, err
 		}
 	}
 	// isMacro can be set by set-macro__ during parse stage
 	if expr.vr.isMacro {
-		v, err := expr.vr.meta.Assoc(criticalKeywords.macro, Boolean{B: true})
+		v, err := expr.vr.meta.Assoc(genv, criticalKeywords.macro, Boolean{B: true})
 		if err != nil {
 			return nil, err
 		}
@@ -313,7 +327,7 @@ func (expr *MetaExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	return res.(Meta).WithMeta(meta.(Map))
+	return res.(Meta).WithMeta(genv, meta.(Map))
 }
 
 func evalSeq(genv *Env, exprs []Expr, env *LocalEnv) ([]Object, error) {
@@ -352,15 +366,20 @@ func (expr *CallExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 
 		return callable.Call(genv, args)
 	default:
-		return nil, genv.RT.NewErrorFlushed(expr, callable.ToString(false)+" is not a Fn")
+		s, err := callable.ToString(genv, false)
+		if err != nil {
+			return nil, err
+		}
+
+		return nil, genv.RT.NewErrorFlushed(expr, s+" is not a Fn")
 	}
 }
 
 func varCallableString(v *Var) string {
 	if v.ns.CoreP() {
-		return "core/" + v.name.ToString(false)
+		return "core/" + v.name.Qual()
 	}
-	return v.ns.Name.ToString(false) + "/" + v.name.ToString(false)
+	return v.ns.Name.Qual() + "/" + v.name.Qual()
 }
 
 func (expr *CallExpr) Name() string {
@@ -368,9 +387,9 @@ func (expr *CallExpr) Name() string {
 	case *VarRefExpr:
 		return varCallableString(c.vr)
 	case *BindingExpr:
-		return c.binding.name.ToString(false)
+		return c.binding.name.Qual()
 	case *LiteralExpr:
-		return c.obj.ToString(false)
+		return "<literal>"
 	default:
 		return "fn"
 	}
@@ -386,7 +405,11 @@ func (expr *ThrowExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 	case Error:
 		return nil, sv
 	default:
-		return nil, genv.RT.NewErrorFlushed(expr, "Cannot throw "+e.ToString(false))
+		s, err := e.ToString(genv, false)
+		if err != nil {
+			return nil, err
+		}
+		return nil, genv.RT.NewErrorFlushed(expr, "Cannot throw "+s)
 	}
 }
 
@@ -400,7 +423,7 @@ func (expr *TryExpr) Eval(genv *Env, env *LocalEnv) (obj Object, err error) {
 	obj, err = evalBody(genv, expr.body, env)
 	if r, ok := err.(Error); ok {
 		for _, catchExpr := range expr.catches {
-			if IsInstance(catchExpr.excType, r) {
+			if IsInstance(genv, catchExpr.excType, r) {
 				obj, err = evalBody(genv, catchExpr.body, env.addFrame([]Object{r}))
 				break
 			}

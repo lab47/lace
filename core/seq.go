@@ -10,7 +10,7 @@ type (
 	Seq interface {
 		Seqable
 		Object
-		First() Object
+		First(env *Env) (Object, error)
 		Rest() Seq
 		IsEmpty() bool
 		Cons(obj Object) Seq
@@ -45,21 +45,32 @@ type (
 		InfoHolder
 		MetaHolder
 		seq Seq
-		fn  func(obj Object) Object
+		fn  func(env *Env, obj Object) (Object, error)
 	}
 )
 
-func SeqsEqual(seq1, seq2 Seq) bool {
+func SeqsEqual(env *Env, seq1, seq2 Seq) bool {
 	iter2 := iter(seq2)
 	for iter1 := iter(seq1); iter1.HasNext(); {
-		if !iter2.HasNext() || !iter2.Next().Equals(iter1.Next()) {
+		v, err := iter1.Next(env)
+		if err != nil {
 			return false
+		}
+
+		if !iter2.HasNext() {
+			v2, err := iter2.Next(env)
+			if err != nil {
+				return false
+			}
+			if !v2.Equals(env, v) {
+				return false
+			}
 		}
 	}
 	return !iter2.HasNext()
 }
 
-func IsSeqEqual(seq Seq, other interface{}) bool {
+func IsSeqEqual(env *Env, seq Seq, other interface{}) bool {
 	if seq == other {
 		return true
 	}
@@ -67,7 +78,7 @@ func IsSeqEqual(seq Seq, other interface{}) bool {
 	case Sequential:
 		switch other := other.(type) {
 		case Seqable:
-			return SeqsEqual(seq, other.Seq())
+			return SeqsEqual(env, seq, other.Seq())
 		}
 	}
 	return false
@@ -77,21 +88,21 @@ func (seq *MappingSeq) Seq() Seq {
 	return seq
 }
 
-func (seq *MappingSeq) Equals(other interface{}) bool {
-	return IsSeqEqual(seq, other)
+func (seq *MappingSeq) Equals(env *Env, other interface{}) bool {
+	return IsSeqEqual(env, seq, other)
 }
 
-func (seq *MappingSeq) ToString(escape bool) string {
-	return SeqToString(seq, escape)
+func (seq *MappingSeq) ToString(env *Env, escape bool) (string, error) {
+	return SeqToString(env, seq, escape)
 }
 
-func (seq *MappingSeq) Pprint(w io.Writer, indent int) int {
-	return pprintSeq(seq, w, indent)
+func (seq *MappingSeq) Pprint(env *Env, w io.Writer, indent int) (int, error) {
+	return pprintSeq(env, seq, w, indent)
 }
 
-func (seq *MappingSeq) WithMeta(meta Map) (Object, error) {
+func (seq *MappingSeq) WithMeta(env *Env, meta Map) (Object, error) {
 	res := *seq
-	m, err := SafeMerge(res.meta, meta)
+	m, err := SafeMerge(env, res.meta, meta)
 	if err != nil {
 		return nil, err
 	}
@@ -103,12 +114,17 @@ func (seq *MappingSeq) GetType() *Type {
 	return TYPE.MappingSeq
 }
 
-func (seq *MappingSeq) Hash() uint32 {
-	return hashOrdered(seq)
+func (seq *MappingSeq) Hash(env *Env) (uint32, error) {
+	return hashOrdered(env, seq)
 }
 
-func (seq *MappingSeq) First() Object {
-	return seq.fn(seq.seq.First())
+func (seq *MappingSeq) First(env *Env) (Object, error) {
+	f, err := seq.seq.First(env)
+	if err != nil {
+		return nil, err
+	}
+
+	return seq.fn(env, f)
 }
 
 func (seq *MappingSeq) Rest() Seq {
@@ -152,21 +168,21 @@ func (seq *LazySeq) IsRealized() bool {
 	return seq.seq != nil
 }
 
-func (seq *LazySeq) Equals(other interface{}) bool {
-	return IsSeqEqual(seq, other)
+func (seq *LazySeq) Equals(env *Env, other interface{}) bool {
+	return IsSeqEqual(env, seq, other)
 }
 
-func (seq *LazySeq) ToString(escape bool) string {
-	return SeqToString(seq, escape)
+func (seq *LazySeq) ToString(env *Env, escape bool) (string, error) {
+	return SeqToString(env, seq, escape)
 }
 
-func (seq *LazySeq) Pprint(w io.Writer, indent int) int {
-	return pprintSeq(seq, w, indent)
+func (seq *LazySeq) Pprint(env *Env, w io.Writer, indent int) (int, error) {
+	return pprintSeq(env, seq, w, indent)
 }
 
-func (seq *LazySeq) WithMeta(meta Map) (Object, error) {
+func (seq *LazySeq) WithMeta(env *Env, meta Map) (Object, error) {
 	res := *seq
-	m, err := SafeMerge(res.meta, meta)
+	m, err := SafeMerge(env, res.meta, meta)
 	if err != nil {
 		return nil, err
 	}
@@ -178,13 +194,13 @@ func (seq *LazySeq) GetType() *Type {
 	return TYPE.LazySeq
 }
 
-func (seq *LazySeq) Hash() uint32 {
-	return hashOrdered(seq)
+func (seq *LazySeq) Hash(env *Env) (uint32, error) {
+	return hashOrdered(env, seq)
 }
 
-func (seq *LazySeq) First() Object {
+func (seq *LazySeq) First(env *Env) (Object, error) {
 	seq.realize()
-	return seq.seq.First()
+	return seq.seq.First(env)
 }
 
 func (seq *LazySeq) Rest() Seq {
@@ -211,21 +227,21 @@ func (seq *ArraySeq) Seq() Seq {
 	return seq
 }
 
-func (seq *ArraySeq) Equals(other interface{}) bool {
-	return IsSeqEqual(seq, other)
+func (seq *ArraySeq) Equals(env *Env, other interface{}) bool {
+	return IsSeqEqual(env, seq, other)
 }
 
-func (seq *ArraySeq) ToString(escape bool) string {
-	return SeqToString(seq, escape)
+func (seq *ArraySeq) ToString(env *Env, escape bool) (string, error) {
+	return SeqToString(env, seq, escape)
 }
 
-func (seq *ArraySeq) Pprint(w io.Writer, indent int) int {
-	return pprintSeq(seq, w, indent)
+func (seq *ArraySeq) Pprint(env *Env, w io.Writer, indent int) (int, error) {
+	return pprintSeq(env, seq, w, indent)
 }
 
-func (seq *ArraySeq) WithMeta(meta Map) (Object, error) {
+func (seq *ArraySeq) WithMeta(env *Env, meta Map) (Object, error) {
 	res := *seq
-	m, err := SafeMerge(res.meta, meta)
+	m, err := SafeMerge(env, res.meta, meta)
 	if err != nil {
 		return nil, err
 	}
@@ -237,15 +253,15 @@ func (seq *ArraySeq) GetType() *Type {
 	return TYPE.ArraySeq
 }
 
-func (seq *ArraySeq) Hash() uint32 {
-	return hashOrdered(seq)
+func (seq *ArraySeq) Hash(env *Env) (uint32, error) {
+	return hashOrdered(env, seq)
 }
 
-func (seq *ArraySeq) First() Object {
+func (seq *ArraySeq) First(env *Env) (Object, error) {
 	if seq.IsEmpty() {
-		return NIL
+		return NIL, nil
 	}
-	return seq.arr[seq.index]
+	return seq.arr[seq.index], nil
 }
 
 func (seq *ArraySeq) Rest() Seq {
@@ -265,22 +281,30 @@ func (seq *ArraySeq) Cons(obj Object) Seq {
 
 func (seq *ArraySeq) sequential() {}
 
-func SeqToString(seq Seq, escape bool) string {
+func SeqToString(env *Env, seq Seq, escape bool) (string, error) {
 	var b bytes.Buffer
 	b.WriteRune('(')
 	for iter := iter(seq); iter.HasNext(); {
-		b.WriteString(iter.Next().ToString(escape))
+		v, err := iter.Next(env)
+		if err != nil {
+			return "", err
+		}
+		s, err := v.ToString(env, escape)
+		if err != nil {
+			return "", err
+		}
+		b.WriteString(s)
 		if iter.HasNext() {
 			b.WriteRune(' ')
 		}
 	}
 	b.WriteRune(')')
-	return b.String()
+	return b.String(), nil
 }
 
-func (seq *ConsSeq) WithMeta(meta Map) (Object, error) {
+func (seq *ConsSeq) WithMeta(env *Env, meta Map) (Object, error) {
 	res := *seq
-	m, err := SafeMerge(res.meta, meta)
+	m, err := SafeMerge(env, res.meta, meta)
 	if err != nil {
 		return nil, err
 	}
@@ -292,28 +316,28 @@ func (seq *ConsSeq) Seq() Seq {
 	return seq
 }
 
-func (seq *ConsSeq) Equals(other interface{}) bool {
-	return IsSeqEqual(seq, other)
+func (seq *ConsSeq) Equals(env *Env, other interface{}) bool {
+	return IsSeqEqual(env, seq, other)
 }
 
-func (seq *ConsSeq) ToString(escape bool) string {
-	return SeqToString(seq, escape)
+func (seq *ConsSeq) ToString(env *Env, escape bool) (string, error) {
+	return SeqToString(env, seq, escape)
 }
 
-func (seq *ConsSeq) Pprint(w io.Writer, indent int) int {
-	return pprintSeq(seq, w, indent)
+func (seq *ConsSeq) Pprint(env *Env, w io.Writer, indent int) (int, error) {
+	return pprintSeq(env, seq, w, indent)
 }
 
 func (seq *ConsSeq) GetType() *Type {
 	return TYPE.ConsSeq
 }
 
-func (seq *ConsSeq) Hash() uint32 {
-	return hashOrdered(seq)
+func (seq *ConsSeq) Hash(env *Env) (uint32, error) {
+	return hashOrdered(env, seq)
 }
 
-func (seq *ConsSeq) First() Object {
-	return seq.first
+func (seq *ConsSeq) First(env *Env) (Object, error) {
+	return seq.first, nil
 }
 
 func (seq *ConsSeq) Rest() Seq {
@@ -341,35 +365,43 @@ func iter(seq Seq) *SeqIterator {
 	return &SeqIterator{seq: seq}
 }
 
-func (iter *SeqIterator) Next() Object {
-	res := iter.seq.First()
+func (iter *SeqIterator) Next(env *Env) (Object, error) {
+	res, err := iter.seq.First(env)
+	if err != nil {
+		return nil, err
+	}
+
 	iter.seq = iter.seq.Rest()
-	return res
+	return res, nil
 }
 
 func (iter *SeqIterator) HasNext() bool {
 	return !iter.seq.IsEmpty()
 }
 
-func Second(seq Seq) Object {
-	return seq.Rest().First()
+func Second(env *Env, seq Seq) (Object, error) {
+	return seq.Rest().First(env)
 }
 
-func Third(seq Seq) Object {
-	return seq.Rest().Rest().First()
+func Third(env *Env, seq Seq) (Object, error) {
+	return seq.Rest().Rest().First(env)
 }
 
-func Fourth(seq Seq) Object {
-	return seq.Rest().Rest().Rest().First()
+func Fourth(env *Env, seq Seq) (Object, error) {
+	return seq.Rest().Rest().Rest().First(env)
 }
 
-func ToSlice(seq Seq) []Object {
+func ToSlice(env *Env, seq Seq) ([]Object, error) {
 	res := make([]Object, 0)
 	for !seq.IsEmpty() {
-		res = append(res, seq.First())
+		v, err := seq.First(env)
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, v)
 		seq = seq.Rest()
 	}
-	return res
+	return res, nil
 }
 
 func SeqCount(seq Seq) int {
@@ -385,14 +417,14 @@ func SeqCount(seq Seq) int {
 	return c
 }
 
-func SeqNth(seq Seq, n int) (Object, error) {
+func SeqNth(env *Env, seq Seq, n int) (Object, error) {
 	if n < 0 {
 		return nil, StubNewError(fmt.Sprintf("Negative index: %d", n))
 	}
 	i := n
 	for !seq.IsEmpty() {
 		if i == 0 {
-			return seq.First(), nil
+			return seq.First(env)
 		}
 		seq = seq.Rest()
 		i--
@@ -400,50 +432,73 @@ func SeqNth(seq Seq, n int) (Object, error) {
 	return nil, StubNewError(fmt.Sprintf("Index %d exceeds seq's length %d", n, (n - i)))
 }
 
-func SeqTryNth(seq Seq, n int, d Object) Object {
+func SeqTryNth(env *Env, seq Seq, n int, d Object) (Object, error) {
 	if n < 0 {
-		return d
+		return d, nil
 	}
 	i := n
 	for !seq.IsEmpty() {
 		if i == 0 {
-			return seq.First()
+			return seq.First(env)
 		}
 		seq = seq.Rest()
 		i--
 	}
-	return d
+	return d, nil
 }
 
-func hashUnordered(seq Seq, seed uint32) uint32 {
+func hashUnordered(env *Env, seq Seq, seed uint32) (uint32, error) {
 	for !seq.IsEmpty() {
-		seed += seq.First().Hash()
+		v, err := seq.First(env)
+		if err == nil {
+			return 0, err
+		}
+		sv, err := v.Hash(env)
+		if err != nil {
+			return 0, err
+		}
+		seed += sv
 		seq = seq.Rest()
 	}
 	h := getHash()
 	h.Write(uint32ToBytes(seed))
-	return h.Sum32()
+	return h.Sum32(), nil
 }
 
-func hashOrdered(seq Seq) uint32 {
+func hashOrdered(env *Env, seq Seq) (uint32, error) {
 	h := getHash()
 	for !seq.IsEmpty() {
-		h.Write(uint32ToBytes(seq.First().Hash()))
+		v, err := seq.First(env)
+		if err == nil {
+			return 0, err
+		}
+		sv, err := v.Hash(env)
+		if err != nil {
+			return 0, err
+		}
+		h.Write(uint32ToBytes(sv))
 		seq = seq.Rest()
 	}
-	return h.Sum32()
+	return h.Sum32(), nil
 }
 
-func pprintSeq(seq Seq, w io.Writer, indent int) int {
+func pprintSeq(env *Env, seq Seq, w io.Writer, indent int) (int, error) {
 	i := indent + 1
 	fmt.Fprint(w, "(")
 	for iter := iter(seq); iter.HasNext(); {
-		i = pprintObject(iter.Next(), indent+1, w)
+		v, err := iter.Next(env)
+		if err != nil {
+			return 0, err
+		}
+		i, err = pprintObject(env, v, indent+1, w)
+		if err != nil {
+			return 0, err
+		}
 		if iter.HasNext() {
 			fmt.Fprint(w, "\n")
 			writeIndent(w, indent+1)
 		}
 	}
 	fmt.Fprint(w, ")")
-	return i + 1
+	return i + 1, nil
 }

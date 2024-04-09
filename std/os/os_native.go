@@ -9,11 +9,11 @@ import (
 	. "github.com/lab47/lace/core"
 )
 
-func env() (Object, error) {
+func env(env *Env) (Object, error) {
 	res := EmptyArrayMap()
 	for _, v := range os.Environ() {
 		parts := strings.Split(v, "=")
-		res.Add(String{S: parts[0]}, String{S: parts[1]})
+		res.Add(env, String{S: parts[0]}, String{S: parts[1]})
 	}
 	return res, nil
 }
@@ -52,7 +52,7 @@ func execute(env *Env, name string, opts Map) (Object, error) {
 	var args []string
 	var stdin io.Reader
 	var stdout, stderr io.Writer
-	if ok, dirObj := opts.Get(MakeKeyword("dir")); ok {
+	if ok, dirObj := opts.GetEqu(MakeKeyword("dir")); ok {
 		dirv, err := AssertString(env, dirObj, "dir must be a string")
 		if err != nil {
 			return nil, err
@@ -60,7 +60,7 @@ func execute(env *Env, name string, opts Map) (Object, error) {
 
 		dir = dirv.S
 	}
-	if ok, argsObj := opts.Get(MakeKeyword("args")); ok {
+	if ok, argsObj := opts.GetEqu(MakeKeyword("args")); ok {
 		sv, err := AssertSeqable(env, argsObj, "args must be Seqable")
 		if err != nil {
 			return nil, err
@@ -68,7 +68,11 @@ func execute(env *Env, name string, opts Map) (Object, error) {
 
 		s := sv.Seq()
 		for !s.IsEmpty() {
-			so, err := AssertString(env, s.First(), "args must be strings")
+			f, err := s.First(env)
+			if err != nil {
+				return nil, err
+			}
+			so, err := AssertString(env, f, "args must be strings")
 			if err != nil {
 				return nil, err
 			}
@@ -76,7 +80,7 @@ func execute(env *Env, name string, opts Map) (Object, error) {
 			s = s.Rest()
 		}
 	}
-	if ok, stdinObj := opts.Get(MakeKeyword("stdin")); ok {
+	if ok, stdinObj := opts.GetEqu(MakeKeyword("stdin")); ok {
 		// Check if the intent was to pipe stdin into the program being called and
 		// use Stdin directly rather than env.stdin.Value, which is a buffered wrapper.
 		// TODO: this won't work correctly if env.stdin is bound to something other than Stdin
@@ -92,11 +96,11 @@ func execute(env *Env, name string, opts Map) (Object, error) {
 			case String:
 				stdin = strings.NewReader(s.S)
 			default:
-				panic(StubNewError("stdin option must be either an IOReader or a string, got " + stdinObj.GetType().ToString(false)))
+				return nil, env.RT.NewError("stdin option must be either an IOReader or a string, got " + stdinObj.GetType().Name())
 			}
 		}
 	}
-	if ok, stdoutObj := opts.Get(MakeKeyword("stdout")); ok {
+	if ok, stdoutObj := opts.GetEqu(MakeKeyword("stdout")); ok {
 		switch s := stdoutObj.(type) {
 		case Nil:
 		case *IOWriter:
@@ -104,10 +108,10 @@ func execute(env *Env, name string, opts Map) (Object, error) {
 		case io.Writer:
 			stdout = s
 		default:
-			panic(StubNewError("stdout option must be an IOWriter, got " + stdoutObj.GetType().ToString(false)))
+			return nil, env.RT.NewError("stdout option must be an IOWriter, got " + stdoutObj.GetType().Name())
 		}
 	}
-	if ok, stderrObj := opts.Get(MakeKeyword("stderr")); ok {
+	if ok, stderrObj := opts.GetEqu(MakeKeyword("stderr")); ok {
 		switch s := stderrObj.(type) {
 		case Nil:
 		case *IOWriter:
@@ -115,7 +119,7 @@ func execute(env *Env, name string, opts Map) (Object, error) {
 		case io.Writer:
 			stderr = s
 		default:
-			panic(StubNewError("stderr option must be an IOWriter, got " + stderrObj.GetType().ToString(false)))
+			return nil, env.RT.NewError("stderr option must be an IOWriter, got " + stderrObj.GetType().Name())
 		}
 	}
 	return sh(dir, stdin, stdout, stderr, name, args)
@@ -139,11 +143,11 @@ func readDir(dirname string) (Object, error) {
 	modTime := MakeKeyword("modtime")
 	for _, f := range files {
 		m := EmptyArrayMap()
-		m.Add(name, MakeString(f.Name()))
-		m.Add(size, MakeInt(int(f.Size())))
-		m.Add(mode, MakeInt(int(f.Mode())))
-		m.Add(isDir, MakeBoolean(f.IsDir()))
-		m.Add(modTime, MakeInt(int(f.ModTime().Unix())))
+		m.AddEqu(name, MakeString(f.Name()))
+		m.AddEqu(size, MakeInt(int(f.Size())))
+		m.AddEqu(mode, MakeInt(int(f.Mode())))
+		m.AddEqu(isDir, MakeBoolean(f.IsDir()))
+		m.AddEqu(modTime, MakeInt(int(f.ModTime().Unix())))
 		res, err = res.Conjoin(m)
 		if err != nil {
 			return nil, err
@@ -162,12 +166,12 @@ func chdir(dirname string) (Object, error) {
 	return NIL, err
 }
 
-func stat(filename string) (Object, error) {
+func stat(env *Env, filename string) (Object, error) {
 	info, err := os.Stat(filename)
 	if err != nil {
 		return nil, err
 	}
-	return FileInfoMap(info.Name(), info), nil
+	return FileInfoMap(env, info.Name(), info), nil
 }
 
 func exists(path string) (bool, error) {

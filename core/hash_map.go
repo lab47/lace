@@ -7,9 +7,10 @@ type (
 		val interface{}
 	}
 	Node interface {
-		assoc(shift uint, hash uint32, key Object, val Object, addedLeaf *Box) Node
-		without(shift uint, hash uint32, key Object) Node
-		find(shift uint, hash uint32, key Object) *Pair
+		assoc(env *Env, shift uint, hash uint32, key Object, val Object, addedLeaf *Box) (Node, error)
+		without(env *Env, shift uint, hash uint32, key Object) Node
+		find(env *Env, shift uint, hash uint32, key Object) *Pair
+		findEqu(shift uint, hash uint32, key Equ) *Pair
 		nodeSeq() Seq
 		iter() MapIterator
 	}
@@ -21,12 +22,12 @@ type (
 	}
 	BitmapIndexedNode struct {
 		bitmap int
-		array  []interface{}
+		array  []any
 	}
 	HashCollisionNode struct {
 		hash  uint32
 		count int
-		array []interface{}
+		array []any
 	}
 	ArrayNode struct {
 		count int
@@ -35,7 +36,7 @@ type (
 	NodeSeq struct {
 		InfoHolder
 		MetaHolder
-		array []interface{}
+		array []any
 		i     int
 		s     Seq
 	}
@@ -47,7 +48,7 @@ type (
 		s     Seq
 	}
 	NodeIterator struct {
-		array     []interface{}
+		array     []any
 		i         int
 		nextEntry *Pair
 		nextIter  MapIterator
@@ -158,9 +159,9 @@ func newArrayNodeSeq(nodes []Node, i int, s Seq) Seq {
 	return nil
 }
 
-func (s *ArrayNodeSeq) WithMeta(meta Map) (Object, error) {
+func (s *ArrayNodeSeq) WithMeta(env *Env, meta Map) (Object, error) {
 	res := *s
-	m, err := SafeMerge(res.meta, meta)
+	m, err := SafeMerge(env, res.meta, meta)
 	if err != nil {
 		return nil, err
 	}
@@ -172,28 +173,28 @@ func (s *ArrayNodeSeq) Seq() Seq {
 	return s
 }
 
-func (s *ArrayNodeSeq) Equals(other interface{}) bool {
-	return IsSeqEqual(s, other)
+func (s *ArrayNodeSeq) Equals(env *Env, other interface{}) bool {
+	return IsSeqEqual(env, s, other)
 }
 
-func (s *ArrayNodeSeq) ToString(escape bool) string {
-	return SeqToString(s, escape)
+func (s *ArrayNodeSeq) ToString(env *Env, escape bool) (string, error) {
+	return SeqToString(env, s, escape)
 }
 
-func (seq *ArrayNodeSeq) Pprint(w io.Writer, indent int) int {
-	return pprintSeq(seq, w, indent)
+func (seq *ArrayNodeSeq) Pprint(env *Env, w io.Writer, indent int) (int, error) {
+	return pprintSeq(env, seq, w, indent)
 }
 
 func (s *ArrayNodeSeq) GetType() *Type {
 	return TYPE.ArrayNodeSeq
 }
 
-func (s *ArrayNodeSeq) Hash() uint32 {
-	return hashOrdered(s)
+func (s *ArrayNodeSeq) Hash(env *Env) (uint32, error) {
+	return hashOrdered(env, s)
 }
 
-func (s *ArrayNodeSeq) First() Object {
-	return s.s.First()
+func (s *ArrayNodeSeq) First(env *Env) (Object, error) {
+	return s.s.First(env)
 }
 
 func (s *ArrayNodeSeq) Rest() Seq {
@@ -221,7 +222,7 @@ func (s *ArrayNodeSeq) Cons(obj Object) Seq {
 
 func (s *ArrayNodeSeq) sequential() {}
 
-func newNodeSeq(array []interface{}, i int, s Seq) Seq {
+func newNodeSeq(array []any, i int, s Seq) Seq {
 	if s != nil {
 		return &NodeSeq{
 			array: array,
@@ -251,9 +252,9 @@ func newNodeSeq(array []interface{}, i int, s Seq) Seq {
 	return nil
 }
 
-func (s *NodeSeq) WithMeta(meta Map) (Object, error) {
+func (s *NodeSeq) WithMeta(env *Env, meta Map) (Object, error) {
 	res := *s
-	m, err := SafeMerge(res.meta, meta)
+	m, err := SafeMerge(env, res.meta, meta)
 	if err != nil {
 		return nil, err
 	}
@@ -266,31 +267,31 @@ func (s *NodeSeq) Seq() Seq {
 	return s
 }
 
-func (s *NodeSeq) Equals(other interface{}) bool {
-	return IsSeqEqual(s, other)
+func (s *NodeSeq) Equals(env *Env, other interface{}) bool {
+	return IsSeqEqual(env, s, other)
 }
 
-func (s *NodeSeq) ToString(escape bool) string {
-	return SeqToString(s, escape)
+func (s *NodeSeq) ToString(env *Env, escape bool) (string, error) {
+	return SeqToString(env, s, escape)
 }
 
-func (seq *NodeSeq) Pprint(w io.Writer, indent int) int {
-	return pprintSeq(seq, w, indent)
+func (seq *NodeSeq) Pprint(env *Env, w io.Writer, indent int) (int, error) {
+	return pprintSeq(env, seq, w, indent)
 }
 
 func (s *NodeSeq) GetType() *Type {
 	return TYPE.NodeSeq
 }
 
-func (s *NodeSeq) Hash() uint32 {
-	return hashOrdered(s)
+func (s *NodeSeq) Hash(env *Env) (uint32, error) {
+	return hashOrdered(env, s)
 }
 
-func (s *NodeSeq) First() Object {
+func (s *NodeSeq) First(env *Env) (Object, error) {
 	if s.s != nil {
-		return s.s.First()
+		return s.s.First(env)
 	}
-	return NewVectorFrom(s.array[s.i].(Object), s.array[s.i+1].(Object))
+	return NewVectorFrom(s.array[s.i].(Object), s.array[s.i+1].(Object)), nil
 }
 
 func (s *NodeSeq) Rest() Seq {
@@ -329,32 +330,39 @@ func (n *ArrayNode) iter() MapIterator {
 	}
 }
 
-func (n *ArrayNode) assoc(shift uint, hash uint32, key Object, val Object, addedLeaf *Box) Node {
+func (n *ArrayNode) assoc(env *Env, shift uint, hash uint32, key Object, val Object, addedLeaf *Box) (Node, error) {
 	idx := mask(hash, shift)
 	node := n.array[idx]
 	if node == nil {
+		nn, err := emptyIndexedNode.assoc(env, shift+5, hash, key, val, addedLeaf)
+		if err != nil {
+			return nil, err
+		}
 		return &ArrayNode{
 			count: n.count + 1,
-			array: cloneAndSetNode(n.array, int(idx), emptyIndexedNode.assoc(shift+5, hash, key, val, addedLeaf)),
-		}
+			array: cloneAndSetNode(n.array, int(idx), nn),
+		}, nil
 	}
-	nn := node.assoc(shift+5, hash, key, val, addedLeaf)
+	nn, err := node.assoc(env, shift+5, hash, key, val, addedLeaf)
+	if err != nil {
+		return nil, err
+	}
 	if nn == node {
-		return n
+		return n, nil
 	}
 	return &ArrayNode{
 		count: n.count,
 		array: cloneAndSetNode(n.array, int(idx), nn),
-	}
+	}, nil
 }
 
-func (n *ArrayNode) without(shift uint, hash uint32, key Object) Node {
+func (n *ArrayNode) without(env *Env, shift uint, hash uint32, key Object) Node {
 	idx := mask(hash, shift)
 	node := n.array[idx]
 	if node == nil {
 		return n
 	}
-	nn := node.without(shift+5, hash, key)
+	nn := node.without(env, shift+5, hash, key)
 	if nn == node {
 		return n
 	}
@@ -374,13 +382,22 @@ func (n *ArrayNode) without(shift uint, hash uint32, key Object) Node {
 	}
 }
 
-func (n *ArrayNode) find(shift uint, hash uint32, key Object) *Pair {
+func (n *ArrayNode) find(env *Env, shift uint, hash uint32, key Object) *Pair {
 	idx := mask(hash, shift)
 	node := n.array[idx]
 	if node == nil {
 		return nil
 	}
-	return node.find(shift+5, hash, key)
+	return node.find(env, shift+5, hash, key)
+}
+
+func (n *ArrayNode) findEqu(shift uint, hash uint32, key Equ) *Pair {
+	idx := mask(hash, shift)
+	node := n.array[idx]
+	if node == nil {
+		return nil
+	}
+	return node.findEqu(shift+5, hash, key)
 }
 
 func (n *ArrayNode) nodeSeq() Seq {
@@ -388,7 +405,7 @@ func (n *ArrayNode) nodeSeq() Seq {
 }
 
 func (n *ArrayNode) pack(idx uint) Node {
-	newArray := make([]interface{}, 2*(n.count-1))
+	newArray := make([]any, 2*(n.count-1))
 	j := 1
 	bitmap := 0
 	var i uint
@@ -412,9 +429,23 @@ func (n *ArrayNode) pack(idx uint) Node {
 	}
 }
 
-func (n *HashCollisionNode) findIndex(key Object) int {
+func (n *HashCollisionNode) findIndex(env *Env, key Object) int {
 	for i := 0; i < 2*n.count; i += 2 {
-		if key.Equals(n.array[i]) {
+		if key.Equals(env, n.array[i]) {
+			return i
+		}
+	}
+	return -1
+}
+
+func (n *HashCollisionNode) findIndexEqu(key Equ) int {
+	for i := 0; i < 2*n.count; i += 2 {
+		k, ok := n.array[i].(Object)
+		if !ok {
+			continue
+		}
+
+		if key.Is(k) {
 			return i
 		}
 	}
@@ -427,18 +458,18 @@ func (n *HashCollisionNode) iter() MapIterator {
 	}
 }
 
-func (n *HashCollisionNode) assoc(shift uint, hash uint32, key Object, val Object, addedLeaf *Box) Node {
+func (n *HashCollisionNode) assoc(env *Env, shift uint, hash uint32, key Object, val Object, addedLeaf *Box) (Node, error) {
 	if hash == n.hash {
-		idx := n.findIndex(key)
+		idx := n.findIndex(env, key)
 		if idx != -1 {
 			if n.array[idx+1] == val {
-				return n
+				return n, nil
 			}
 			return &HashCollisionNode{
 				hash:  hash,
 				count: n.count,
 				array: cloneAndSet(n.array, idx+1, val),
-			}
+			}, nil
 		}
 		newArray := make([]interface{}, 2*(n.count+1))
 		for i := 0; i < 2*n.count; i++ {
@@ -451,16 +482,17 @@ func (n *HashCollisionNode) assoc(shift uint, hash uint32, key Object, val Objec
 			hash:  hash,
 			count: n.count + 1,
 			array: newArray,
-		}
+		}, nil
 	}
+
 	return (&BitmapIndexedNode{
 		bitmap: bitpos(n.hash, shift),
 		array:  []interface{}{nil, n},
-	}).assoc(shift, hash, key, val, addedLeaf)
+	}).assoc(env, shift, hash, key, val, addedLeaf)
 }
 
-func (n *HashCollisionNode) without(shift uint, hash uint32, key Object) Node {
-	idx := n.findIndex(key)
+func (n *HashCollisionNode) without(env *Env, shift uint, hash uint32, key Object) Node {
+	idx := n.findIndex(env, key)
 	if idx == -1 {
 		return n
 	}
@@ -474,8 +506,19 @@ func (n *HashCollisionNode) without(shift uint, hash uint32, key Object) Node {
 	}
 }
 
-func (n *HashCollisionNode) find(shift uint, hash uint32, key Object) *Pair {
-	idx := n.findIndex(key)
+func (n *HashCollisionNode) find(env *Env, shift uint, hash uint32, key Object) *Pair {
+	idx := n.findIndex(env, key)
+	if idx == -1 {
+		return nil
+	}
+	return &Pair{
+		Key:   n.array[idx].(Object),
+		Value: n.array[idx+1].(Object),
+	}
+}
+
+func (n *HashCollisionNode) findEqu(shift uint, hash uint32, key Equ) *Pair {
+	idx := n.findIndexEqu(key)
 	if idx == -1 {
 		return nil
 	}
@@ -526,20 +569,28 @@ func cloneAndSetNode(array []Node, i int, a Node) []Node {
 	return res
 }
 
-func createNode(shift uint, key1 Object, val1 Object, key2hash uint32, key2 Object, val2 Object) Node {
-	key1hash := key1.Hash()
+func createNode(env *Env, shift uint, key1 Object, val1 Object, key2hash uint32, key2 Object, val2 Object) (Node, error) {
+	key1hash, err := key1.Hash(env)
+	if err != nil {
+		return nil, err
+	}
 	if key1hash == key2hash {
 		return &HashCollisionNode{
 			hash:  key1hash,
 			count: 2,
 			array: []interface{}{key1, val1, key2, val2},
-		}
+		}, nil
 	}
 	addedLeaf := &Box{}
-	return emptyIndexedNode.assoc(shift, key1hash, key1, val1, addedLeaf).assoc(shift, key2hash, key2, val2, addedLeaf)
+	n, err := emptyIndexedNode.assoc(env, shift, key1hash, key1, val1, addedLeaf)
+	if err != nil {
+		return nil, err
+	}
+
+	return n.assoc(env, shift, key2hash, key2, val2, addedLeaf)
 }
 
-func removePair(array []interface{}, n int) []interface{} {
+func removePair(array []any, n int) []interface{} {
 	newArray := make([]interface{}, len(array)-2)
 	for i := 0; i < 2*n; i++ {
 		newArray[i] = array[i]
@@ -560,42 +611,54 @@ func (b *BitmapIndexedNode) iter() MapIterator {
 	}
 }
 
-func (b *BitmapIndexedNode) assoc(shift uint, hash uint32, key Object, val Object, addedLeaf *Box) Node {
+func (b *BitmapIndexedNode) assoc(env *Env, shift uint, hash uint32, key Object, val Object, addedLeaf *Box) (Node, error) {
 	bit := bitpos(hash, shift)
 	idx := b.index(bit)
 	if b.bitmap&bit != 0 {
 		keyOrNull := b.array[2*idx]
 		valOrNode := b.array[2*idx+1]
 		if keyOrNull == nil {
-			n := valOrNode.(Node).assoc(shift+5, hash, key, val, addedLeaf)
+			n, err := valOrNode.(Node).assoc(env, shift+5, hash, key, val, addedLeaf)
+			if err != nil {
+				return nil, err
+			}
 			if n == valOrNode {
-				return b
+				return b, nil
 			}
 			return &BitmapIndexedNode{
 				bitmap: b.bitmap,
 				array:  cloneAndSet(b.array, 2*idx+1, n),
-			}
+			}, nil
 		}
-		if key.Equals(keyOrNull) {
+		if key.Equals(env, keyOrNull) {
 			if val == valOrNode {
-				return b
+				return b, nil
 			}
 			return &BitmapIndexedNode{
 				bitmap: b.bitmap,
 				array:  cloneAndSet(b.array, 2*idx+1, val),
-			}
+			}, nil
 		}
 		addedLeaf.val = addedLeaf
+		nn, err := createNode(env, shift+5, keyOrNull.(Object), valOrNode.(Object), hash, key, val)
+		if err != nil {
+			return nil, err
+		}
+
 		return &BitmapIndexedNode{
 			bitmap: b.bitmap,
-			array:  cloneAndSet2(b.array, 2*idx, nil, 2*idx+1, createNode(shift+5, keyOrNull.(Object), valOrNode.(Object), hash, key, val)),
-		}
+			array:  cloneAndSet2(b.array, 2*idx, nil, 2*idx+1, nn),
+		}, nil
 	} else {
 		n := bitCount(b.bitmap)
+		var err error
 		if n >= 16 {
 			nodes := make([]Node, 32)
 			jdx := mask(hash, shift)
-			nodes[jdx] = emptyIndexedNode.assoc(shift+5, hash, key, val, addedLeaf)
+			nodes[jdx], err = emptyIndexedNode.assoc(env, shift+5, hash, key, val, addedLeaf)
+			if err != nil {
+				return nil, err
+			}
 			j := 0
 			var i uint
 			for i = 0; i < 32; i++ {
@@ -603,7 +666,14 @@ func (b *BitmapIndexedNode) assoc(shift uint, hash uint32, key Object, val Objec
 					if b.array[j] == nil {
 						nodes[i] = b.array[j+1].(Node)
 					} else {
-						nodes[i] = emptyIndexedNode.assoc(shift+5, b.array[j].(Object).Hash(), b.array[j].(Object), b.array[j+1].(Object), addedLeaf)
+						h, err := b.array[j].(Object).Hash(env)
+						if err != nil {
+							return nil, err
+						}
+						nodes[i], err = emptyIndexedNode.assoc(env, shift+5, h, b.array[j].(Object), b.array[j+1].(Object), addedLeaf)
+						if err != nil {
+							return nil, err
+						}
 					}
 					j += 2
 				}
@@ -611,7 +681,7 @@ func (b *BitmapIndexedNode) assoc(shift uint, hash uint32, key Object, val Objec
 			return &ArrayNode{
 				count: n + 1,
 				array: nodes,
-			}
+			}, nil
 		} else {
 			newArray := make([]interface{}, 2*(n+1))
 			for i := 0; i < 2*idx; i++ {
@@ -626,12 +696,12 @@ func (b *BitmapIndexedNode) assoc(shift uint, hash uint32, key Object, val Objec
 			return &BitmapIndexedNode{
 				bitmap: b.bitmap | bit,
 				array:  newArray,
-			}
+			}, nil
 		}
 	}
 }
 
-func (b *BitmapIndexedNode) without(shift uint, hash uint32, key Object) Node {
+func (b *BitmapIndexedNode) without(env *Env, shift uint, hash uint32, key Object) Node {
 	bit := bitpos(hash, shift)
 	if (b.bitmap & bit) == 0 {
 		return b
@@ -640,7 +710,7 @@ func (b *BitmapIndexedNode) without(shift uint, hash uint32, key Object) Node {
 	keyOrNull := b.array[2*idx]
 	valOrNode := b.array[2*idx+1]
 	if keyOrNull == nil {
-		n := valOrNode.(Node).without(shift+5, hash, key)
+		n := valOrNode.(Node).without(env, shift+5, hash, key)
 		if n == valOrNode {
 			return b
 		}
@@ -658,7 +728,7 @@ func (b *BitmapIndexedNode) without(shift uint, hash uint32, key Object) Node {
 			array:  removePair(b.array, idx),
 		}
 	}
-	if key.Equals(keyOrNull) {
+	if key.Equals(env, keyOrNull) {
 		return &BitmapIndexedNode{
 			bitmap: b.bitmap ^ bit,
 			array:  removePair(b.array, idx),
@@ -667,7 +737,7 @@ func (b *BitmapIndexedNode) without(shift uint, hash uint32, key Object) Node {
 	return b
 }
 
-func (b *BitmapIndexedNode) find(shift uint, hash uint32, key Object) *Pair {
+func (b *BitmapIndexedNode) find(env *Env, shift uint, hash uint32, key Object) *Pair {
 	bit := bitpos(hash, shift)
 	if (b.bitmap & bit) == 0 {
 		return nil
@@ -676,9 +746,30 @@ func (b *BitmapIndexedNode) find(shift uint, hash uint32, key Object) *Pair {
 	keyOrNull := b.array[2*idx]
 	valOrNode := b.array[2*idx+1]
 	if keyOrNull == nil {
-		return valOrNode.(Node).find(shift+5, hash, key)
+		return valOrNode.(Node).find(env, shift+5, hash, key)
 	}
-	if key.Equals(keyOrNull) {
+	if key.Equals(env, keyOrNull) {
+		return &Pair{
+			Key:   keyOrNull.(Object),
+			Value: valOrNode.(Object),
+		}
+	}
+	return nil
+}
+
+func (b *BitmapIndexedNode) findEqu(shift uint, hash uint32, key Equ) *Pair {
+	bit := bitpos(hash, shift)
+	if (b.bitmap & bit) == 0 {
+		return nil
+	}
+	idx := b.index(bit)
+	keyOrNull := b.array[2*idx]
+	valOrNode := b.array[2*idx+1]
+	if keyOrNull == nil {
+		return valOrNode.(Node).findEqu(shift+5, hash, key)
+	}
+	obj, ok := keyOrNull.(Object)
+	if ok && key.Is(obj) {
 		return &Pair{
 			Key:   keyOrNull.(Object),
 			Value: valOrNode.(Object),
@@ -691,9 +782,9 @@ func (b *BitmapIndexedNode) nodeSeq() Seq {
 	return newNodeSeq(b.array, 0, nil)
 }
 
-func (m *HashMap) WithMeta(meta Map) (Object, error) {
+func (m *HashMap) WithMeta(env *Env, meta Map) (Object, error) {
 	res := *m
-	v, err := SafeMerge(res.meta, meta)
+	v, err := SafeMerge(env, res.meta, meta)
 	if err != nil {
 		return nil, err
 	}
@@ -701,20 +792,20 @@ func (m *HashMap) WithMeta(meta Map) (Object, error) {
 	return &res, nil
 }
 
-func (m *HashMap) ToString(escape bool) string {
-	return mapToString(m, escape)
+func (m *HashMap) ToString(env *Env, escape bool) (string, error) {
+	return mapToString(env, m, escape)
 }
 
-func (m *HashMap) Equals(other interface{}) bool {
-	return mapEquals(m, other)
+func (m *HashMap) Equals(env *Env, other interface{}) bool {
+	return mapEquals(env, m, other)
 }
 
 func (m *HashMap) GetType() *Type {
 	return TYPE.HashMap
 }
 
-func (m *HashMap) Hash() uint32 {
-	return hashUnordered(m.Seq(), 1)
+func (m *HashMap) Hash(env *Env) (uint32, error) {
+	return hashUnordered(env, m.Seq(), 1)
 }
 
 func (m *HashMap) Seq() Seq {
@@ -731,15 +822,20 @@ func (m *HashMap) Count() int {
 	return m.count
 }
 
-func (m *HashMap) containsKey(key Object) bool {
+func (m *HashMap) containsKey(env *Env, key Object) bool {
 	if m.root != nil {
-		return m.root.find(0, key.Hash(), key) != nil
+		h, err := key.Hash(env)
+		if err != nil {
+			return false
+		}
+
+		return m.root.find(env, 0, h, key) != nil
 	} else {
 		return false
 	}
 }
 
-func (m *HashMap) Assoc(key, val Object) (Associative, error) {
+func (m *HashMap) Assoc(env *Env, key, val Object) (Associative, error) {
 	addedLeaf := &Box{}
 	var newroot, t Node
 	if m.root == nil {
@@ -747,7 +843,14 @@ func (m *HashMap) Assoc(key, val Object) (Associative, error) {
 	} else {
 		t = m.root
 	}
-	newroot = t.assoc(0, key.Hash(), key, val, addedLeaf)
+	h, err := key.Hash(env)
+	if err != nil {
+		return nil, err
+	}
+	newroot, err = t.assoc(env, 0, h, key, val, addedLeaf)
+	if err != nil {
+		return nil, err
+	}
 	if newroot == m.root {
 		return m, nil
 	}
@@ -763,9 +866,13 @@ func (m *HashMap) Assoc(key, val Object) (Associative, error) {
 	return res, nil
 }
 
-func (m *HashMap) EntryAt(key Object) (*Vector, error) {
+func (m *HashMap) EntryAt(env *Env, key Object) (*Vector, error) {
 	if m.root != nil {
-		p := m.root.find(0, key.Hash(), key)
+		h, err := key.Hash(env)
+		if err != nil {
+			return nil, err
+		}
+		p := m.root.find(env, 0, h, key)
 		if p != nil {
 			return NewVectorFrom(p.Key, p.Value), nil
 		}
@@ -773,17 +880,30 @@ func (m *HashMap) EntryAt(key Object) (*Vector, error) {
 	return nil, nil
 }
 
-func (m *HashMap) Get(key Object) (bool, Object) {
+func (m *HashMap) Get(env *Env, key Object) (bool, Object, error) {
 	if m.root != nil {
-		if res := m.root.find(0, key.Hash(), key); res != nil {
+		h, err := key.Hash(env)
+		if err != nil {
+			return false, nil, err
+		}
+		if res := m.root.find(env, 0, h, key); res != nil {
+			return true, res.Value, nil
+		}
+	}
+	return false, nil, nil
+}
+
+func (m *HashMap) GetEqu(key Equ) (bool, Object) {
+	if m.root != nil {
+		if res := m.root.findEqu(0, key.IsHash(), key); res != nil {
 			return true, res.Value
 		}
 	}
 	return false, nil
 }
 
-func (m *HashMap) Conj(obj Object) (Conjable, error) {
-	return mapConj(m, obj)
+func (m *HashMap) Conj(env *Env, obj Object) (Conjable, error) {
+	return mapConj(env, m, obj)
 }
 
 func (m *HashMap) Iter() MapIterator {
@@ -796,8 +916,8 @@ func (m *HashMap) Iter() MapIterator {
 func (m *HashMap) Keys() Seq {
 	return &MappingSeq{
 		seq: m.Seq(),
-		fn: func(obj Object) Object {
-			return obj.(*Vector).Nth(0)
+		fn: func(env *Env, obj Object) (Object, error) {
+			return obj.(*Vector).Nth(env, 0)
 		},
 	}
 }
@@ -805,13 +925,13 @@ func (m *HashMap) Keys() Seq {
 func (m *HashMap) Vals() Seq {
 	return &MappingSeq{
 		seq: m.Seq(),
-		fn: func(obj Object) Object {
-			return obj.(*Vector).Nth(1)
+		fn: func(env *Env, obj Object) (Object, error) {
+			return obj.(*Vector).Nth(env, 1)
 		},
 	}
 }
 
-func (m *HashMap) Merge(other Map) (Map, error) {
+func (m *HashMap) Merge(env *Env, other Map) (Map, error) {
 	if other.Count() == 0 {
 		return m, nil
 	}
@@ -822,7 +942,7 @@ func (m *HashMap) Merge(other Map) (Map, error) {
 	var err error
 	for iter := other.Iter(); iter.HasNext(); {
 		p := iter.Next()
-		res, err = res.Assoc(p.Key, p.Value)
+		res, err = res.Assoc(env, p.Key, p.Value)
 		if err != nil {
 			return nil, err
 		}
@@ -830,20 +950,26 @@ func (m *HashMap) Merge(other Map) (Map, error) {
 	return res.(Map), nil
 }
 
-func (m *HashMap) Without(key Object) Map {
+func (m *HashMap) Without(env *Env, key Object) (Map, error) {
 	if m.root == nil {
-		return m
+		return m, nil
 	}
-	newroot := m.root.without(0, key.Hash(), key)
+
+	h, err := key.Hash(env)
+	if err != nil {
+		return nil, err
+	}
+
+	newroot := m.root.without(env, 0, h, key)
 	if newroot == m.root {
-		return m
+		return m, nil
 	}
 	res := &HashMap{
 		count: m.count - 1,
 		root:  newroot,
 	}
 	res.meta = m.meta
-	return res
+	return res, nil
 }
 
 func (m *HashMap) Call(env *Env, args []Object) (Object, error) {
@@ -852,11 +978,11 @@ func (m *HashMap) Call(env *Env, args []Object) (Object, error) {
 
 var _ Callable = (*HashMap)(nil)
 
-func NewHashMap(keyvals ...Object) (*HashMap, error) {
+func NewHashMap(env *Env, keyvals ...Object) (*HashMap, error) {
 	var res Associative = EmptyHashMap
 	var err error
 	for i := 0; i < len(keyvals); i += 2 {
-		res, err = res.Assoc(keyvals[i], keyvals[i+1])
+		res, err = res.Assoc(env, keyvals[i], keyvals[i+1])
 		if err != nil {
 			return nil, err
 		}
@@ -868,6 +994,6 @@ func (m *HashMap) Empty() Collection {
 	return EmptyHashMap
 }
 
-func (m *HashMap) Pprint(w io.Writer, indent int) int {
-	return pprintMap(m, w, indent)
+func (m *HashMap) Pprint(env *Env, w io.Writer, indent int) (int, error) {
+	return pprintMap(env, m, w, indent)
 }

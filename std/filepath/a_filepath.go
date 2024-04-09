@@ -137,7 +137,7 @@ func __file_seq_(_env *Env, _args []Object) (Object, error) {
 	case _c == 1:
 		var err error
 		root, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
-		_res, err := fileSeq(root)
+		_res, err := fileSeq(_env, root)
 		return _res, err
 
 	default:

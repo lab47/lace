@@ -11,11 +11,13 @@ type (
 	}
 )
 
-func (f *File) ToString(escape bool) string {
-	return "#object[File]"
+var _ Object = &File{}
+
+func (f *File) ToString(env *Env, escape bool) (string, error) {
+	return "#object[File]", nil
 }
 
-func (f *File) Equals(other interface{}) bool {
+func (f *File) Equals(env *Env, other interface{}) bool {
 	return f == other
 }
 
@@ -27,8 +29,8 @@ func (f *File) GetType() *Type {
 	return TYPE.File
 }
 
-func (f *File) Hash() uint32 {
-	return HashPtr(uintptr(unsafe.Pointer(f)))
+func (f *File) Hash(env *Env) (uint32, error) {
+	return HashPtr(uintptr(unsafe.Pointer(f))), nil
 }
 
 func (f *File) WithInfo(info *ObjectInfo) Object {

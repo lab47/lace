@@ -6,7 +6,7 @@ package core
 var privateMeta Map
 
 func init() {
-	v, err := EmptyArrayMap().Assoc(criticalKeywords.private, Boolean{B: true})
+	v, err := NewArrayMap(criticalKeywords.private, Boolean{B: true})
 	if err != nil {
 		panic(err)
 	}

@@ -28,18 +28,18 @@ import (
 type (
 	Object interface {
 		Equality
-		ToString(escape bool) string
+		ToString(env *Env, escape bool) (string, error)
 		GetInfo() *ObjectInfo
 		WithInfo(*ObjectInfo) Object
 		GetType() *Type
-		Hash() uint32
+		Hash(env *Env) (uint32, error)
 	}
 	Equality interface {
-		Equals(interface{}) bool
+		Equals(env *Env, other interface{}) bool
 	}
 	Conjable interface {
 		Object
-		Conj(obj Object) (Conjable, error)
+		Conj(env *Env, obj Object) (Conjable, error)
 	}
 	Counted interface {
 		Count() int
@@ -51,7 +51,7 @@ type (
 	}
 	Meta interface {
 		GetMeta() Map
-		WithMeta(Map) (Object, error)
+		WithMeta(*Env, Map) (Object, error)
 	}
 	Ref interface {
 		AlterMeta(env *Env, fn *Fn, args []Object) (Map, error)
@@ -67,21 +67,21 @@ type (
 		Compare(env *Env, a, b Object) (int, error)
 	}
 	Indexed interface {
-		Nth(i int) Object
-		TryNth(i int, d Object) Object
+		Nth(env *Env, i int) (Object, error)
+		TryNth(env *Env, i int, d Object) (Object, error)
 	}
 	Stack interface {
-		Peek() Object
-		Pop() Stack
+		Peek(env *Env) (Object, error)
+		Pop(env *Env) (Stack, error)
 	}
 	Gettable interface {
-		Get(key Object) (bool, Object)
+		Get(env *Env, key Object) (bool, Object, error)
 	}
 	Associative interface {
 		Conjable
 		Gettable
-		EntryAt(key Object) (*Vector, error)
-		Assoc(key, val Object) (Associative, error)
+		EntryAt(env *Env, key Object) (*Vector, error)
+		Assoc(env *Env, key, val Object) (Associative, error)
 	}
 	Reversible interface {
 		Rseq() Seq
@@ -94,7 +94,7 @@ type (
 		Print(writer io.Writer, printReadably bool)
 	}
 	Pprinter interface {
-		Pprint(writer io.Writer, indent int) int
+		Pprint(env *Env, writer io.Writer, indent int) (int, error)
 	}
 	Collection interface {
 		Object
@@ -319,6 +319,8 @@ type (
 
 // interface checks
 var (
+	_ Object = Time{}
+
 	_ Conjable = &HashMap{}
 	_ Conjable = &Vector{}
 	_ Conjable = Nil{}
@@ -496,7 +498,7 @@ func (s BySymbolName) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 func (s BySymbolName) Less(i, j int) bool {
-	return s[i].ToString(false) < s[j].ToString(false)
+	return s[i].Qual() < s[j].Qual()
 }
 
 const KeywordHashMask uint32 = 0x7334c790
@@ -566,7 +568,11 @@ func getMap(env *Env, k Object, args []Object) (Object, error) {
 
 	switch m := args[0].(type) {
 	case Map:
-		ok, v := m.Get(k)
+		ok, v, err := m.Get(env, k)
+		if err != nil {
+			return nil, err
+		}
+
 		if ok {
 			return v, nil
 		}
@@ -631,11 +637,15 @@ func equalsNumbers(x Number, y interface{}) bool {
 	}
 }
 
-func (a *Atom) ToString(escape bool) string {
-	return "#object[Atom {:val " + a.value.ToString(escape) + "}]"
+func (a *Atom) ToString(env *Env, escape bool) (string, error) {
+	v, err := a.value.ToString(env, escape)
+	if err != nil {
+		return "", err
+	}
+	return "#object[Atom {:val " + v + "}]", nil
 }
 
-func (a *Atom) Equals(other interface{}) bool {
+func (a *Atom) Equals(env *Env, other interface{}) bool {
 	return a == other
 }
 
@@ -647,17 +657,17 @@ func (a *Atom) GetType() *Type {
 	return TYPE.Atom
 }
 
-func (a *Atom) Hash() uint32 {
-	return HashPtr(uintptr(unsafe.Pointer(a)))
+func (a *Atom) Hash(env *Env) (uint32, error) {
+	return HashPtr(uintptr(unsafe.Pointer(a))), nil
 }
 
 func (a *Atom) WithInfo(info *ObjectInfo) Object {
 	return a
 }
 
-func (a *Atom) WithMeta(meta Map) (Object, error) {
+func (a *Atom) WithMeta(env *Env, meta Map) (Object, error) {
 	res := *a
-	m, err := SafeMerge(res.meta, meta)
+	m, err := SafeMerge(env, res.meta, meta)
 	if err != nil {
 		return nil, err
 	}
@@ -678,11 +688,11 @@ func (a *Atom) Deref(env *Env) (Object, error) {
 	return a.value, nil
 }
 
-func (d *Delay) ToString(escape bool) string {
-	return "#object[Delay]"
+func (d *Delay) ToString(env *Env, escape bool) (string, error) {
+	return "#object[Delay]", nil
 }
 
-func (d *Delay) Equals(other interface{}) bool {
+func (d *Delay) Equals(env *Env, other interface{}) bool {
 	return d == other
 }
 
@@ -694,8 +704,8 @@ func (d *Delay) GetType() *Type {
 	return TYPE.Delay
 }
 
-func (d *Delay) Hash() uint32 {
-	return HashPtr(uintptr(unsafe.Pointer(d)))
+func (d *Delay) Hash(env *Env) (uint32, error) {
+	return HashPtr(uintptr(unsafe.Pointer(d))), nil
 }
 
 func (d *Delay) WithInfo(info *ObjectInfo) Object {
@@ -721,11 +731,15 @@ func (d *Delay) IsRealized() bool {
 	return d.value != nil
 }
 
-func (t *Type) ToString(escape bool) string {
+func (t *Type) ToString(env *Env, escape bool) (string, error) {
+	return t.name, nil
+}
+
+func (t *Type) Name() string {
 	return t.name
 }
 
-func (t *Type) Equals(other interface{}) bool {
+func (t *Type) Equals(env *Env, other interface{}) bool {
 	return t == other
 }
 
@@ -737,15 +751,15 @@ func (t *Type) GetType() *Type {
 	return TYPE.Type
 }
 
-func (t *Type) Hash() uint32 {
-	return HashPtr(uintptr(unsafe.Pointer(t)))
+func (t *Type) Hash(env *Env) (uint32, error) {
+	return HashPtr(uintptr(unsafe.Pointer(t))), nil
 }
 
-func (rb RecurBindings) ToString(escape bool) string {
-	return "#object[RecurBindings]"
+func (rb RecurBindings) ToString(env *Env, escape bool) (string, error) {
+	return "#object[RecurBindings]", nil
 }
 
-func (rb RecurBindings) Equals(other interface{}) bool {
+func (rb RecurBindings) Equals(env *Env, other interface{}) bool {
 	return false
 }
 
@@ -757,15 +771,15 @@ func (rb RecurBindings) GetType() *Type {
 	return TYPE.RecurBindings
 }
 
-func (rb RecurBindings) Hash() uint32 {
-	return 0
+func (rb RecurBindings) Hash(env *Env) (uint32, error) {
+	return 0, nil
 }
 
-func (exInfo *ExInfo) ToString(escape bool) string {
-	return exInfo.Error()
+func (exInfo *ExInfo) ToString(env *Env, escape bool) (string, error) {
+	return exInfo.Error(), nil
 }
 
-func (exInfo *ExInfo) Equals(other interface{}) bool {
+func (exInfo *ExInfo) Equals(env *Env, other interface{}) bool {
 	return exInfo == other
 }
 
@@ -773,12 +787,12 @@ func (exInfo *ExInfo) GetType() *Type {
 	return TYPE.ExInfo
 }
 
-func (exInfo *ExInfo) Hash() uint32 {
-	return HashPtr(uintptr(unsafe.Pointer(exInfo)))
+func (exInfo *ExInfo) Hash(env *Env) (uint32, error) {
+	return HashPtr(uintptr(unsafe.Pointer(exInfo))), nil
 }
 
 func (exInfo *ExInfo) Message() Object {
-	if ok, res := exInfo.Get(criticalKeywords.message); ok {
+	if ok, res := exInfo.GetEqu(criticalKeywords.message); ok {
 		return res
 	}
 	return NIL
@@ -786,18 +800,21 @@ func (exInfo *ExInfo) Message() Object {
 
 func (exInfo *ExInfo) Error() string {
 	var pos Position
-	_, data := exInfo.Get(criticalKeywords.data)
-	ok, form := data.(Map).Get(criticalKeywords.form)
+	_, data := exInfo.GetEqu(criticalKeywords.data)
+	ok, form := data.(Map).GetEqu(criticalKeywords.form)
 	if ok {
 		if form.GetInfo() != nil {
 			pos = form.GetInfo().Pos()
 		}
 	}
 	prefix := "Exception"
-	if ok, pr := data.(Map).Get(criticalKeywords._prefix); ok {
-		prefix = pr.ToString(false)
+	if ok, pr := data.(Map).GetEqu(criticalKeywords._prefix); ok {
+		s, err := pr.ToString(nil, false)
+		if err == nil {
+			prefix = s
+		}
 	}
-	_, msg := exInfo.Get(criticalKeywords.message)
+	_, msg := exInfo.GetEqu(criticalKeywords.message)
 	if len(exInfo.rt.callstack.frames) > 0 && !LINTER_MODE {
 		return fmt.Sprintf("%s:%d:%d: %s: %s\nStacktrace:\n%s", pos.Filename(), pos.startLine, pos.startColumn, prefix, msg.(String).S, exInfo.rt.stacktrace())
 	} else {
@@ -805,11 +822,11 @@ func (exInfo *ExInfo) Error() string {
 	}
 }
 
-func (fn *Fn) ToString(escape bool) string {
-	return "#object[Fn]"
+func (fn *Fn) ToString(env *Env, escape bool) (string, error) {
+	return "#object[Fn]", nil
 }
 
-func (fn *Fn) Equals(other interface{}) bool {
+func (fn *Fn) Equals(env *Env, other interface{}) bool {
 	switch other := other.(type) {
 	case *Fn:
 		return fn == other
@@ -818,9 +835,9 @@ func (fn *Fn) Equals(other interface{}) bool {
 	}
 }
 
-func (fn *Fn) WithMeta(meta Map) (Object, error) {
+func (fn *Fn) WithMeta(env *Env, meta Map) (Object, error) {
 	res := *fn
-	m, err := SafeMerge(res.meta, meta)
+	m, err := SafeMerge(env, res.meta, meta)
 	if err != nil {
 		return nil, err
 	}
@@ -832,8 +849,8 @@ func (fn *Fn) GetType() *Type {
 	return TYPE.Fn
 }
 
-func (fn *Fn) Hash() uint32 {
-	return HashPtr(uintptr(unsafe.Pointer(fn)))
+func (fn *Fn) Hash(env *Env) (uint32, error) {
+	return HashPtr(uintptr(unsafe.Pointer(fn))), nil
 }
 
 func (fn *Fn) Call(env *Env, args []Object) (Object, error) {
@@ -944,7 +961,7 @@ func (p Proc) Compare(env *Env, a, b Object) (int, error) {
 	return compare(env, p, a, b)
 }
 
-func (p Proc) ToString(escape bool) string {
+func (p Proc) ToString(env *Env, escape bool) (string, error) {
 	pkg := p.Package
 	if pkg != "" {
 		pkg += "."
@@ -955,10 +972,10 @@ func (p Proc) ToString(escape bool) string {
 		file = "<unknown>"
 	}
 
-	return fmt.Sprintf("#object[Proc:%s%s %s:%d]", pkg, p.Name, file, p.Line)
+	return fmt.Sprintf("#object[Proc:%s%s %s:%d]", pkg, p.Name, file, p.Line), nil
 }
 
-func (p Proc) Equals(other interface{}) bool {
+func (p Proc) Equals(env *Env, other interface{}) bool {
 	switch other := other.(type) {
 	case Proc:
 		return reflect.ValueOf(p.Fn).Pointer() == reflect.ValueOf(other.Fn).Pointer()
@@ -978,8 +995,8 @@ func (p Proc) GetType() *Type {
 	return TYPE.Proc
 }
 
-func (p Proc) Hash() uint32 {
-	return HashPtr(reflect.ValueOf(p.Fn).Pointer())
+func (p Proc) Hash(env *Env) (uint32, error) {
+	return HashPtr(reflect.ValueOf(p.Fn).Pointer()), nil
 }
 
 func (i InfoHolder) GetInfo() *ObjectInfo {
@@ -1010,9 +1027,9 @@ func AlterMeta(env *Env, m *MetaHolder, fn *Fn, args []Object) (Map, error) {
 	return m.meta, nil
 }
 
-func (sym Symbol) WithMeta(meta Map) (Object, error) {
+func (sym Symbol) WithMeta(env *Env, meta Map) (Object, error) {
 	res := sym
-	m, err := SafeMerge(res.meta, meta)
+	m, err := SafeMerge(env, res.meta, meta)
 	if err != nil {
 		return nil, err
 	}
@@ -1021,21 +1038,25 @@ func (sym Symbol) WithMeta(meta Map) (Object, error) {
 }
 
 func (v *Var) Name() string {
-	return v.ns.Name.ToString(false) + "/" + v.name.ToString(false)
+	return v.ns.Name.Qual() + "/" + v.name.Qual()
 }
 
-func (v *Var) ToString(escape bool) string {
+func (v *Var) ToString(env *Env, escape bool) (string, error) {
+	return "#'" + v.Name(), nil
+}
+
+func (v *Var) Qual() string {
 	return "#'" + v.Name()
 }
 
-func (v *Var) Equals(other interface{}) bool {
+func (v *Var) Equals(env *Env, other interface{}) bool {
 	// TODO: revisit this
 	return v == other
 }
 
-func (v *Var) WithMeta(meta Map) (Object, error) {
+func (v *Var) WithMeta(env *Env, meta Map) (Object, error) {
 	res := *v
-	m, err := SafeMerge(res.meta, meta)
+	m, err := SafeMerge(env, res.meta, meta)
 	if err != nil {
 		return nil, err
 	}
@@ -1056,8 +1077,8 @@ func (v *Var) GetType() *Type {
 	return TYPE.Var
 }
 
-func (v *Var) Hash() uint32 {
-	return HashPtr(uintptr(unsafe.Pointer(v)))
+func (v *Var) Hash(env *Env) (uint32, error) {
+	return HashPtr(uintptr(unsafe.Pointer(v))), nil
 }
 
 func (v *Var) Resolve() Object {
@@ -1069,9 +1090,19 @@ func (v *Var) Resolve() Object {
 
 func (v *Var) Call(env *Env, args []Object) (Object, error) {
 	vl := v.Resolve()
+	vs, err := v.ToString(env, false)
+	if err != nil {
+		return nil, err
+	}
+
+	vls, err := v.ToString(env, false)
+	if err != nil {
+		return nil, err
+	}
+
 	call, err := AssertCallable(env,
 		vl,
-		"Var "+v.ToString(false)+" resolves to "+vl.ToString(false)+", which is not a Fn")
+		"Var "+vs+" resolves to "+vls+", which is not a Fn")
 	if err != nil {
 		return nil, err
 	}
@@ -1085,11 +1116,11 @@ func (v *Var) Deref(env *Env) (Object, error) {
 	return v.Resolve(), nil
 }
 
-func (n Nil) ToString(escape bool) string {
-	return "nil"
+func (n Nil) ToString(env *Env, escape bool) (string, error) {
+	return "nil", nil
 }
 
-func (n Nil) Equals(other interface{}) bool {
+func (n Nil) Equals(env *Env, other interface{}) bool {
 	switch other.(type) {
 	case Nil:
 		return true
@@ -1098,20 +1129,24 @@ func (n Nil) Equals(other interface{}) bool {
 	}
 }
 
+func (n Nil) GetEqu(key Equ) (bool, Object) {
+	return false, NIL
+}
+
 func (n Nil) GetType() *Type {
 	return TYPE.Nil
 }
 
-func (n Nil) Hash() uint32 {
-	return 0
+func (n Nil) Hash(env *Env) (uint32, error) {
+	return 0, nil
 }
 
 func (n Nil) Seq() Seq {
 	return n
 }
 
-func (n Nil) First() Object {
-	return NIL
+func (n Nil) First(env *Env) (Object, error) {
+	return NIL, nil
 }
 
 func (n Nil) Rest() Seq {
@@ -1126,12 +1161,12 @@ func (n Nil) Cons(obj Object) Seq {
 	return NewListFrom(obj)
 }
 
-func (n Nil) Conj(obj Object) (Conjable, error) {
+func (n Nil) Conj(env *Env, obj Object) (Conjable, error) {
 	return NewListFrom(obj), nil
 }
 
-func (n Nil) Without(key Object) Map {
-	return n
+func (n Nil) Without(env *Env, key Object) (Map, error) {
+	return n, nil
 }
 
 func (n Nil) Count() int {
@@ -1142,24 +1177,28 @@ func (n Nil) Iter() MapIterator {
 	return emptyMapIterator
 }
 
-func (n Nil) Merge(other Map) (Map, error) {
+func (n Nil) Merge(env *Env, other Map) (Map, error) {
 	return other, nil
 }
 
-func (n Nil) Assoc(key, value Object) (Associative, error) {
-	return EmptyArrayMap().Assoc(key, value)
+func (n Nil) Assoc(env *Env, key, value Object) (Associative, error) {
+	return EmptyArrayMap().Assoc(env, key, value)
 }
 
-func (n Nil) EntryAt(key Object) (*Vector, error) {
+func (n Nil) EntryAt(env *Env, key Object) (*Vector, error) {
 	return nil, nil
 }
 
-func (n Nil) Get(key Object) (bool, Object) {
-	return false, NIL
+func (n Nil) Get(env *Env, key Object) (bool, Object, error) {
+	return false, NIL, nil
 }
 
-func (n Nil) Disjoin(key Object) Set {
-	return n
+func (n Nil) Disjoin(env *Env, key Object) (Set, error) {
+	return n, nil
+}
+
+func (n Nil) Has(key Equ) bool {
+	return false
 }
 
 func (n Nil) Keys() Seq {
@@ -1170,11 +1209,11 @@ func (n Nil) Vals() Seq {
 	return NIL
 }
 
-func (rat *Ratio) ToString(escape bool) string {
-	return rat.r.String()
+func (rat *Ratio) ToString(env *Env, escape bool) (string, error) {
+	return rat.r.String(), nil
 }
 
-func (rat *Ratio) Equals(other interface{}) bool {
+func (rat *Ratio) Equals(env *Env, other interface{}) bool {
 	return equalsNumbers(rat, other)
 }
 
@@ -1182,14 +1221,16 @@ func (rat *Ratio) GetType() *Type {
 	return TYPE.Ratio
 }
 
-func (rat *Ratio) Hash() uint32 {
-	h, _ := hashGobEncoder(&rat.r)
-
-	return h
+func (rat *Ratio) Hash(env *Env) (uint32, error) {
+	return hashGobEncoder(&rat.r)
 }
 
 func (rat *Ratio) Compare(env *Env, other Object) (int, error) {
-	n, err := AssertNumber(env, other, "Cannot compare Ratio and "+other.GetType().ToString(false))
+	os, err := other.GetType().ToString(env, false)
+	if err != nil {
+		return 0, err
+	}
+	n, err := AssertNumber(env, other, "Cannot compare Ratio and "+os)
 	if err != nil {
 		return 0, err
 	}
@@ -1201,11 +1242,11 @@ func MakeBigInt(bi int64) *BigInt {
 	return &BigInt{b: *big.NewInt(bi)}
 }
 
-func (bi *BigInt) ToString(escape bool) string {
-	return bi.b.String() + "N"
+func (bi *BigInt) ToString(env *Env, escape bool) (string, error) {
+	return bi.b.String() + "N", nil
 }
 
-func (bi *BigInt) Equals(other interface{}) bool {
+func (bi *BigInt) Equals(env *Env, other interface{}) bool {
 	return equalsNumbers(bi, other)
 }
 
@@ -1213,24 +1254,27 @@ func (bi *BigInt) GetType() *Type {
 	return TYPE.BigInt
 }
 
-func (bi *BigInt) Hash() uint32 {
-	h, _ := hashGobEncoder(&bi.b)
-	return h
+func (bi *BigInt) Hash(env *Env) (uint32, error) {
+	return hashGobEncoder(&bi.b)
 }
 
 func (bi *BigInt) Compare(env *Env, other Object) (int, error) {
-	n, err := AssertNumber(env, other, "Cannot compare BigInt and "+other.GetType().ToString(false))
+	os, err := other.GetType().ToString(env, false)
+	if err != nil {
+		return 0, err
+	}
+	n, err := AssertNumber(env, other, "Cannot compare BigInt and "+os)
 	if err != nil {
 		return 0, err
 	}
 	return CompareNumbers(bi, n), nil
 }
 
-func (bf *BigFloat) ToString(escape bool) string {
-	return bf.b.Text('g', -1) + "M"
+func (bf *BigFloat) ToString(env *Env, escape bool) (string, error) {
+	return bf.b.Text('g', -1) + "M", nil
 }
 
-func (bf *BigFloat) Equals(other interface{}) bool {
+func (bf *BigFloat) Equals(env *Env, other interface{}) bool {
 	return equalsNumbers(bf, other)
 }
 
@@ -1238,13 +1282,16 @@ func (bf *BigFloat) GetType() *Type {
 	return TYPE.BigFloat
 }
 
-func (bf *BigFloat) Hash() uint32 {
-	h, _ := hashGobEncoder(&bf.b)
-	return h
+func (bf *BigFloat) Hash(env *Env) (uint32, error) {
+	return hashGobEncoder(&bf.b)
 }
 
 func (bf *BigFloat) Compare(env *Env, other Object) (int, error) {
-	n, err := AssertNumber(env, other, "Cannot compare BigFloat and "+other.GetType().ToString(false))
+	os, err := other.GetType().ToString(env, false)
+	if err != nil {
+		return 0, err
+	}
+	n, err := AssertNumber(env, other, "Cannot compare BigFloat and "+os)
 	if err != nil {
 		return 0, err
 	}
@@ -1252,14 +1299,14 @@ func (bf *BigFloat) Compare(env *Env, other Object) (int, error) {
 	return CompareNumbers(bf, n), nil
 }
 
-func (c Char) ToString(escape bool) string {
+func (c Char) ToString(env *Env, escape bool) (string, error) {
 	if escape {
-		return escapeRune(c.Ch)
+		return escapeRune(c.Ch), nil
 	}
-	return string(c.Ch)
+	return string(c.Ch), nil
 }
 
-func (c Char) Equals(other interface{}) bool {
+func (c Char) Equals(env *Env, other interface{}) bool {
 	switch other := other.(type) {
 	case Char:
 		return c.Ch == other.Ch
@@ -1276,14 +1323,19 @@ func (c Char) Native() interface{} {
 	return c.Ch
 }
 
-func (c Char) Hash() uint32 {
+func (c Char) Hash(env *Env) (uint32, error) {
 	h := getHash()
 	h.Write([]byte(string(c.Ch)))
-	return h.Sum32()
+	return h.Sum32(), nil
 }
 
 func (c Char) Compare(env *Env, other Object) (int, error) {
-	c2, err := AssertChar(env, other, "Cannot compare Char and "+other.GetType().ToString(false))
+	os, err := other.GetType().ToString(env, false)
+	if err != nil {
+		return 0, err
+	}
+
+	c2, err := AssertChar(env, other, "Cannot compare Char and "+os)
 	if err != nil {
 		return 0, err
 	}
@@ -1308,11 +1360,11 @@ func MakeDouble(d float64) Double {
 	return Double{D: d}
 }
 
-func (d Double) ToString(escape bool) string {
-	return fmt.Sprintf("%g", d.D)
+func (d Double) ToString(env *Env, escape bool) (string, error) {
+	return fmt.Sprintf("%g", d.D), nil
 }
 
-func (d Double) Equals(other interface{}) bool {
+func (d Double) Equals(env *Env, other interface{}) bool {
 	return equalsNumbers(d, other)
 }
 
@@ -1324,31 +1376,36 @@ func (d Double) Native() interface{} {
 	return d.D
 }
 
-func (d Double) Hash() uint32 {
+func (d Double) Hash(env *Env) (uint32, error) {
 	h := getHash()
 	b := make([]byte, 8)
 	binary.LittleEndian.PutUint64(b, math.Float64bits(d.D))
 	h.Write(b)
-	return h.Sum32()
+	return h.Sum32(), nil
 }
 
 func (d Double) Compare(env *Env, other Object) (int, error) {
-	n, err := AssertNumber(env, other, "Cannot compare Double and "+other.GetType().ToString(false))
+	os, err := other.GetType().ToString(env, false)
+	if err != nil {
+		return 0, err
+	}
+
+	n, err := AssertNumber(env, other, "Cannot compare Double and "+os)
 	if err != nil {
 		return 0, err
 	}
 	return CompareNumbers(d, n), nil
 }
 
-func (i Int) ToString(escape bool) string {
-	return fmt.Sprintf("%d", i.I)
+func (i Int) ToString(env *Env, escape bool) (string, error) {
+	return fmt.Sprintf("%d", i.I), nil
 }
 
 func MakeInt(i int) Int {
 	return Int{I: i}
 }
 
-func (i Int) Equals(other interface{}) bool {
+func (i Int) Equals(env *Env, other interface{}) bool {
 	return equalsNumbers(i, other)
 }
 
@@ -1360,27 +1417,32 @@ func (i Int) Native() interface{} {
 	return i.I
 }
 
-func (i Int) Hash() uint32 {
+func (i Int) Hash(env *Env) (uint32, error) {
 	h := getHash()
 	b := make([]byte, 8)
 	binary.LittleEndian.PutUint64(b, uint64(i.I))
 	h.Write(b)
-	return h.Sum32()
+	return h.Sum32(), nil
 }
 
 func (i Int) Compare(env *Env, other Object) (int, error) {
-	n, err := AssertNumber(env, other, "Cannot compare Int and "+other.GetType().ToString(false))
+	os, err := other.GetType().ToString(env, false)
+	if err != nil {
+		return 0, err
+	}
+
+	n, err := AssertNumber(env, other, "Cannot compare Int and "+os)
 	if err != nil {
 		return 0, err
 	}
 	return CompareNumbers(i, n), nil
 }
 
-func (b Boolean) ToString(escape bool) string {
-	return fmt.Sprintf("%t", b.B)
+func (b Boolean) ToString(env *Env, escape bool) (string, error) {
+	return fmt.Sprintf("%t", b.B), nil
 }
 
-func (b Boolean) Equals(other interface{}) bool {
+func (b Boolean) Equals(env *Env, other interface{}) bool {
 	switch other := other.(type) {
 	case Boolean:
 		return b.B == other.B
@@ -1397,7 +1459,7 @@ func (b Boolean) Native() interface{} {
 	return b.B
 }
 
-func (b Boolean) Hash() uint32 {
+func (b Boolean) Hash(env *Env) (uint32, error) {
 	h := getHash()
 	var bs = make([]byte, 1)
 	if b.B {
@@ -1406,11 +1468,16 @@ func (b Boolean) Hash() uint32 {
 		bs[0] = 0
 	}
 	h.Write(bs)
-	return h.Sum32()
+	return h.Sum32(), nil
 }
 
 func (b Boolean) Compare(env *Env, other Object) (int, error) {
-	b2, err := AssertBoolean(env, other, "Cannot compare Boolean and "+other.GetType().ToString(false))
+	os, err := other.GetType().ToString(env, false)
+	if err != nil {
+		return 0, err
+	}
+
+	b2, err := AssertBoolean(env, other, "Cannot compare Boolean and "+os)
 	if err != nil {
 		return 0, err
 	}
@@ -1423,11 +1490,11 @@ func (b Boolean) Compare(env *Env, other Object) (int, error) {
 	return -1, nil
 }
 
-func (t Time) ToString(escape bool) string {
-	return t.T.String()
+func (t Time) ToString(env *Env, escape bool) (string, error) {
+	return t.T.String(), nil
 }
 
-func (t Time) Equals(other interface{}) bool {
+func (t Time) Equals(env *Env, other interface{}) bool {
 	switch other := other.(type) {
 	case Time:
 		return t.T.Equal(other.T)
@@ -1444,13 +1511,17 @@ func (t Time) Native() interface{} {
 	return t.T
 }
 
-func (t Time) Hash() uint32 {
-	h, _ := hashGobEncoder(t.T)
-	return h
+func (t Time) Hash(env *Env) (uint32, error) {
+	return hashGobEncoder(t.T)
 }
 
 func (t Time) Compare(env *Env, other Object) (int, error) {
-	t2, err := AssertTime(env, other, "Cannot compare Time and "+other.GetType().ToString(false))
+	os, err := other.GetType().ToString(env, false)
+	if err != nil {
+		return 0, err
+	}
+
+	t2, err := AssertTime(env, other, "Cannot compare Time and "+os)
 	if err != nil {
 		return 0, err
 	}
@@ -1463,7 +1534,14 @@ func (t Time) Compare(env *Env, other Object) (int, error) {
 	return -1, nil
 }
 
-func (k Keyword) ToString(escape bool) string {
+func (k Keyword) ToString(env *Env, escape bool) (string, error) {
+	if k.ns != nil {
+		return ":" + *k.ns + "/" + *k.name, nil
+	}
+	return ":" + *k.name, nil
+}
+
+func (k Keyword) Qual() string {
 	if k.ns != nil {
 		return ":" + *k.ns + "/" + *k.name
 	}
@@ -1481,10 +1559,19 @@ func (k Keyword) Namespace() string {
 	return ""
 }
 
-func (k Keyword) Equals(other interface{}) bool {
+func (k Keyword) Equals(env *Env, other interface{}) bool {
 	switch other := other.(type) {
 	case Keyword:
 		return k.ns == other.ns && k.name == other.name
+	default:
+		return false
+	}
+}
+
+func (s Keyword) Is(other Object) bool {
+	switch other := other.(type) {
+	case Symbol:
+		return s.ns == other.ns && s.name == other.name
 	default:
 		return false
 	}
@@ -1494,16 +1581,28 @@ func (k Keyword) GetType() *Type {
 	return TYPE.Keyword
 }
 
-func (k Keyword) Hash() uint32 {
+func (k Keyword) Hash(env *Env) (uint32, error) {
+	return k.hash, nil
+}
+
+func (k Keyword) IsHash() uint32 {
 	return k.hash
 }
 
 func (k Keyword) Compare(env *Env, other Object) (int, error) {
-	k2, err := AssertKeyword(env, other, "Cannot compare Keyword and "+other.GetType().ToString(false))
+	os, err := other.GetType().ToString(env, false)
 	if err != nil {
 		return 0, err
 	}
-	return strings.Compare(k.ToString(false), k2.ToString(false)), nil
+
+	k2, err := AssertKeyword(env, other, "Cannot compare Keyword and "+os)
+	if err != nil {
+		return 0, err
+	}
+
+	ks, err := k.ToString(env, false)
+	k2s, err := k2.ToString(env, false)
+	return strings.Compare(ks, k2s), nil
 }
 
 func (k Keyword) Call(env *Env, args []Object) (Object, error) {
@@ -1516,18 +1615,18 @@ func MakeRegex(r *regexp.Regexp) *Regex {
 	return &Regex{R: r}
 }
 
-func (rx *Regex) ToString(escape bool) string {
+func (rx *Regex) ToString(env *Env, escape bool) (string, error) {
 	if escape {
-		return "#\"" + rx.R.String() + "\""
+		return "#\"" + rx.R.String() + "\"", nil
 	}
-	return rx.R.String()
+	return rx.R.String(), nil
 }
 
 func (rx *Regex) Print(w io.Writer, printReadably bool) {
-	fmt.Fprint(w, rx.ToString(true))
+	fmt.Fprint(w, "#\""+rx.R.String()+"\"")
 }
 
-func (rx *Regex) Equals(other interface{}) bool {
+func (rx *Regex) Equals(env *Env, other interface{}) bool {
 	switch other := other.(type) {
 	case *Regex:
 		return rx.R == other.R
@@ -1540,11 +1639,18 @@ func (rx *Regex) GetType() *Type {
 	return TYPE.Regex
 }
 
-func (rx *Regex) Hash() uint32 {
-	return HashPtr(uintptr(unsafe.Pointer(rx.R)))
+func (rx *Regex) Hash(env *Env) (uint32, error) {
+	return HashPtr(uintptr(unsafe.Pointer(rx.R))), nil
 }
 
-func (s Symbol) ToString(escape bool) string {
+func (s Symbol) ToString(env *Env, escape bool) (string, error) {
+	if s.ns != nil {
+		return *s.ns + "/" + *s.name, nil
+	}
+	return *s.name, nil
+}
+
+func (s Symbol) Qual() string {
 	if s.ns != nil {
 		return *s.ns + "/" + *s.name
 	}
@@ -1562,7 +1668,16 @@ func (s Symbol) Namespace() string {
 	return ""
 }
 
-func (s Symbol) Equals(other interface{}) bool {
+func (s Symbol) Equals(env *Env, other interface{}) bool {
+	switch other := other.(type) {
+	case Symbol:
+		return s.ns == other.ns && s.name == other.name
+	default:
+		return false
+	}
+}
+
+func (s Symbol) Is(other Object) bool {
 	switch other := other.(type) {
 	case Symbol:
 		return s.ns == other.ns && s.name == other.name
@@ -1575,16 +1690,28 @@ func (s Symbol) GetType() *Type {
 	return TYPE.Symbol
 }
 
-func (s Symbol) Hash() uint32 {
+func (s Symbol) Hash(env *Env) (uint32, error) {
+	return s.IsHash(), nil
+}
+
+func (s Symbol) IsHash() uint32 {
 	return hashSymbol(s.ns, s.name) + 0x9e3779b9
 }
 
 func (s Symbol) Compare(env *Env, other Object) (int, error) {
-	s2, err := AssertSymbol(env, other, "Cannot compare Symbol and "+other.GetType().ToString(false))
+	os, err := other.GetType().ToString(env, false)
 	if err != nil {
 		return 0, err
 	}
-	return strings.Compare(s.ToString(false), s2.ToString(false)), nil
+
+	s2, err := AssertSymbol(env, other, "Cannot compare Symbol and "+os)
+	if err != nil {
+		return 0, err
+	}
+
+	ks, err := s.ToString(env, false)
+	k2s, err := s2.ToString(env, false)
+	return strings.Compare(ks, k2s), nil
 }
 
 func (s Symbol) Call(env *Env, args []Object) (Object, error) {
@@ -1593,11 +1720,11 @@ func (s Symbol) Call(env *Env, args []Object) (Object, error) {
 
 var _ Callable = Symbol{}
 
-func (s String) ToString(escape bool) string {
+func (s String) ToString(env *Env, escape bool) (string, error) {
 	if escape {
-		return escapeString(s.S)
+		return escapeString(s.S), nil
 	}
-	return s.S
+	return s.S, nil
 }
 
 func MakeString(s string) String {
@@ -1612,7 +1739,7 @@ func MakeStringVector(ss []string) *Vector {
 	return res
 }
 
-func (s String) Equals(other interface{}) bool {
+func (s String) Equals(env *Env, other interface{}) bool {
 	switch other := other.(type) {
 	case String:
 		return s.S == other.S
@@ -1629,10 +1756,10 @@ func (s String) Native() interface{} {
 	return s.S
 }
 
-func (s String) Hash() uint32 {
+func (s String) Hash(env *Env) (uint32, error) {
 	h := getHash()
 	h.Write([]byte(s.S))
-	return h.Sum32()
+	return h.Sum32(), nil
 }
 
 func (s String) Count() int {
@@ -1647,33 +1774,38 @@ func (s String) Seq() Seq {
 	return &ArraySeq{arr: runes}
 }
 
-func (s String) Nth(i int) Object {
+func (s String) Nth(env *Env, i int) (Object, error) {
 	if i < 0 {
-		panic(StubNewError(fmt.Sprintf("Negative index: %d", i)))
+		return nil, env.RT.NewError(fmt.Sprintf("Negative index: %d", i))
 	}
 	j, r := 0, 't'
 	for j, r = range s.S {
 		if i == j {
-			return Char{Ch: r}
+			return Char{Ch: r}, nil
 		}
 	}
-	panic(StubNewError(fmt.Sprintf("Index %d exceeds string's length %d", i, j+1)))
+
+	return nil, env.RT.NewError(fmt.Sprintf("Index %d exceeds string's length %d", i, j+1))
 }
 
-func (s String) TryNth(i int, d Object) Object {
+func (s String) TryNth(env *Env, i int, d Object) (Object, error) {
 	if i < 0 {
-		return d
+		return d, nil
 	}
 	for j, r := range s.S {
 		if i == j {
-			return Char{Ch: r}
+			return Char{Ch: r}, nil
 		}
 	}
-	return d
+	return d, nil
 }
 
 func (s String) Compare(env *Env, other Object) (int, error) {
-	s2, err := AssertString(env, other, "Cannot compare String and "+other.GetType().ToString(false))
+	os, err := other.GetType().ToString(env, false)
+	if err != nil {
+		return 0, err
+	}
+	s2, err := AssertString(env, other, "Cannot compare String and "+os)
 	if err != nil {
 		return 0, err
 	}
@@ -1724,8 +1856,8 @@ func IsEqualOrImplements(abstractType *Type, concreteType *Type) bool {
 	}
 }
 
-func IsInstance(t *Type, obj Object) bool {
-	if obj.Equals(NIL) {
+func IsInstance(env *Env, t *Type, obj Object) bool {
+	if obj.Equals(env, NIL) {
 		return false
 	}
 	return IsEqualOrImplements(t, obj.GetType())
@@ -1769,9 +1901,9 @@ func IsSpecialSymbol(obj Object) bool {
 func MakeMeta(arglists Seq, docstring string, added string) *ArrayMap {
 	res := EmptyArrayMap()
 	if arglists != nil {
-		res.Add(criticalKeywords.arglist, arglists)
+		res.AddEqu(criticalKeywords.arglist, arglists)
 	}
-	res.Add(criticalKeywords.doc, String{S: docstring})
-	res.Add(criticalKeywords.added, String{S: added})
+	res.AddEqu(criticalKeywords.doc, String{S: docstring})
+	res.AddEqu(criticalKeywords.added, String{S: added})
 	return res
 }

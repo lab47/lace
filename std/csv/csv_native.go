@@ -38,35 +38,35 @@ func csvSeqOpts(env *Env, src Object, opts Map) (Object, error) {
 	}
 	csvReader := csv.NewReader(rdr)
 	csvReader.ReuseRecord = true
-	if ok, c := opts.Get(MakeKeyword("comma")); ok {
+	if ok, c := opts.GetEqu(MakeKeyword("comma")); ok {
 		c, err := AssertChar(env, c, "comma must be a char")
 		if err != nil {
 			return nil, err
 		}
 		csvReader.Comma = c.Ch
 	}
-	if ok, c := opts.Get(MakeKeyword("comment")); ok {
+	if ok, c := opts.GetEqu(MakeKeyword("comment")); ok {
 		c, err := AssertChar(env, c, "comment must be a char")
 		if err != nil {
 			return nil, err
 		}
 		csvReader.Comment = c.Ch
 	}
-	if ok, c := opts.Get(MakeKeyword("fields-per-record")); ok {
+	if ok, c := opts.GetEqu(MakeKeyword("fields-per-record")); ok {
 		i, err := AssertInt(env, c, "fields-per-record must be an integer")
 		if err != nil {
 			return nil, err
 		}
 		csvReader.FieldsPerRecord = i.I
 	}
-	if ok, c := opts.Get(MakeKeyword("lazy-quotes")); ok {
+	if ok, c := opts.GetEqu(MakeKeyword("lazy-quotes")); ok {
 		b, err := AssertBoolean(env, c, "lazy-quotes must be a boolean")
 		if err != nil {
 			return nil, err
 		}
 		csvReader.LazyQuotes = b.B
 	}
-	if ok, c := opts.Get(MakeKeyword("trim-leading-space")); ok {
+	if ok, c := opts.GetEqu(MakeKeyword("trim-leading-space")); ok {
 		b, err := AssertBoolean(env, c, "trim-leading-space must be a boolean")
 		if err != nil {
 			return nil, err
@@ -83,7 +83,15 @@ func sliceOfStrings(env *Env, obj Object) (res []string, err error) {
 	}
 	s := sq.Seq()
 	for !s.IsEmpty() {
-		res = append(res, s.First().ToString(false))
+		f, err := s.First(env)
+		if err != nil {
+			return nil, err
+		}
+		str, err := f.ToString(env, false)
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, str)
 		s = s.Rest()
 	}
 	return
@@ -91,14 +99,14 @@ func sliceOfStrings(env *Env, obj Object) (res []string, err error) {
 
 func writeWriter(env *Env, wr io.Writer, data Seqable, opts Map) error {
 	csvWriter := csv.NewWriter(wr)
-	if ok, c := opts.Get(MakeKeyword("comma")); ok {
+	if ok, c := opts.GetEqu(MakeKeyword("comma")); ok {
 		c, err := AssertChar(env, c, "comma must be a char")
 		if err != nil {
 			return err
 		}
 		csvWriter.Comma = c.Ch
 	}
-	if ok, c := opts.Get(MakeKeyword("use-crlf")); ok {
+	if ok, c := opts.GetEqu(MakeKeyword("use-crlf")); ok {
 		b, err := AssertBoolean(env, c, "use-crlf must be a boolean")
 		if err != nil {
 			return err
@@ -107,7 +115,11 @@ func writeWriter(env *Env, wr io.Writer, data Seqable, opts Map) error {
 	}
 	s := data.Seq()
 	for !s.IsEmpty() {
-		sl, err := sliceOfStrings(env, s.First())
+		f, err := s.First(env)
+		if err != nil {
+			return err
+		}
+		sl, err := sliceOfStrings(env, f)
 		if err != nil {
 			return err
 		}

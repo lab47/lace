@@ -12,17 +12,19 @@ type (
 	}
 )
 
+var _ Object = &IOReader{}
+
 func MakeIOReader(r io.Reader) *IOReader {
 	res := &IOReader{r, 0}
 	res.hash = HashPtr(uintptr(unsafe.Pointer(res)))
 	return res
 }
 
-func (ior *IOReader) ToString(escape bool) string {
-	return "#object[IOReader]"
+func (ior *IOReader) ToString(env *Env, escape bool) (string, error) {
+	return "#object[IOReader]", nil
 }
 
-func (ior *IOReader) Equals(other interface{}) bool {
+func (ior *IOReader) Equals(env *Env, other interface{}) bool {
 	return ior == other
 }
 
@@ -34,18 +36,18 @@ func (ior *IOReader) GetType() *Type {
 	return TYPE.IOReader
 }
 
-func (ior *IOReader) Hash() uint32 {
-	return ior.hash
+func (ior *IOReader) Hash(env *Env) (uint32, error) {
+	return ior.hash, nil
 }
 
 func (ior *IOReader) WithInfo(info *ObjectInfo) Object {
 	return ior
 }
 
-func (ior *IOReader) Close() error {
+func (ior *IOReader) Close(env *Env) error {
 	if c, ok := ior.Reader.(io.Closer); ok {
 		return c.Close()
 	} else {
-		return StubNewError("Object is not closable: " + ior.ToString(false))
+		return env.RT.NewError("Object is not closable: #object[IOReader]")
 	}
 }

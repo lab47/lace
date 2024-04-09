@@ -16,12 +16,17 @@ func pipe() (Object, error) {
 	return res.Conjoin(MakeIOWriter(w))
 }
 
-func close(f Object) (Nil, error) {
+func close(env *Env, f Object) (Nil, error) {
 	if c, ok := f.(io.Closer); ok {
 		if err := c.Close(); err != nil {
-			return NIL, StubNewError(err.Error())
+			return NIL, env.RT.NewError(err.Error())
 		}
 		return NIL, nil
 	}
-	return NIL, StubNewError("Object is not closable: " + f.ToString(false))
+	s, err := f.ToString(env, false)
+	if err != nil {
+		return NIL, err
+	}
+
+	return NIL, env.RT.NewError("Object is not closable: " + s)
 }

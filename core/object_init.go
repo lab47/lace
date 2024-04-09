@@ -16,7 +16,7 @@ func RegRefType(name string, inst interface{}, doc string) *Type {
 		doc = "\n  " + doc
 	}
 	meta := MakeMeta(nil, "(Concrete reference type)"+doc, "1.0")
-	meta.Add(criticalKeywords.name, MakeString(name))
+	meta.AddEqu(criticalKeywords.name, MakeString(name))
 	t := &Type{MetaHolder{meta}, name, reflect.TypeOf(inst)}
 	TYPES[STRINGS.Intern(name)] = t
 	return t
@@ -27,7 +27,7 @@ func regType(name string, inst interface{}, doc string) *Type {
 		doc = "\n  " + doc
 	}
 	meta := MakeMeta(nil, "(Concrete type)"+doc, "1.0")
-	meta.Add(criticalKeywords.name, MakeString(name))
+	meta.AddEqu(criticalKeywords.name, MakeString(name))
 	t := &Type{MetaHolder{meta}, name, reflect.TypeOf(inst).Elem()}
 	TYPES[STRINGS.Intern(name)] = t
 	return t
@@ -38,7 +38,7 @@ func regInterface(name string, inst interface{}, doc string) *Type {
 		doc = "\n  " + doc
 	}
 	meta := MakeMeta(nil, "(Interface type)"+doc, "1.0")
-	meta.Add(criticalKeywords.name, MakeString(name))
+	meta.AddEqu(criticalKeywords.name, MakeString(name))
 	t := &Type{MetaHolder{meta}, name, reflect.TypeOf(inst).Elem()}
 	TYPES[STRINGS.Intern(name)] = t
 	return t

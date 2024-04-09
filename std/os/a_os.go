@@ -99,7 +99,7 @@ func __env_(_env *Env, _args []Object) (Object, error) {
 	switch {
 	case _c == 0:
 		var err error
-		_res, err := env()
+		_res, err := env(_env)
 		return _res, err
 
 	default:
@@ -329,7 +329,7 @@ func __stat_(_env *Env, _args []Object) (Object, error) {
 	case _c == 1:
 		var err error
 		filename, err := ExtractString(_env, _args, 0); if err != nil { return nil, err }
-		_res, err := stat(filename)
+		_res, err := stat(_env, filename)
 		return _res, err
 
 	default:

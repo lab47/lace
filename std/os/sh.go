@@ -37,11 +37,11 @@ func sh(dir string, stdin io.Reader, stdout io.Writer, stderr io.Writer, name st
 	err = cmd.Wait()
 
 	res := EmptyArrayMap()
-	res.Add(MakeKeyword("success"), Boolean{B: err == nil})
+	res.AddEqu(MakeKeyword("success"), Boolean{B: err == nil})
 
 	var exitCode int
 	if err != nil {
-		res.Add(MakeKeyword("err-msg"), String{S: err.Error()})
+		res.AddEqu(MakeKeyword("err-msg"), String{S: err.Error()})
 		if exiterr, ok := err.(*exec.ExitError); ok {
 			ws := exiterr.Sys().(syscall.WaitStatus)
 			exitCode = ws.ExitStatus()
@@ -52,12 +52,12 @@ func sh(dir string, stdin io.Reader, stdout io.Writer, stderr io.Writer, name st
 		ws := cmd.ProcessState.Sys().(syscall.WaitStatus)
 		exitCode = ws.ExitStatus()
 	}
-	res.Add(MakeKeyword("exit"), Int{I: exitCode})
+	res.AddEqu(MakeKeyword("exit"), Int{I: exitCode})
 	if stdout == nil {
-		res.Add(MakeKeyword("out"), String{S: string(stdoutBuffer.Bytes())})
+		res.AddEqu(MakeKeyword("out"), String{S: string(stdoutBuffer.Bytes())})
 	}
 	if stderr == nil {
-		res.Add(MakeKeyword("err"), String{S: string(stderrBuffer.Bytes())})
+		res.AddEqu(MakeKeyword("err"), String{S: string(stderrBuffer.Bytes())})
 	}
 	return res, nil
 }

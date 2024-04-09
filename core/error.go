@@ -8,11 +8,13 @@ type EvalError struct {
 	hash uint32
 }
 
-func (err *EvalError) ToString(escape bool) string {
-	return err.Error()
+var _ Object = &EvalError{}
+
+func (err *EvalError) ToString(env *Env, escape bool) (string, error) {
+	return err.Error(), nil
 }
 
-func (err *EvalError) Equals(other interface{}) bool {
+func (err *EvalError) Equals(env *Env, other interface{}) bool {
 	return err == other
 }
 
@@ -24,8 +26,8 @@ func (err *EvalError) GetType() *Type {
 	return TYPE.EvalError
 }
 
-func (err *EvalError) Hash() uint32 {
-	return err.hash
+func (err *EvalError) Hash(env *Env) (uint32, error) {
+	return err.hash, nil
 }
 
 func (err *EvalError) WithInfo(info *ObjectInfo) Object {

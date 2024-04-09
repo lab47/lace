@@ -19,6 +19,6 @@ func InternsOrThunks(env *Env, ns *Namespace) {
 	ns.InternVar(env, "new", new_,
 		MakeMeta(
 			NewListFrom(NewVectorFrom()),
-			`Creates a new random UUID.`, "1.0").Plus(MakeKeyword("tag"), String{S: "String"}))
+			`Creates a new random UUID.`, "1.0").Plus(env, MakeKeyword("tag"), String{S: "String"}))
 
 }

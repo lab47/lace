@@ -266,11 +266,11 @@ var (
 	}
 )
 
-func (b *Bindings) ToMap() (Map, error) {
+func (b *Bindings) ToMap(env *Env) (Map, error) {
 	var res Map = EmptyArrayMap()
 	for b != nil {
 		for _, v := range b.bindings {
-			v, err := res.Assoc(v.name, NIL)
+			v, err := res.Assoc(env, v.name, NIL)
 			if err != nil {
 				return nil, err
 			}
@@ -352,7 +352,7 @@ func (b *Bindings) AddBinding(sym Symbol, index int, skipUnused bool) {
 	if LINTER_MODE && !skipUnused {
 		old := b.bindings[sym.name]
 		if old != nil && needsUnusedWarning(old) {
-			printParseWarning(GetPosition(old.name), "Unused binding: "+old.name.ToString(false))
+			printParseWarning(GetPosition(old.name), "Unused binding: "+old.name.Qual())
 		}
 	}
 	b.bindings[sym.name] = &Binding{
@@ -434,8 +434,7 @@ func isIgnoredUnusedNamespace(ns *Namespace) bool {
 	if WARNINGS.ignoredUnusedNamespaces == nil {
 		return false
 	}
-	ok, _ := WARNINGS.ignoredUnusedNamespaces.Get(ns.Name)
-	return ok
+	return WARNINGS.ignoredUnusedNamespaces.Has(ns.Name)
 }
 
 func ResetUsage(env *Env) {
@@ -451,8 +450,7 @@ func ResetUsage(env *Env) {
 }
 
 func isEntryPointNs(ns *Namespace) bool {
-	ok, _ := WARNINGS.entryPoints.Get(ns.Name)
-	return ok
+	return WARNINGS.entryPoints.Has(ns.Name)
 }
 
 func WarnOnGloballyUnusedNamespaces(env *Env) {
@@ -463,7 +461,7 @@ func WarnOnGloballyUnusedNamespaces(env *Env) {
 		if !ns.isGloballyUsed && !isIgnoredUnusedNamespace(ns) && !isEntryPointNs(ns) {
 			pos := ns.Name.GetInfo()
 			if pos != nil && pos.Filename() != "<lace.core>" && pos.Filename() != "<user>" {
-				name := ns.Name.ToString(false)
+				name := ns.Name.Qual()
 				names = append(names, name)
 				positions[name] = pos.Position
 			}
@@ -484,7 +482,7 @@ func WarnOnUnusedNamespaces(env *Env) {
 		if ns != env.CurrentNamespace() && !ns.isUsed && !isIgnoredUnusedNamespace(ns) {
 			pos := ns.Name.GetInfo()
 			if pos != nil && pos.Filename() != "<lace.core>" && pos.Filename() != "<user>" {
-				name := ns.Name.ToString(false)
+				name := ns.Name.Qual()
 				names = append(names, name)
 				positions[name] = pos.Position
 			}
@@ -505,8 +503,7 @@ func isEntryPointVar(vr *Var) bool {
 		ns:   vr.ns.Name.name,
 		name: vr.name.name,
 	}
-	ok, _ := WARNINGS.entryPoints.Get(sym)
-	return ok
+	return WARNINGS.entryPoints.Has(sym)
 }
 
 func WarnOnGloballyUnusedVars(env *Env) {
@@ -575,11 +572,13 @@ func NewSurrogateExpr(obj Object) *LiteralExpr {
 	return res
 }
 
-func (err *ParseError) ToString(escape bool) string {
-	return err.Error()
+var _ Object = &ParseError{}
+
+func (err *ParseError) ToString(env *Env, escape bool) (string, error) {
+	return err.Error(), nil
 }
 
-func (err *ParseError) Equals(other interface{}) bool {
+func (err *ParseError) Equals(env *Env, other interface{}) bool {
 	return err == other
 }
 
@@ -591,8 +590,8 @@ func (err *ParseError) GetType() *Type {
 	return TYPE.ParseError
 }
 
-func (err *ParseError) Hash() uint32 {
-	return HashPtr(uintptr(unsafe.Pointer(err)))
+func (err *ParseError) Hash(env *Env) (uint32, error) {
+	return HashPtr(uintptr(unsafe.Pointer(err))), nil
 }
 
 func (err *ParseError) WithInfo(info *ObjectInfo) Object {
@@ -615,7 +614,11 @@ func (err ParseError) Error() string {
 func parseSeq(seq Seq, ctx *ParseContext) ([]Expr, error) {
 	res := make([]Expr, 0)
 	for !seq.IsEmpty() {
-		pv, err := Parse(seq.First(), ctx)
+		v, err := seq.First(ctx.Env)
+		if err != nil {
+			return nil, err
+		}
+		pv, err := Parse(v, ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -667,9 +670,12 @@ func parseSet(s *MapSet, pos Position, ctx *ParseContext) (Expr, error) {
 		elements: make([]Expr, s.m.Count()),
 		Position: pos,
 	}
-	var err error
 	for iter, i := iter(s.Seq()), 0; iter.HasNext(); i++ {
-		res.elements[i], err = Parse(iter.Next(), ctx)
+		v, err := iter.Next(ctx.Env)
+		if err != nil {
+			return nil, err
+		}
+		res.elements[i], err = Parse(v, ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -677,14 +683,30 @@ func parseSet(s *MapSet, pos Position, ctx *ParseContext) (Expr, error) {
 	return res, nil
 }
 
-func checkForm(obj Object, min int, max int) (int, error) {
+func checkForm(env *Env, obj Object, min int, max int) (int, error) {
 	seq := obj.(Seq)
 	c := SeqCount(seq)
 	if c < min {
-		return 0, &ParseError{obj: obj, msg: "Too few arguments to " + seq.First().ToString(false)}
+		v, err := seq.First(env)
+		if err != nil {
+			return 0, err
+		}
+		s, err := v.ToString(env, false)
+		if err != nil {
+			return 0, err
+		}
+		return 0, &ParseError{obj: obj, msg: "Too few arguments to " + s}
 	}
 	if c > max {
-		return 0, &ParseError{obj: obj, msg: "Too many arguments to " + seq.First().ToString(false)}
+		v, err := seq.First(env)
+		if err != nil {
+			return 0, err
+		}
+		s, err := v.ToString(env, false)
+		if err != nil {
+			return 0, err
+		}
+		return 0, &ParseError{obj: obj, msg: "Too many arguments to " + s}
 	}
 	return c, nil
 }
@@ -702,35 +724,42 @@ func updateVar(vr *Var, info *ObjectInfo, valueExpr Expr, sym Symbol) {
 	vr.expr = valueExpr
 	meta := sym.GetMeta()
 	if meta != nil {
-		if ok, p := meta.Get(criticalKeywords.private); ok {
+		if ok, p := meta.GetEqu(criticalKeywords.private); ok {
 			vr.isPrivate = ToBool(p)
 		}
-		if ok, p := meta.Get(criticalKeywords.dynamic); ok {
+		if ok, p := meta.GetEqu(criticalKeywords.dynamic); ok {
 			vr.isDynamic = ToBool(p)
 		}
 		vr.taggedType = getTaggedType(sym)
 	}
 }
 
-func isCreatedByMacro(formSeq Seq) bool {
-	return formSeq.First().GetInfo().Pos().filename == STR.coreFilename
+func isCreatedByMacro(env *Env, formSeq Seq) bool {
+	f, err := formSeq.First(env)
+	if err != nil {
+		return false
+	}
+	return f.GetInfo().Pos().filename == STR.coreFilename
 }
 
 func parseDef(obj Object, ctx *ParseContext, isForLinter bool) (*DefExpr, error) {
-	count, err := checkForm(obj, 2, 4)
+	count, err := checkForm(ctx.Env, obj, 2, 4)
 	if err != nil {
 		return nil, err
 	}
 	seq := obj.(Seq)
-	s := Second(seq)
+	s, err := Second(ctx.Env, seq)
+	if err != nil {
+		return nil, err
+	}
 	var meta Map
 	switch sym := s.(type) {
 	case Symbol:
 		if sym.ns != nil && (Symbol{name: sym.ns} != ctx.Env.CurrentNamespace().Name) {
-			panic(&ParseError{
+			return nil, &ParseError{
 				msg: "Can't create defs outside of current ns",
 				obj: obj,
-			})
+			}
 		}
 		symWithoutNs := sym
 		symWithoutNs.ns = nil
@@ -746,30 +775,42 @@ func parseDef(obj Object, ctx *ParseContext, isForLinter bool) (*DefExpr, error)
 			name:             sym,
 			value:            nil,
 			Position:         GetPosition(obj),
-			isCreatedByMacro: isCreatedByMacro(seq),
+			isCreatedByMacro: isCreatedByMacro(ctx.Env, seq),
 		}
 		meta = sym.GetMeta()
 		if count == 3 {
-			res.value, err = Parse(Third(seq), ctx)
+			v, err := Third(ctx.Env, seq)
+			if err != nil {
+				return nil, err
+			}
+			res.value, err = Parse(v, ctx)
 			if err != nil {
 				return nil, err
 			}
 		} else if count == 4 {
-			res.value, err = Parse(Fourth(seq), ctx)
+			v, err := Fourth(ctx.Env, seq)
 			if err != nil {
 				return nil, err
 			}
-			docstring := Third(seq)
+			res.value, err = Parse(v, ctx)
+			if err != nil {
+				return nil, err
+			}
+			docstring, err := Third(ctx.Env, seq)
+			if err != nil {
+				return nil, err
+			}
+
 			switch docstring.(type) {
 			case String:
 				if meta != nil {
-					v, err := meta.Assoc(criticalKeywords.doc, docstring)
+					v, err := meta.Assoc(ctx.Env, criticalKeywords.doc, docstring)
 					if err != nil {
 						return nil, err
 					}
 					meta = v.(Map)
 				} else {
-					v, err := EmptyArrayMap().Assoc(criticalKeywords.doc, docstring)
+					v, err := EmptyArrayMap().Assoc(ctx.Env, criticalKeywords.doc, docstring)
 					if err != nil {
 						return nil, err
 					}
@@ -803,7 +844,11 @@ func parseBody(seq Seq, ctx *ParseContext) ([]Expr, error) {
 	defer func() { ctx.recur = recur }()
 	res := make([]Expr, 0)
 	for !seq.IsEmpty() {
-		ro := seq.First()
+		ro, err := seq.First(ctx.Env)
+		if err != nil {
+			return nil, err
+		}
+
 		expr, err := Parse(ro, ctx)
 		if err != nil {
 			return nil, err
@@ -824,7 +869,7 @@ func parseBody(seq Seq, ctx *ParseContext) ([]Expr, error) {
 	return res, nil
 }
 
-func parseParams(params Object) ([]Symbol, bool, error) {
+func parseParams(env *Env, params Object) ([]Symbol, bool, error) {
 	res := make([]Symbol, 0)
 	v := params.(*Vector)
 	for i := 0; i < v.count; i++ {
@@ -834,13 +879,21 @@ func parseParams(params Object) ([]Symbol, bool, error) {
 			if LINTER_MODE {
 				sym = generateSymbol("linter")
 			} else {
-				return nil, false, &ParseError{obj: ro, msg: "Unsupported binding form: " + sym.ToString(false)}
+				s, err := sym.ToString(env, false)
+				if err != nil {
+					return nil, false, err
+				}
+				return nil, false, &ParseError{obj: ro, msg: "Unsupported binding form: " + s}
 			}
 		}
-		if criticalSymbols.amp.Equals(sym) {
+		if criticalSymbols.amp.Equals(env, sym) {
 			if v.count > i+2 {
 				ro := v.at(i + 2)
-				return nil, false, &ParseError{obj: ro, msg: "Unexpected parameter: " + ro.ToString(false)}
+				s, err := ro.ToString(env, false)
+				if err != nil {
+					return nil, false, err
+				}
+				return nil, false, &ParseError{obj: ro, msg: "Unexpected parameter: " + s}
 			}
 			if v.count == i+2 {
 				variadic := v.at(i + 1)
@@ -848,7 +901,11 @@ func parseParams(params Object) ([]Symbol, bool, error) {
 					if LINTER_MODE {
 						variadic = generateSymbol("linter")
 					} else {
-						return nil, false, &ParseError{obj: variadic, msg: "Unsupported binding form: " + variadic.ToString(false)}
+						s, err := variadic.ToString(env, false)
+						if err != nil {
+							return nil, false, err
+						}
+						return nil, false, &ParseError{obj: variadic, msg: "Unsupported binding form: " + s}
 					}
 				}
 				res = append(res, variadic.(Symbol))
@@ -871,9 +928,12 @@ func needsUnusedWarning(b *Binding) bool {
 }
 
 func addArity(fn *FnExpr, sig Seq, ctx *ParseContext) error {
-	params := sig.First()
+	params, err := sig.First(ctx.Env)
+	if err != nil {
+		return err
+	}
 	body := sig.Rest()
-	args, isVariadic, err := parseParams(params)
+	args, isVariadic, err := parseParams(ctx.Env, params)
 	if err != nil {
 		return err
 	}
@@ -935,7 +995,7 @@ func addArity(fn *FnExpr, sig Seq, ctx *ParseContext) error {
 			}
 			sort.Sort(BySymbolName(unused))
 			for _, u := range unused {
-				printParseWarning(GetPosition(u), "unused parameter: "+u.ToString(false))
+				printParseWarning(GetPosition(u), "unused parameter: "+u.Qual())
 			}
 		}
 	}
@@ -968,11 +1028,18 @@ func wrapWithMeta(fnExpr *FnExpr, obj Object, ctx *ParseContext) (Expr, error) {
 func parseFn(obj Object, ctx *ParseContext) (Expr, error) {
 	res := &FnExpr{Position: GetPosition(obj)}
 	bodies := obj.(Seq).Rest()
-	p := bodies.First()
+	p, err := bodies.First(ctx.Env)
+	if err != nil {
+		return nil, err
+	}
 	if IsSymbol(p) { // self reference
 		res.self = p.(Symbol)
 		bodies = bodies.Rest()
-		p = bodies.First()
+		p, err = bodies.First(ctx.Env)
+		if err != nil {
+			return nil, err
+		}
+
 		ctx.PushLocalFrame([]Symbol{res.self})
 		defer ctx.PopLocalFrame()
 	}
@@ -985,28 +1052,66 @@ func parseFn(obj Object, ctx *ParseContext) (Expr, error) {
 		return nil, &ParseError{obj: p, msg: "Parameter declaration missing"}
 	}
 	for !bodies.IsEmpty() {
-		body := bodies.First()
+		body, err := bodies.First(ctx.Env)
+		if err != nil {
+			return nil, err
+		}
+
 		switch s := body.(type) {
 		case Seq:
-			params := s.First()
+			params, err := s.First(ctx.Env)
+			if err != nil {
+				return nil, err
+			}
+
 			if !IsVector(params) {
-				return nil, &ParseError{obj: params, msg: "Parameter declaration must be a vector. Got: " + params.ToString(false)}
+				s, err := params.ToString(ctx.Env, false)
+				if err != nil {
+					return nil, err
+				}
+
+				return nil, &ParseError{obj: params, msg: "Parameter declaration must be a vector. Got: " + s}
 			}
 			addArity(res, s, ctx)
 		default:
-			return nil, &ParseError{obj: body, msg: "Function body must be a list. Got: " + s.ToString(false)}
+			ss, err := s.ToString(ctx.Env, false)
+			if err != nil {
+				return nil, err
+			}
+
+			return nil, &ParseError{obj: body, msg: "Function body must be a list. Got: " + ss}
 		}
 		bodies = bodies.Rest()
 	}
 	return wrapWithMeta(res, obj, ctx)
 }
 
-func isCatch(obj Object) bool {
-	return IsSeq(obj) && obj.(Seq).First().Equals(criticalSymbols.catch)
+func isCatch(env *Env, obj Object) bool {
+	seq, ok := obj.(Seq)
+	if !ok {
+		return false
+	}
+
+	v, err := seq.First(env)
+	if err != nil {
+		return false
+	}
+
+	return criticalSymbols.catch.Is(v)
 }
 
-func isFinally(obj Object) bool {
-	return IsSeq(obj) && obj.(Seq).First().Equals(criticalSymbols.finally)
+func isFinally(env *Env, obj Object) bool {
+	seq, ok := obj.(Seq)
+	if !ok {
+		return false
+	}
+
+	v, err := seq.First(env)
+	if err != nil {
+		return false
+	}
+
+	return criticalSymbols.finally.Is(v)
 }
 
 func resolveType(obj Object, ctx *ParseContext) (*Type, error) {
@@ -1025,7 +1130,11 @@ func resolveType(obj Object, ctx *ParseContext) (*Type, error) {
 	if LINTER_MODE {
 		return TYPE.Error, nil
 	}
-	return nil, &ParseError{obj: obj, msg: "Unable to resolve type: " + obj.ToString(false)}
+	s, err := obj.ToString(ctx.Env, false)
+	if err != nil {
+		return nil, err
+	}
+	return nil, &ParseError{obj: obj, msg: "Unable to resolve type: " + s}
 }
 
 func parseCatch(obj Object, ctx *ParseContext) (*CatchExpr, error) {
@@ -1033,15 +1142,30 @@ func parseCatch(obj Object, ctx *ParseContext) (*CatchExpr, error) {
 	if seq.IsEmpty() || seq.Rest().IsEmpty() {
 		return nil, &ParseError{obj: obj, msg: "catch requires at least two arguments: type symbol and binding symbol"}
 	}
-	excSymbol := Second(seq)
-	excType, err := resolveType(seq.First(), ctx)
+	excSymbol, err := Second(ctx.Env, seq)
+	if err != nil {
+		return nil, err
+	}
+
+	v, err := seq.First(ctx.Env)
+	if err != nil {
+		return nil, err
+	}
+
+	excType, err := resolveType(v, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	if !IsSymbol(excSymbol) {
-		return nil, &ParseError{obj: excSymbol, msg: "Bad binding form, expected symbol, got: " + excSymbol.ToString(false)}
+		s, err := excSymbol.ToString(ctx.Env, false)
+		if err != nil {
+			return nil, err
+		}
+
+		return nil, &ParseError{obj: excSymbol, msg: "Bad binding form, expected symbol, got: " + s}
 	}
+
 	ctx.PushLocalFrame([]Symbol{excSymbol.(Symbol)})
 	defer ctx.PopLocalFrame()
 	bodye, err := parseBody(seq.Rest().Rest(), ctx)
@@ -1076,18 +1200,22 @@ func parseTry(obj Object, ctx *ParseContext) (*TryExpr, error) {
 
 	var err error
 	for !seq.IsEmpty() {
-		obj = seq.First()
+		obj, err = seq.First(ctx.Env)
+		if err != nil {
+			return nil, err
+		}
+
 		if lastType == Finally {
 			return nil, &ParseError{obj: obj, msg: "finally clause must be last in try expression"}
 		}
-		if isCatch(obj) {
+		if isCatch(ctx.Env, obj) {
 			c, err := parseCatch(obj, ctx)
 			if err != nil {
 				return nil, err
 			}
 			res.catches = append(res.catches, c)
 			lastType = Catch
-		} else if isFinally(obj) {
+		} else if isFinally(ctx.Env, obj) {
 			res.finallyExpr, err = parseFinally(obj.(Seq).Rest(), ctx)
 			if err != nil {
 				return nil, err
@@ -1141,7 +1269,7 @@ func parseLetfn(obj Object, ctx *ParseContext) (*LoopExpr, error) {
 
 func isSkipUnused(obj Meta) bool {
 	if m := obj.GetMeta(); m != nil {
-		if ok, v := m.Get(criticalKeywords.skipUnused); ok {
+		if ok, v := m.GetEqu(criticalKeywords.skipUnused); ok {
 			return ToBool(v)
 		}
 	}
@@ -1152,7 +1280,11 @@ func parseLetLoop(obj Object, formName string, ctx *ParseContext) (*LetExpr, err
 	res := &LetExpr{
 		Position: GetPosition(obj),
 	}
-	bindings := Second(obj.(Seq))
+	bindings, err := Second(ctx.Env, obj.(Seq))
+	if err != nil {
+		return nil, err
+	}
+
 	switch b := bindings.(type) {
 	case *Vector:
 		if b.count%2 != 0 {
@@ -1175,7 +1307,7 @@ func parseLetLoop(obj Object, formName string, ctx *ParseContext) (*LetExpr, err
 			switch sym := s.(type) {
 			case Symbol:
 				if sym.ns != nil {
-					msg := "Can't let qualified name: " + sym.ToString(false)
+					msg := "Can't let qualified name: " + sym.Qual()
 					if LINTER_MODE {
 						printParseError(GetPosition(s), msg)
 					} else {
@@ -1187,7 +1319,12 @@ func parseLetLoop(obj Object, formName string, ctx *ParseContext) (*LetExpr, err
 				if LINTER_MODE {
 					res.names[i] = generateSymbol("linter")
 				} else {
-					return nil, &ParseError{obj: s, msg: "Unsupported binding form: " + sym.ToString(false)}
+					ss, err := sym.ToString(ctx.Env, false)
+					if err != nil {
+						return nil, err
+					}
+
+					return nil, &ParseError{obj: s, msg: "Unsupported binding form: " + ss}
 				}
 			}
 			if formName != "letfn" {
@@ -1237,7 +1374,12 @@ func parseLetLoop(obj Object, formName string, ctx *ParseContext) (*LetExpr, err
 				}
 				sort.Sort(BySymbolName(unused))
 				for _, u := range unused {
-					printParseWarning(GetPosition(u), "unused binding: "+u.ToString(false))
+					s, err := u.ToString(ctx.Env, false)
+					if err != nil {
+						return nil, err
+					}
+
+					printParseWarning(GetPosition(u), "unused binding: "+s)
 				}
 			}
 		}
@@ -1291,71 +1433,96 @@ func resolveMacro(obj Object, ctx *ParseContext) *Var {
 	}
 }
 
-func fixInfo(obj Object, info *ObjectInfo) Object {
+func fixInfo(env *Env, obj Object, info *ObjectInfo) (Object, error) {
 	switch s := obj.(type) {
 	case Nil:
-		return obj
+		return obj, nil
 	case Seq:
 		objs := make([]Object, 0, 8)
 		for !s.IsEmpty() {
-			t := fixInfo(s.First(), info)
+			v, err := s.First(env)
+			if err != nil {
+				return nil, err
+			}
+			t, err := fixInfo(env, v, info)
+			if err != nil {
+				return nil, err
+			}
 			objs = append(objs, t)
 			s = s.Rest()
 		}
 		res := NewListFrom(objs...)
 		if objInfo := obj.GetInfo(); objInfo != nil {
-			return res.WithInfo(objInfo)
+			return res.WithInfo(objInfo), nil
 		}
-		return res.WithInfo(info)
+		return res.WithInfo(info), nil
 	case *Vector:
 		res := EmptyVector()
 		for i := 0; i < s.count; i++ {
-			t := fixInfo(s.at(i), info)
+			t, err := fixInfo(env, s.at(i), info)
+			if err != nil {
+				return nil, err
+			}
 			res, _ = res.Conjoin(t)
 		}
 		res.meta = s.meta
 		if objInfo := obj.GetInfo(); objInfo != nil {
-			return res.WithInfo(objInfo)
+			return res.WithInfo(objInfo), nil
 		}
-		return res.WithInfo(info)
+		return res.WithInfo(info), nil
 	case Map:
 		res := EmptyArrayMap()
 		iter := s.Iter()
 		for iter.HasNext() {
 			p := iter.Next()
-			key := fixInfo(p.Key, info)
-			value := fixInfo(p.Value, info)
-			res.Add(key, value)
+			key, err := fixInfo(env, p.Key, info)
+			if err != nil {
+				return nil, err
+			}
+			value, err := fixInfo(env, p.Value, info)
+			if err != nil {
+				return nil, err
+			}
+			res.Add(env, key, value)
 		}
 		res.meta = s.(Meta).GetMeta()
 		if objInfo := obj.GetInfo(); objInfo != nil {
-			return res.WithInfo(objInfo)
+			return res.WithInfo(objInfo), nil
 		}
-		return res.WithInfo(info)
+		return res.WithInfo(info), nil
 	default:
-		return obj
+		return obj, nil
 	}
 }
 
 func macroexpand1(env *Env, seq Seq, ctx *ParseContext) (Object, error) {
-	op := seq.First()
+	op, err := seq.First(env)
+	if err != nil {
+		return nil, err
+	}
+
 	vr := resolveMacro(op, ctx)
 	if vr != nil {
-		m, err := ctx.localBindings.ToMap()
+		m, err := ctx.localBindings.ToMap(env)
 		if err != nil {
 			return nil, err
 		}
+		slice, err := ToSlice(env, seq.Rest().Cons(m).Cons(seq))
+		if err != nil {
+			return nil, err
+		}
+
 		expr := &MacroCallExpr{
 			Position: GetPosition(seq),
 			macro:    vr.Value.(Callable),
-			args:     ToSlice(seq.Rest().Cons(m).Cons(seq)),
+			args:     slice,
 			name:     varCallableString(vr),
 		}
 		v, err := Eval(env, expr, nil)
 		if err != nil {
 			return nil, err
 		}
-		return fixInfo(v, seq.GetInfo()), nil
+		return fixInfo(env, v, seq.GetInfo())
 	} else {
 		return seq, nil
 	}
@@ -1367,7 +1534,7 @@ func reportNotAFunction(pos Position, name string) {
 
 func getTaggedType(obj Meta) *Type {
 	if m := obj.GetMeta(); m != nil {
-		if ok, typeName := m.Get(criticalKeywords.tag); ok {
+		if ok, typeName := m.GetEqu(criticalKeywords.tag); ok {
 			if typeSym, ok := typeName.(Symbol); ok {
 				if t := TYPES[typeSym.name]; t != nil {
 					return t
@@ -1381,7 +1548,7 @@ func getTaggedType(obj Meta) *Type {
 func getTaggedTypes(obj Meta) []*Type {
 	var res []*Type
 	if m := obj.GetMeta(); m != nil {
-		if ok, typeName := m.Get(criticalKeywords.tag); ok {
+		if ok, typeName := m.GetEqu(criticalKeywords.tag); ok {
 			switch typeDecl := typeName.(type) {
 			case Symbol:
 				if t := TYPES[typeDecl.name]; t != nil {
@@ -1409,31 +1576,39 @@ func isTypeOneOf(abstractTypes []*Type, concreteType *Type) bool {
 	return false
 }
 
-func typesString(types []*Type) string {
+func typesString(env *Env, types []*Type) (string, error) {
 	var b bytes.Buffer
 	for i, t := range types {
-		b.WriteString(t.ToString(false))
+		s, err := t.ToString(env, false)
+		if err != nil {
+			return "", err
+		}
+		b.WriteString(s)
 		if i < len(types)-1 {
 			b.WriteString(" or ")
 		}
 	}
-	return b.String()
+	return b.String(), nil
 }
 
-func checkTypes(declaredArgs []Symbol, call *CallExpr) bool {
+func checkTypes(env *Env, declaredArgs []Symbol, call *CallExpr) (bool, error) {
 	res := false
 	for i, da := range declaredArgs {
 		if declaredTypes := getTaggedTypes(da); len(declaredTypes) > 0 {
 			passedType := call.args[i].InferType()
 			if passedType != nil {
 				if !isTypeOneOf(declaredTypes, passedType) {
-					printParseWarning(call.args[i].Pos(), fmt.Sprintf("arg[%d] of %s must have type %s, got %s", i, call.Name(), typesString(declaredTypes), passedType.ToString(false)))
+					ts, err := typesString(env, declaredTypes)
+					if err != nil {
+						return false, err
+					}
+					printParseWarning(call.args[i].Pos(), fmt.Sprintf("arg[%d] of %s must have type %s, got %s", i, call.Name(), ts, passedType.Name()))
 					res = true
 				}
 			}
 		}
 	}
-	return res
+	return res, nil
 }
 
 func selectArity(expr *FnExpr, passedArgsCount int) *FnArityExpr {
@@ -1448,38 +1623,52 @@ func selectArity(expr *FnExpr, passedArgsCount int) *FnArityExpr {
 	return nil
 }
 
-func reportWrongArity(expr *FnExpr, isMacro bool, call *CallExpr, pos Position) bool {
+func reportWrongArity(env *Env, expr *FnExpr, isMacro bool, call *CallExpr, pos Position) (bool, error) {
 	passedArgsCount := len(call.args)
 	if isMacro {
 		passedArgsCount += 2
 	}
 	if v := selectArity(expr, passedArgsCount); v != nil {
-		return checkTypes(v.args, call)
+		return checkTypes(env, v.args, call)
 	}
 	printParseWarning(pos, fmt.Sprintf("Wrong number of args (%d) passed to %s", len(call.args), call.Name()))
-	return true
+	return true, nil
 }
 
-func checkArglist(arglist Seq, passedArgsCount int) bool {
+func checkArglist(env *Env, arglist Seq, passedArgsCount int) (bool, error) {
 	for !arglist.IsEmpty() {
-		if v, ok := arglist.First().(*Vector); ok {
-			if v.Count() == passedArgsCount ||
-				v.Count() >= 2 && v.Nth(v.Count()-2).Equals(criticalSymbols.amp) && passedArgsCount >= (v.Count()-2) {
-				return true
+		f, err := arglist.First(env)
+		if err != nil {
+			return false, err
+		}
+		if v, ok := f.(*Vector); ok {
+			if v.Count() == passedArgsCount {
+				return true, nil
+			}
+
+			if v.Count() >= 2 {
+				n, err := v.Nth(env, v.Count()-2)
+				if err != nil {
+					return false, err
+				}
+
+				if n.Equals(env, criticalSymbols.amp) && passedArgsCount >= (v.Count()-2) {
+					return true, nil
+				}
 			}
 		}
 		arglist = arglist.Rest()
 	}
-	return false
+	return false, nil
 }
 
-func setMacroMeta(vr *Var) error {
+func setMacroMeta(env *Env, vr *Var) error {
 	var err error
 	var ass Associative
 	if vr.meta == nil {
-		ass, err = EmptyArrayMap().Assoc(criticalKeywords.macro, Boolean{B: true})
+		ass, err = EmptyArrayMap().Assoc(env, criticalKeywords.macro, Boolean{B: true})
 	} else {
-		ass, err = vr.meta.Assoc(criticalKeywords.macro, Boolean{B: true})
+		ass, err = vr.meta.Assoc(env, criticalKeywords.macro, Boolean{B: true})
 	}
 
 	vr.meta = ass.(Map)
@@ -1488,10 +1677,16 @@ func setMacroMeta(vr *Var) error {
 }
 
 func parseSetMacro(env *Env, obj Object, ctx *ParseContext) (Expr, error) {
-	expr, err := Parse(Second(obj.(Seq)), ctx)
+	s, err := Second(env, obj.(Seq))
 	if err != nil {
 		return nil, err
 	}
+
+	expr, err := Parse(s, ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	switch expr := expr.(type) {
 	case *LiteralExpr:
 		switch vr := expr.obj.(type) {
@@ -1514,7 +1709,7 @@ func isKnownMacros(env *Env, sym Symbol) (bool, Seq) {
 		}
 		KNOWN_MACROS = knownMacros
 	}
-	if ok, v := KNOWN_MACROS.Value.(Map).Get(sym); ok {
+	if ok, v := KNOWN_MACROS.Value.(Map).GetEqu(sym); ok {
 		switch v := v.(type) {
 		case Seqable:
 			return true, v.Seq()
@@ -1600,11 +1795,11 @@ func getInNsVar(ctx *ParseContext) *Var {
 	return IN_NS_VAR
 }
 
-func checkCall(expr Expr, isMacro bool, call *CallExpr, pos Position) {
+func checkCall(env *Env, expr Expr, isMacro bool, call *CallExpr, pos Position) {
 	argsCount := len(call.args)
 	switch expr := expr.(type) {
 	case *FnExpr:
-		reportWrongArity(expr, isMacro, call, pos)
+		reportWrongArity(env, expr, isMacro, call, pos)
 	case *MapExpr:
 		if argsCount == 0 || argsCount > 2 {
 			printParseWarning(pos, fmt.Sprintf("Wrong number of args (%d) passed to a map", argsCount))
@@ -1652,25 +1847,48 @@ func parseList(env *Env, obj Object, ctx *ParseContext) (Expr, error) {
 	ctx.isUnknownCallableScope = false
 
 	pos := GetPosition(obj)
-	first := seq.First()
+	first, err := seq.First(env)
+	if err != nil {
+		return nil, err
+	}
+
 	if v, ok := first.(Symbol); ok && v.ns == nil {
 		switch v.name {
 		case STR.quote:
-			return NewLiteralExpr(Second(seq)), nil
+			sec, err := Second(env, seq)
+			if err != nil {
+				return nil, err
+			}
+			return NewLiteralExpr(sec), nil
 		case STR._if:
-			checkForm(obj, 3, 4)
+			if _, err := checkForm(env, obj, 3, 4); err != nil {
+				return nil, err
+			}
+
 			if LINTER_MODE && SeqCount(seq) < 4 && WARNINGS.ifWithoutElse {
 				printParseWarning(pos, "missing else branch")
 			}
-			cond, err := Parse(Second(seq), ctx)
+			sec, err := Second(env, seq)
 			if err != nil {
 				return nil, err
 			}
-			positive, err := Parse(Third(seq), ctx)
+			cond, err := Parse(sec, ctx)
 			if err != nil {
 				return nil, err
 			}
-			negative, err := Parse(Fourth(seq), ctx)
+			thi, err := Third(env, seq)
+			if err != nil {
+				return nil, err
+			}
+			positive, err := Parse(thi, ctx)
+			if err != nil {
+				return nil, err
+			}
+			fou, err := Fourth(env, seq)
+			if err != nil {
+				return nil, err
+			}
+			negative, err := Parse(fou, ctx)
 			if err != nil {
 				return nil, err
 			}
@@ -1701,18 +1919,23 @@ func parseList(env *Env, obj Object, ctx *ParseContext) (Expr, error) {
 		case STR.defLinter:
 			return parseDef(obj, ctx, true)
 		case STR._var:
-			checkForm(obj, 2, 2)
-			switch sym := Second(seq).(type) {
+			if _, err := checkForm(env, obj, 2, 2); err != nil {
+				return nil, err
+			}
+
+			obj, err := Second(env, seq)
+
+			switch sym := obj.(type) {
 			case Symbol:
 				vr, ok := ctx.Env.Resolve(sym)
 				if !ok {
 					if !LINTER_MODE {
-						return nil, &ParseError{obj: obj, msg: "Unable to resolve var " + sym.ToString(false) + " in this context"}
+						return nil, &ParseError{obj: obj, msg: "Unable to resolve var " + sym.Qual() + " in this context"}
 					}
 					symNs := ctx.Env.NamespaceFor(ctx.Env.CurrentNamespace(), sym)
 					if !ctx.isUnknownCallableScope {
 						if symNs == nil || symNs == ctx.Env.CurrentNamespace() {
-							printParseError(obj.GetInfo().Pos(), "Unable to resolve symbol: "+sym.ToString(false))
+							printParseError(obj.GetInfo().Pos(), "Unable to resolve symbol: "+sym.Qual())
 						}
 					}
 					vr, err = InternFakeSymbol(ctx.Env, symNs, sym)
@@ -1739,7 +1962,7 @@ func parseList(env *Env, obj Object, ctx *ParseContext) (Expr, error) {
 			res := &DoExpr{
 				body:             body,
 				Position:         pos,
-				isCreatedByMacro: isCreatedByMacro(seq),
+				isCreatedByMacro: isCreatedByMacro(env, seq),
 			}
 			if LINTER_MODE {
 				if len(res.body) == 0 {
@@ -1750,7 +1973,11 @@ func parseList(env *Env, obj Object, ctx *ParseContext) (Expr, error) {
 			}
 			return res, nil
 		case STR.throw:
-			e, err := Parse(Second(seq), ctx)
+			sec, err := Second(env, seq)
+			if err != nil {
+				return nil, err
+			}
+			e, err := Parse(sec, ctx)
 			if err != nil {
 				return nil, err
 			}
@@ -1777,7 +2004,11 @@ func parseList(env *Env, obj Object, ctx *ParseContext) (Expr, error) {
 				ctx.linterBindings = ctx.linterBindings.PopFrame()
 			}()
 			for !syms.IsEmpty() {
-				if sym, ok := syms.First().(Symbol); ok {
+				v, err := syms.First(env)
+				if err != nil {
+					return nil, err
+				}
+				if sym, ok := v.(Symbol); ok {
 					ctx.linterBindings.AddBinding(sym, 0, true)
 				}
 				syms = syms.Rest()
@@ -1802,26 +2033,34 @@ func parseList(env *Env, obj Object, ctx *ParseContext) (Expr, error) {
 			if c.vr.Value != nil {
 				switch f := c.vr.Value.(type) {
 				case *Fn:
-					if !reportWrongArity(f.fnExpr, c.vr.isMacro, res, pos) {
+					ok, err := reportWrongArity(env, f.fnExpr, c.vr.isMacro, res, pos)
+					if err != nil {
+						return nil, err
+					}
+					if !ok {
 						require := getRequireVar(ctx)
 						refer := getReferVar(ctx)
 						alias := getAliasVar(ctx)
 						createNs := getCreateNsVar(ctx)
 						inNs := getInNsVar(ctx)
-						if (c.vr.Value.Equals(require.Value) ||
-							c.vr.Value.Equals(alias.Value) ||
-							c.vr.Value.Equals(refer.Value) ||
-							c.vr.Value.Equals(inNs.Value) ||
-							c.vr.Value.Equals(createNs.Value)) &&
+						if (c.vr.Value.Equals(env, require.Value) ||
+							c.vr.Value.Equals(env, alias.Value) ||
+							c.vr.Value.Equals(env, refer.Value) ||
+							c.vr.Value.Equals(env, inNs.Value) ||
+							c.vr.Value.Equals(env, createNs.Value)) &&
 							areAllLiteralExprs(res.args) {
 							Eval(env, res, nil)
 						}
 					}
 				case Callable:
 					if m := c.vr.GetMeta(); m != nil {
-						if ok, arglist := m.Get(criticalKeywords.arglist); ok {
+						if ok, arglist := m.GetEqu(criticalKeywords.arglist); ok {
 							if arglist, ok := arglist.(Seq); ok {
-								if !checkArglist(arglist, len(res.args)) {
+								ok, err := checkArglist(env, arglist, len(res.args))
+								if err != nil {
+									return nil, err
+								}
+								if !ok {
 									printParseWarning(pos, fmt.Sprintf("Wrong number of args (%d) passed to %s", len(res.args), res.Name()))
 								}
 							}
@@ -1832,10 +2071,10 @@ func parseList(env *Env, obj Object, ctx *ParseContext) (Expr, error) {
 					reportNotAFunction(pos, res.Name())
 				}
 			} else {
-				checkCall(c.vr.expr, c.vr.isMacro, res, pos)
+				checkCall(env, c.vr.expr, c.vr.isMacro, res, pos)
 			}
 		default:
-			checkCall(res.callable, false, res, pos)
+			checkCall(env, res.callable, false, res, pos)
 		}
 	}
 	return res, nil
@@ -1851,7 +2090,7 @@ func InternFakeSymbol(env *Env, ns *Namespace, sym Symbol) (*Var, error) {
 	}
 	fakeSym := Symbol{
 		ns:   nil,
-		name: STRINGS.Intern(sym.ToString(false)),
+		name: STRINGS.Intern(sym.Qual()),
 	}
 	return env.CurrentNamespace().Intern(env, fakeSym)
 }
@@ -1905,7 +2144,7 @@ func parseSymbol(obj Object, ctx *ParseContext) (Expr, error) {
 		}, nil
 	}
 	if !LINTER_MODE {
-		return nil, &ParseError{obj: obj, msg: "Unable to resolve symbol: " + sym.ToString(false)}
+		return nil, &ParseError{obj: obj, msg: "Unable to resolve symbol: " + sym.Qual()}
 	}
 	if DIALECT == CLJS && sym.ns == nil {
 		// Check if this is a "callable namespace"
@@ -1937,7 +2176,7 @@ func parseSymbol(obj Object, ctx *ParseContext) (Expr, error) {
 		}
 		if !ctx.isUnknownCallableScope {
 			if ctx.linterBindings.GetBinding(sym) == nil {
-				printParseError(obj.GetInfo().Pos(), "Unable to resolve symbol: "+sym.ToString(false))
+				printParseError(obj.GetInfo().Pos(), "Unable to resolve symbol: "+sym.Qual())
 			}
 		}
 	}
@@ -1970,7 +2209,11 @@ func Parse(obj Object, ctx *ParseContext) (Expr, error) {
 	case Symbol:
 		res, err = parseSymbol(obj, ctx)
 	default:
-		return nil, &ParseError{obj: obj, msg: "Cannot parse form: " + obj.ToString(false)}
+		s, err := obj.ToString(ctx.Env, false)
+		if err != nil {
+			return nil, err
+		}
+		return nil, &ParseError{obj: obj, msg: "Cannot parse form: " + s}
 	}
 
 	if err != nil {
@@ -1995,22 +2238,10 @@ func Parse(obj Object, ctx *ParseContext) (Expr, error) {
 }
 
 func TryParse(obj Object, ctx *ParseContext) (expr Expr, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			PROBLEM_COUNT++
-			switch sv := r.(type) {
-			case *ParseError:
-				err = r.(error)
-			case *EvalError:
-				err = r.(error)
-			case *ExInfo:
-				err = r.(error)
-			case error:
-				err = sv
-			default:
-				panic(r)
-			}
-		}
-	}()
-	return Parse(obj, ctx)
+	expr, err = Parse(obj, ctx)
+	if err != nil {
+		PROBLEM_COUNT++
+	}
+
+	return expr, err
 }

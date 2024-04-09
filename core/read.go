@@ -93,6 +93,24 @@ func escapeString(str string) string {
 	return b.String()
 }
 
+func MakeReadError3(env *Env, reader *Reader, msg string, obj Object) ReadError {
+	if obj != nil {
+		s, err := obj.ToString(env, false)
+		if err != nil {
+			s = fmt.Sprintf("%s(%p)", obj.GetType().Name(), obj)
+		}
+
+		msg = msg + ": " + s
+	}
+
+	return ReadError{
+		line:     reader.line,
+		column:   reader.column,
+		filename: reader.filename,
+		msg:      msg,
+	}
+}
+
 func MakeReadError(reader *Reader, msg string) ReadError {
 	return ReadError{
 		line:     reader.line,
@@ -726,16 +744,16 @@ func readMapWithNamespace(env *Env, reader *Reader, nsname string) (Object, erro
 		return nil, MakeReadError(reader, "Map literal must contain an even number of forms")
 	}
 	if int64(len(objs)) >= HASHMAP_THRESHOLD {
-		hashMap, err := NewHashMap()
+		hashMap, err := NewHashMap(env)
 		if err != nil {
 			return nil, err
 		}
 		for i := 0; i < len(objs); i += 2 {
 			key := resolveKey(objs[i], nsname)
-			if hashMap.containsKey(key) {
-				return nil, MakeReadError(reader, "Duplicate key "+key.ToString(false))
+			if hashMap.containsKey(env, key) {
+				return nil, MakeReadError3(env, reader, "Duplicate key", key)
 			}
-			v, err := hashMap.Assoc(key, objs[i+1])
+			v, err := hashMap.Assoc(env, key, objs[i+1])
 			if err != nil {
 				return nil, err
 			}
@@ -746,8 +764,8 @@ func readMapWithNamespace(env *Env, reader *Reader, nsname string) (Object, erro
 	m := EmptyArrayMap()
 	for i := 0; i < len(objs); i += 2 {
 		key := resolveKey(objs[i], nsname)
-		if !m.Add(key, objs[i+1]) {
-			return nil, MakeReadError(reader, "Duplicate key "+key.ToString(false))
+		if !m.Add(env, key, objs[i+1]) {
+			return nil, MakeReadError3(env, reader, "Duplicate key", key)
 		}
 	}
 	return MakeReadObject(reader, m), nil
@@ -763,22 +781,22 @@ func readSet(env *Env, reader *Reader) (Object, error) {
 			return nil, err
 		}
 		if !multi {
-			ok, err := set.Add(obj)
+			ok, err := set.Add(env, obj)
 			if err != nil {
 				return nil, err
 			}
 			if !ok {
-				return nil, MakeReadError(reader, "Duplicate set element "+obj.ToString(false))
+				return nil, MakeReadError3(env, reader, "Duplicate set element ", obj)
 			}
 		} else {
 			v := obj.(*Vector)
 			for i := 0; i < v.Count(); i++ {
-				ok, err := set.Add(v.at(i))
+				ok, err := set.Add(env, v.at(i))
 				if err != nil {
 					return nil, err
 				}
 				if !ok {
-					return nil, MakeReadError(reader, "Duplicate set element "+v.at(i).ToString(false))
+					return nil, MakeReadError3(env, reader, "Duplicate set element ", v.at(i))
 				}
 			}
 		}
@@ -886,7 +904,7 @@ func readArgSymbol(env *Env, reader *Reader) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	if obj.Equals(criticalSymbols.amp) {
+	if obj.Equals(env, criticalSymbols.amp) {
 		return MakeReadObject(reader, registerArg(reader, -1)), nil
 	}
 	switch n := obj.(type) {
@@ -909,21 +927,36 @@ func isSelfEvaluating(obj Object) bool {
 	}
 }
 
-func isCall(obj Object, name Symbol) bool {
+func isCall(env *Env, obj Object, name Symbol) (bool, error) {
 	switch seq := obj.(type) {
 	case Seq:
-		return seq.First().Equals(name)
+		f, err := seq.First(env)
+		if err != nil {
+			return false, err
+		}
+		return name.Is(f), nil
 	default:
-		return false
+		return false, nil
 	}
 }
 
 func syntaxQuoteSeq(tenv *Env, seq Seq, env map[*string]Symbol, reader *Reader) (Seq, error) {
 	res := make([]Object, 0)
 	for iter := iter(seq); iter.HasNext(); {
-		obj := iter.Next()
-		if isCall(obj, criticalSymbols.unquoteSplicing) {
-			res = append(res, (obj).(Seq).Rest().First())
+		obj, err := iter.Next(tenv)
+		if err != nil {
+			return nil, err
+		}
+		ok, err := isCall(tenv, obj, criticalSymbols.unquoteSplicing)
+		if err != nil {
+			return nil, err
+		}
+		if ok {
+			f, err := (obj).(Seq).Rest().First(tenv)
+			if err != nil {
+				return nil, err
+			}
+			res = append(res, f)
 		} else {
 			q, err := makeSyntaxQuote(tenv, obj, env, reader)
 			if err != nil {
@@ -977,10 +1010,20 @@ func makeSyntaxQuote(tenv *Env, obj Object, env map[*string]Symbol, reader *Read
 		}
 		return makeQuote(obj, criticalSymbols.quote), nil
 	case Seq:
-		if isCall(obj, criticalSymbols.unquote) {
-			return Second(s), nil
+		ok, err := isCall(tenv, obj, criticalSymbols.unquote)
+		if err != nil {
+			return nil, err
 		}
-		if isCall(obj, criticalSymbols.unquoteSplicing) {
+
+		if ok {
+			return Second(tenv, s)
+		}
+
+		ok, err = isCall(tenv, obj, criticalSymbols.unquoteSplicing)
+		if err != nil {
+			return nil, err
+		}
+		if ok {
 			return nil, MakeReadError(reader, "Splice not in list")
 		}
 		return syntaxQuoteColl(tenv, s, env, reader, criticalSymbols.emptySymbol, info)
@@ -1005,11 +1048,11 @@ func filename(f *string) string {
 func handleNoReaderError(env *Env, reader *Reader, s Symbol) (Object, error) {
 	if LINTER_MODE {
 		if DIALECT != EDN {
-			printReadWarning(reader, "No reader function for tag "+s.ToString(false))
+			printReadWarning(reader, "No reader function for tag "+s.Qual())
 		}
 		return readFirst(env, reader)
 	}
-	return nil, MakeReadError(reader, "No reader function for tag "+s.ToString(false))
+	return nil, MakeReadError3(env, reader, "No reader function for tag", s)
 }
 
 func readTagged(env *Env, reader *Reader) (Object, error) {
@@ -1028,7 +1071,7 @@ func readTagged(env *Env, reader *Reader) (Object, error) {
 		if !ok {
 			return handleNoReaderError(env, reader, s)
 		}
-		ok, readFunc := readersMap.Get(s)
+		ok, readFunc := readersMap.GetEqu(s)
 		if !ok {
 			return handleNoReaderError(env, reader, s)
 		}
@@ -1073,12 +1116,19 @@ func readConditional(env *Env, reader *Reader) (Object, bool, error) {
 		}
 	}
 	for cond.count > 0 {
-		if ok, _ := env.Features.Get(cond.first); ok {
-			v := Second(cond)
+		ok, _, err := env.Features.Get(env, cond.first)
+		if err != nil {
+			return nil, false, err
+		}
+		if ok {
+			v, err := Second(env, cond)
+			if err != nil {
+				return nil, false, err
+			}
 			if isSplicing {
 				s, ok := v.(Seqable)
 				if !ok {
-					msg := "Spliced form in reader conditional must be Seqable, got " + v.GetType().ToString(false)
+					msg := "Spliced form in reader conditional must be Seqable, got " + v.GetType().Name()
 					if LINTER_MODE {
 						printReadError(reader, msg)
 						return EmptyVector(), true, nil
@@ -1086,7 +1136,11 @@ func readConditional(env *Env, reader *Reader) (Object, bool, error) {
 						return nil, false, MakeReadError(reader, msg)
 					}
 				}
-				return NewVectorFromSeq(s.Seq()), true, nil
+				vec, err := NewVectorFromSeq(env, s.Seq())
+				if err != nil {
+					return nil, false, err
+				}
+				return vec, true, nil
 			}
 			return v, false, nil
 		}
@@ -1151,14 +1205,14 @@ func readNamespacedMap(env *Env, reader *Reader) (Object, error) {
 		} else {
 			sym, ok := sym.(Symbol)
 			if !ok || sym.ns != nil {
-				return nil, MakeReadError(reader, "Namespaced map must specify a valid namespace: "+sym.ToString(false))
+				return nil, MakeReadError3(env, reader, "Namespaced map must specify a valid namespace", sym)
 			}
 			ns := env.CurrentNamespace().aliases[sym.name]
 			if ns == nil {
 				ns = env.Namespaces[sym.name]
 			}
 			if ns == nil {
-				return nil, MakeReadError(reader, "Unknown auto-resolved namespace alias: "+sym.ToString(false))
+				return nil, MakeReadError3(env, reader, "Unknown auto-resolved namespace alias", sym)
 			}
 			ns.isUsed = true
 			ns.isGloballyUsed = true
@@ -1170,7 +1224,7 @@ func readNamespacedMap(env *Env, reader *Reader) (Object, error) {
 		}
 		sym, ok := sym.(Symbol)
 		if !ok || sym.ns != nil {
-			return nil, MakeReadError(reader, "Namespaced map must specify a valid namespace: "+sym.ToString(false))
+			return nil, MakeReadError3(env, reader, "Namespaced map must specify a valid namespace", sym)
 		}
 		nsname = sym.Name()
 	}
@@ -1254,13 +1308,13 @@ func readWithMeta(env *Env, reader *Reader) (Object, error) {
 	}
 	switch v := nextObj.(type) {
 	case Meta:
-		m, err := v.WithMeta(meta)
+		m, err := v.WithMeta(env, meta)
 		if err != nil {
 			return nil, err
 		}
 		return DeriveReadObject(nextObj, m), nil
 	default:
-		return nil, MakeReadError(reader, "Metadata cannot be applied to "+v.ToString(false))
+		return nil, MakeReadError3(env, reader, "Metadata cannot be applied to", v)
 	}
 }
 

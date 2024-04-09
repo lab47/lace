@@ -20,15 +20,19 @@ type (
 	}
 )
 
-func (ns *Namespace) ToString(escape bool) string {
-	return ns.Name.ToString(escape)
+func (ns *Namespace) ToString(env *Env, escape bool) (string, error) {
+	return ns.Name.ToString(env, escape)
+}
+
+func (ns *Namespace) Qual() string {
+	return ns.Name.Qual()
 }
 
 func (ns *Namespace) Print(w io.Writer, printReadably bool) {
-	fmt.Fprint(w, "#object[Namespace \""+ns.Name.ToString(true)+"\"]")
+	fmt.Fprint(w, "#object[Namespace \""+ns.Name.Qual()+"\"]")
 }
 
-func (ns *Namespace) Equals(other interface{}) bool {
+func (ns *Namespace) Equals(env *Env, other interface{}) bool {
 	return ns == other
 }
 
@@ -44,9 +48,9 @@ func (ns *Namespace) GetType() *Type {
 	return TYPE.Namespace
 }
 
-func (ns *Namespace) WithMeta(meta Map) (Object, error) {
+func (ns *Namespace) WithMeta(env *Env, meta Map) (Object, error) {
 	res := *ns
-	v, err := SafeMerge(res.meta, meta)
+	v, err := SafeMerge(env, res.meta, meta)
 	if err != nil {
 		return nil, err
 	}
@@ -64,8 +68,8 @@ func (ns *Namespace) AlterMeta(env *Env, fn *Fn, args []Object) (Map, error) {
 	return AlterMeta(env, &ns.MetaHolder, fn, args)
 }
 
-func (ns *Namespace) Hash() uint32 {
-	return ns.hash
+func (ns *Namespace) Hash(env *Env) (uint32, error) {
+	return ns.hash, nil
 }
 
 func (ns *Namespace) MaybeLazy(env *Env, doc string) {
@@ -85,18 +89,23 @@ func (ns *Namespace) CoreP() bool {
 
 const nsHashMask uint32 = 0x90569f6f
 
-func NewNamespace(sym Symbol) *Namespace {
+func NewNamespace(env *Env, sym Symbol) (*Namespace, error) {
+	h, err := sym.Hash(env)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Namespace{
 		Name:     sym,
 		mappings: make(map[*string]*Var),
 		aliases:  make(map[*string]*Namespace),
-		hash:     sym.Hash() ^ nsHashMask,
-	}
+		hash:     h ^ nsHashMask,
+	}, nil
 }
 
 func (ns *Namespace) Refer(env *Env, sym Symbol, vr *Var) (*Var, error) {
 	if sym.ns != nil {
-		return nil, env.RT.NewError("Can't intern namespace-qualified symbol " + sym.ToString(false))
+		return nil, env.RT.NewError("Can't intern namespace-qualified symbol " + sym.Qual())
 	}
 	ns.mappings[sym.name] = vr
 	return vr, nil
@@ -112,7 +121,7 @@ func (ns *Namespace) ReferAll(other *Namespace) {
 
 func (ns *Namespace) Intern(env *Env, sym Symbol) (*Var, error) {
 	if sym.ns != nil {
-		return nil, StubNewError("Can't intern namespace-qualified symbol " + sym.ToString(false))
+		return nil, StubNewError("Can't intern namespace-qualified symbol " + sym.Qual())
 	}
 	sym.meta = nil
 	existingVar, ok := ns.mappings[sym.name]
@@ -125,7 +134,7 @@ func (ns *Namespace) Intern(env *Env, sym Symbol) (*Var, error) {
 		return newVar, nil
 	}
 	if existingVar.ns != ns {
-		if existingVar.ns.Name.Equals(criticalSymbols.lace_core) {
+		if existingVar.ns.Name.Equals(env, criticalSymbols.lace_core) {
 			newVar := &Var{
 				ns:   ns,
 				name: sym,
@@ -133,15 +142,15 @@ func (ns *Namespace) Intern(env *Env, sym Symbol) (*Var, error) {
 			ns.mappings[sym.name] = newVar
 			if !strings.HasPrefix(ns.Name.Name(), "lace.") {
 				printParseWarning(sym.GetInfo().Pos(), fmt.Sprintf("WARNING: %s already refers to: %s in namespace %s, being replaced by: %s\n",
-					sym.ToString(false), existingVar.ToString(false), ns.Name.ToString(false), newVar.ToString(false)))
+					sym.Qual(), existingVar.Qual(), ns.Name.Qual(), newVar.Qual()))
 			}
 			return newVar, nil
 		}
-		return nil, StubNewError(fmt.Sprintf("WARNING: %s already refers to: %s in namespace %s",
-			sym.ToString(false), existingVar.ToString(false), ns.ToString(false)))
+		return nil, env.RT.NewError(fmt.Sprintf("WARNING: %s already refers to: %s in namespace %s",
+			sym.Qual(), existingVar.Qual(), ns.Qual()))
 	}
-	if LINTER_MODE && existingVar.expr != nil && !existingVar.ns.Name.Equals(criticalSymbols.lace_core) {
-		printParseWarning(sym.GetInfo().Pos(), "Duplicate def of "+existingVar.ToString(false))
+	if LINTER_MODE && existingVar.expr != nil && !existingVar.ns.Name.Equals(env, criticalSymbols.lace_core) {
+		printParseWarning(sym.GetInfo().Pos(), "Duplicate def of "+existingVar.Qual())
 	}
 	return existingVar, nil
 }
@@ -152,8 +161,8 @@ func (ns *Namespace) InternVar(env *Env, name string, val Object, meta *ArrayMap
 		return nil, err
 	}
 	vr.Value = val
-	meta.Add(criticalKeywords.ns, ns)
-	meta.Add(criticalKeywords.name, vr.name)
+	meta.Add(env, criticalKeywords.ns, ns)
+	meta.Add(env, criticalKeywords.name, vr.name)
 	vr.meta = meta
 	return vr, nil
 }
@@ -164,7 +173,7 @@ func (ns *Namespace) AddAlias(env *Env, alias Symbol, namespace *Namespace) erro
 	}
 	existing := ns.aliases[alias.name]
 	if existing != nil && existing != namespace {
-		msg := "Alias " + alias.ToString(false) + " already exists in namespace " + ns.Name.ToString(false) + ", aliasing " + existing.Name.ToString(false)
+		msg := "Alias " + alias.Qual() + " already exists in namespace " + ns.Name.Qual() + ", aliasing " + existing.Name.Qual()
 		if LINTER_MODE {
 			printParseError(GetPosition(alias), msg)
 			return nil

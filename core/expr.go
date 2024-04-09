@@ -9,19 +9,19 @@ func (expr *LiteralExpr) InferType() *Type {
 
 func dumpPosition(p Position) Map {
 	res := EmptyArrayMap()
-	res.Add(criticalKeywords.startLine, Int{I: p.startLine})
-	res.Add(criticalKeywords.endLine, Int{I: p.endLine})
-	res.Add(criticalKeywords.startColumn, Int{I: p.startColumn})
-	res.Add(criticalKeywords.endColumn, Int{I: p.endColumn})
-	res.Add(criticalKeywords.filename, String{S: p.Filename()})
+	res.AddEqu(criticalKeywords.startLine, Int{I: p.startLine})
+	res.AddEqu(criticalKeywords.endLine, Int{I: p.endLine})
+	res.AddEqu(criticalKeywords.startColumn, Int{I: p.startColumn})
+	res.AddEqu(criticalKeywords.endColumn, Int{I: p.endColumn})
+	res.AddEqu(criticalKeywords.filename, String{S: p.Filename()})
 	return res
 }
 
 func exprArrayMap(expr Expr, exprType string, pos bool) *ArrayMap {
 	res := EmptyArrayMap()
-	res.Add(criticalKeywords.type_, MakeKeyword(exprType))
+	res.AddEqu(criticalKeywords.type_, MakeKeyword(exprType))
 	if pos {
-		res.Add(criticalKeywords.pos, dumpPosition(expr.Pos()))
+		res.AddEqu(criticalKeywords.pos, dumpPosition(expr.Pos()))
 	}
 	return res
 }
@@ -31,12 +31,12 @@ func addVector(res *ArrayMap, body []Expr, name string, pos bool) {
 	for _, e := range body {
 		b, _ = b.Conjoin(e.Dump(pos))
 	}
-	res.Add(MakeKeyword(name), b)
+	res.AddEqu(MakeKeyword(name), b)
 }
 
 func (expr *LiteralExpr) Dump(pos bool) Map {
 	res := exprArrayMap(expr, "literal", pos)
-	res.Add(criticalKeywords.object, expr.obj)
+	res.AddEqu(criticalKeywords.object, expr.obj)
 	return res
 }
 
@@ -77,9 +77,9 @@ func (expr *IfExpr) InferType() *Type {
 
 func (expr *IfExpr) Dump(pos bool) Map {
 	res := exprArrayMap(expr, "if", pos)
-	res.Add(MakeKeyword("condition"), expr.cond.Dump(pos))
-	res.Add(MakeKeyword("positive"), expr.positive.Dump(pos))
-	res.Add(MakeKeyword("negative"), expr.negative.Dump(pos))
+	res.AddEqu(MakeKeyword("condition"), expr.cond.Dump(pos))
+	res.AddEqu(MakeKeyword("positive"), expr.positive.Dump(pos))
+	res.AddEqu(MakeKeyword("negative"), expr.negative.Dump(pos))
 	return res
 }
 
@@ -89,13 +89,13 @@ func (expr *DefExpr) InferType() *Type {
 
 func (expr *DefExpr) Dump(pos bool) Map {
 	res := exprArrayMap(expr, "def", pos)
-	res.Add(criticalKeywords.var_, expr.vr)
-	res.Add(criticalKeywords.name, expr.name)
+	res.AddEqu(criticalKeywords.var_, expr.vr)
+	res.AddEqu(criticalKeywords.name, expr.name)
 	if expr.value != nil {
-		res.Add(criticalKeywords.value, expr.value.Dump(pos))
+		res.AddEqu(criticalKeywords.value, expr.value.Dump(pos))
 	}
 	if expr.meta != nil {
-		res.Add(criticalKeywords.meta, expr.meta.Dump(pos))
+		res.AddEqu(criticalKeywords.meta, expr.meta.Dump(pos))
 	}
 	return res
 }
@@ -116,8 +116,8 @@ func (expr *CallExpr) InferType() *Type {
 
 func (expr *CallExpr) Dump(pos bool) Map {
 	res := exprArrayMap(expr, "call", pos)
-	res.Add(MakeKeyword("name"), String{S: expr.Name()})
-	res.Add(MakeKeyword("callable"), expr.callable.Dump(pos))
+	res.AddEqu(MakeKeyword("name"), String{S: expr.Name()})
+	res.AddEqu(MakeKeyword("callable"), expr.callable.Dump(pos))
 	addVector(res, expr.args, "args", pos)
 	return res
 }
@@ -128,12 +128,12 @@ func (expr *MacroCallExpr) InferType() *Type {
 
 func (expr *MacroCallExpr) Dump(pos bool) Map {
 	res := exprArrayMap(expr, "macro-call", pos)
-	res.Add(MakeKeyword("name"), String{S: expr.name})
+	res.AddEqu(MakeKeyword("name"), String{S: expr.name})
 	args := EmptyVector()
 	for _, arg := range expr.args {
 		args, _ = args.Conjoin(arg)
 	}
-	res.Add(MakeKeyword("args"), args)
+	res.AddEqu(MakeKeyword("args"), args)
 	return res
 }
 
@@ -162,7 +162,7 @@ func (expr *VarRefExpr) InferType() *Type {
 
 func (expr *VarRefExpr) Dump(pos bool) Map {
 	res := exprArrayMap(expr, "var-ref", pos)
-	res.Add(criticalKeywords.var_, expr.vr)
+	res.AddEqu(criticalKeywords.var_, expr.vr)
 	return res
 }
 
@@ -172,7 +172,7 @@ func (expr *SetMacroExpr) InferType() *Type {
 
 func (expr *SetMacroExpr) Dump(pos bool) Map {
 	res := exprArrayMap(expr, "set-macro", pos)
-	res.Add(criticalKeywords.var_, expr.vr)
+	res.AddEqu(criticalKeywords.var_, expr.vr)
 	return res
 }
 
@@ -182,7 +182,7 @@ func (expr *BindingExpr) InferType() *Type {
 
 func (expr *BindingExpr) Dump(pos bool) Map {
 	res := exprArrayMap(expr, "binding", pos)
-	res.Add(MakeKeyword("name"), expr.binding.name)
+	res.AddEqu(MakeKeyword("name"), expr.binding.name)
 	return res
 }
 
@@ -192,8 +192,8 @@ func (expr *MetaExpr) InferType() *Type {
 
 func (expr *MetaExpr) Dump(pos bool) Map {
 	res := exprArrayMap(expr, "meta", pos)
-	res.Add(criticalKeywords.meta, expr.meta.Dump(pos))
-	res.Add(MakeKeyword("expr"), expr.expr.Dump(pos))
+	res.AddEqu(criticalKeywords.meta, expr.meta.Dump(pos))
+	res.AddEqu(MakeKeyword("expr"), expr.expr.Dump(pos))
 	return res
 }
 
@@ -229,7 +229,7 @@ func (expr *FnArityExpr) Dump(pos bool) Map {
 	for _, arg := range expr.args {
 		args, _ = args.Conjoin(arg)
 	}
-	res.Add(MakeKeyword("args"), args)
+	res.AddEqu(MakeKeyword("args"), args)
 	addVector(res, expr.body, "body", pos)
 	return res
 }
@@ -237,16 +237,16 @@ func (expr *FnArityExpr) Dump(pos bool) Map {
 func (expr *FnExpr) Dump(pos bool) Map {
 	res := exprArrayMap(expr, "fn", pos)
 	if expr.self.name != nil {
-		res.Add(MakeKeyword("self"), expr.self)
+		res.AddEqu(MakeKeyword("self"), expr.self)
 	}
 	if expr.variadic != nil {
-		res.Add(MakeKeyword("variadic"), expr.variadic.Dump(pos))
+		res.AddEqu(MakeKeyword("variadic"), expr.variadic.Dump(pos))
 	}
 	arities := EmptyVector()
 	for _, a := range expr.arities {
 		arities, _ = arities.Conjoin(a.Dump(pos))
 	}
-	res.Add(MakeKeyword("arities"), arities)
+	res.AddEqu(MakeKeyword("arities"), arities)
 	return res
 }
 
@@ -286,7 +286,7 @@ func (expr *ThrowExpr) InferType() *Type {
 
 func (expr *ThrowExpr) Dump(pos bool) Map {
 	res := exprArrayMap(expr, "throw", pos)
-	res.Add(MakeKeyword("expr"), expr.e.Dump(pos))
+	res.AddEqu(MakeKeyword("expr"), expr.e.Dump(pos))
 	return res
 }
 
@@ -296,8 +296,8 @@ func (expr *CatchExpr) InferType() *Type {
 
 func (expr *CatchExpr) Dump(pos bool) Map {
 	res := exprArrayMap(expr, "catch", pos)
-	res.Add(MakeKeyword("error-type"), expr.excType)
-	res.Add(MakeKeyword("error-symbol"), expr.excSymbol)
+	res.AddEqu(MakeKeyword("error-type"), expr.excType)
+	res.AddEqu(MakeKeyword("error-symbol"), expr.excSymbol)
 	addVector(res, expr.body, "body", pos)
 	return res
 }
@@ -314,6 +314,6 @@ func (expr *TryExpr) Dump(pos bool) Map {
 	for _, c := range expr.catches {
 		catches, _ = catches.Conjoin(c.Dump(pos))
 	}
-	res.Add(MakeKeyword("catches"), catches)
+	res.AddEqu(MakeKeyword("catches"), catches)
 	return res
 }

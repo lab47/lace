@@ -445,7 +445,7 @@ func (n *NSBuilder) makeMeta(b *DefnInfo) *ArrayMap {
 	}
 
 	if b.Tag != "" {
-		m = m.Plus(MakeKeyword("tag"), MakeString(b.Tag))
+		m = m.Plus(n.env, MakeKeyword("tag"), MakeString(b.Tag))
 	}
 
 	return m

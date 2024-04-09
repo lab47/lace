@@ -5,12 +5,13 @@ package core
 
 func NewEnv() (*Env, error) {
 	features := EmptySet()
-	features.Add(MakeKeyword("default"))
-	features.Add(MakeKeyword("lace"))
 	res := &Env{
 		Namespaces: make(map[*string]*Namespace),
 		Features:   features,
 	}
+	features.Add(res, MakeKeyword("default"))
+	features.Add(res, MakeKeyword("lace"))
+
 	var err error
 	res.CoreNamespace = res.EnsureNamespace(criticalSymbols.lace_core)
 	res.CoreNamespace.core = true
@@ -47,7 +48,7 @@ func NewEnv() (*Env, error) {
 	if err != nil {
 		return nil, err
 	}
-	res.version, err = res.CoreNamespace.InternVar(res, "*lace-version*", versionMap(),
+	res.version, err = res.CoreNamespace.InternVar(res, "*lace-version*", versionMap(res),
 		MakeMeta(nil, `The version info for Clojure core, as a map containing :major :minor
 			:incremental and :qualifier keys. Feature releases may increment
 			:minor and/or :major, bugfix releases will increment :incremental.`, "1.0"))

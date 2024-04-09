@@ -19,11 +19,11 @@ func InternsOrThunks(env *Env, ns *Namespace) {
 	ns.InternVar(env, "decode-string", decode_string_,
 		MakeMeta(
 			NewListFrom(NewVectorFrom(MakeSymbol("s"))),
-			`Returns the bytes represented by the hexadecimal string s.`, "1.0").Plus(MakeKeyword("tag"), String{S: "String"}))
+			`Returns the bytes represented by the hexadecimal string s.`, "1.0").Plus(env, MakeKeyword("tag"), String{S: "String"}))
 
 	ns.InternVar(env, "encode-string", encode_string_,
 		MakeMeta(
 			NewListFrom(NewVectorFrom(MakeSymbol("s"))),
-			`Returns the hexadecimal encoding of s.`, "1.0").Plus(MakeKeyword("tag"), String{S: "String"}))
+			`Returns the hexadecimal encoding of s.`, "1.0").Plus(env, MakeKeyword("tag"), String{S: "String"}))
 
 }

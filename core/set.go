@@ -10,7 +10,8 @@ type (
 	Set interface {
 		Conjable
 		Gettable
-		Disjoin(key Object) Set
+		Has(key Equ) bool
+		Disjoin(env *Env, key Object) (Set, error)
 	}
 	MapSet struct {
 		InfoHolder
@@ -19,9 +20,9 @@ type (
 	}
 )
 
-func (v *MapSet) WithMeta(meta Map) (Object, error) {
+func (v *MapSet) WithMeta(env *Env, meta Map) (Object, error) {
 	res := *v
-	m, err := SafeMerge(res.meta, meta)
+	m, err := SafeMerge(env, res.meta, meta)
 	if err != nil {
 		return nil, err
 	}
@@ -30,19 +31,23 @@ func (v *MapSet) WithMeta(meta Map) (Object, error) {
 	return &res, nil
 }
 
-func (set *MapSet) Disjoin(key Object) Set {
-	return &MapSet{m: set.m.Without(key)}
+func (set *MapSet) Disjoin(env *Env, key Object) (Set, error) {
+	nm, err := set.m.Without(env, key)
+	if err != nil {
+		return nil, err
+	}
+	return &MapSet{m: nm}, nil
 }
 
-func (set *MapSet) Add(obj Object) (bool, error) {
+func (set *MapSet) Add(env *Env, obj Object) (bool, error) {
 	switch m := set.m.(type) {
 	case *ArrayMap:
-		return m.Add(obj, Boolean{B: true}), nil
+		return m.Add(env, obj, Boolean{B: true}), nil
 	case *HashMap:
-		if m.containsKey(obj) {
+		if m.containsKey(env, obj) {
 			return false, nil
 		}
-		v, err := set.m.Assoc(obj, Boolean{B: true})
+		v, err := set.m.Assoc(env, obj, Boolean{B: true})
 		if err != nil {
 			return false, err
 		}
@@ -53,8 +58,8 @@ func (set *MapSet) Add(obj Object) (bool, error) {
 	}
 }
 
-func (set *MapSet) Conj(obj Object) (Conjable, error) {
-	v, err := set.m.Assoc(obj, Boolean{B: true})
+func (set *MapSet) Conj(env *Env, obj Object) (Conjable, error) {
+	v, err := set.m.Assoc(env, obj, Boolean{B: true})
 	if err != nil {
 		return nil, err
 	}
@@ -66,41 +71,57 @@ func EmptySet() *MapSet {
 	return &MapSet{m: EmptyArrayMap()}
 }
 
-func (set *MapSet) ToString(escape bool) string {
+func (set *MapSet) ToString(env *Env, escape bool) (string, error) {
 	var b bytes.Buffer
 	b.WriteString("#{")
 	for iter := iter(set.m.Keys()); iter.HasNext(); {
-		b.WriteString(iter.Next().ToString(escape))
+		v, err := iter.Next(env)
+		if err != nil {
+			return "", err
+		}
+		s, err := v.ToString(env, escape)
+		b.WriteString(s)
 		if iter.HasNext() {
 			b.WriteRune(' ')
 		}
 	}
 	b.WriteRune('}')
-	return b.String()
+	return b.String(), nil
 }
 
-func (set *MapSet) Equals(other interface{}) bool {
+func (set *MapSet) Equals(env *Env, other interface{}) bool {
 	switch otherSet := other.(type) {
 	case *MapSet:
-		return set.m.Equals(otherSet.m)
+		return set.m.Equals(env, otherSet.m)
 	default:
 		return false
 	}
 }
 
-func (set *MapSet) Get(key Object) (bool, Object) {
-	if ok, _ := set.m.Get(key); ok {
-		return true, key
+func (set *MapSet) Get(env *Env, key Object) (bool, Object, error) {
+	ok, _, err := set.m.Get(env, key)
+	if err != nil {
+		return false, nil, err
 	}
-	return false, nil
+
+	if ok {
+		return true, key, nil
+	}
+
+	return false, nil, nil
+}
+
+func (set *MapSet) Has(key Equ) bool {
+	ok, _ := set.m.GetEqu(key)
+	return ok
 }
 
 func (seq *MapSet) GetType() *Type {
 	return TYPE.MapSet
 }
 
-func (set *MapSet) Hash() uint32 {
-	return hashUnordered(set.Seq(), 2)
+func (set *MapSet) Hash(env *Env) (uint32, error) {
+	return hashUnordered(env, set.Seq(), 2)
 }
 
 func (set *MapSet) Seq() Seq {
@@ -116,9 +137,15 @@ func (set *MapSet) Call(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 
-	if ok, _ := set.Get(args[0]); ok {
+	ok, _, err := set.Get(env, args[0])
+	if err != nil {
+		return nil, err
+	}
+
+	if ok {
 		return args[0], nil
 	}
+
 	return NIL, nil
 }
 
@@ -128,25 +155,36 @@ func (set *MapSet) Empty() Collection {
 	return EmptySet()
 }
 
-func NewSetFromSeq(s Seq) *MapSet {
+func NewSetFromSeq(env *Env, s Seq) (*MapSet, error) {
 	res := EmptySet()
 	for !s.IsEmpty() {
-		res.Add(s.First())
+		v, err := s.First(env)
+		if err != nil {
+			return nil, err
+		}
+		res.Add(env, v)
 		s = s.Rest()
 	}
-	return res
+	return res, nil
 }
 
-func (set *MapSet) Pprint(w io.Writer, indent int) int {
+func (set *MapSet) Pprint(env *Env, w io.Writer, indent int) (int, error) {
 	i := indent + 1
 	fmt.Fprint(w, "#{")
 	for iter := iter(set.m.Keys()); iter.HasNext(); {
-		i = pprintObject(iter.Next(), indent+2, w)
+		v, err := iter.Next(env)
+		if err != nil {
+			return 0, err
+		}
+		i, err = pprintObject(env, v, indent+2, w)
+		if err != nil {
+			return 0, err
+		}
 		if iter.HasNext() {
 			fmt.Fprint(w, "\n")
 			writeIndent(w, indent+2)
 		}
 	}
 	fmt.Fprint(w, "}")
-	return i + 1
+	return i + 1, nil
 }

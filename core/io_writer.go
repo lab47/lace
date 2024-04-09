@@ -12,17 +12,19 @@ type (
 	}
 )
 
+var _ Object = &IOWriter{}
+
 func MakeIOWriter(w io.Writer) *IOWriter {
 	res := &IOWriter{w, 0}
 	res.hash = HashPtr(uintptr(unsafe.Pointer(res)))
 	return res
 }
 
-func (iow *IOWriter) ToString(escape bool) string {
-	return "#object[IOWriter]"
+func (iow *IOWriter) ToString(env *Env, escape bool) (string, error) {
+	return "#object[IOWriter]", nil
 }
 
-func (iow *IOWriter) Equals(other interface{}) bool {
+func (iow *IOWriter) Equals(env *Env, other interface{}) bool {
 	return iow == other
 }
 
@@ -34,18 +36,18 @@ func (iow *IOWriter) GetType() *Type {
 	return TYPE.IOWriter
 }
 
-func (iow *IOWriter) Hash() uint32 {
-	return iow.hash
+func (iow *IOWriter) Hash(env *Env) (uint32, error) {
+	return iow.hash, nil
 }
 
 func (iow *IOWriter) WithInfo(info *ObjectInfo) Object {
 	return iow
 }
 
-func (iow *IOWriter) Close() error {
+func (iow *IOWriter) Close(env *Env) error {
 	if c, ok := iow.Writer.(io.Closer); ok {
 		return c.Close()
 	} else {
-		return StubNewError("Object is not closable: " + iow.ToString(false))
+		return env.RT.NewError("Object is not closable: #object[IOWriter]")
 	}
 }

@@ -31,9 +31,9 @@ type (
 
 var empty_node []interface{} = make([]interface{}, 32)
 
-func (v *Vector) WithMeta(meta Map) (Object, error) {
+func (v *Vector) WithMeta(env *Env, meta Map) (Object, error) {
 	res := *v
-	m, err := SafeMerge(res.meta, meta)
+	m, err := SafeMerge(env, res.meta, meta)
 	if err != nil {
 		return nil, err
 	}
@@ -119,54 +119,62 @@ func (v *Vector) Conjoin(obj Object) (*Vector, error) {
 	return &Vector{count: v.count + 1, shift: newShift, root: newRoot, tail: newTail}, nil
 }
 
-func (v *Vector) ToString(escape bool) string {
+func (v *Vector) ToString(env *Env, escape bool) (string, error) {
 	var b bytes.Buffer
 	b.WriteRune('[')
 	if v.count > 0 {
 		for i := 0; i < v.count-1; i++ {
-			b.WriteString(v.at(i).ToString(escape))
+			s, err := v.at(i).ToString(env, escape)
+			if err != nil {
+				return "", err
+			}
+			b.WriteString(s)
 			b.WriteRune(' ')
 		}
-		b.WriteString(v.at(v.count - 1).ToString(escape))
+		s, err := v.at(v.count-1).ToString(env, escape)
+		if err != nil {
+			return "", err
+		}
+		b.WriteString(s)
 	}
 	b.WriteRune(']')
-	return b.String()
+	return b.String(), nil
 }
 
-func (v *Vector) Equals(other interface{}) bool {
+func (v *Vector) Equals(env *Env, other interface{}) bool {
 	if v == other {
 		return true
 	}
-	return IsSeqEqual(v.Seq(), other)
+	return IsSeqEqual(env, v.Seq(), other)
 }
 
 func (v *Vector) GetType() *Type {
 	return TYPE.Vector
 }
 
-func (v *Vector) Hash() uint32 {
-	return hashOrdered(v.Seq())
+func (v *Vector) Hash(env *Env) (uint32, error) {
+	return hashOrdered(env, v.Seq())
 }
 
 func (seq *VectorSeq) Seq() Seq {
 	return seq
 }
 
-func (vseq *VectorSeq) Equals(other interface{}) bool {
-	return IsSeqEqual(vseq, other)
+func (vseq *VectorSeq) Equals(env *Env, other interface{}) bool {
+	return IsSeqEqual(env, vseq, other)
 }
 
-func (vseq *VectorSeq) ToString(escape bool) string {
-	return SeqToString(vseq, escape)
+func (vseq *VectorSeq) ToString(env *Env, escape bool) (string, error) {
+	return SeqToString(env, vseq, escape)
 }
 
-func (seq *VectorSeq) Pprint(w io.Writer, indent int) int {
-	return pprintSeq(seq, w, indent)
+func (seq *VectorSeq) Pprint(env *Env, w io.Writer, indent int) (int, error) {
+	return pprintSeq(env, seq, w, indent)
 }
 
-func (vseq *VectorSeq) WithMeta(meta Map) (Object, error) {
+func (vseq *VectorSeq) WithMeta(env *Env, meta Map) (Object, error) {
 	res := *vseq
-	m, err := SafeMerge(res.meta, meta)
+	m, err := SafeMerge(env, res.meta, meta)
 	if err != nil {
 		return nil, err
 	}
@@ -178,15 +186,15 @@ func (vseq *VectorSeq) GetType() *Type {
 	return TYPE.VectorSeq
 }
 
-func (vseq *VectorSeq) Hash() uint32 {
-	return hashOrdered(vseq)
+func (vseq *VectorSeq) Hash(env *Env) (uint32, error) {
+	return hashOrdered(env, vseq)
 }
 
-func (vseq *VectorSeq) First() Object {
+func (vseq *VectorSeq) First(env *Env) (Object, error) {
 	if vseq.index < vseq.vector.count {
-		return vseq.vector.at(vseq.index)
+		return vseq.vector.at(vseq.index), nil
 	}
-	return NIL
+	return NIL, nil
 }
 
 func (vseq *VectorSeq) Rest() Seq {
@@ -210,21 +218,21 @@ func (seq *VectorRSeq) Seq() Seq {
 	return seq
 }
 
-func (vseq *VectorRSeq) Equals(other interface{}) bool {
-	return IsSeqEqual(vseq, other)
+func (vseq *VectorRSeq) Equals(env *Env, other interface{}) bool {
+	return IsSeqEqual(env, vseq, other)
 }
 
-func (vseq *VectorRSeq) ToString(escape bool) string {
-	return SeqToString(vseq, escape)
+func (vseq *VectorRSeq) ToString(env *Env, escape bool) (string, error) {
+	return SeqToString(env, vseq, escape)
 }
 
-func (seq *VectorRSeq) Pprint(w io.Writer, indent int) int {
-	return pprintSeq(seq, w, indent)
+func (seq *VectorRSeq) Pprint(env *Env, w io.Writer, indent int) (int, error) {
+	return pprintSeq(env, seq, w, indent)
 }
 
-func (vseq *VectorRSeq) WithMeta(meta Map) (Object, error) {
+func (vseq *VectorRSeq) WithMeta(env *Env, meta Map) (Object, error) {
 	res := *vseq
-	m, err := SafeMerge(res.meta, meta)
+	m, err := SafeMerge(env, res.meta, meta)
 	if err != nil {
 		return nil, err
 	}
@@ -236,15 +244,15 @@ func (vseq *VectorRSeq) GetType() *Type {
 	return TYPE.VectorRSeq
 }
 
-func (vseq *VectorRSeq) Hash() uint32 {
-	return hashOrdered(vseq)
+func (vseq *VectorRSeq) Hash(env *Env) (uint32, error) {
+	return hashOrdered(env, vseq)
 }
 
-func (vseq *VectorRSeq) First() Object {
+func (vseq *VectorRSeq) First(env *Env) (Object, error) {
 	if vseq.index >= 0 {
-		return vseq.vector.at(vseq.index)
+		return vseq.vector.at(vseq.index), nil
 	}
-	return NIL
+	return NIL, nil
 }
 
 func (vseq *VectorRSeq) Rest() Seq {
@@ -268,7 +276,7 @@ func (v *Vector) Seq() Seq {
 	return &VectorSeq{vector: v, index: 0}
 }
 
-func (v *Vector) Conj(obj Object) (Conjable, error) {
+func (v *Vector) Conj(env *Env, obj Object) (Conjable, error) {
 	return v.Conjoin(obj)
 }
 
@@ -276,21 +284,26 @@ func (v *Vector) Count() int {
 	return v.count
 }
 
-func (v *Vector) Nth(i int) Object {
-	return v.at(i)
+func (v *Vector) Nth(env *Env, i int) (Object, error) {
+	return v.at(i), nil
 }
 
-func (v *Vector) TryNth(i int, d Object) Object {
+func (v *Vector) TryNth(env *Env, i int, d Object) (Object, error) {
 	if i < 0 || i >= v.count {
-		return d
+		return d, nil
 	}
-	return v.at(i)
+	return v.at(i), nil
 }
 
 func (v *Vector) sequential() {}
 
 func (v *Vector) Compare(env *Env, other Object) (int, error) {
-	v2, err := AssertVector(env, other, "Cannot compare Vector and "+other.GetType().ToString(false))
+	os, err := other.GetType().ToString(env, false)
+	if err != nil {
+		return 0, err
+	}
+
+	v2, err := AssertVector(env, other, "Cannot compare Vector and "+os)
 	if err != nil {
 		return 0, err
 	}
@@ -316,11 +329,11 @@ func (v *Vector) Compare(env *Env, other Object) (int, error) {
 	return 0, nil
 }
 
-func (v *Vector) Peek() Object {
+func (v *Vector) Peek(env *Env) (Object, error) {
 	if v.count > 0 {
-		return v.Nth(v.count - 1)
+		return v.Nth(env, v.count-1)
 	}
-	return NIL
+	return NIL, nil
 }
 
 func (v *Vector) popTail(level uint, node []interface{}) []interface{} {
@@ -343,18 +356,18 @@ func (v *Vector) popTail(level uint, node []interface{}) []interface{} {
 	}
 }
 
-func (v *Vector) Pop() Stack {
+func (v *Vector) Pop(env *Env) (Stack, error) {
 	if v.count == 0 {
-		panic(StubNewError("Can't pop empty vector"))
+		return nil, env.RT.NewError("Can't pop empty vector")
 	}
 	if v.count == 1 {
-		return EmptyVectorWithMeta(v.meta).(Stack)
+		return EmptyVectorWithMeta(v.meta).(Stack), nil
 	}
 	if v.count-v.tailoff() > 1 {
 		newTail := clone(v.tail)[0 : len(v.tail)-1]
 		res := &Vector{count: v.count - 1, shift: v.shift, root: v.root, tail: newTail}
 		res.meta = v.meta
-		return res
+		return res, nil
 	}
 	newTail := v.arrayFor(v.count - 2)
 	newRoot := v.popTail(v.shift, v.root)
@@ -368,21 +381,25 @@ func (v *Vector) Pop() Stack {
 	}
 	res := &Vector{count: v.count - 1, shift: newShift, root: newRoot, tail: newTail}
 	res.meta = v.meta
-	return res
+	return res, nil
 }
 
-func (v *Vector) Get(key Object) (bool, Object) {
+func (v *Vector) Get(env *Env, key Object) (bool, Object, error) {
 	switch key := key.(type) {
 	case Int:
 		if key.I >= 0 && key.I < v.count {
-			return true, v.at(key.I)
+			return true, v.at(key.I), nil
 		}
 	}
-	return false, nil
+	return false, nil, nil
 }
 
-func (v *Vector) EntryAt(key Object) (*Vector, error) {
-	ok, val := v.Get(key)
+func (v *Vector) EntryAt(env *Env, key Object) (*Vector, error) {
+	ok, val, err := v.Get(env, key)
+	if err != nil {
+		return nil, err
+	}
+
 	if ok {
 		return NewVectorFrom(key, val), nil
 	}
@@ -432,7 +449,7 @@ func assertInteger(obj Object) (int, error) {
 	return i, nil
 }
 
-func (v *Vector) Assoc(key, val Object) (Associative, error) {
+func (v *Vector) Assoc(env *Env, key, val Object) (Associative, error) {
 	i, err := assertInteger(key)
 	if err != nil {
 		return nil, err
@@ -484,13 +501,17 @@ func NewVectorFrom(objs ...Object) *Vector {
 	return res
 }
 
-func NewVectorFromSeq(seq Seq) *Vector {
+func NewVectorFromSeq(env *Env, seq Seq) (*Vector, error) {
 	res := EmptyVector()
 	for !seq.IsEmpty() {
-		res, _ = res.Conjoin(seq.First())
+		v, err := seq.First(env)
+		if err != nil {
+			return nil, err
+		}
+		res, _ = res.Conjoin(v)
 		seq = seq.Rest()
 	}
-	return res
+	return res, nil
 }
 
 func (v *Vector) Empty() Collection {
@@ -499,9 +520,12 @@ func (v *Vector) Empty() Collection {
 
 func (v *Vector) kvreduce(env *Env, c Callable, init Object) (Object, error) {
 	res := init
-	var err error
 	for i := 0; i < v.Count(); i++ {
-		res, err = c.Call(env, []Object{res, Int{I: i}, v.Nth(i)})
+		o, err := v.Nth(env, i)
+		if err != nil {
+			return nil, err
+		}
+		res, err = c.Call(env, []Object{res, Int{I: i}, o})
 		if err != nil {
 			return nil, err
 		}
@@ -509,17 +533,24 @@ func (v *Vector) kvreduce(env *Env, c Callable, init Object) (Object, error) {
 	return res, nil
 }
 
-func (v *Vector) Pprint(w io.Writer, indent int) int {
+func (v *Vector) Pprint(env *Env, w io.Writer, indent int) (int, error) {
 	ind := indent + 1
+	var err error
 	fmt.Fprint(w, "[")
 	if v.count > 0 {
 		for i := 0; i < v.count-1; i++ {
-			pprintObject(v.at(i), indent+1, w)
+			_, err = pprintObject(env, v.at(i), indent+1, w)
+			if err != nil {
+				return 0, err
+			}
 			fmt.Fprint(w, "\n")
 			writeIndent(w, indent+1)
 		}
-		ind = pprintObject(v.at(v.count-1), indent+1, w)
+		ind, err = pprintObject(env, v.at(v.count-1), indent+1, w)
+		if err != nil {
+			return 0, err
+		}
 	}
 	fmt.Fprint(w, "]")
-	return ind + 1
+	return ind + 1, nil
 }

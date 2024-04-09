@@ -37,15 +37,15 @@ type (
 	}
 )
 
-func versionMap() Map {
+func versionMap(env *Env) Map {
 	res := EmptyArrayMap()
 	parts := strings.Split(VERSION[1:], ".")
 	i, _ := strconv.ParseInt(parts[0], 10, 64)
-	res.Add(MakeKeyword("major"), Int{I: int(i)})
+	res.Add(env, MakeKeyword("major"), Int{I: int(i)})
 	i, _ = strconv.ParseInt(parts[1], 10, 64)
-	res.Add(MakeKeyword("minor"), Int{I: int(i)})
+	res.Add(env, MakeKeyword("minor"), Int{I: int(i)})
 	i, _ = strconv.ParseInt(parts[2], 10, 64)
-	res.Add(MakeKeyword("incremental"), Int{I: int(i)})
+	res.Add(env, MakeKeyword("incremental"), Int{I: int(i)})
 	return res
 }
 
@@ -137,10 +137,14 @@ func (env *Env) SetCurrentNamespace(ns *Namespace) {
 
 func (env *Env) EnsureNamespace(sym Symbol) *Namespace {
 	if sym.ns != nil {
-		panic(env.RT.NewError("Namespace's name cannot be qualified: " + sym.ToString(false)))
+		panic(env.RT.NewError("Namespace's name cannot be qualified: " + sym.Qual()))
 	}
+	var err error
 	if env.Namespaces[sym.name] == nil {
-		env.Namespaces[sym.name] = NewNamespace(sym)
+		env.Namespaces[sym.name], err = NewNamespace(env, sym)
+		if err != nil {
+			panic(err)
+		}
 	}
 	return env.Namespaces[sym.name]
 }
@@ -169,10 +173,10 @@ func (env *Env) ResolveIn(n *Namespace, s Symbol) (*Var, bool) {
 	if v, ok := ns.mappings[s.name]; ok {
 		return v, true
 	}
-	if s.Equals(env.IN_NS_VAR.name) {
+	if s.Is(env.IN_NS_VAR.name) {
 		return env.IN_NS_VAR, true
 	}
-	if s.Equals(env.NS_VAR.name) {
+	if s.Is(env.NS_VAR.name) {
 		return env.NS_VAR, true
 	}
 	return nil, false
@@ -207,7 +211,7 @@ func (env *Env) RemoveNamespace(s Symbol) *Namespace {
 	if s.ns != nil {
 		return nil
 	}
-	if s.Equals(criticalSymbols.lace_core) {
+	if s.Is(criticalSymbols.lace_core) {
 		panic(env.RT.NewError("Cannot remove core namespace"))
 	}
 	ns := env.Namespaces[s.name]

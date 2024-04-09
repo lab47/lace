@@ -13,17 +13,19 @@ type (
 	}
 )
 
+var _ Object = &BufferedReader{}
+
 func MakeBufferedReader(rd io.Reader) *BufferedReader {
 	res := &BufferedReader{bufio.NewReader(rd), 0}
 	res.hash = HashPtr(uintptr(unsafe.Pointer(res)))
 	return res
 }
 
-func (br *BufferedReader) ToString(escape bool) string {
-	return "#object[BufferedReader]"
+func (br *BufferedReader) ToString(env *Env, escape bool) (string, error) {
+	return "#object[BufferedReader]", nil
 }
 
-func (br *BufferedReader) Equals(other interface{}) bool {
+func (br *BufferedReader) Equals(env *Env, other interface{}) bool {
 	return br == other
 }
 
@@ -35,8 +37,8 @@ func (br *BufferedReader) GetType() *Type {
 	return TYPE.BufferedReader
 }
 
-func (br *BufferedReader) Hash() uint32 {
-	return br.hash
+func (br *BufferedReader) Hash(env *Env) (uint32, error) {
+	return br.hash, nil
 }
 
 func (br *BufferedReader) WithInfo(info *ObjectInfo) Object {

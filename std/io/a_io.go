@@ -17,7 +17,7 @@ func __close_(_env *Env, _args []Object) (Object, error) {
 	case _c == 1:
 		var err error
 		f, err := ExtractObject(_env, _args, 0); if err != nil { return nil, err }
-		_res, err := close(f)
+		_res, err := close(_env, f)
 		return _res, err
 
 	default:

@@ -57,35 +57,62 @@ func init() {
 	core.AddNativeNamespace("lace.log", Setup)
 }
 
-func convertObj(obj core.Object) any {
+func convertObj(env *core.Env, obj core.Object) (any, error) {
 	switch sv := obj.(type) {
 	case core.Keyword:
-		return sv.Name()
+		return sv.Name(), nil
 	case core.Int:
-		return sv.I
+		return sv.I, nil
 	case core.String:
-		return sv.S
+		return sv.S, nil
 	case core.Map:
 		ret := map[any]any{}
 
-		for _, k := range core.ToSlice(sv.Keys()) {
-			ok, v := sv.Get(k)
-			if !ok {
-				return core.ToNative(obj)
+		slice, err := core.ToSlice(env, sv.Keys())
+		if err != nil {
+			return nil, err
+		}
+
+		for _, k := range slice {
+			ok, v, err := sv.Get(env, k)
+			if err != nil {
+				return nil, err
 			}
 
-			ret[convertObj(k)] = convertObj(v)
+			if !ok {
+				return core.ToNative(env, obj)
+			}
+
+			ko, err := convertObj(env, k)
+			if err != nil {
+				return nil, err
+			}
+
+			vo, err := convertObj(env, v)
+			if err != nil {
+				return nil, err
+			}
+
+			ret[ko] = vo
 		}
 
-		return ret
+		return ret, nil
 	case core.Seqable:
 		var ret []any
-		for _, o := range core.ToSlice(sv.Seq()) {
-			ret = append(ret, convertObj(o))
+		slice, err := core.ToSlice(env, sv.Seq())
+		if err != nil {
+			return nil, err
 		}
-		return ret
+		for _, o := range slice {
+			co, err := convertObj(env, o)
+			if err != nil {
+				return nil, err
+			}
+			ret = append(ret, co)
+		}
+		return ret, nil
 	default:
-		return core.ToNative(obj)
+		return core.ToNative(env, obj)
 	}
 }
 
@@ -119,7 +146,10 @@ func emit(env *core.Env, logobj core.Object, level core.Keyword, message string,
 		sl = slog.LevelWarn
 	}
 
-	vals := core.ToSlice(seq.Seq())
+	vals, err := core.ToSlice(env, seq.Seq())
+	if err != nil {
+		return err
+	}
 
 	var args []any
 	expectKey := true
@@ -137,9 +167,20 @@ func emit(env *core.Env, logobj core.Object, level core.Keyword, message string,
 				args = append(args, sv.S)
 				expectKey = false
 			case core.Seqable:
-				objs := core.ToSlice(sv.Seq())
+				objs, err := core.ToSlice(env, sv.Seq())
+				if err != nil {
+					return err
+				}
 				if len(objs) == 2 {
-					args = append(args, convertObj(objs[0]), convertObj(objs[1]))
+					a, err := convertObj(env, objs[0])
+					if err != nil {
+						return err
+					}
+					b, err := convertObj(env, objs[1])
+					if err != nil {
+						return err
+					}
+					args = append(args, a, b)
 				} else {
 					return env.RT.NewError("key value must be keyword, symbol, or string")
 				}
@@ -148,7 +189,11 @@ func emit(env *core.Env, logobj core.Object, level core.Keyword, message string,
 				return env.RT.NewError("key value must be keyword, symbol, or string")
 			}
 		} else {
-			args = append(args, convertObj(r))
+			co, err := convertObj(env, r)
+			if err != nil {
+				return err
+			}
+			args = append(args, co)
 			expectKey = true
 		}
 	}

@@ -85,8 +85,8 @@ func Setup(env *core.Env) error {
 		Fns: []core.ArityFn{
 			{
 				Args: []string{"coll"},
-				Fn: func(seq core.Seqable) (string, error) {
-					return join("", seq)
+				Fn: func(env *core.Env, seq core.Seqable) (string, error) {
+					return join(env, "", seq)
 				},
 			},
 			{
@@ -365,11 +365,19 @@ func splitOnStringOrRegex3(s string, sep core.Object, n int) (core.Object, error
 	}
 }
 
-func join(sep string, seqable core.Seqable) (string, error) {
+func join(env *core.Env, sep string, seqable core.Seqable) (string, error) {
 	seq := seqable.Seq()
 	var b bytes.Buffer
 	for !seq.IsEmpty() {
-		b.WriteString(seq.First().ToString(false))
+		f, err := seq.First(env)
+		if err != nil {
+			return "", err
+		}
+		s, err := f.ToString(env, false)
+		if err != nil {
+			return "", err
+		}
+		b.WriteString(s)
 		seq = seq.Rest()
 		if !seq.IsEmpty() {
 			b.WriteString(sep)
@@ -379,7 +387,7 @@ func join(sep string, seqable core.Seqable) (string, error) {
 }
 
 func isBlank(env *core.Env, s core.Object) (bool, error) {
-	if s.Equals(core.NIL) {
+	if s.Equals(env, core.NIL) {
 		return true, nil
 	}
 	str, err := core.AssertString(env, s, "")
@@ -408,8 +416,12 @@ func escape(env *core.Env, s string, cmap core.Callable) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		if !obj.Equals(core.NIL) {
-			b.WriteString(obj.ToString(false))
+		if !obj.Equals(env, core.NIL) {
+			s, err := obj.ToString(env, false)
+			if err != nil {
+				return "", err
+			}
+			b.WriteString(s)
 		} else {
 			b.WriteRune(r)
 		}

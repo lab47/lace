@@ -34,13 +34,13 @@ func InternsOrThunks(env *Env, ns *Namespace) {
 	ns.InternVar(env, "create", create_,
 		MakeMeta(
 			NewListFrom(NewVectorFrom(MakeSymbol("name"))),
-			`Creates the named file with mode 0666 (before umask), truncating it if it already exists.`, "1.0").Plus(MakeKeyword("tag"), String{S: "File"}))
+			`Creates the named file with mode 0666 (before umask), truncating it if it already exists.`, "1.0").Plus(env, MakeKeyword("tag"), String{S: "File"}))
 
 	ns.InternVar(env, "cwd", cwd_,
 		MakeMeta(
 			NewListFrom(NewVectorFrom()),
 			`Returns a rooted path name corresponding to the current directory. If the current directory can
-  be reached via multiple paths (due to symbolic links), cwd may return any one of them.`, "1.0").Plus(MakeKeyword("tag"), String{S: "String"}))
+  be reached via multiple paths (due to symbolic links), cwd may return any one of them.`, "1.0").Plus(env, MakeKeyword("tag"), String{S: "String"}))
 
 	ns.InternVar(env, "env", env_,
 		MakeMeta(
@@ -69,7 +69,7 @@ func InternsOrThunks(env *Env, ns *Namespace) {
 	ns.InternVar(env, "exists?", isexists_,
 		MakeMeta(
 			NewListFrom(NewVectorFrom(MakeSymbol("path"))),
-			`Returns true if file or directory with the given path exists. Otherwise returns false.`, "1.0").Plus(MakeKeyword("tag"), String{S: "Boolean"}))
+			`Returns true if file or directory with the given path exists. Otherwise returns false.`, "1.0").Plus(env, MakeKeyword("tag"), String{S: "Boolean"}))
 
 	ns.InternVar(env, "exit", exit_,
 		MakeMeta(
@@ -95,7 +95,7 @@ func InternsOrThunks(env *Env, ns *Namespace) {
 		MakeMeta(
 			NewListFrom(NewVectorFrom(MakeSymbol("name"))),
 			`Opens the named file for reading. If successful, the file can be used for reading;
-  the associated file descriptor has mode O_RDONLY.`, "1.0").Plus(MakeKeyword("tag"), String{S: "File"}))
+  the associated file descriptor has mode O_RDONLY.`, "1.0").Plus(env, MakeKeyword("tag"), String{S: "File"}))
 
 	ns.InternVar(env, "remove", remove_,
 		MakeMeta(

@@ -19,24 +19,27 @@ func writeIndent(w io.Writer, n int) {
 	}
 }
 
-func pprintObject(obj Object, indent int, w io.Writer) int {
+func pprintObject(env *Env, obj Object, indent int, w io.Writer) (int, error) {
 	switch obj := obj.(type) {
 	case Pprinter:
-		return obj.Pprint(w, indent)
+		return obj.Pprint(env, w, indent)
 	default:
-		s := obj.ToString(true)
+		s, err := obj.ToString(env, true)
+		if err != nil {
+			return 0, err
+		}
 		fmt.Fprint(w, s)
-		return indent + len(s)
+		return indent + len(s), nil
 	}
 }
 
-func FileInfoMap(name string, info os.FileInfo) Map {
+func FileInfoMap(env *Env, name string, info os.FileInfo) Map {
 	m := EmptyArrayMap()
-	m.Add(MakeKeyword("name"), MakeString(name))
-	m.Add(MakeKeyword("size"), MakeInt(int(info.Size())))
-	m.Add(MakeKeyword("mode"), MakeInt(int(info.Mode())))
-	m.Add(MakeKeyword("modtime"), MakeTime(info.ModTime()))
-	m.Add(MakeKeyword("dir?"), MakeBoolean(info.IsDir()))
+	m.Add(env, MakeKeyword("name"), MakeString(name))
+	m.Add(env, MakeKeyword("size"), MakeInt(int(info.Size())))
+	m.Add(env, MakeKeyword("mode"), MakeInt(int(info.Mode())))
+	m.Add(env, MakeKeyword("modtime"), MakeTime(info.ModTime()))
+	m.Add(env, MakeKeyword("dir?"), MakeBoolean(info.IsDir()))
 	return m
 }
 
@@ -51,17 +54,17 @@ func ToBool(obj Object) bool {
 	}
 }
 
-func ToNative(obj Object) any {
+func ToNative(env *Env, obj Object) (any, error) {
 	switch sv := obj.(type) {
 	case Nil:
-		return nil
+		return nil, nil
 	case Boolean:
-		return sv.B
+		return sv.B, nil
 	case Int:
-		return sv.Int()
+		return sv.Int().I, nil
 	case String:
-		return sv.S
+		return sv.S, nil
 	default:
-		return obj.ToString(false)
+		return obj.ToString(env, false)
 	}
 }

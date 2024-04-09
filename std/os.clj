@@ -6,7 +6,7 @@
 (defn env
   "Returns a map representing the environment."
   {:added "1.0"
-   :go "env()"}
+   :go "env(_env)"}
   [])
 
 (defn set-env
@@ -109,7 +109,7 @@
   :modtime - modification time
   :dir? - true if file is a directory"
   {:added "1.0"
-   :go "stat(filename)"}
+   :go "stat(_env, filename)"}
   [^String filename])
 
 (defn ^Boolean exists?

@@ -11,12 +11,14 @@ type (
 	}
 )
 
-func (f *Opaque[T]) ToString(escape bool) string {
+var _ Object = &Opaque[bool]{}
+
+func (f *Opaque[T]) ToString(env *Env, escape bool) (string, error) {
 	var t T
-	return fmt.Sprintf("#object[Opaque[%T]]", t)
+	return fmt.Sprintf("#object[Opaque[%T]]", t), nil
 }
 
-func (f *Opaque[T]) Equals(other interface{}) bool {
+func (f *Opaque[T]) Equals(env *Env, other interface{}) bool {
 	return f == other
 }
 
@@ -28,8 +30,8 @@ func (f *Opaque[T]) GetType() *Type {
 	return TYPE.Opaque
 }
 
-func (f *Opaque[T]) Hash() uint32 {
-	return HashPtr(uintptr(unsafe.Pointer(f)))
+func (f *Opaque[T]) Hash(env *Env) (uint32, error) {
+	return HashPtr(uintptr(unsafe.Pointer(f))), nil
 }
 
 func (f *Opaque[T]) WithInfo(info *ObjectInfo) Object {

@@ -29,9 +29,9 @@ func NewListFrom(objs ...Object) *List {
 	return res
 }
 
-func (list *List) WithMeta(meta Map) (Object, error) {
+func (list *List) WithMeta(env *Env, meta Map) (Object, error) {
 	res := *list
-	m, err := SafeMerge(res.meta, meta)
+	m, err := SafeMerge(env, res.meta, meta)
 	if err != nil {
 		return nil, err
 	}
@@ -43,32 +43,32 @@ func (list *List) conj(obj Object) *List {
 	return NewList(obj, list)
 }
 
-func (list *List) Conj(obj Object) (Conjable, error) {
+func (list *List) Conj(env *Env, obj Object) (Conjable, error) {
 	return list.conj(obj), nil
 }
 
-func (list *List) ToString(escape bool) string {
-	return SeqToString(list, escape)
+func (list *List) ToString(env *Env, escape bool) (string, error) {
+	return SeqToString(env, list, escape)
 }
 
-func (seq *List) Pprint(w io.Writer, indent int) int {
-	return pprintSeq(seq, w, indent)
+func (seq *List) Pprint(env *Env, w io.Writer, indent int) (int, error) {
+	return pprintSeq(env, seq, w, indent)
 }
 
-func (list *List) Equals(other interface{}) bool {
-	return IsSeqEqual(list, other)
+func (list *List) Equals(env *Env, other interface{}) bool {
+	return IsSeqEqual(env, list, other)
 }
 
 func (list *List) GetType() *Type {
 	return TYPE.List
 }
 
-func (list *List) Hash() uint32 {
-	return hashOrdered(list)
+func (list *List) Hash(env *Env) (uint32, error) {
+	return hashOrdered(env, list)
 }
 
-func (list *List) First() Object {
-	return list.first
+func (list *List) First(env *Env) (Object, error) {
+	return list.first, nil
 }
 
 func (list *List) Rest() Seq {
@@ -107,15 +107,15 @@ func (list *List) Empty() Collection {
 	return EmptyList
 }
 
-func (list *List) Peek() Object {
-	return list.first
+func (list *List) Peek(env *Env) (Object, error) {
+	return list.first, nil
 }
 
-func (list *List) Pop() Stack {
+func (list *List) Pop(env *Env) (Stack, error) {
 	if list.count == 0 {
-		panic(StubNewError("Can't pop empty list"))
+		return nil, env.RT.NewError("Can't pop empty list")
 	}
-	return list.rest
+	return list.rest, nil
 }
 
 func (list *List) sequential() {}

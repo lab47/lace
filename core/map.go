@@ -11,11 +11,12 @@ type (
 		Associative
 		Seqable
 		Counted
-		Without(key Object) Map
+		Without(env *Env, key Object) (Map, error)
 		Keys() Seq
 		Vals() Seq
-		Merge(m Map) (Map, error)
+		Merge(env *Env, m Map) (Map, error)
 		Iter() MapIterator
+		GetEqu(key Equ) (bool, Object)
 	}
 	MapIterator interface {
 		HasNext() bool
@@ -41,21 +42,21 @@ func (iter *EmptyMapIterator) Next() *Pair {
 	panic(newIteratorError())
 }
 
-func mapConj(m Map, obj Object) (Conjable, error) {
+func mapConj(env *Env, m Map, obj Object) (Conjable, error) {
 	switch obj := obj.(type) {
 	case *Vector:
 		if obj.count != 2 {
 			return nil, StubNewError("Vector argument to map's conj must be a vector with two elements")
 		}
-		return m.Assoc(obj.at(0), obj.at(1))
+		return m.Assoc(env, obj.at(0), obj.at(1))
 	case Map:
-		return m.Merge(obj)
+		return m.Merge(env, obj)
 	default:
 		return nil, StubNewError("Argument to map's conj must be a vector with two elements or a map")
 	}
 }
 
-func mapEquals(m Map, other interface{}) bool {
+func mapEquals(env *Env, m Map, other interface{}) bool {
 	if m == other {
 		return true
 	}
@@ -68,8 +69,11 @@ func mapEquals(m Map, other interface{}) bool {
 		}
 		for iter := m.Iter(); iter.HasNext(); {
 			p := iter.Next()
-			success, value := otherMap.Get(p.Key)
-			if !success || !value.Equals(p.Value) {
+			success, value, err := otherMap.Get(env, p.Key)
+			if err != nil {
+				return false
+			}
+			if !success || !value.Equals(env, p.Value) {
 				return false
 			}
 		}
@@ -79,15 +83,25 @@ func mapEquals(m Map, other interface{}) bool {
 	}
 }
 
-func mapToString(m Map, escape bool) string {
+func mapToString(env *Env, m Map, escape bool) (string, error) {
 	var b bytes.Buffer
 	b.WriteRune('{')
 	if m.Count() > 0 {
 		for iter := m.Iter(); ; {
 			p := iter.Next()
-			b.WriteString(p.Key.ToString(escape))
+			ks, err := p.Key.ToString(env, escape)
+			if err != nil {
+				return "", err
+			}
+
+			vs, err := p.Value.ToString(env, escape)
+			if err != nil {
+				return "", err
+			}
+
+			b.WriteString(ks)
 			b.WriteRune(' ')
-			b.WriteString(p.Value.ToString(escape))
+			b.WriteString(vs)
 			if iter.HasNext() {
 				b.WriteString(", ")
 			} else {
@@ -96,12 +110,17 @@ func mapToString(m Map, escape bool) string {
 		}
 	}
 	b.WriteRune('}')
-	return b.String()
+	return b.String(), nil
 }
 
 func callMap(env *Env, m Map, args []Object) (Object, error) {
 	CheckArity(env, args, 1, 2)
-	if ok, v := m.Get(args[0]); ok {
+	ok, v, err := m.Get(env, args[0])
+	if err != nil {
+		return nil, err
+	}
+
+	if ok {
 		return v, nil
 	}
 	if len(args) == 2 {
@@ -110,15 +129,23 @@ func callMap(env *Env, m Map, args []Object) (Object, error) {
 	return NIL, nil
 }
 
-func pprintMap(m Map, w io.Writer, indent int) int {
+func pprintMap(env *Env, m Map, w io.Writer, indent int) (int, error) {
 	i := indent + 1
 	fmt.Fprint(w, "{")
+	var err error
 	if m.Count() > 0 {
 		for iter := m.Iter(); ; {
 			p := iter.Next()
-			i = pprintObject(p.Key, indent+1, w)
+			i, err = pprintObject(env, p.Key, indent+1, w)
+			if err != nil {
+				return 0, err
+			}
+
 			fmt.Fprint(w, " ")
-			i = pprintObject(p.Value, i+1, w)
+			i, err = pprintObject(env, p.Value, i+1, w)
+			if err != nil {
+				return 0, err
+			}
 			if iter.HasNext() {
 				fmt.Fprint(w, ",\n")
 				writeIndent(w, indent+1)
@@ -128,5 +155,5 @@ func pprintMap(m Map, w io.Writer, indent int) int {
 		}
 	}
 	fmt.Fprint(w, "}")
-	return i + 1
+	return i + 1, nil
 }

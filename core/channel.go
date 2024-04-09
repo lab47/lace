@@ -16,15 +16,17 @@ type (
 	}
 )
 
+var _ Object = &Channel{}
+
 func MakeFutureResult(value Object, err Error) FutureResult {
 	return FutureResult{value: value, err: err}
 }
 
-func (ch *Channel) ToString(escape bool) string {
-	return "#object[Channel]"
+func (ch *Channel) ToString(env *Env, escape bool) (string, error) {
+	return "#object[Channel]", nil
 }
 
-func (ch *Channel) Equals(other interface{}) bool {
+func (ch *Channel) Equals(env *Env, other interface{}) bool {
 	return ch == other
 }
 
@@ -36,8 +38,8 @@ func (ch *Channel) GetType() *Type {
 	return TYPE.Channel
 }
 
-func (ch *Channel) Hash() uint32 {
-	return ch.hash
+func (ch *Channel) Hash(env *Env) (uint32, error) {
+	return ch.hash, nil
 }
 
 func (ch *Channel) WithInfo(info *ObjectInfo) Object {

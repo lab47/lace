@@ -12,7 +12,7 @@ func AssertStringable(obj Object, msg string) (String, error) {
 		return String{S: string(c.Ch)}, nil
 	default:
 		if msg == "" {
-			msg = fmt.Sprintf("Expected %s, got %s", "Stringable", obj.GetType().ToString(false))
+			msg = fmt.Sprintf("Expected %s, got %s", "Stringable", obj.GetType().Name())
 		}
 		return String{}, StubNewError(msg)
 	}

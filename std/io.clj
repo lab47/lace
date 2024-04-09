@@ -9,7 +9,7 @@
   src must be IOReader, e.g. as returned by lace.os/open.
   dst must be IOWriter, e.g. as returned by lace.os/create."
   {:added "1.0"
-  :go "! n, err := io.Copy(dst, src); _res := int(n)"} ;; TODO: 32-bit issue
+   :go "! n, err := io.Copy(dst, src); _res := int(n)"} ;; TODO: 32-bit issue
   [^IOWriter dst ^IOReader src])
 
 (defn pipe
@@ -23,5 +23,5 @@
 (defn close
   "Closes f (IOWriter, IOReader, or File) if possible. Otherwise throws an error."
   {:added "1.0"
-   :go "close(f)"}
+   :go "close(_env, f)"}
   [^Object f])
