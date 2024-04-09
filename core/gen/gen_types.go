@@ -34,7 +34,7 @@ func Assert{{.Name}}(env *Env, obj Object, msg string) ({{.TypeName}}, error) {
 		return c, nil
 	default:
 		if msg == "" {
-			msg = fmt.Sprintf("Expected %s, got %s", "{{.ShowName}}", obj.GetType().ToString(false))
+			msg = fmt.Sprintf("Expected %s, got %s", "{{.ShowName}}", obj.GetType().Name())
 		}
 		var v {{.TypeName}}
 		return v, env.RT.NewError(msg)

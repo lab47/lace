@@ -2952,6 +2952,10 @@ func PackReader(env *Env, reader *Reader, filename string) ([]byte, error) {
 		}
 		parseContext.Env.SetFilename(MakeString(s))
 	}
+
+	env.RT.callstack.pushFrame(Frame{})
+	defer env.RT.popFrame()
+
 	for {
 		obj, err := TryRead(env, reader)
 		if err == io.EOF {

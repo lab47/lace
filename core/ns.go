@@ -25,11 +25,11 @@ func (ns *Namespace) ToString(env *Env, escape bool) (string, error) {
 }
 
 func (ns *Namespace) Qual() string {
-	return ns.Name.Qual()
+	return ns.Name.String()
 }
 
 func (ns *Namespace) Print(w io.Writer, printReadably bool) {
-	fmt.Fprint(w, "#object[Namespace \""+ns.Name.Qual()+"\"]")
+	fmt.Fprint(w, "#object[Namespace \""+ns.Name.String()+"\"]")
 }
 
 func (ns *Namespace) Equals(env *Env, other interface{}) bool {
@@ -105,7 +105,7 @@ func NewNamespace(env *Env, sym Symbol) (*Namespace, error) {
 
 func (ns *Namespace) Refer(env *Env, sym Symbol, vr *Var) (*Var, error) {
 	if sym.ns != nil {
-		return nil, env.RT.NewError("Can't intern namespace-qualified symbol " + sym.Qual())
+		return nil, env.RT.NewError("Can't intern namespace-qualified symbol " + sym.String())
 	}
 	ns.mappings[sym.name] = vr
 	return vr, nil
@@ -121,7 +121,7 @@ func (ns *Namespace) ReferAll(other *Namespace) {
 
 func (ns *Namespace) Intern(env *Env, sym Symbol) (*Var, error) {
 	if sym.ns != nil {
-		return nil, StubNewError("Can't intern namespace-qualified symbol " + sym.Qual())
+		return nil, StubNewError("Can't intern namespace-qualified symbol " + sym.String())
 	}
 	sym.meta = nil
 	existingVar, ok := ns.mappings[sym.name]
@@ -142,15 +142,15 @@ func (ns *Namespace) Intern(env *Env, sym Symbol) (*Var, error) {
 			ns.mappings[sym.name] = newVar
 			if !strings.HasPrefix(ns.Name.Name(), "lace.") {
 				printParseWarning(sym.GetInfo().Pos(), fmt.Sprintf("WARNING: %s already refers to: %s in namespace %s, being replaced by: %s\n",
-					sym.Qual(), existingVar.Qual(), ns.Name.Qual(), newVar.Qual()))
+					sym.String(), existingVar.String(), ns.Name.String(), newVar.String()))
 			}
 			return newVar, nil
 		}
 		return nil, env.RT.NewError(fmt.Sprintf("WARNING: %s already refers to: %s in namespace %s",
-			sym.Qual(), existingVar.Qual(), ns.Qual()))
+			sym.String(), existingVar.String(), ns.Qual()))
 	}
 	if LINTER_MODE && existingVar.expr != nil && !existingVar.ns.Name.Equals(env, criticalSymbols.lace_core) {
-		printParseWarning(sym.GetInfo().Pos(), "Duplicate def of "+existingVar.Qual())
+		printParseWarning(sym.GetInfo().Pos(), "Duplicate def of "+existingVar.String())
 	}
 	return existingVar, nil
 }
@@ -173,7 +173,7 @@ func (ns *Namespace) AddAlias(env *Env, alias Symbol, namespace *Namespace) erro
 	}
 	existing := ns.aliases[alias.name]
 	if existing != nil && existing != namespace {
-		msg := "Alias " + alias.Qual() + " already exists in namespace " + ns.Name.Qual() + ", aliasing " + existing.Name.Qual()
+		msg := "Alias " + alias.String() + " already exists in namespace " + ns.Name.String() + ", aliasing " + existing.Name.String()
 		if LINTER_MODE {
 			printParseError(GetPosition(alias), msg)
 			return nil

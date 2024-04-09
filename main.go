@@ -244,7 +244,7 @@ func srepl(env *core.Env, port string, phase core.Phase) error {
 		core.VERSION, conn.RemoteAddr())
 
 	for {
-		fmt.Fprint(core.Stdout, env.CurrentNamespace().Name.Qual()+"=> ")
+		fmt.Fprint(core.Stdout, env.CurrentNamespace().Name.String()+"=> ")
 		done, err := processReplCommand(env, reader, phase, parseContext, replContext)
 		if err != nil {
 			return err

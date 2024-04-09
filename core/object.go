@@ -498,7 +498,7 @@ func (s BySymbolName) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 func (s BySymbolName) Less(i, j int) bool {
-	return s[i].Qual() < s[j].Qual()
+	return s[i].String() < s[j].String()
 }
 
 const KeywordHashMask uint32 = 0x7334c790
@@ -1038,14 +1038,14 @@ func (sym Symbol) WithMeta(env *Env, meta Map) (Object, error) {
 }
 
 func (v *Var) Name() string {
-	return v.ns.Name.Qual() + "/" + v.name.Qual()
+	return v.ns.Name.String() + "/" + v.name.String()
 }
 
 func (v *Var) ToString(env *Env, escape bool) (string, error) {
 	return "#'" + v.Name(), nil
 }
 
-func (v *Var) Qual() string {
+func (v *Var) String() string {
 	return "#'" + v.Name()
 }
 
@@ -1541,7 +1541,7 @@ func (k Keyword) ToString(env *Env, escape bool) (string, error) {
 	return ":" + *k.name, nil
 }
 
-func (k Keyword) Qual() string {
+func (k Keyword) String() string {
 	if k.ns != nil {
 		return ":" + *k.ns + "/" + *k.name
 	}
@@ -1650,7 +1650,7 @@ func (s Symbol) ToString(env *Env, escape bool) (string, error) {
 	return *s.name, nil
 }
 
-func (s Symbol) Qual() string {
+func (s Symbol) String() string {
 	if s.ns != nil {
 		return *s.ns + "/" + *s.name
 	}

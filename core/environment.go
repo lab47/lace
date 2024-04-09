@@ -137,7 +137,7 @@ func (env *Env) SetCurrentNamespace(ns *Namespace) {
 
 func (env *Env) EnsureNamespace(sym Symbol) *Namespace {
 	if sym.ns != nil {
-		panic(env.RT.NewError("Namespace's name cannot be qualified: " + sym.Qual()))
+		panic(env.RT.NewError("Namespace's name cannot be qualified: " + sym.String()))
 	}
 	var err error
 	if env.Namespaces[sym.name] == nil {

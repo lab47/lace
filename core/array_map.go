@@ -147,7 +147,7 @@ type Equ interface {
 	IsHash() uint32
 }
 
-func (m *ArrayMap) indexOfSymbol(key Equ) int {
+func (m *ArrayMap) indexOfEqu(key Equ) int {
 	for i := 0; i < len(m.arr); i += 2 {
 		if key.Is(m.arr[i]) {
 			return i
@@ -157,7 +157,7 @@ func (m *ArrayMap) indexOfSymbol(key Equ) int {
 }
 
 func (m *ArrayMap) GetEqu(key Equ) (bool, Object) {
-	i := m.indexOfSymbol(key)
+	i := m.indexOfEqu(key)
 	if i != -1 {
 		return true, m.arr[i+1]
 	}
@@ -185,7 +185,7 @@ func (m *ArrayMap) Add(env *Env, key Object, value Object) bool {
 }
 
 func (m *ArrayMap) AddEqu(key Equ, value Object) bool {
-	i := m.indexOfSymbol(key)
+	i := m.indexOfEqu(key)
 	if i != -1 {
 		return false
 	}
@@ -217,7 +217,7 @@ func (m *ArrayMap) Clone() *ArrayMap {
 func NewArrayMap(key Equ, value Object) (Associative, error) {
 	m := EmptyArrayMap()
 
-	i := m.indexOfSymbol(key)
+	i := m.indexOfEqu(key)
 	if i != -1 {
 		m.arr[i+1] = value
 		return m, nil

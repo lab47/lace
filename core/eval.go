@@ -377,9 +377,9 @@ func (expr *CallExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 
 func varCallableString(v *Var) string {
 	if v.ns.CoreP() {
-		return "core/" + v.name.Qual()
+		return "core/" + v.name.String()
 	}
-	return v.ns.Name.Qual() + "/" + v.name.Qual()
+	return v.ns.Name.String() + "/" + v.name.String()
 }
 
 func (expr *CallExpr) Name() string {
@@ -387,7 +387,7 @@ func (expr *CallExpr) Name() string {
 	case *VarRefExpr:
 		return varCallableString(c.vr)
 	case *BindingExpr:
-		return c.binding.name.Qual()
+		return c.binding.name.String()
 	case *LiteralExpr:
 		return "<literal>"
 	default:

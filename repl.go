@@ -148,7 +148,7 @@ func repl(env *core.Env, phase core.Phase) error {
 	reader := core.NewReader(runeReader, "<repl>")
 
 	for {
-		namespace := env.CurrentNamespace().Name.Qual()
+		namespace := env.CurrentNamespace().Name.String()
 		if noReadline {
 			print(namespace + "=> ")
 		} else {

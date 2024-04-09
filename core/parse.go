@@ -352,7 +352,7 @@ func (b *Bindings) AddBinding(sym Symbol, index int, skipUnused bool) {
 	if LINTER_MODE && !skipUnused {
 		old := b.bindings[sym.name]
 		if old != nil && needsUnusedWarning(old) {
-			printParseWarning(GetPosition(old.name), "Unused binding: "+old.name.Qual())
+			printParseWarning(GetPosition(old.name), "Unused binding: "+old.name.String())
 		}
 	}
 	b.bindings[sym.name] = &Binding{
@@ -461,7 +461,7 @@ func WarnOnGloballyUnusedNamespaces(env *Env) {
 		if !ns.isGloballyUsed && !isIgnoredUnusedNamespace(ns) && !isEntryPointNs(ns) {
 			pos := ns.Name.GetInfo()
 			if pos != nil && pos.Filename() != "<lace.core>" && pos.Filename() != "<user>" {
-				name := ns.Name.Qual()
+				name := ns.Name.String()
 				names = append(names, name)
 				positions[name] = pos.Position
 			}
@@ -482,7 +482,7 @@ func WarnOnUnusedNamespaces(env *Env) {
 		if ns != env.CurrentNamespace() && !ns.isUsed && !isIgnoredUnusedNamespace(ns) {
 			pos := ns.Name.GetInfo()
 			if pos != nil && pos.Filename() != "<lace.core>" && pos.Filename() != "<user>" {
-				name := ns.Name.Qual()
+				name := ns.Name.String()
 				names = append(names, name)
 				positions[name] = pos.Position
 			}
@@ -995,7 +995,7 @@ func addArity(fn *FnExpr, sig Seq, ctx *ParseContext) error {
 			}
 			sort.Sort(BySymbolName(unused))
 			for _, u := range unused {
-				printParseWarning(GetPosition(u), "unused parameter: "+u.Qual())
+				printParseWarning(GetPosition(u), "unused parameter: "+u.String())
 			}
 		}
 	}
@@ -1307,7 +1307,7 @@ func parseLetLoop(obj Object, formName string, ctx *ParseContext) (*LetExpr, err
 			switch sym := s.(type) {
 			case Symbol:
 				if sym.ns != nil {
-					msg := "Can't let qualified name: " + sym.Qual()
+					msg := "Can't let qualified name: " + sym.String()
 					if LINTER_MODE {
 						printParseError(GetPosition(s), msg)
 					} else {
@@ -1930,12 +1930,12 @@ func parseList(env *Env, obj Object, ctx *ParseContext) (Expr, error) {
 				vr, ok := ctx.Env.Resolve(sym)
 				if !ok {
 					if !LINTER_MODE {
-						return nil, &ParseError{obj: obj, msg: "Unable to resolve var " + sym.Qual() + " in this context"}
+						return nil, &ParseError{obj: obj, msg: "Unable to resolve var " + sym.String() + " in this context"}
 					}
 					symNs := ctx.Env.NamespaceFor(ctx.Env.CurrentNamespace(), sym)
 					if !ctx.isUnknownCallableScope {
 						if symNs == nil || symNs == ctx.Env.CurrentNamespace() {
-							printParseError(obj.GetInfo().Pos(), "Unable to resolve symbol: "+sym.Qual())
+							printParseError(obj.GetInfo().Pos(), "Unable to resolve symbol: "+sym.String())
 						}
 					}
 					vr, err = InternFakeSymbol(ctx.Env, symNs, sym)
@@ -2090,7 +2090,7 @@ func InternFakeSymbol(env *Env, ns *Namespace, sym Symbol) (*Var, error) {
 	}
 	fakeSym := Symbol{
 		ns:   nil,
-		name: STRINGS.Intern(sym.Qual()),
+		name: STRINGS.Intern(sym.String()),
 	}
 	return env.CurrentNamespace().Intern(env, fakeSym)
 }
@@ -2144,7 +2144,7 @@ func parseSymbol(obj Object, ctx *ParseContext) (Expr, error) {
 		}, nil
 	}
 	if !LINTER_MODE {
-		return nil, &ParseError{obj: obj, msg: "Unable to resolve symbol: " + sym.Qual()}
+		return nil, &ParseError{obj: obj, msg: "Unable to resolve symbol: " + sym.String()}
 	}
 	if DIALECT == CLJS && sym.ns == nil {
 		// Check if this is a "callable namespace"
@@ -2176,7 +2176,7 @@ func parseSymbol(obj Object, ctx *ParseContext) (Expr, error) {
 		}
 		if !ctx.isUnknownCallableScope {
 			if ctx.linterBindings.GetBinding(sym) == nil {
-				printParseError(obj.GetInfo().Pos(), "Unable to resolve symbol: "+sym.Qual())
+				printParseError(obj.GetInfo().Pos(), "Unable to resolve symbol: "+sym.String())
 			}
 		}
 	}

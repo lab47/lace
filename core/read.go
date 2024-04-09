@@ -1048,7 +1048,7 @@ func filename(f *string) string {
 func handleNoReaderError(env *Env, reader *Reader, s Symbol) (Object, error) {
 	if LINTER_MODE {
 		if DIALECT != EDN {
-			printReadWarning(reader, "No reader function for tag "+s.Qual())
+			printReadWarning(reader, "No reader function for tag "+s.String())
 		}
 		return readFirst(env, reader)
 	}

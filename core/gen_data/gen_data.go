@@ -33,7 +33,10 @@ func main() {
 
 	coreCons := []string{}
 
-	env := core.NewEnv()
+	env, err := core.NewEnv()
+	if err != nil {
+		panic(err)
+	}
 
 	for _, f := range gen_common.CoreSourceFiles {
 		env.SetCurrentNamespace(env.CoreNamespace)
