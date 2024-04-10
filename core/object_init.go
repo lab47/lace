@@ -103,6 +103,8 @@ func init() {
 		Namespace:     RegRefType("Namespace", (*Namespace)(nil), ""),
 		Nil:           regType("Nil", (*Nil)(nil), "The 'nil' value"),
 		NodeSeq:       RegRefType("NodeSeq", (*NodeSeq)(nil), ""),
+		ReflectType:   RegRefType("ReflectType", (*ReflectType)(nil), ""),
+		ReflectValue:  RegRefType("ReflectValue", (*ReflectValue)(nil), ""),
 		ParseError:    RegRefType("ParseError", (*ParseError)(nil), ""),
 		Proc:          RegRefType("Proc", (*Proc)(nil), "A callable function implemented via Go code"),
 		Ratio:         RegRefType("Ratio", (*Ratio)(nil), "Wraps the Go 'math.big/Rat' type"),

@@ -300,6 +300,8 @@ type (
 		MappingSeq     *Type
 		Namespace      *Type
 		Nil            *Type
+		ReflectType    *Type
+		ReflectValue   *Type
 		NodeSeq        *Type
 		ParseError     *Type
 		Proc           *Type
@@ -487,6 +489,50 @@ func MakeSymbol(nsname string) Symbol {
 		ns:   STRINGS.Intern(nsname[0:index]),
 		name: STRINGS.Intern(nsname[index+1:]),
 	}
+}
+
+func MakeSymbolWithMeta(nsname string, m Map) Symbol {
+	index := strings.IndexRune(nsname, '/')
+	var sym Symbol
+	if index == -1 || nsname == "/" {
+		sym = Symbol{
+			ns:   nil,
+			name: STRINGS.Intern(nsname),
+		}
+	} else {
+		sym = Symbol{
+			ns:   STRINGS.Intern(nsname[0:index]),
+			name: STRINGS.Intern(nsname[index+1:]),
+		}
+	}
+
+	sym.meta = m
+
+	return sym
+}
+
+func MakeTaggedSymbol(nsname string, tag Symbol) Symbol {
+	var sym Symbol
+
+	index := strings.IndexRune(nsname, '/')
+	if index == -1 || nsname == "/" {
+		sym = Symbol{
+			ns:   nil,
+			name: STRINGS.Intern(nsname),
+		}
+	} else {
+		sym = Symbol{
+			ns:   STRINGS.Intern(nsname[0:index]),
+			name: STRINGS.Intern(nsname[index+1:]),
+		}
+	}
+
+	m := EmptyArrayMap()
+	m.AddEqu(criticalKeywords.tag, tag)
+
+	sym.meta = m
+
+	return sym
 }
 
 type BySymbolName []Symbol

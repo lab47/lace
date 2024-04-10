@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"strings"
 )
 
 const (
@@ -27,6 +28,7 @@ const (
 	BINDING_EXPR   = 18
 	LOOP_EXPR      = 19
 	SET_MACRO_EXPR = 20
+	METHOD_EXPR    = 21
 	NULL           = 100
 	NOT_NULL       = 101
 	SYMBOL_OBJ     = 102
@@ -628,6 +630,42 @@ func unpackCallExpr(env *Env, p []byte, header *PackHeader) (*CallExpr, []byte, 
 	return res, p, nil
 }
 
+func (expr *MethodExpr) Pack(p []byte, env *PackEnv) []byte {
+	p = append(p, METHOD_EXPR)
+	p = expr.Pos().Pack(p, env)
+	p = expr.name.Pack(p, env)
+	p = expr.obj.Pack(p, env)
+	p = packSeq(p, expr.args, env)
+	return p
+}
+
+func unpackMethodExpr(env *Env, p []byte, header *PackHeader) (*MethodExpr, []byte, error) {
+	p = p[1:]
+	pos, p := unpackPosition(p, header)
+	name, p, err := unpackSymbol(env, p, header)
+	if err != nil {
+		return nil, nil, err
+	}
+	obj, p, err := UnpackExpr(env, p, header)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	args, p, err := unpackSeq(env, p, header)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	res := &MethodExpr{
+		Position: pos,
+		name:     name,
+		method:   strings.TrimPrefix(name.Name(), "."),
+		obj:      obj,
+		args:     args,
+	}
+	return res, p, nil
+}
+
 func (expr *RecurExpr) Pack(p []byte, env *PackEnv) []byte {
 	p = append(p, RECUR_EXPR)
 	p = expr.Pos().Pack(p, env)
@@ -1049,6 +1087,8 @@ func UnpackExpr(env *Env, p []byte, header *PackHeader) (Expr, []byte, error) {
 		return unpackDefExpr(env, p, header)
 	case CALL_EXPR:
 		return unpackCallExpr(env, p, header)
+	case METHOD_EXPR:
+		return unpackMethodExpr(env, p, header)
 	case RECUR_EXPR:
 		return unpackRecurExpr(env, p, header)
 	case META_EXPR:

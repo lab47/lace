@@ -84,9 +84,29 @@ type DefnInfo struct {
 	Tags  []DefnTag
 	Fn    any
 
+	ArgTags map[string]string
+
 	Aliases []string
 
 	Fns []ArityFn
+}
+
+type DefTypeInfo struct {
+	Name  string
+	Doc   string
+	Added string
+	Tag   string
+
+	Type reflect.Type
+}
+
+type DefVarInfo struct {
+	Name  string
+	Doc   string
+	Added string
+	Tag   string
+
+	Value reflect.Value
 }
 
 // from error to Error
@@ -221,6 +241,29 @@ func convertSeqableIn(env *Env, index int, o Object) (reflect.Value, error) {
 	return reflect.ValueOf(ls), nil
 }
 
+// from ReflectValue to *type
+func convertReflectValueIn(env *Env, index int, o Object, at reflect.Type) (reflect.Value, error) {
+	ls, ok := o.(*ReflectValue)
+	if !ok {
+		return reflect.Value{}, env.RT.NewArgTypeError(index, o, at.Name())
+	}
+
+	if ls.val.Type() != at {
+		return reflect.Value{}, env.RT.NewArgTypeError(index, o, at.Name())
+	}
+
+	return ls.val, nil
+}
+
+// from any to ReflectValue
+func convertReflectValueOut(env *Env, s reflect.Value) (reflect.Value, error) {
+	if _, ok := s.Interface().(Object); ok {
+		return s, nil
+	}
+
+	return reflect.ValueOf(&ReflectValue{val: s}), nil
+}
+
 func convertCallableIn(env *Env, index int, o Object) (reflect.Value, error) {
 	ls, ok := o.(Callable)
 	if !ok {
@@ -236,9 +279,13 @@ type outConv func(*Env, reflect.Value) (reflect.Value, error)
 var procFnType = reflect.TypeFor[ProcFn]()
 
 func (n *NSBuilder) buildProc(fn any) (ProcFn, int, error) {
-	v := reflect.ValueOf(fn)
+	v, ok := fn.(reflect.Value)
+	if !ok {
+		v = reflect.ValueOf(fn)
+	}
+
 	if v.Kind() != reflect.Func {
-		panic("procs can only be built from Go funcs")
+		return nil, 0, fmt.Errorf("procs can only be built from Go funcs, is: %s (%s)", v, v.Kind())
 	}
 
 	t := v.Type()
@@ -273,7 +320,9 @@ func (n *NSBuilder) buildProc(fn any) (ProcFn, int, error) {
 		case reflect.TypeFor[int]():
 			argIn[i] = convertIntIn
 		default:
-			return nil, 0, fmt.Errorf("unable to find converter for %s", at)
+			argIn[i] = func(e *Env, i int, o Object) (reflect.Value, error) {
+				return convertReflectValueIn(e, i, o, at)
+			}
 		}
 
 		passed++
@@ -304,7 +353,7 @@ func (n *NSBuilder) buildProc(fn any) (ProcFn, int, error) {
 			errorPos = i
 			continue
 		default:
-			return nil, 0, fmt.Errorf("unable to find converter for %s", at)
+			rets[i] = convertReflectValueOut
 		}
 
 		valueReturns++
@@ -313,7 +362,7 @@ func (n *NSBuilder) buildProc(fn any) (ProcFn, int, error) {
 	nilErr := reflect.Zero(reflect.TypeFor[error]())
 	nilObject := reflect.Zero(reflect.TypeFor[Object]())
 
-	fnVal := reflect.ValueOf(fn)
+	fnVal := v
 
 	var out reflect.Value
 
@@ -411,14 +460,18 @@ func (n *NSBuilder) buildProc(fn any) (ProcFn, int, error) {
 	return out.Interface().(ProcFn), passed, nil
 }
 
-func (n *NSBuilder) makeMeta(b *DefnInfo) *ArrayMap {
+func (nb *NSBuilder) makeMeta(b *DefnInfo) *ArrayMap {
 	var m *ArrayMap
 
 	if len(b.Fns) == 0 {
 		var args []Object
 
 		for _, n := range b.Args {
-			args = append(args, MakeSymbol(n))
+			if t, ok := b.ArgTags[n]; ok {
+				args = append(args, MakeTaggedSymbol(n, MakeSymbol(t)))
+			} else {
+				args = append(args, MakeSymbol(n))
+			}
 		}
 
 		m = MakeMeta(
@@ -445,7 +498,7 @@ func (n *NSBuilder) makeMeta(b *DefnInfo) *ArrayMap {
 	}
 
 	if b.Tag != "" {
-		m = m.Plus(n.env, MakeKeyword("tag"), MakeString(b.Tag))
+		m = m.Plus(nb.env, MakeKeyword("tag"), MakeString(b.Tag))
 	}
 
 	return m
@@ -459,11 +512,51 @@ func (b *NSBuilder) Def(name string, obj Object) {
 	b.ns.InternVar(b.env, name, obj, m)
 }
 
+func (b *NSBuilder) DefType(i *DefTypeInfo) *NSBuilder {
+	m := MakeMeta(
+		NewListFrom(),
+		i.Doc, i.Added,
+	)
+
+	obj := &ReflectType{typ: i.Type}
+
+	b.ns.InternVar(b.env, i.Name, obj, m)
+
+	return b
+}
+
+func (b *NSBuilder) DefVar(i *DefVarInfo) *NSBuilder {
+	m := MakeMeta(
+		NewListFrom(),
+		i.Doc, i.Added,
+	)
+
+	var obj Object
+	switch i.Value.Kind() {
+	case reflect.String:
+		obj = MakeString(i.Value.String())
+	case reflect.Int:
+		obj = MakeInt(int(i.Value.Int()))
+	case reflect.Bool:
+		obj = MakeBoolean(i.Value.Bool())
+	default:
+		var ok bool
+		obj, ok = i.Value.Interface().(Object)
+		if !ok {
+			obj = &ReflectValue{val: i.Value}
+		}
+	}
+
+	b.ns.InternVar(b.env, i.Name, obj, m)
+
+	return b
+}
+
 func (n *NSBuilder) Defn(b *DefnInfo) *NSBuilder {
 	if b.Fn != nil {
 		procFn, _, err := n.buildProc(b.Fn)
 		if err != nil {
-			panic(err)
+			panic(fmt.Sprintf("unable to define %s: %s", b.Name, err))
 		}
 
 		var (

@@ -94,6 +94,17 @@ func NewEnv() (*Env, error) {
 			}
 		}
 	}
+
+	err = SetupTime(res)
+	if err != nil {
+		return nil, err
+	}
+
+	err = SetupPkgReflect(res)
+	if err != nil {
+		return nil, err
+	}
+
 	return res, nil
 }
 

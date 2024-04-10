@@ -209,7 +209,9 @@ func (seq *LazySeq) Rest() Seq {
 }
 
 func (seq *LazySeq) IsEmpty() bool {
-	seq.realize()
+	if err := seq.realize(); err != nil {
+		panic(err)
+	}
 	return seq.seq.IsEmpty()
 }
 

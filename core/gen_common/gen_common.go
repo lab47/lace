@@ -61,6 +61,10 @@ var CoreSourceFiles []FileInfo = []FileInfo{
 		Filename: "better_cond.clj",
 	},
 	{
+		Name:     "<lace.time>",
+		Filename: "time.clj",
+	},
+	{
 		Name:     "<lace.core>",
 		Filename: "linter_all.clj",
 	},

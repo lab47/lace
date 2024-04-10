@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"unicode"
 	"unsafe"
 )
 
@@ -1990,6 +1991,40 @@ func parseList(env *Env, obj Object, ctx *ParseContext) (Expr, error) {
 		}
 	}
 
+	if sym, ok := first.(Symbol); ok && sym.ns == nil && strings.HasPrefix(sym.Name(), ".") {
+		args, err := parseSeq(seq.Rest(), ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(args) == 0 {
+			return nil, fmt.Errorf("method expression must have at least 1 argument")
+		}
+
+		capNext := true
+		mname := strings.Map(func(r rune) rune {
+			if capNext {
+				capNext = false
+				return unicode.ToUpper(r)
+			}
+
+			if r == '-' {
+				capNext = true
+				return -1
+			}
+
+			return r
+		}, sym.Name()[1:])
+
+		return &MethodExpr{
+			Position: GetPosition(obj),
+			name:     sym,
+			method:   mname,
+			obj:      args[0],
+			args:     args[1:],
+		}, nil
+	}
+
 	ctx.isUnknownCallableScope = currentIsUnknownCallableScope
 	callable, err := Parse(first, ctx)
 	if err != nil {
@@ -2017,6 +2052,7 @@ func parseList(env *Env, obj Object, ctx *ParseContext) (Expr, error) {
 	} else {
 		ctx.isUnknownCallableScope = false
 	}
+
 	args, err := parseSeq(seq.Rest(), ctx)
 	if err != nil {
 		return nil, err
@@ -2143,6 +2179,7 @@ func parseSymbol(obj Object, ctx *ParseContext) (Expr, error) {
 			obj:      TYPES[sym.name],
 		}, nil
 	}
+
 	if !LINTER_MODE {
 		return nil, &ParseError{obj: obj, msg: "Unable to resolve symbol: " + sym.String()}
 	}

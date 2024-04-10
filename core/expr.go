@@ -122,6 +122,29 @@ func (expr *CallExpr) Dump(pos bool) Map {
 	return res
 }
 
+type MethodExpr struct {
+	Position
+	name   Symbol
+	method string
+
+	obj  Expr
+	args []Expr
+}
+
+var _ Expr = &MethodExpr{}
+
+func (expr *MethodExpr) Dump(pos bool) Map {
+	res := exprArrayMap(expr, "call", pos)
+	res.AddEqu(MakeKeyword("method"), String{S: expr.method})
+	res.AddEqu(MakeKeyword("object"), expr.obj.Dump(pos))
+	addVector(res, expr.args, "args", pos)
+	return res
+}
+
+func (expr *MethodExpr) InferType() *Type {
+	return nil
+}
+
 func (expr *MacroCallExpr) InferType() *Type {
 	return nil
 }
