@@ -275,7 +275,9 @@ func (b *Bindings) ToMap(env *Env) (Map, error) {
 			if err != nil {
 				return nil, err
 			}
-			res = v.(Map)
+			if err := Cast(env, v, &res); err != nil {
+				return nil, err
+			}
 		}
 		b = b.parent
 	}
@@ -685,7 +687,11 @@ func parseSet(s *MapSet, pos Position, ctx *ParseContext) (Expr, error) {
 }
 
 func checkForm(env *Env, obj Object, min int, max int) (int, error) {
-	seq := obj.(Seq)
+	var seq Seq
+	if err := Cast(env, obj, &seq); err != nil {
+		return 0, err
+	}
+
 	c := SeqCount(seq)
 	if c < min {
 		v, err := seq.First(env)
@@ -748,7 +754,10 @@ func parseDef(obj Object, ctx *ParseContext, isForLinter bool) (*DefExpr, error)
 	if err != nil {
 		return nil, err
 	}
-	seq := obj.(Seq)
+	var seq Seq
+	if err := Cast(ctx.Env, obj, &seq); err != nil {
+		return nil, err
+	}
 	s, err := Second(ctx.Env, seq)
 	if err != nil {
 		return nil, err
@@ -809,18 +818,18 @@ func parseDef(obj Object, ctx *ParseContext, isForLinter bool) (*DefExpr, error)
 					if err != nil {
 						return nil, err
 					}
-					meta = v.(Map)
+					if err := Cast(ctx.Env, v, &meta); err != nil {
+						return nil, err
+					}
 				} else {
 					v, err := EmptyArrayMap().Assoc(ctx.Env, criticalKeywords.doc, docstring)
 					if err != nil {
 						return nil, err
 					}
 
-					meta = v.(Map)
-				}
-
-				if err != nil {
-					return nil, err
+					if err := Cast(ctx.Env, v, &meta); err != nil {
+						return nil, err
+					}
 				}
 			default:
 				return nil, &ParseError{obj: docstring, msg: "Docstring must be a string"}
@@ -872,7 +881,10 @@ func parseBody(seq Seq, ctx *ParseContext) ([]Expr, error) {
 
 func parseParams(env *Env, params Object) ([]Symbol, bool, error) {
 	res := make([]Symbol, 0)
-	v := params.(*Vector)
+	var v *Vector
+	if err := Cast(env, params, &v); err != nil {
+		return nil, false, err
+	}
 	for i := 0; i < v.count; i++ {
 		ro := v.at(i)
 		sym := ro
@@ -952,11 +964,16 @@ func addArity(fn *FnExpr, sig Seq, ctx *ParseContext) error {
 		return err
 	}
 
+	var meta Meta
+	if err := Cast(ctx.Env, params, &meta); err != nil {
+		return err
+	}
+
 	arity := FnArityExpr{
 		Position:   GetPosition(sig),
 		args:       args,
 		body:       bodye,
-		taggedType: getTaggedType(params.(Meta)),
+		taggedType: getTaggedType(meta),
 	}
 	if isVariadic {
 		if fn.variadic != nil {
@@ -1005,7 +1022,12 @@ func addArity(fn *FnExpr, sig Seq, ctx *ParseContext) error {
 }
 
 func wrapWithMeta(fnExpr *FnExpr, obj Object, ctx *ParseContext) (Expr, error) {
-	meta := obj.(Meta).GetMeta()
+	var metao Meta
+	if err := Cast(ctx.Env, obj, &metao); err != nil {
+		return nil, err
+	}
+
+	meta := metao.GetMeta()
 	if meta != nil {
 		m, err := parseMap(meta, fnExpr.Pos(), ctx)
 		if err != nil {
@@ -1027,8 +1049,13 @@ func wrapWithMeta(fnExpr *FnExpr, obj Object, ctx *ParseContext) (Expr, error) {
 //	([a] a 3)
 //	([a & b] a b))
 func parseFn(obj Object, ctx *ParseContext) (Expr, error) {
+	var seq Seq
+	if err := Cast(ctx.Env, obj, &seq); err != nil {
+		return nil, err
+	}
+
 	res := &FnExpr{Position: GetPosition(obj)}
-	bodies := obj.(Seq).Rest()
+	bodies := seq.Rest()
 	p, err := bodies.First(ctx.Env)
 	if err != nil {
 		return nil, err
@@ -1045,7 +1072,9 @@ func parseFn(obj Object, ctx *ParseContext) (Expr, error) {
 		defer ctx.PopLocalFrame()
 	}
 	if IsVector(p) { // single arity
-		addArity(res, bodies, ctx)
+		if err := addArity(res, bodies, ctx); err != nil {
+			return nil, err
+		}
 		return wrapWithMeta(res, obj, ctx)
 	}
 	// multiple arities
@@ -1073,7 +1102,10 @@ func parseFn(obj Object, ctx *ParseContext) (Expr, error) {
 
 				return nil, &ParseError{obj: params, msg: "Parameter declaration must be a vector. Got: " + s}
 			}
-			addArity(res, s, ctx)
+			if err := addArity(res, s, ctx); err != nil {
+				panic(err)
+				return nil, err
+			}
 		default:
 			ss, err := s.ToString(ctx.Env, false)
 			if err != nil {
@@ -1139,7 +1171,11 @@ func resolveType(obj Object, ctx *ParseContext) (*Type, error) {
 }
 
 func parseCatch(obj Object, ctx *ParseContext) (*CatchExpr, error) {
-	seq := obj.(Seq).Rest()
+	var seqo Seq
+	if err := Cast(ctx.Env, obj, &seqo); err != nil {
+		return nil, err
+	}
+	seq := seqo.Rest()
 	if seq.IsEmpty() || seq.Rest().IsEmpty() {
 		return nil, &ParseError{obj: obj, msg: "catch requires at least two arguments: type symbol and binding symbol"}
 	}
@@ -1193,7 +1229,12 @@ func parseTry(obj Object, ctx *ParseContext) (*TryExpr, error) {
 	)
 	res := &TryExpr{Position: GetPosition(obj)}
 	lastType := Regular
-	seq := obj.(Seq).Rest()
+	var seqo Seq
+	if err := Cast(ctx.Env, obj, &seqo); err != nil {
+		return nil, err
+	}
+
+	seq := seqo.Rest()
 
 	noRecurAllowed := ctx.noRecurAllowed
 	ctx.noRecurAllowed = true
@@ -1217,7 +1258,12 @@ func parseTry(obj Object, ctx *ParseContext) (*TryExpr, error) {
 			res.catches = append(res.catches, c)
 			lastType = Catch
 		} else if isFinally(ctx.Env, obj) {
-			res.finallyExpr, err = parseFinally(obj.(Seq).Rest(), ctx)
+			var seqo Seq
+			if err := Cast(ctx.Env, obj, &seqo); err != nil {
+				return nil, err
+			}
+
+			res.finallyExpr, err = parseFinally(seqo.Rest(), ctx)
 			if err != nil {
 				return nil, err
 			}
@@ -1281,7 +1327,13 @@ func parseLetLoop(obj Object, formName string, ctx *ParseContext) (*LetExpr, err
 	res := &LetExpr{
 		Position: GetPosition(obj),
 	}
-	bindings, err := Second(ctx.Env, obj.(Seq))
+
+	var seqo Seq
+	if err := Cast(ctx.Env, obj, &seqo); err != nil {
+		return nil, err
+	}
+
+	bindings, err := Second(ctx.Env, seqo)
 	if err != nil {
 		return nil, err
 	}
@@ -1355,7 +1407,12 @@ func parseLetLoop(obj Object, formName string, ctx *ParseContext) (*LetExpr, err
 			defer func() { ctx.noRecurAllowed = noRecurAllowed }()
 		}
 
-		res.body, err = parseBody(obj.(Seq).Rest().Rest(), ctx)
+		var seqo Seq
+		if err := Cast(ctx.Env, obj, &seqo); err != nil {
+			return nil, err
+		}
+
+		res.body, err = parseBody(seqo.Rest().Rest(), ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -1399,7 +1456,12 @@ func parseRecur(obj Object, ctx *ParseContext) (*RecurExpr, error) {
 	if loopBindings == nil && !LINTER_MODE {
 		return nil, &ParseError{obj: obj, msg: "No recursion point for recur"}
 	}
-	seq := obj.(Seq)
+
+	var seq Seq
+	if err := Cast(ctx.Env, obj, &seq); err != nil {
+		return nil, err
+	}
+
 	args, err := parseSeq(seq.Rest(), ctx)
 	if err != nil {
 		return nil, err
@@ -1486,7 +1548,13 @@ func fixInfo(env *Env, obj Object, info *ObjectInfo) (Object, error) {
 			}
 			res.Add(env, key, value)
 		}
-		res.meta = s.(Meta).GetMeta()
+
+		var metao Meta
+		if err := Cast(env, s, &metao); err != nil {
+			return nil, err
+		}
+
+		res.meta = metao.GetMeta()
 		if objInfo := obj.GetInfo(); objInfo != nil {
 			return res.WithInfo(objInfo), nil
 		}
@@ -1513,9 +1581,14 @@ func macroexpand1(env *Env, seq Seq, ctx *ParseContext) (Object, error) {
 			return nil, err
 		}
 
+		var callable Callable
+		if err := Cast(env, vr.Value, &callable); err != nil {
+			return nil, err
+		}
+
 		expr := &MacroCallExpr{
 			Position: GetPosition(seq),
-			macro:    vr.Value.(Callable),
+			macro:    callable,
 			args:     slice,
 			name:     varCallableString(vr),
 		}
@@ -1672,13 +1745,20 @@ func setMacroMeta(env *Env, vr *Var) error {
 		ass, err = vr.meta.Assoc(env, criticalKeywords.macro, Boolean{B: true})
 	}
 
-	vr.meta = ass.(Map)
+	if err := Cast(env, ass, &vr.meta); err != nil {
+		return err
+	}
 
 	return err
 }
 
 func parseSetMacro(env *Env, obj Object, ctx *ParseContext) (Expr, error) {
-	s, err := Second(env, obj.(Seq))
+	var seq Seq
+	if err := Cast(env, obj, &seq); err != nil {
+		return nil, err
+	}
+
+	s, err := Second(env, seq)
 	if err != nil {
 		return nil, err
 	}
@@ -1710,7 +1790,13 @@ func isKnownMacros(env *Env, sym Symbol) (bool, Seq) {
 		}
 		KNOWN_MACROS = knownMacros
 	}
-	if ok, v := KNOWN_MACROS.Value.(Map).GetEqu(sym); ok {
+
+	var m Map
+	if err := Cast(env, KNOWN_MACROS.Value, &m); err != nil {
+		return false, nil
+	}
+
+	if ok, v := m.GetEqu(sym); ok {
 		switch v := v.(type) {
 		case Seqable:
 			return true, v.Seq()
@@ -1828,14 +1914,18 @@ func checkCall(env *Env, expr Expr, isMacro bool, call *CallExpr, pos Position) 
 }
 
 func parseList(env *Env, obj Object, ctx *ParseContext) (Expr, error) {
-	expanded, err := macroexpand1(env, obj.(Seq), ctx)
+	var seq Seq
+	if err := Cast(env, obj, &seq); err != nil {
+		return nil, err
+	}
+
+	expanded, err := macroexpand1(env, seq, ctx)
 	if err != nil {
 		return nil, err
 	}
 	if expanded != obj {
 		return Parse(expanded, ctx)
 	}
-	seq := obj.(Seq)
 	if seq.IsEmpty() {
 		return NewLiteralExpr(obj), nil
 	}
@@ -1925,6 +2015,9 @@ func parseList(env *Env, obj Object, ctx *ParseContext) (Expr, error) {
 			}
 
 			obj, err := Second(env, seq)
+			if err != nil {
+				return nil, err
+			}
 
 			switch sym := obj.(type) {
 			case Symbol:
@@ -2001,25 +2094,10 @@ func parseList(env *Env, obj Object, ctx *ParseContext) (Expr, error) {
 			return nil, fmt.Errorf("method expression must have at least 1 argument")
 		}
 
-		capNext := true
-		mname := strings.Map(func(r rune) rune {
-			if capNext {
-				capNext = false
-				return unicode.ToUpper(r)
-			}
-
-			if r == '-' {
-				capNext = true
-				return -1
-			}
-
-			return r
-		}, sym.Name()[1:])
-
 		return &MethodExpr{
 			Position: GetPosition(obj),
 			name:     sym,
-			method:   mname,
+			method:   convertMethodName(sym),
 			obj:      args[0],
 			args:     args[1:],
 		}, nil
@@ -2116,6 +2194,23 @@ func parseList(env *Env, obj Object, ctx *ParseContext) (Expr, error) {
 	return res, nil
 }
 
+func convertMethodName(sym Symbol) string {
+	capNext := true
+	return strings.Map(func(r rune) rune {
+		if capNext {
+			capNext = false
+			return unicode.ToUpper(r)
+		}
+
+		if r == '-' {
+			capNext = true
+			return -1
+		}
+
+		return r
+	}, sym.Name()[1:])
+}
+
 func InternFakeSymbol(env *Env, ns *Namespace, sym Symbol) (*Var, error) {
 	if ns != nil {
 		fakeSym := Symbol{
@@ -2161,7 +2256,11 @@ func MakeVarRefExpr(vr *Var, obj Object) *VarRefExpr {
 }
 
 func parseSymbol(obj Object, ctx *ParseContext) (Expr, error) {
-	sym := obj.(Symbol)
+	var sym Symbol
+	if err := Cast(ctx.Env, obj, &sym); err != nil {
+		return nil, err
+	}
+
 	b := ctx.GetLocalBinding(sym)
 	if b != nil {
 		b.isUsed = true
@@ -2258,7 +2357,12 @@ func Parse(obj Object, ctx *ParseContext) (Expr, error) {
 	}
 
 	if canHaveMeta {
-		meta := obj.(Meta).GetMeta()
+		var metao Meta
+		if err := Cast(ctx.Env, obj, &metao); err != nil {
+			return nil, err
+		}
+
+		meta := metao.GetMeta()
 		if meta != nil {
 			meta, err := parseMap(meta, pos, ctx)
 			if err != nil {

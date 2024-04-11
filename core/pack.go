@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"strings"
 )
 
 const (
@@ -659,7 +658,7 @@ func unpackMethodExpr(env *Env, p []byte, header *PackHeader) (*MethodExpr, []by
 	res := &MethodExpr{
 		Position: pos,
 		name:     name,
-		method:   strings.TrimPrefix(name.Name(), "."),
+		method:   convertMethodName(name),
 		obj:      obj,
 		args:     args,
 	}
@@ -703,7 +702,12 @@ func unpackVar(env *Env, p []byte, header *PackHeader) (*Var, []byte, error) {
 		return nil, nil, err
 	}
 
-	vr := env.FindNamespace(nsName).mappings[name.name]
+	ns := env.FindNamespace(nsName)
+	if ns == nil {
+		panic("unknown namespace: " + *nsName.name)
+	}
+
+	vr := ns.mappings[name.name]
 	if vr == nil {
 		return nil, nil, env.RT.NewError("Error unpacking var: cannot find var " + *nsName.name + "/" + *name.name)
 	}

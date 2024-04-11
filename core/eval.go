@@ -60,6 +60,11 @@ func StubNewArgTypeError(index int, obj Object, expectedType string) *EvalError 
 	return StubNewError(fmt.Sprintf("Arg[%d] of <<func_name>> must have type %s, got %s", index, expectedType, obj.GetType().Name()))
 }
 
+func TypeError[T any](env *Env, obj Object) *EvalError {
+	var t T
+	return env.RT.NewError(fmt.Sprintf("object must have type %T, got %s", t, obj.GetType().Name()))
+}
+
 func (rt *Runtime) NewArgTypeError(index int, obj Object, expectedType string) *EvalError {
 	name := rt.topName()
 	return rt.NewError(fmt.Sprintf("Arg[%d] of %s must have type %s, got %s", index, name, expectedType, obj.GetType().Name()))

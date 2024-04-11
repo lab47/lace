@@ -13,7 +13,7 @@ func NewEnv() (*Env, error) {
 	features.Add(res, MakeKeyword("lace"))
 
 	var err error
-	res.CoreNamespace = res.EnsureNamespace(criticalSymbols.lace_core)
+	res.CoreNamespace = res.ensureNamespace(criticalSymbols.lace_core)
 	res.CoreNamespace.core = true
 	res.CoreNamespace.meta = MakeMeta(nil, "Core library of Lace.", "1.0")
 	res.NS_VAR, err = res.CoreNamespace.Intern(res, MakeSymbol("ns"))
@@ -84,6 +84,10 @@ func NewEnv() (*Env, error) {
 		return nil, err
 	}
 
+	// Pull in lace.string because it needs to be defined to pack repl.clj
+
+	res.EnsureNamespace(MakeSymbol("lace.string"))
+
 	builtinNS := []string{"lace.core", "lace.repl"}
 
 	for _, name := range builtinNS {
@@ -93,11 +97,6 @@ func NewEnv() (*Env, error) {
 				panic(err)
 			}
 		}
-	}
-
-	err = SetupTime(res)
-	if err != nil {
-		return nil, err
 	}
 
 	err = SetupPkgReflect(res)

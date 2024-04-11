@@ -242,6 +242,17 @@ func convertSeqableIn(env *Env, index int, o Object) (reflect.Value, error) {
 }
 
 // from ReflectValue to *type
+func convertReflectTypeIn(env *Env, index int, o Object) (reflect.Value, error) {
+	ls, ok := o.(*ReflectType)
+	if !ok {
+		spew.Dump(o)
+		return reflect.Value{}, env.RT.NewArgTypeError(index, o, "ReflectType")
+	}
+
+	return reflect.ValueOf(ls.typ), nil
+}
+
+// from ReflectValue to *type
 func convertReflectValueIn(env *Env, index int, o Object, at reflect.Type) (reflect.Value, error) {
 	ls, ok := o.(*ReflectValue)
 	if !ok {
@@ -319,6 +330,8 @@ func (n *NSBuilder) buildProc(fn any) (ProcFn, int, error) {
 			argIn[i] = convertBytesIn
 		case reflect.TypeFor[int]():
 			argIn[i] = convertIntIn
+		case reflect.TypeFor[reflect.Type]():
+			argIn[i] = convertReflectTypeIn
 		default:
 			argIn[i] = func(e *Env, i int, o Object) (reflect.Value, error) {
 				return convertReflectValueIn(e, i, o, at)

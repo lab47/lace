@@ -145,6 +145,28 @@ func (env *Env) EnsureNamespace(sym Symbol) *Namespace {
 		if err != nil {
 			panic(err)
 		}
+		if setup, ok := builtinNSSetup[*sym.name]; ok {
+			err := setup(env)
+			if err != nil {
+				return nil
+			}
+		} else {
+			PopulateNativeNamespaceToEnv(env, *sym.name)
+		}
+	}
+	return env.Namespaces[sym.name]
+}
+
+func (env *Env) ensureNamespace(sym Symbol) *Namespace {
+	if sym.ns != nil {
+		panic(env.RT.NewError("Namespace's name cannot be qualified: " + sym.String()))
+	}
+	var err error
+	if env.Namespaces[sym.name] == nil {
+		env.Namespaces[sym.name], err = NewNamespace(env, sym)
+		if err != nil {
+			panic(err)
+		}
 	}
 	return env.Namespaces[sym.name]
 }

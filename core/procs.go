@@ -2858,12 +2858,6 @@ var procSend = func(env *Env, args []Object) (Object, error) {
 		return MakeBoolean(false), nil
 	}
 	obj := MakeBoolean(true)
-	defer func() {
-		if r := recover(); r != nil {
-			//env.RT.GIL.Lock()
-			obj = MakeBoolean(false)
-		}
-	}()
 	//env.RT.GIL.Unlock()
 	ch.ch <- MakeFutureResult(v, nil)
 	//env.RT.GIL.Lock()

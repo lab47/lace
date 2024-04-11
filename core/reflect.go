@@ -204,6 +204,33 @@ func listMethods(env *Env, obj Object, reg map[reflect.Type]reifiedType) Seq {
 	return NewListFrom(objs...)
 }
 
+func castObjectToRef(env *Env, typ reflect.Type, obj Object) (Object, error) {
+	switch typ.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		num, err := AssertNumber(env, obj, "")
+		if err != nil {
+			return nil, err
+		}
+
+		v := reflect.New(typ).Elem()
+		v.SetInt(int64(num.Int().I))
+
+		return &ReflectValue{val: v}, nil
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		num, err := AssertNumber(env, obj, "")
+		if err != nil {
+			return nil, err
+		}
+
+		v := reflect.New(typ).Elem()
+		v.SetInt(int64(num.Int().I))
+
+		return &ReflectValue{val: v}, nil
+	default:
+		return nil, env.RT.NewError("unable to cast to type: " + typ.Name())
+	}
+}
+
 var nsSubs = strings.NewReplacer(
 	"github.com", "github",
 	"gitlab.com", "gitlab",
@@ -324,6 +351,13 @@ func SetupPkgReflect(env *Env) error {
 		Tag:   "Seq",
 
 		Value: reflect.ValueOf(NewVectorFrom(pkgs...)),
+	})
+
+	b.Defn(&DefnInfo{
+		Name:  "cast",
+		Doc:   "Cast a given value to a Go type.",
+		Added: "1.0",
+		Fn:    castObjectToRef,
 	})
 
 	return nil

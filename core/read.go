@@ -1464,12 +1464,6 @@ func Read(env *Env, reader *Reader) (Object, bool, error) {
 }
 
 func TryRead(env *Env, reader *Reader) (obj Object, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			PROBLEM_COUNT++
-			err = r.(error)
-		}
-	}()
 	for {
 		eatWhitespace(env, reader)
 		if reader.Peek() == EOF {
