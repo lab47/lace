@@ -917,7 +917,11 @@ func (m *HashMap) Keys() Seq {
 	return &MappingSeq{
 		seq: m.Seq(),
 		fn: func(env *Env, obj Object) (Object, error) {
-			return obj.(*Vector).Nth(env, 0)
+			var v *Vector
+			if err := Cast(env, obj, &v); err != nil {
+				return nil, err
+			}
+			return v.Nth(env, 0)
 		},
 	}
 }
@@ -926,7 +930,11 @@ func (m *HashMap) Vals() Seq {
 	return &MappingSeq{
 		seq: m.Seq(),
 		fn: func(env *Env, obj Object) (Object, error) {
-			return obj.(*Vector).Nth(env, 1)
+			var v *Vector
+			if err := Cast(env, obj, &v); err != nil {
+				return nil, err
+			}
+			return v.Nth(env, 1)
 		},
 	}
 }
@@ -947,7 +955,12 @@ func (m *HashMap) Merge(env *Env, other Map) (Map, error) {
 			return nil, err
 		}
 	}
-	return res.(Map), nil
+	var mm Map
+	if err := Cast(env, res, &mm); err != nil {
+		return nil, err
+	}
+
+	return mm, nil
 }
 
 func (m *HashMap) Without(env *Env, key Object) (Map, error) {
@@ -987,7 +1000,11 @@ func NewHashMap(env *Env, keyvals ...Object) (*HashMap, error) {
 			return nil, err
 		}
 	}
-	return res.(*HashMap), nil
+	var hm *HashMap
+	if err := Cast(env, res, &hm); err != nil {
+		return nil, err
+	}
+	return hm, nil
 }
 
 func (m *HashMap) Empty() Collection {

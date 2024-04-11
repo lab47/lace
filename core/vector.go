@@ -361,7 +361,7 @@ func (v *Vector) Pop(env *Env) (Stack, error) {
 		return nil, env.RT.NewError("Can't pop empty vector")
 	}
 	if v.count == 1 {
-		return EmptyVectorWithMeta(v.meta).(Stack), nil
+		return EmptyVectorWithMeta(v.meta), nil
 	}
 	if v.count-v.tailoff() > 1 {
 		newTail := clone(v.tail)[0 : len(v.tail)-1]
@@ -481,7 +481,7 @@ func EmptyVector() *Vector {
 	}
 }
 
-func EmptyVectorWithMeta(m Map) Object {
+func EmptyVectorWithMeta(m Map) *Vector {
 	v := &Vector{
 		count: 0,
 		shift: 5,

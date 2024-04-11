@@ -642,7 +642,10 @@ func readList(env *Env, reader *Reader) (Object, error) {
 		}
 
 		if multi {
-			v := obj.(*Vector)
+			var v *Vector
+			if err := Cast(env, obj, &v); err != nil {
+				return nil, err
+			}
 			for i := 0; i < v.Count(); i++ {
 				s = append(s, v.at(i))
 			}
@@ -672,7 +675,10 @@ func readVector(env *Env, reader *Reader) (Object, error) {
 		}
 
 		if multi {
-			v := obj.(*Vector)
+			var v *Vector
+			if err := Cast(env, obj, &v); err != nil {
+				return nil, err
+			}
 			for i := 0; i < v.Count(); i++ {
 				res, err = res.Conjoin(v.at(i))
 				if err != nil {
@@ -731,7 +737,10 @@ func readMapWithNamespace(env *Env, reader *Reader, nsname string) (Object, erro
 		if !multi {
 			objs = append(objs, obj)
 		} else {
-			v := obj.(*Vector)
+			var v *Vector
+			if err := Cast(env, obj, &v); err != nil {
+				return nil, err
+			}
 			for i := 0; i < v.Count(); i++ {
 				objs = append(objs, v.at(i))
 			}
@@ -757,7 +766,9 @@ func readMapWithNamespace(env *Env, reader *Reader, nsname string) (Object, erro
 			if err != nil {
 				return nil, err
 			}
-			hashMap = v.(*HashMap)
+			if err := Cast(env, v, &hashMap); err != nil {
+				return nil, err
+			}
 		}
 		return MakeReadObject(reader, hashMap), nil
 	}
@@ -789,7 +800,10 @@ func readSet(env *Env, reader *Reader) (Object, error) {
 				return nil, MakeReadError3(env, reader, "Duplicate set element ", obj)
 			}
 		} else {
-			v := obj.(*Vector)
+			var v *Vector
+			if err := Cast(env, obj, &v); err != nil {
+				return nil, err
+			}
 			for i := 0; i < v.Count(); i++ {
 				ok, err := set.Add(env, v.at(i))
 				if err != nil {
@@ -952,7 +966,12 @@ func syntaxQuoteSeq(tenv *Env, seq Seq, env map[*string]Symbol, reader *Reader) 
 			return nil, err
 		}
 		if ok {
-			f, err := (obj).(Seq).Rest().First(tenv)
+			var seq Seq
+			if err := Cast(tenv, obj, &seq); err != nil {
+				return nil, err
+			}
+
+			f, err := seq.Rest().First(tenv)
 			if err != nil {
 				return nil, err
 			}
@@ -1107,7 +1126,10 @@ func readConditional(env *Env, reader *Reader) (Object, bool, error) {
 	if err != nil {
 		return nil, false, err
 	}
-	cond := v.(*List)
+	var cond *List
+	if err := Cast(env, v, &cond); err != nil {
+		return nil, false, err
+	}
 	if cond.count%2 != 0 {
 		if LINTER_MODE {
 			printReadError(reader, "Reader conditional requires an even number of forms")
@@ -1326,7 +1348,10 @@ func readFirst(env *Env, reader *Reader) (Object, error) {
 	if !multi {
 		return obj, nil
 	}
-	v := obj.(*Vector)
+	var v *Vector
+	if err := Cast(env, obj, &v); err != nil {
+		return nil, err
+	}
 	if v.Count() == 0 {
 		return readFirst(env, reader)
 	}
@@ -1476,7 +1501,11 @@ func TryRead(env *Env, reader *Reader) (obj Object, err error) {
 		if !multi {
 			return obj, nil
 		}
-		if obj.(*Vector).Count() > 0 {
+		var v *Vector
+		if err := Cast(env, obj, &v); err != nil {
+			return nil, err
+		}
+		if v.Count() > 0 {
 			PROBLEM_COUNT++
 			return NIL, MakeReadError(reader, "Reader conditional splicing not allowed at the top level.")
 		}

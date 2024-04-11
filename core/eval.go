@@ -230,7 +230,9 @@ func (expr *MapExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 			if err != nil {
 				return nil, err
 			}
-			res = v.(*HashMap)
+			if err := Cast(genv, v, &res); err != nil {
+				return nil, err
+			}
 		}
 		return res, nil
 	}
@@ -308,7 +310,11 @@ func (expr *DefExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 		if err != nil {
 			return nil, err
 		}
-		expr.vr.meta, err = expr.vr.meta.Merge(genv, v.(Map))
+		var m Map
+		if err := Cast(genv, v, &m); err != nil {
+			return nil, err
+		}
+		expr.vr.meta, err = expr.vr.meta.Merge(genv, m)
 		if err != nil {
 			return nil, err
 		}
@@ -319,7 +325,11 @@ func (expr *DefExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 		if err != nil {
 			return nil, err
 		}
-		expr.vr.meta = v.(Map)
+		var m Map
+		if err := Cast(genv, v, &m); err != nil {
+			return nil, err
+		}
+		expr.vr.meta = m
 	}
 	return expr.vr, nil
 }
@@ -333,7 +343,18 @@ func (expr *MetaExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	return res.(Meta).WithMeta(genv, meta.(Map))
+
+	var metao Meta
+	if err := Cast(genv, res, &metao); err != nil {
+		return nil, err
+	}
+
+	var m Map
+	if err := Cast(genv, meta, &m); err != nil {
+		return nil, err
+	}
+
+	return metao.WithMeta(genv, m)
 }
 
 func evalSeq(genv *Env, exprs []Expr, env *LocalEnv) ([]Object, error) {

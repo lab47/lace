@@ -560,7 +560,12 @@ var procExData = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 
-	if ok, res := args[0].(*ExInfo).GetEqu(criticalKeywords.data); ok {
+	var ex *ExInfo
+	if err := Cast(env, args[0], &ex); err != nil {
+		return nil, err
+	}
+
+	if ok, res := ex.GetEqu(criticalKeywords.data); ok {
 		return res, nil
 	}
 	return NIL, nil
@@ -571,7 +576,12 @@ var procExCause = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 
-	if ok, res := args[0].(*ExInfo).GetEqu(criticalKeywords.cause); ok {
+	var ex *ExInfo
+	if err := Cast(env, args[0], &ex); err != nil {
+		return nil, err
+	}
+
+	if ok, res := ex.GetEqu(criticalKeywords.cause); ok {
 		return res, nil
 	}
 	return NIL, nil
@@ -582,7 +592,12 @@ var procExMessage = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 
-	return args[0].(Error).Message(), nil
+	var ex Error
+	if err := Cast(env, args[0], &ex); err != nil {
+		return nil, err
+	}
+
+	return ex.Message(), nil
 }
 
 var procRegex = func(env *Env, args []Object) (Object, error) {
@@ -1293,9 +1308,14 @@ var procLazySeq = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 
+	var fn *Fn
+	if err := Cast(env, args[0], &fn); err != nil {
+		return nil, err
+	}
+
 	return &LazySeq{
 		env: env,
-		fn:  args[0].(*Fn),
+		fn:  fn,
 	}, nil
 }
 
@@ -1304,8 +1324,13 @@ var procDelay = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 
+	var fn *Fn
+	if err := Cast(env, args[0], &fn); err != nil {
+		return nil, err
+	}
+
 	return &Delay{
-		fn: args[0].(*Fn),
+		fn: fn,
 	}, nil
 }
 
@@ -1701,7 +1726,7 @@ var procPop = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	return obj.(Object), nil
+	return obj, nil
 }
 
 var procContains = func(env *Env, args []Object) (Object, error) {
@@ -2153,7 +2178,9 @@ var procCreateNamespace = func(env *Env, args []Object) (Object, error) {
 	// This is for the cases when (ns ...) is called in .laced/linter.clj file and alike.
 	// Also, isUsed needs to be reset in this case.
 	if LINTER_MODE {
-		res.Name = res.Name.WithInfo(sym.GetInfo()).(Symbol)
+		if err := Cast(env, res.Name.WithInfo(sym.GetInfo()), &res.Name); err != nil {
+			return nil, err
+		}
 		res.isUsed = false
 	}
 	return res, nil
@@ -2668,7 +2695,12 @@ var procIndexOf = func(env *Env, args []Object) (Object, error) {
 
 func libExternalPath(env *Env, sym Symbol) (path string, ok bool, err error) {
 	nsSourcesVar, _ := env.Resolve(MakeSymbol("lace.core/*ns-sources*"))
-	nsSources, err := ToSlice(env, nsSourcesVar.Value.(*Vector).Seq())
+	var vec *Vector
+	if err := Cast(env, nsSourcesVar.Value, &vec); err != nil {
+		return "", false, err
+	}
+
+	nsSources, err := ToSlice(env, vec.Seq())
 	if err != nil {
 		return "", false, err
 	}
@@ -2676,7 +2708,12 @@ func libExternalPath(env *Env, sym Symbol) (path string, ok bool, err error) {
 	var sourceKey string
 	var sourceMap Map
 	for _, source := range nsSources {
-		n, err := source.(*Vector).Nth(env, 0)
+		var svec *Vector
+		if err := Cast(env, source, &svec); err != nil {
+			return "", false, err
+		}
+
+		n, err := svec.Nth(env, 0)
 		if err != nil {
 			return "", false, err
 		}
@@ -2687,11 +2724,13 @@ func libExternalPath(env *Env, sym Symbol) (path string, ok bool, err error) {
 		}
 		match, _ := regexp.MatchString(sourceKey, sym.Name())
 		if match {
-			n, err := source.(*Vector).Nth(env, 0)
+			n, err := svec.Nth(env, 0)
 			if err != nil {
 				return "", false, err
 			}
-			sourceMap = n.(Map)
+			if err := Cast(env, n, &sourceMap); err != nil {
+				return "", false, err
+			}
 			break
 		}
 	}
@@ -3117,23 +3156,34 @@ func setCoreNamespaces(env *Env) error {
 	ns.MaybeLazy(env, "lace.core")
 
 	vr := ns.Resolve("*core-namespaces*")
-	set := vr.Value.(*MapSet)
+
+	var set *MapSet
+	if err := Cast(env, vr.Value, &set); err != nil {
+		return err
+	}
 	for _, ns := range coreNamespaces {
 		v, err := set.Conj(env, MakeSymbol(ns))
 		if err != nil {
 			return err
 		}
-		set = v.(*MapSet)
+		if err := Cast(env, v, &set); err != nil {
+			return err
+		}
 	}
 	vr.Value = set
 
 	// Add 'lace.core to *loaded-libs*, now that it's loaded.
 	vr = ns.Resolve("*loaded-libs*")
-	v, err := vr.Value.(*MapSet).Conj(env, ns.Name)
+	if err := Cast(env, vr.Value, &set); err != nil {
+		return err
+	}
+	v, err := set.Conj(env, ns.Name)
 	if err != nil {
 		return err
 	}
-	set = v.(*MapSet)
+	if err := Cast(env, v, &set); err != nil {
+		return err
+	}
 	vr.Value = set
 	return nil
 }
@@ -3211,7 +3261,12 @@ func printConfigError(filename, msg string) {
 }
 
 func knownMacrosToMap(env *Env, km Object) (Map, error) {
-	s := km.(Seqable).Seq()
+	var seqo Seqable
+	if err := Cast(env, km, &seqo); err != nil {
+		return nil, err
+	}
+
+	s := seqo.Seq()
 	res := EmptyArrayMap()
 	for !s.IsEmpty() {
 		obj, err := s.First(env)
@@ -3345,7 +3400,9 @@ func ReadConfig(env *Env, filename string, workingDir string) error {
 		if err != nil {
 			return err
 		}
-		configMap = v.(Map)
+		if err := Cast(env, v, &configMap); err != nil {
+			return err
+		}
 	}
 	ok, rules := configMap.GetEqu(criticalKeywords.rules)
 	if ok {

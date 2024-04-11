@@ -71,6 +71,7 @@ type (
 		TryNth(env *Env, i int, d Object) (Object, error)
 	}
 	Stack interface {
+		Object
 		Peek(env *Env) (Object, error)
 		Pop(env *Env) (Stack, error)
 	}
@@ -78,6 +79,7 @@ type (
 		Get(env *Env, key Object) (bool, Object, error)
 	}
 	Associative interface {
+		Object
 		Conjable
 		Gettable
 		EntryAt(env *Env, key Object) (*Vector, error)
