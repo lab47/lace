@@ -197,23 +197,30 @@ func (s *ArrayNodeSeq) First(env *Env) (Object, error) {
 	return s.s.First(env)
 }
 
-func (s *ArrayNodeSeq) Rest(env *Env) Seq {
-	next := s.s.Rest(env)
-	if next.IsEmpty(env) {
+func (s *ArrayNodeSeq) Rest(env *Env) (Seq, error) {
+	next, err := s.s.Rest(env)
+	if err != nil {
+		return nil, err
+	}
+	ok, err := next.IsEmpty(env)
+	if err != nil {
+		return nil, err
+	}
+	if ok {
 		next = nil
 	}
 	res := newArrayNodeSeq(s.nodes, s.i, next)
 	if res == nil {
-		return EmptyList
+		return EmptyList, nil
 	}
-	return res
+	return res, nil
 }
 
-func (s *ArrayNodeSeq) IsEmpty(env *Env) bool {
+func (s *ArrayNodeSeq) IsEmpty(env *Env) (bool, error) {
 	if s.s != nil {
 		return s.s.IsEmpty(env)
 	}
-	return false
+	return false, nil
 }
 
 func (s *ArrayNodeSeq) Cons(obj Object) Seq {
@@ -294,11 +301,19 @@ func (s *NodeSeq) First(env *Env) (Object, error) {
 	return NewVectorFrom(s.array[s.i].(Object), s.array[s.i+1].(Object)), nil
 }
 
-func (s *NodeSeq) Rest(env *Env) Seq {
+func (s *NodeSeq) Rest(env *Env) (Seq, error) {
 	var res Seq
 	if s.s != nil {
-		next := s.s.Rest(env)
-		if next.IsEmpty(env) {
+		next, err := s.s.Rest(env)
+		if err != nil {
+			return nil, err
+		}
+		ok, err := next.IsEmpty(env)
+		if err != nil {
+			return nil, err
+		}
+
+		if ok {
 			next = nil
 		}
 		res = newNodeSeq(s.array, s.i, next)
@@ -306,16 +321,16 @@ func (s *NodeSeq) Rest(env *Env) Seq {
 		res = newNodeSeq(s.array, s.i+2, nil)
 	}
 	if res == nil {
-		return EmptyList
+		return EmptyList, nil
 	}
-	return res
+	return res, nil
 }
 
-func (s *NodeSeq) IsEmpty(env *Env) bool {
+func (s *NodeSeq) IsEmpty(env *Env) (bool, error) {
 	if s.s != nil {
 		return s.s.IsEmpty(env)
 	}
-	return false
+	return false, nil
 }
 
 func (s *NodeSeq) Cons(obj Object) Seq {

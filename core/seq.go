@@ -11,8 +11,8 @@ type (
 		Seqable
 		Object
 		First(env *Env) (Object, error)
-		Rest(env *Env) Seq
-		IsEmpty(env *Env) bool
+		Rest(env *Env) (Seq, error)
+		IsEmpty(env *Env) (bool, error)
 		Cons(obj Object) Seq
 	}
 	Seqable interface {
@@ -126,14 +126,19 @@ func (seq *MappingSeq) First(env *Env) (Object, error) {
 	return seq.fn(env, f)
 }
 
-func (seq *MappingSeq) Rest(env *Env) Seq {
-	return &MappingSeq{
-		seq: seq.seq.Rest(env),
-		fn:  seq.fn,
+func (seq *MappingSeq) Rest(env *Env) (Seq, error) {
+	x, err := seq.seq.Rest(env)
+	if err != nil {
+		return nil, err
 	}
+
+	return &MappingSeq{
+		seq: x,
+		fn:  seq.fn,
+	}, nil
 }
 
-func (seq *MappingSeq) IsEmpty(env *Env) bool {
+func (seq *MappingSeq) IsEmpty(env *Env) (bool, error) {
 	return seq.seq.IsEmpty(env)
 }
 
@@ -198,18 +203,24 @@ func (seq *LazySeq) Hash(env *Env) (uint32, error) {
 }
 
 func (seq *LazySeq) First(env *Env) (Object, error) {
-	seq.realize(env)
+	err := seq.realize(env)
+	if err != nil {
+		return nil, err
+	}
 	return seq.seq.First(env)
 }
 
-func (seq *LazySeq) Rest(env *Env) Seq {
-	seq.realize(env)
+func (seq *LazySeq) Rest(env *Env) (Seq, error) {
+	err := seq.realize(env)
+	if err != nil {
+		return nil, err
+	}
 	return seq.seq.Rest(env)
 }
 
-func (seq *LazySeq) IsEmpty(env *Env) bool {
+func (seq *LazySeq) IsEmpty(env *Env) (bool, error) {
 	if err := seq.realize(env); err != nil {
-		panic(err)
+		return false, err
 	}
 	return seq.seq.IsEmpty(env)
 }
@@ -259,21 +270,27 @@ func (seq *ArraySeq) Hash(env *Env) (uint32, error) {
 }
 
 func (seq *ArraySeq) First(env *Env) (Object, error) {
-	if seq.IsEmpty(env) {
+	ok, err := seq.IsEmpty(env)
+	if err != nil {
+		return nil, err
+	}
+
+	if ok {
 		return NIL, nil
 	}
+
 	return seq.arr[seq.index], nil
 }
 
-func (seq *ArraySeq) Rest(env *Env) Seq {
+func (seq *ArraySeq) Rest(env *Env) (Seq, error) {
 	if seq.index+1 < len(seq.arr) {
-		return &ArraySeq{index: seq.index + 1, arr: seq.arr}
+		return &ArraySeq{index: seq.index + 1, arr: seq.arr}, nil
 	}
-	return EmptyList
+	return EmptyList, nil
 }
 
-func (seq *ArraySeq) IsEmpty(env *Env) bool {
-	return seq.index >= len(seq.arr)
+func (seq *ArraySeq) IsEmpty(env *Env) (bool, error) {
+	return seq.index >= len(seq.arr), nil
 }
 
 func (seq *ArraySeq) Cons(obj Object) Seq {
@@ -341,12 +358,12 @@ func (seq *ConsSeq) First(env *Env) (Object, error) {
 	return seq.first, nil
 }
 
-func (seq *ConsSeq) Rest(env *Env) Seq {
-	return seq.rest
+func (seq *ConsSeq) Rest(env *Env) (Seq, error) {
+	return seq.rest, nil
 }
 
-func (seq *ConsSeq) IsEmpty(env *Env) bool {
-	return false
+func (seq *ConsSeq) IsEmpty(env *Env) (bool, error) {
+	return false, nil
 }
 
 func (seq *ConsSeq) Cons(obj Object) Seq {
@@ -372,50 +389,110 @@ func (iter *SeqIterator) Next(env *Env) (Object, error) {
 		return nil, err
 	}
 
-	iter.seq = iter.seq.Rest(env)
+	iter.seq, err = iter.seq.Rest(env)
+	if err != nil {
+		return nil, err
+	}
 	return res, nil
 }
 
 func (iter *SeqIterator) HasNext(env *Env) bool {
-	return !iter.seq.IsEmpty(env)
+	ok, err := iter.seq.IsEmpty(env)
+	if err != nil {
+		return false
+	}
+
+	return !ok
 }
 
 func Second(env *Env, seq Seq) (Object, error) {
-	return seq.Rest(env).First(env)
+	x, err := seq.Rest(env)
+	if err != nil {
+		return nil, err
+	}
+	return x.First(env)
 }
 
 func Third(env *Env, seq Seq) (Object, error) {
-	return seq.Rest(env).Rest(env).First(env)
+	x, err := seq.Rest(env)
+	if err != nil {
+		return nil, err
+	}
+
+	x, err = x.Rest(env)
+	if err != nil {
+		return nil, err
+	}
+
+	return x.First(env)
 }
 
 func Fourth(env *Env, seq Seq) (Object, error) {
-	return seq.Rest(env).Rest(env).Rest(env).First(env)
+	x, err := seq.Rest(env)
+	if err != nil {
+		return nil, err
+	}
+
+	x, err = x.Rest(env)
+	if err != nil {
+		return nil, err
+	}
+
+	x, err = x.Rest(env)
+	if err != nil {
+		return nil, err
+	}
+
+	return x.First(env)
 }
 
 func ToSlice(env *Env, seq Seq) ([]Object, error) {
 	res := make([]Object, 0)
-	for !seq.IsEmpty(env) {
+	for {
+		ok, err := seq.IsEmpty(env)
+		if err != nil {
+			return nil, err
+		}
+		if ok {
+			break
+		}
+
 		v, err := seq.First(env)
 		if err != nil {
 			return nil, err
 		}
 		res = append(res, v)
-		seq = seq.Rest(env)
+		seq, err = seq.Rest(env)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return res, nil
 }
 
-func SeqCount(env *Env, seq Seq) int {
+func SeqCount(env *Env, seq Seq) (int, error) {
 	c := 0
-	for !seq.IsEmpty(env) {
+	for {
+		ok, err := seq.IsEmpty(env)
+		if err != nil {
+			return 0, err
+		}
+		if ok {
+			break
+		}
+
 		switch obj := seq.(type) {
 		case Counted:
-			return c + obj.Count()
+			return c + obj.Count(), nil
 		}
 		c++
-		seq = seq.Rest(env)
+		seq, err = seq.Rest(env)
+		if err != nil {
+			return 0, err
+		}
 	}
-	return c
+
+	return c, nil
 }
 
 func SeqNth(env *Env, seq Seq, n int) (Object, error) {
@@ -423,14 +500,25 @@ func SeqNth(env *Env, seq Seq, n int) (Object, error) {
 		return nil, StubNewError(fmt.Sprintf("Negative index: %d", n))
 	}
 	i := n
-	for !seq.IsEmpty(env) {
+	for {
+		ok, err := seq.IsEmpty(env)
+		if err != nil {
+			return nil, err
+		}
+		if ok {
+			break
+		}
+
 		if i == 0 {
 			return seq.First(env)
 		}
-		seq = seq.Rest(env)
+		seq, err = seq.Rest(env)
+		if err != nil {
+			return nil, err
+		}
 		i--
 	}
-	return nil, StubNewError(fmt.Sprintf("Index %d exceeds seq's length %d", n, (n - i)))
+	return nil, env.RT.NewError(fmt.Sprintf("Index %d exceeds seq's length %d", n, (n - i)))
 }
 
 func SeqTryNth(env *Env, seq Seq, n int, d Object) (Object, error) {
@@ -438,18 +526,38 @@ func SeqTryNth(env *Env, seq Seq, n int, d Object) (Object, error) {
 		return d, nil
 	}
 	i := n
-	for !seq.IsEmpty(env) {
+	for {
+		ok, err := seq.IsEmpty(env)
+		if err != nil {
+			return nil, err
+		}
+		if ok {
+			break
+		}
+
 		if i == 0 {
 			return seq.First(env)
 		}
-		seq = seq.Rest(env)
+		seq, err = seq.Rest(env)
+		if err != nil {
+			return nil, err
+		}
+
 		i--
 	}
 	return d, nil
 }
 
 func hashUnordered(env *Env, seq Seq, seed uint32) (uint32, error) {
-	for !seq.IsEmpty(env) {
+	for {
+		ok, err := seq.IsEmpty(env)
+		if err != nil {
+			return 0, err
+		}
+		if ok {
+			break
+		}
+
 		v, err := seq.First(env)
 		if err == nil {
 			return 0, err
@@ -459,7 +567,10 @@ func hashUnordered(env *Env, seq Seq, seed uint32) (uint32, error) {
 			return 0, err
 		}
 		seed += sv
-		seq = seq.Rest(env)
+		seq, err = seq.Rest(env)
+		if err != nil {
+			return 0, err
+		}
 	}
 	h := getHash()
 	h.Write(uint32ToBytes(seed))
@@ -468,7 +579,15 @@ func hashUnordered(env *Env, seq Seq, seed uint32) (uint32, error) {
 
 func hashOrdered(env *Env, seq Seq) (uint32, error) {
 	h := getHash()
-	for !seq.IsEmpty(env) {
+	for {
+		ok, err := seq.IsEmpty(env)
+		if err != nil {
+			return 0, err
+		}
+		if ok {
+			break
+		}
+
 		v, err := seq.First(env)
 		if err == nil {
 			return 0, err
@@ -478,12 +597,18 @@ func hashOrdered(env *Env, seq Seq) (uint32, error) {
 			return 0, err
 		}
 		h.Write(uint32ToBytes(sv))
-		seq = seq.Rest(env)
+		seq, err = seq.Rest(env)
+		if err != nil {
+			return 0, err
+		}
 	}
 	return h.Sum32(), nil
 }
 
+var cnt int
+
 func pprintSeq(env *Env, seq Seq, w io.Writer, indent int) (int, error) {
+	cnt++
 	i := indent + 1
 	fmt.Fprint(w, "(")
 	for iter := iter(seq); iter.HasNext(env); {

@@ -82,7 +82,15 @@ func sliceOfStrings(env *Env, obj Object) (res []string, err error) {
 		return nil, err
 	}
 	s := sq.Seq()
-	for !s.IsEmpty(env) {
+	for {
+		empty, err := s.IsEmpty(env)
+		if err != nil {
+			return nil, err
+		}
+		if empty {
+			break
+		}
+
 		f, err := s.First(env)
 		if err != nil {
 			return nil, err
@@ -92,7 +100,10 @@ func sliceOfStrings(env *Env, obj Object) (res []string, err error) {
 			return nil, err
 		}
 		res = append(res, str)
-		s = s.Rest(env)
+		s, err = s.Rest(env)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return
 }
@@ -114,7 +125,15 @@ func writeWriter(env *Env, wr io.Writer, data Seqable, opts Map) error {
 		csvWriter.UseCRLF = b.B
 	}
 	s := data.Seq()
-	for !s.IsEmpty(env) {
+	for {
+		empty, err := s.IsEmpty(env)
+		if err != nil {
+			return err
+		}
+		if empty {
+			break
+		}
+
 		f, err := s.First(env)
 		if err != nil {
 			return err
@@ -127,7 +146,10 @@ func writeWriter(env *Env, wr io.Writer, data Seqable, opts Map) error {
 		if err != nil {
 			return err
 		}
-		s = s.Rest(env)
+		s, err = s.Rest(env)
+		if err != nil {
+			return err
+		}
 	}
 	csvWriter.Flush()
 	return nil

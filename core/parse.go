@@ -616,7 +616,16 @@ func (err ParseError) Error() string {
 
 func parseSeq(seq Seq, ctx *ParseContext) ([]Expr, error) {
 	res := make([]Expr, 0)
-	for !seq.IsEmpty(ctx.Env) {
+	for {
+		empty, err := seq.IsEmpty(ctx.Env)
+		if err != nil {
+			return nil, err
+		}
+
+		if empty {
+			break
+		}
+
 		v, err := seq.First(ctx.Env)
 		if err != nil {
 			return nil, err
@@ -627,7 +636,10 @@ func parseSeq(seq Seq, ctx *ParseContext) ([]Expr, error) {
 		}
 
 		res = append(res, pv)
-		seq = seq.Rest(ctx.Env)
+		seq, err = seq.Rest(ctx.Env)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return res, nil
 }
@@ -692,7 +704,10 @@ func checkForm(env *Env, obj Object, min int, max int) (int, error) {
 		return 0, err
 	}
 
-	c := SeqCount(env, seq)
+	c, err := SeqCount(env, seq)
+	if err != nil {
+		return 0, err
+	}
 	if c < min {
 		v, err := seq.First(env)
 		if err != nil {
@@ -853,7 +868,16 @@ func parseBody(seq Seq, ctx *ParseContext) ([]Expr, error) {
 	ctx.recur = false
 	defer func() { ctx.recur = recur }()
 	res := make([]Expr, 0)
-	for !seq.IsEmpty(ctx.Env) {
+	for {
+		empty, err := seq.IsEmpty(ctx.Env)
+		if err != nil {
+			return nil, err
+		}
+
+		if empty {
+			break
+		}
+
 		ro, err := seq.First(ctx.Env)
 		if err != nil {
 			return nil, err
@@ -863,8 +887,16 @@ func parseBody(seq Seq, ctx *ParseContext) ([]Expr, error) {
 		if err != nil {
 			return nil, err
 		}
-		seq = seq.Rest(ctx.Env)
-		if ctx.recur && !seq.IsEmpty(ctx.Env) && !LINTER_MODE {
+		seq, err = seq.Rest(ctx.Env)
+		if err != nil {
+			return nil, err
+		}
+		empty, err = seq.IsEmpty(ctx.Env)
+		if err != nil {
+			return nil, err
+		}
+
+		if ctx.recur && !empty && !LINTER_MODE {
 			return nil, &ParseError{obj: ro, msg: "Can only recur from tail position"}
 		}
 		res = append(res, expr)
@@ -945,7 +977,10 @@ func addArity(fn *FnExpr, sig Seq, ctx *ParseContext) error {
 	if err != nil {
 		return err
 	}
-	body := sig.Rest(ctx.Env)
+	body, err := sig.Rest(ctx.Env)
+	if err != nil {
+		return err
+	}
 	args, isVariadic, err := parseParams(ctx.Env, params)
 	if err != nil {
 		return err
@@ -1055,14 +1090,20 @@ func parseFn(obj Object, ctx *ParseContext) (Expr, error) {
 	}
 
 	res := &FnExpr{Position: GetPosition(obj)}
-	bodies := seq.Rest(ctx.Env)
+	bodies, err := seq.Rest(ctx.Env)
+	if err != nil {
+		return nil, err
+	}
 	p, err := bodies.First(ctx.Env)
 	if err != nil {
 		return nil, err
 	}
 	if IsSymbol(p) { // self reference
 		res.self = p.(Symbol)
-		bodies = bodies.Rest(ctx.Env)
+		bodies, err = bodies.Rest(ctx.Env)
+		if err != nil {
+			return nil, err
+		}
 		p, err = bodies.First(ctx.Env)
 		if err != nil {
 			return nil, err
@@ -1078,10 +1119,25 @@ func parseFn(obj Object, ctx *ParseContext) (Expr, error) {
 		return wrapWithMeta(res, obj, ctx)
 	}
 	// multiple arities
-	if bodies.IsEmpty(ctx.Env) {
+	ok, err := bodies.IsEmpty(ctx.Env)
+	if err != nil {
+		return nil, err
+	}
+
+	if ok {
 		return nil, &ParseError{obj: p, msg: "Parameter declaration missing"}
 	}
-	for !bodies.IsEmpty(ctx.Env) {
+
+	for {
+		empty, err := bodies.IsEmpty(ctx.Env)
+		if err != nil {
+			return nil, err
+		}
+
+		if empty {
+			break
+		}
+
 		body, err := bodies.First(ctx.Env)
 		if err != nil {
 			return nil, err
@@ -1103,7 +1159,6 @@ func parseFn(obj Object, ctx *ParseContext) (Expr, error) {
 				return nil, &ParseError{obj: params, msg: "Parameter declaration must be a vector. Got: " + s}
 			}
 			if err := addArity(res, s, ctx); err != nil {
-				panic(err)
 				return nil, err
 			}
 		default:
@@ -1114,7 +1169,10 @@ func parseFn(obj Object, ctx *ParseContext) (Expr, error) {
 
 			return nil, &ParseError{obj: body, msg: "Function body must be a list. Got: " + ss}
 		}
-		bodies = bodies.Rest(ctx.Env)
+		bodies, err = bodies.Rest(ctx.Env)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return wrapWithMeta(res, obj, ctx)
 }
@@ -1175,8 +1233,31 @@ func parseCatch(obj Object, ctx *ParseContext) (*CatchExpr, error) {
 	if err := Cast(ctx.Env, obj, &seqo); err != nil {
 		return nil, err
 	}
-	seq := seqo.Rest(ctx.Env)
-	if seq.IsEmpty(ctx.Env) || seq.Rest(ctx.Env).IsEmpty(ctx.Env) {
+	seq, err := seqo.Rest(ctx.Env)
+	if err != nil {
+		return nil, err
+	}
+
+	empty, err := seq.IsEmpty(ctx.Env)
+	if err != nil {
+		return nil, err
+	}
+
+	if empty {
+		return nil, &ParseError{obj: obj, msg: "catch requires at least two arguments: type symbol and binding symbol"}
+	}
+
+	r, err := seq.Rest(ctx.Env)
+	if err != nil {
+		return nil, err
+	}
+
+	empty, err = r.IsEmpty(ctx.Env)
+	if err != nil {
+		return nil, err
+	}
+
+	if empty {
 		return nil, &ParseError{obj: obj, msg: "catch requires at least two arguments: type symbol and binding symbol"}
 	}
 	excSymbol, err := Second(ctx.Env, seq)
@@ -1205,7 +1286,15 @@ func parseCatch(obj Object, ctx *ParseContext) (*CatchExpr, error) {
 
 	ctx.PushLocalFrame([]Symbol{excSymbol.(Symbol)})
 	defer ctx.PopLocalFrame()
-	bodye, err := parseBody(seq.Rest(ctx.Env).Rest(ctx.Env), ctx)
+	r1, err := seq.Rest(ctx.Env)
+	if err != nil {
+		return nil, err
+	}
+	r2, err := r1.Rest(ctx.Env)
+	if err != nil {
+		return nil, err
+	}
+	bodye, err := parseBody(r2, ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -1234,14 +1323,25 @@ func parseTry(obj Object, ctx *ParseContext) (*TryExpr, error) {
 		return nil, err
 	}
 
-	seq := seqo.Rest(ctx.Env)
+	seq, err := seqo.Rest(ctx.Env)
+	if err != nil {
+		return nil, err
+	}
 
 	noRecurAllowed := ctx.noRecurAllowed
 	ctx.noRecurAllowed = true
 	defer func() { ctx.noRecurAllowed = noRecurAllowed }()
 
-	var err error
-	for !seq.IsEmpty(ctx.Env) {
+	for {
+		empty, err := seq.IsEmpty(ctx.Env)
+		if err != nil {
+			return nil, err
+		}
+
+		if empty {
+			break
+		}
+
 		obj, err = seq.First(ctx.Env)
 		if err != nil {
 			return nil, err
@@ -1263,7 +1363,12 @@ func parseTry(obj Object, ctx *ParseContext) (*TryExpr, error) {
 				return nil, err
 			}
 
-			res.finallyExpr, err = parseFinally(seqo.Rest(ctx.Env), ctx)
+			r, err := seqo.Rest(ctx.Env)
+			if err != nil {
+				return nil, err
+			}
+
+			res.finallyExpr, err = parseFinally(r, ctx)
 			if err != nil {
 				return nil, err
 			}
@@ -1278,7 +1383,10 @@ func parseTry(obj Object, ctx *ParseContext) (*TryExpr, error) {
 			}
 			res.body = append(res.body, b)
 		}
-		seq = seq.Rest(ctx.Env)
+		seq, err = seq.Rest(ctx.Env)
+		if err != nil {
+			return nil, err
+		}
 	}
 	if LINTER_MODE {
 		if res.body == nil {
@@ -1411,8 +1519,17 @@ func parseLetLoop(obj Object, formName string, ctx *ParseContext) (*LetExpr, err
 		if err := Cast(ctx.Env, obj, &seqo); err != nil {
 			return nil, err
 		}
+		r1, err := seqo.Rest(ctx.Env)
+		if err != nil {
+			return nil, err
+		}
 
-		res.body, err = parseBody(seqo.Rest(ctx.Env).Rest(ctx.Env), ctx)
+		r2, err := r1.Rest(ctx.Env)
+		if err != nil {
+			return nil, err
+		}
+
+		res.body, err = parseBody(r2, ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -1462,7 +1579,12 @@ func parseRecur(obj Object, ctx *ParseContext) (*RecurExpr, error) {
 		return nil, err
 	}
 
-	args, err := parseSeq(seq.Rest(ctx.Env), ctx)
+	r, err := seq.Rest(ctx.Env)
+	if err != nil {
+		return nil, err
+	}
+
+	args, err := parseSeq(r, ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -1502,7 +1624,16 @@ func fixInfo(env *Env, obj Object, info *ObjectInfo) (Object, error) {
 		return obj, nil
 	case Seq:
 		objs := make([]Object, 0, 8)
-		for !s.IsEmpty(env) {
+		for {
+			empty, err := s.IsEmpty(env)
+			if err != nil {
+				return nil, err
+			}
+
+			if empty {
+				break
+			}
+
 			v, err := s.First(env)
 			if err != nil {
 				return nil, err
@@ -1512,7 +1643,10 @@ func fixInfo(env *Env, obj Object, info *ObjectInfo) (Object, error) {
 				return nil, err
 			}
 			objs = append(objs, t)
-			s = s.Rest(env)
+			s, err = s.Rest(env)
+			if err != nil {
+				return nil, err
+			}
 		}
 		res := NewListFrom(objs...)
 		if objInfo := obj.GetInfo(); objInfo != nil {
@@ -1576,7 +1710,12 @@ func macroexpand1(env *Env, seq Seq, ctx *ParseContext) (Object, error) {
 		if err != nil {
 			return nil, err
 		}
-		slice, err := ToSlice(env, seq.Rest(env).Cons(m).Cons(seq))
+		r, err := seq.Rest(env)
+		if err != nil {
+			return nil, err
+		}
+
+		slice, err := ToSlice(env, r.Cons(m).Cons(seq))
 		if err != nil {
 			return nil, err
 		}
@@ -1710,7 +1849,16 @@ func reportWrongArity(env *Env, expr *FnExpr, isMacro bool, call *CallExpr, pos 
 }
 
 func checkArglist(env *Env, arglist Seq, passedArgsCount int) (bool, error) {
-	for !arglist.IsEmpty(env) {
+	for {
+		empty, err := arglist.IsEmpty(env)
+		if err != nil {
+			return false, err
+		}
+
+		if empty {
+			break
+		}
+
 		f, err := arglist.First(env)
 		if err != nil {
 			return false, err
@@ -1731,7 +1879,10 @@ func checkArglist(env *Env, arglist Seq, passedArgsCount int) (bool, error) {
 				}
 			}
 		}
-		arglist = arglist.Rest(env)
+		arglist, err = arglist.Rest(env)
+		if err != nil {
+			return false, err
+		}
 	}
 	return false, nil
 }
@@ -1926,7 +2077,12 @@ func parseList(env *Env, obj Object, ctx *ParseContext) (Expr, error) {
 	if expanded != obj {
 		return Parse(expanded, ctx)
 	}
-	if seq.IsEmpty(env) {
+	empty, err := seq.IsEmpty(env)
+	if err != nil {
+		return nil, err
+	}
+
+	if empty {
 		return NewLiteralExpr(obj), nil
 	}
 
@@ -1956,8 +2112,14 @@ func parseList(env *Env, obj Object, ctx *ParseContext) (Expr, error) {
 				return nil, err
 			}
 
-			if LINTER_MODE && SeqCount(env, seq) < 4 && WARNINGS.ifWithoutElse {
-				printParseWarning(pos, "missing else branch")
+			if LINTER_MODE {
+				c, err := SeqCount(env, seq)
+				if err != nil {
+					return nil, err
+				}
+				if c < 4 && WARNINGS.ifWithoutElse {
+					printParseWarning(pos, "missing else branch")
+				}
 			}
 			sec, err := Second(env, seq)
 			if err != nil {
@@ -2049,7 +2211,11 @@ func parseList(env *Env, obj Object, ctx *ParseContext) (Expr, error) {
 				return nil, &ParseError{obj: obj, msg: "var's argument must be a symbol"}
 			}
 		case STR.do:
-			body, err := parseBody(seq.Rest(env), ctx)
+			r, err := seq.Rest(env)
+			if err != nil {
+				return nil, err
+			}
+			body, err := parseBody(r, ctx)
 			if err != nil {
 				return nil, err
 			}
@@ -2085,7 +2251,11 @@ func parseList(env *Env, obj Object, ctx *ParseContext) (Expr, error) {
 	}
 
 	if sym, ok := first.(Symbol); ok && sym.ns == nil && strings.HasPrefix(sym.Name(), ".") {
-		args, err := parseSeq(seq.Rest(env), ctx)
+		r, err := seq.Rest(env)
+		if err != nil {
+			return nil, err
+		}
+		args, err := parseSeq(r, ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -2116,7 +2286,16 @@ func parseList(env *Env, obj Object, ctx *ParseContext) (Expr, error) {
 			defer func() {
 				ctx.linterBindings = ctx.linterBindings.PopFrame()
 			}()
-			for !syms.IsEmpty(env) {
+			for {
+				empty, err := syms.IsEmpty(env)
+				if err != nil {
+					return nil, err
+				}
+
+				if empty {
+					break
+				}
+
 				v, err := syms.First(env)
 				if err != nil {
 					return nil, err
@@ -2124,14 +2303,21 @@ func parseList(env *Env, obj Object, ctx *ParseContext) (Expr, error) {
 				if sym, ok := v.(Symbol); ok {
 					ctx.linterBindings.AddBinding(sym, 0, true)
 				}
-				syms = syms.Rest(env)
+				syms, err = syms.Rest(env)
+				if err != nil {
+					return nil, err
+				}
 			}
 		}
 	} else {
 		ctx.isUnknownCallableScope = false
 	}
 
-	args, err := parseSeq(seq.Rest(env), ctx)
+	r, err := seq.Rest(env)
+	if err != nil {
+		return nil, err
+	}
+	args, err := parseSeq(r, ctx)
 	if err != nil {
 		return nil, err
 	}

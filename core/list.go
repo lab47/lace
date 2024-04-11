@@ -71,12 +71,12 @@ func (list *List) First(env *Env) (Object, error) {
 	return list.first, nil
 }
 
-func (list *List) Rest(env *Env) Seq {
-	return list.rest
+func (list *List) Rest(env *Env) (Seq, error) {
+	return list.rest, nil
 }
 
-func (list *List) IsEmpty(env *Env) bool {
-	return list.count == 0
+func (list *List) IsEmpty(env *Env) (bool, error) {
+	return list.count == 0, nil
 }
 
 func (list *List) Cons(obj Object) Seq {

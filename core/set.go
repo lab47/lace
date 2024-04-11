@@ -157,13 +157,23 @@ func (set *MapSet) Empty() Collection {
 
 func NewSetFromSeq(env *Env, s Seq) (*MapSet, error) {
 	res := EmptySet()
-	for !s.IsEmpty(env) {
+	for {
+		empty, err := s.IsEmpty(env)
+		if err != nil {
+			return nil, err
+		}
+		if empty {
+			break
+		}
 		v, err := s.First(env)
 		if err != nil {
 			return nil, err
 		}
 		res.Add(env, v)
-		s = s.Rest(env)
+		s, err = s.Rest(env)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return res, nil
 }

@@ -1000,8 +1000,16 @@ var procNext = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	res := s.Seq().Rest(env)
-	if res.IsEmpty(env) {
+	res, err := s.Seq().Rest(env)
+	if err != nil {
+		return nil, err
+	}
+	empty, err := res.IsEmpty(env)
+	if err != nil {
+		return nil, err
+	}
+
+	if empty {
 		return NIL, nil
 	}
 	return res, nil
@@ -1015,7 +1023,7 @@ var procRest = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	return s.Seq().Rest(env), nil
+	return s.Seq().Rest(env)
 }
 
 var procConj = func(env *Env, args []Object) (Object, error) {
@@ -1042,7 +1050,12 @@ var procSeq = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 	sq := s.Seq()
-	if sq.IsEmpty(env) {
+	empty, err := sq.IsEmpty(env)
+	if err != nil {
+		return nil, err
+	}
+
+	if empty {
 		return NIL, nil
 	}
 	return sq, nil
@@ -1093,7 +1106,11 @@ var procCount = func(env *Env, args []Object) (Object, error) {
 		if err != nil {
 			return nil, err
 		}
-		return Int{I: SeqCount(env, s.Seq())}, nil
+		c, err := SeqCount(env, s.Seq())
+		if err != nil {
+			return nil, err
+		}
+		return Int{I: c}, nil
 	}
 }
 
@@ -3267,7 +3284,16 @@ func knownMacrosToMap(env *Env, km Object) (Map, error) {
 
 	s := seqo.Seq()
 	res := EmptyArrayMap()
-	for !s.IsEmpty(env) {
+	for {
+		empty, err := s.IsEmpty(env)
+		if err != nil {
+			return nil, err
+		}
+
+		if empty {
+			break
+		}
+
 		obj, err := s.First(env)
 		if err != nil {
 			return nil, err
@@ -3283,7 +3309,10 @@ func knownMacrosToMap(env *Env, km Object) (Map, error) {
 		default:
 			return nil, errors.New(":known-macros item must be a symbol or a vector, got " + obj.GetType().Name())
 		}
-		s = s.Rest(env)
+		s, err = s.Rest(env)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return res, nil
 }
@@ -3333,7 +3362,16 @@ func ReadConfig(env *Env, filename string, workingDir string) error {
 		seq, ok1 := ignoredFileRegexes.(Seqable)
 		if ok1 {
 			s := seq.Seq()
-			for !s.IsEmpty(env) {
+			for {
+				empty, err := s.IsEmpty(env)
+				if err != nil {
+					return err
+				}
+
+				if empty {
+					break
+				}
+
 				f, err := s.First(env)
 				if err != nil {
 					return err
@@ -3349,7 +3387,10 @@ func ReadConfig(env *Env, filename string, workingDir string) error {
 					return nil
 				}
 				WARNINGS.IgnoredFileRegexes = append(WARNINGS.IgnoredFileRegexes, regex.R)
-				s = s.Rest(env)
+				s, err = s.Rest(env)
+				if err != nil {
+					return err
+				}
 			}
 		} else {
 			printConfigError(configFileName, ":ignored-file-regexes value must be a vector, got "+ignoredFileRegexes.GetType().Name())

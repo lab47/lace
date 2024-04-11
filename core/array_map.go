@@ -85,15 +85,15 @@ func (seq *ArrayMapSeq) First(env *Env) (Object, error) {
 	return NIL, nil
 }
 
-func (seq *ArrayMapSeq) Rest(env *Env) Seq {
+func (seq *ArrayMapSeq) Rest(env *Env) (Seq, error) {
 	if seq.index < len(seq.m.arr) {
-		return &ArrayMapSeq{m: seq.m, index: seq.index + 2}
+		return &ArrayMapSeq{m: seq.m, index: seq.index + 2}, nil
 	}
-	return EmptyList
+	return EmptyList, nil
 }
 
-func (seq *ArrayMapSeq) IsEmpty(env *Env) bool {
-	return seq.index >= len(seq.m.arr)
+func (seq *ArrayMapSeq) IsEmpty(env *Env) (bool, error) {
+	return seq.index >= len(seq.m.arr), nil
 }
 
 func (seq *ArrayMapSeq) Cons(obj Object) Seq {

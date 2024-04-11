@@ -197,15 +197,15 @@ func (vseq *VectorSeq) First(env *Env) (Object, error) {
 	return NIL, nil
 }
 
-func (vseq *VectorSeq) Rest(env *Env) Seq {
+func (vseq *VectorSeq) Rest(env *Env) (Seq, error) {
 	if vseq.index+1 < vseq.vector.count {
-		return &VectorSeq{vector: vseq.vector, index: vseq.index + 1}
+		return &VectorSeq{vector: vseq.vector, index: vseq.index + 1}, nil
 	}
-	return EmptyList
+	return EmptyList, nil
 }
 
-func (vseq *VectorSeq) IsEmpty(env *Env) bool {
-	return vseq.index >= vseq.vector.count
+func (vseq *VectorSeq) IsEmpty(env *Env) (bool, error) {
+	return vseq.index >= vseq.vector.count, nil
 }
 
 func (vseq *VectorSeq) Cons(obj Object) Seq {
@@ -255,15 +255,15 @@ func (vseq *VectorRSeq) First(env *Env) (Object, error) {
 	return NIL, nil
 }
 
-func (vseq *VectorRSeq) Rest(env *Env) Seq {
+func (vseq *VectorRSeq) Rest(env *Env) (Seq, error) {
 	if vseq.index-1 >= 0 {
-		return &VectorRSeq{vector: vseq.vector, index: vseq.index - 1}
+		return &VectorRSeq{vector: vseq.vector, index: vseq.index - 1}, nil
 	}
-	return EmptyList
+	return EmptyList, nil
 }
 
-func (vseq *VectorRSeq) IsEmpty(env *Env) bool {
-	return vseq.index < 0
+func (vseq *VectorRSeq) IsEmpty(env *Env) (bool, error) {
+	return vseq.index < 0, nil
 }
 
 func (vseq *VectorRSeq) Cons(obj Object) Seq {
@@ -503,13 +503,25 @@ func NewVectorFrom(objs ...Object) *Vector {
 
 func NewVectorFromSeq(env *Env, seq Seq) (*Vector, error) {
 	res := EmptyVector()
-	for !seq.IsEmpty(env) {
+	for {
+		ok, err := seq.IsEmpty(env)
+		if err != nil {
+			return nil, err
+		}
+
+		if ok {
+			break
+		}
+
 		v, err := seq.First(env)
 		if err != nil {
 			return nil, err
 		}
 		res, _ = res.Conjoin(v)
-		seq = seq.Rest(env)
+		seq, err = seq.Rest(env)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return res, nil
 }

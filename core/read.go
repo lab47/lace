@@ -970,8 +970,12 @@ func syntaxQuoteSeq(tenv *Env, seq Seq, env map[*string]Symbol, reader *Reader) 
 			if err := Cast(tenv, obj, &seq); err != nil {
 				return nil, err
 			}
+			r, err := seq.Rest(tenv)
+			if err != nil {
+				return nil, err
+			}
 
-			f, err := seq.Rest(tenv).First(tenv)
+			f, err := r.First(tenv)
 			if err != nil {
 				return nil, err
 			}
