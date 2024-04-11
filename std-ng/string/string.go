@@ -368,7 +368,7 @@ func splitOnStringOrRegex3(s string, sep core.Object, n int) (core.Object, error
 func join(env *core.Env, sep string, seqable core.Seqable) (string, error) {
 	seq := seqable.Seq()
 	var b bytes.Buffer
-	for !seq.IsEmpty() {
+	for !seq.IsEmpty(env) {
 		f, err := seq.First(env)
 		if err != nil {
 			return "", err
@@ -378,8 +378,8 @@ func join(env *core.Env, sep string, seqable core.Seqable) (string, error) {
 			return "", err
 		}
 		b.WriteString(s)
-		seq = seq.Rest()
-		if !seq.IsEmpty() {
+		seq = seq.Rest(env)
+		if !seq.IsEmpty(env) {
 			b.WriteString(sep)
 		}
 	}

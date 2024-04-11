@@ -74,14 +74,14 @@ func EmptySet() *MapSet {
 func (set *MapSet) ToString(env *Env, escape bool) (string, error) {
 	var b bytes.Buffer
 	b.WriteString("#{")
-	for iter := iter(set.m.Keys()); iter.HasNext(); {
+	for iter := iter(set.m.Keys()); iter.HasNext(env); {
 		v, err := iter.Next(env)
 		if err != nil {
 			return "", err
 		}
 		s, err := v.ToString(env, escape)
 		b.WriteString(s)
-		if iter.HasNext() {
+		if iter.HasNext(env) {
 			b.WriteRune(' ')
 		}
 	}
@@ -157,13 +157,13 @@ func (set *MapSet) Empty() Collection {
 
 func NewSetFromSeq(env *Env, s Seq) (*MapSet, error) {
 	res := EmptySet()
-	for !s.IsEmpty() {
+	for !s.IsEmpty(env) {
 		v, err := s.First(env)
 		if err != nil {
 			return nil, err
 		}
 		res.Add(env, v)
-		s = s.Rest()
+		s = s.Rest(env)
 	}
 	return res, nil
 }
@@ -171,7 +171,7 @@ func NewSetFromSeq(env *Env, s Seq) (*MapSet, error) {
 func (set *MapSet) Pprint(env *Env, w io.Writer, indent int) (int, error) {
 	i := indent + 1
 	fmt.Fprint(w, "#{")
-	for iter := iter(set.m.Keys()); iter.HasNext(); {
+	for iter := iter(set.m.Keys()); iter.HasNext(env); {
 		v, err := iter.Next(env)
 		if err != nil {
 			return 0, err
@@ -180,7 +180,7 @@ func (set *MapSet) Pprint(env *Env, w io.Writer, indent int) (int, error) {
 		if err != nil {
 			return 0, err
 		}
-		if iter.HasNext() {
+		if iter.HasNext(env) {
 			fmt.Fprint(w, "\n")
 			writeIndent(w, indent+2)
 		}

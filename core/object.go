@@ -1199,11 +1199,11 @@ func (n Nil) First(env *Env) (Object, error) {
 	return NIL, nil
 }
 
-func (n Nil) Rest() Seq {
+func (n Nil) Rest(env *Env) Seq {
 	return NIL
 }
 
-func (n Nil) IsEmpty() bool {
+func (n Nil) IsEmpty(env *Env) bool {
 	return true
 }
 

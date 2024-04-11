@@ -956,7 +956,7 @@ func isCall(env *Env, obj Object, name Symbol) (bool, error) {
 
 func syntaxQuoteSeq(tenv *Env, seq Seq, env map[*string]Symbol, reader *Reader) (Seq, error) {
 	res := make([]Object, 0)
-	for iter := iter(seq); iter.HasNext(); {
+	for iter := iter(seq); iter.HasNext(tenv); {
 		obj, err := iter.Next(tenv)
 		if err != nil {
 			return nil, err
@@ -971,7 +971,7 @@ func syntaxQuoteSeq(tenv *Env, seq Seq, env map[*string]Symbol, reader *Reader) 
 				return nil, err
 			}
 
-			f, err := seq.Rest().First(tenv)
+			f, err := seq.Rest(tenv).First(tenv)
 			if err != nil {
 				return nil, err
 			}

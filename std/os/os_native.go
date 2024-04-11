@@ -67,7 +67,7 @@ func execute(env *Env, name string, opts Map) (Object, error) {
 		}
 
 		s := sv.Seq()
-		for !s.IsEmpty() {
+		for !s.IsEmpty(env) {
 			f, err := s.First(env)
 			if err != nil {
 				return nil, err
@@ -77,7 +77,7 @@ func execute(env *Env, name string, opts Map) (Object, error) {
 				return nil, err
 			}
 			args = append(args, so.S)
-			s = s.Rest()
+			s = s.Rest(env)
 		}
 	}
 	if ok, stdinObj := opts.GetEqu(MakeKeyword("stdin")); ok {
