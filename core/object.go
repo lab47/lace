@@ -20,8 +20,6 @@ import (
 	"time"
 	"unicode/utf8"
 	"unsafe"
-
-	"github.com/davecgh/go-spew/spew"
 )
 
 // interfaces
@@ -907,8 +905,6 @@ func (fn *Fn) Call(env *Env, args []Object) (Object, error) {
 	for _, arity := range fn.fnExpr.arities {
 		a := len(arity.args)
 		if a == len(args) {
-			//env.RT.pushFrame()
-			//defer env.RT.popFrame()
 			return evalLoop(env, arity.body, fn.env.addFrame(args))
 		}
 		if min > a {
@@ -933,7 +929,6 @@ func (fn *Fn) Call(env *Env, args []Object) (Object, error) {
 			}
 		}
 
-		spew.Dump(fn.fnExpr.self.String())
 		return nil, ErrorArityMinMax(env, c, min, max)
 	}
 	var restArgs Object = NIL
@@ -945,8 +940,6 @@ func (fn *Fn) Call(env *Env, args []Object) (Object, error) {
 		vargs[i] = args[i]
 	}
 	vargs[len(vargs)-1] = restArgs
-	//env.RT.pushFrame()
-	//defer env.RT.popFrame()
 	return evalLoop(env, v.body, fn.env.addFrame(vargs))
 }
 

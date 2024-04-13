@@ -543,6 +543,7 @@ var procExInfo = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	res.AddEqu(criticalKeywords.message, s)
 	res.AddEqu(criticalKeywords.data, m)
 	if len(args) == 3 {
@@ -3002,9 +3003,6 @@ func PackReader(env *Env, reader *Reader, filename string) ([]byte, error) {
 		parseContext.Env.SetFilename(MakeString(s))
 	}
 
-	env.RT.callstack.pushFrame(Frame{})
-	defer env.RT.popFrame()
-
 	for {
 		obj, err := TryRead(env, reader)
 		if err == io.EOF {
@@ -3052,10 +3050,6 @@ func ProcessReader(env *Env, reader *Reader, filename string, phase Phase) error
 		}
 		parseContext.Env.SetFilename(MakeString(s))
 	}
-
-	// Set it up, we update it constantly below.
-	env.RT.callstack.pushFrame(Frame{})
-	defer env.RT.popFrame()
 
 	for {
 		obj, err := TryRead(env, reader)
@@ -3140,9 +3134,6 @@ func processInEnvInNS(env *Env, ns *Namespace, data []byte) error {
 	cur := env.CurrentNamespace()
 	env.SetCurrentNamespace(ns)
 	defer func() { env.SetCurrentNamespace(cur) }()
-
-	env.RT.callstack.pushFrame(Frame{})
-	defer env.RT.popFrame()
 
 	header, p, err := UnpackHeader(data, env)
 	if err != nil {
