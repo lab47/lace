@@ -24,6 +24,8 @@ func Generate(name string, base, output string) error {
 	var files []*ast.File
 
 	ts := token.NewFileSet()
+	sort.Strings(pkg.GoFiles)
+
 	for _, path := range pkg.GoFiles {
 		f, err := parser.ParseFile(ts, filepath.Join(pkg.Dir, path), nil, parser.ParseComments)
 		if err != nil {
@@ -45,7 +47,15 @@ func Generate(name string, base, output string) error {
 	fmt.Fprintln(&buf, "func init() {")
 
 	for _, f := range files {
-		for _, d := range f.Scope.Objects {
+		var keys []string
+		for k := range f.Scope.Objects {
+			keys = append(keys, k)
+		}
+
+		sort.Strings(keys)
+
+		for _, k := range keys {
+			d := f.Scope.Objects[k]
 			if ts, ok := d.Decl.(*ast.TypeSpec); ok {
 				if !ast.IsExported(ts.Name.Name) {
 					continue

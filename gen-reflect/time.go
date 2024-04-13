@@ -9,9 +9,9 @@ func init() {
 	ParseError_methods := map[string]pkgreflect.Func{}
 	Timer_methods := map[string]pkgreflect.Func{}
 	Ticker_methods := map[string]pkgreflect.Func{}
-	Time_methods := map[string]pkgreflect.Func{}
 	Duration_methods := map[string]pkgreflect.Func{}
 	Month_methods := map[string]pkgreflect.Func{}
+	Time_methods := map[string]pkgreflect.Func{}
 	Weekday_methods := map[string]pkgreflect.Func{}
 	Location_methods := map[string]pkgreflect.Func{}
 	Time_methods["String"] = pkgreflect.Func{Args: []pkgreflect.Arg{}, Tag: "string", Doc: "String returns the time formatted using the format string\n\n\t\"2006-01-02 15:04:05.999999999 -0700 MST\"\n\nIf the time has a monotonic clock reading, the returned string\nincludes a final field \"m=±<value>\", where value is the monotonic\nclock reading formatted as a decimal number of seconds.\n\nThe returned string is meant for debugging; for a stable serialized\nrepresentation, use t.MarshalText, t.MarshalBinary, or t.Format\nwith an explicit format string."}

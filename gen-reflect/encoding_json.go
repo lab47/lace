@@ -6,21 +6,21 @@ import "github.com/lab47/lace/pkg/pkgreflect"
 import . "encoding/json"
 
 func init() {
-	UnmarshalTypeError_methods := map[string]pkgreflect.Func{}
-	Number_methods := map[string]pkgreflect.Func{}
-	Unmarshaler_methods := map[string]pkgreflect.Func{}
-	UnmarshalFieldError_methods := map[string]pkgreflect.Func{}
 	InvalidUnmarshalError_methods := map[string]pkgreflect.Func{}
-	Marshaler_methods := map[string]pkgreflect.Func{}
-	UnsupportedTypeError_methods := map[string]pkgreflect.Func{}
-	MarshalerError_methods := map[string]pkgreflect.Func{}
+	Number_methods := map[string]pkgreflect.Func{}
+	UnmarshalFieldError_methods := map[string]pkgreflect.Func{}
+	UnmarshalTypeError_methods := map[string]pkgreflect.Func{}
+	Unmarshaler_methods := map[string]pkgreflect.Func{}
 	InvalidUTF8Error_methods := map[string]pkgreflect.Func{}
+	Marshaler_methods := map[string]pkgreflect.Func{}
+	MarshalerError_methods := map[string]pkgreflect.Func{}
+	UnsupportedTypeError_methods := map[string]pkgreflect.Func{}
 	UnsupportedValueError_methods := map[string]pkgreflect.Func{}
 	SyntaxError_methods := map[string]pkgreflect.Func{}
 	Decoder_methods := map[string]pkgreflect.Func{}
-	RawMessage_methods := map[string]pkgreflect.Func{}
 	Delim_methods := map[string]pkgreflect.Func{}
 	Encoder_methods := map[string]pkgreflect.Func{}
+	RawMessage_methods := map[string]pkgreflect.Func{}
 	Token_methods := map[string]pkgreflect.Func{}
 	UnmarshalTypeError_methods["Error"] = pkgreflect.Func{Args: []pkgreflect.Arg{}, Tag: "string", Doc: ""}
 	UnmarshalFieldError_methods["Error"] = pkgreflect.Func{Args: []pkgreflect.Arg{}, Tag: "string", Doc: ""}

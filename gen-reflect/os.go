@@ -9,14 +9,14 @@ func init() {
 	DirEntry_methods := map[string]pkgreflect.Func{}
 	PathError_methods := map[string]pkgreflect.Func{}
 	SyscallError_methods := map[string]pkgreflect.Func{}
-	Signal_methods := map[string]pkgreflect.Func{}
-	Process_methods := map[string]pkgreflect.Func{}
 	ProcAttr_methods := map[string]pkgreflect.Func{}
+	Process_methods := map[string]pkgreflect.Func{}
+	Signal_methods := map[string]pkgreflect.Func{}
 	ProcessState_methods := map[string]pkgreflect.Func{}
 	LinkError_methods := map[string]pkgreflect.Func{}
 	File_methods := map[string]pkgreflect.Func{}
-	FileMode_methods := map[string]pkgreflect.Func{}
 	FileInfo_methods := map[string]pkgreflect.Func{}
+	FileMode_methods := map[string]pkgreflect.Func{}
 	File_methods["Readdir"] = pkgreflect.Func{Args: []pkgreflect.Arg{{Name: "n", Tag: "int"}}, Tag: "any", Doc: "Readdir reads the contents of the directory associated with file and\nreturns a slice of up to n FileInfo values, as would be returned\nby Lstat, in directory order. Subsequent calls on the same file will yield\nfurther FileInfos.\n\nIf n > 0, Readdir returns at most n FileInfo structures. In this case, if\nReaddir returns an empty slice, it will return a non-nil error\nexplaining why. At the end of a directory, the error is io.EOF.\n\nIf n <= 0, Readdir returns all the FileInfo from the directory in\na single slice. In this case, if Readdir succeeds (reads all\nthe way to the end of the directory), it returns the slice and a\nnil error. If it encounters an error before the end of the\ndirectory, Readdir returns the FileInfo read until that point\nand a non-nil error.\n\nMost clients are better served by the more efficient ReadDir method."}
 	File_methods["Readdirnames"] = pkgreflect.Func{Args: []pkgreflect.Arg{{Name: "n", Tag: "int"}}, Tag: "any", Doc: "Readdirnames reads the contents of the directory associated with file\nand returns a slice of up to n names of files in the directory,\nin directory order. Subsequent calls on the same file will yield\nfurther names.\n\nIf n > 0, Readdirnames returns at most n names. In this case, if\nReaddirnames returns an empty slice, it will return a non-nil error\nexplaining why. At the end of a directory, the error is io.EOF.\n\nIf n <= 0, Readdirnames returns all the names from the directory in\na single slice. In this case, if Readdirnames succeeds (reads all\nthe way to the end of the directory), it returns the slice and a\nnil error. If it encounters an error before the end of the\ndirectory, Readdirnames returns the names read until that point and\na non-nil error."}
 	File_methods["ReadDir"] = pkgreflect.Func{Args: []pkgreflect.Arg{{Name: "n", Tag: "int"}}, Tag: "any", Doc: "ReadDir reads the contents of the directory associated with the file f\nand returns a slice of DirEntry values in directory order.\nSubsequent calls on the same file will yield later DirEntry records in the directory.\n\nIf n > 0, ReadDir returns at most n DirEntry records.\nIn this case, if ReadDir returns an empty slice, it will return an error explaining why.\nAt the end of a directory, the error is io.EOF.\n\nIf n <= 0, ReadDir returns all the DirEntry records remaining in the directory.\nWhen it succeeds, it returns a nil error (not io.EOF)."}
