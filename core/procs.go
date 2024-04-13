@@ -2304,6 +2304,7 @@ var procVarNamespace = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return v.ns, nil
 }
 

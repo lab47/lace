@@ -1613,7 +1613,7 @@ func (k Keyword) Equals(env *Env, other interface{}) bool {
 
 func (s Keyword) Is(other Object) bool {
 	switch other := other.(type) {
-	case Symbol:
+	case Keyword:
 		return s.ns == other.ns && s.name == other.name
 	default:
 		return false
