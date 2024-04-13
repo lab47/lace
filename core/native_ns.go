@@ -4,11 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"reflect"
-	"regexp"
 	"runtime"
 	"sort"
-
-	"github.com/davecgh/go-spew/spew"
 )
 
 type NativeSetup func(env *Env) error
@@ -60,6 +57,11 @@ func NewNSBuilder(env *Env, name string) *NSBuilder {
 	}
 }
 
+func (b *NSBuilder) NSMeta(doc, added string) {
+	m := MakeMeta(NIL, doc, added)
+	b.ns.meta = m
+}
+
 func (b *NSBuilder) Namespace() *Namespace {
 	return b.ns
 }
@@ -98,6 +100,8 @@ type DefTypeInfo struct {
 	Tag   string
 
 	Type reflect.Type
+
+	Aliases []string
 }
 
 type DefVarInfo struct {
@@ -109,368 +113,176 @@ type DefVarInfo struct {
 	Value reflect.Value
 }
 
-// from error to Error
-func convertErrorOut(env *Env, s reflect.Value) (reflect.Value, error) {
-	err, ok := s.Interface().(error)
-	if !ok {
-		return reflect.Value{}, env.RT.NewError("wrong type, expecting error")
+func toAny(env *Env, o Object) (any, error) {
+	switch sv := o.(type) {
+	case Int:
+		return sv.I, nil
+	case String:
+		return sv.S, nil
+	case Symbol:
+		return sv.Name(), nil
+	case Keyword:
+		return sv.Name(), nil
+	case Boolean:
+		return sv.B, nil
+	case Map:
+		m := map[any]any{}
+		i := sv.Iter()
+		strKey := true
+		for i.HasNext() {
+			n := i.Next()
+
+			k, err := toAny(env, n.Key)
+			if err != nil {
+				return nil, err
+			}
+
+			_, isStr := k.(string)
+			if !isStr {
+				strKey = false
+			}
+			v, err := toAny(env, n.Value)
+			if err != nil {
+				return nil, err
+			}
+
+			m[k] = v
+		}
+
+		if strKey {
+			ms := map[string]any{}
+
+			for k, v := range m {
+				ms[k.(string)] = v
+			}
+
+			return ms, nil
+		}
+
+		return m, nil
+	case Seq:
+		var ret []any
+
+		i := iter(sv)
+
+		for i.HasNext(env) {
+			o, err := i.Next(env)
+			if err != nil {
+				return nil, err
+			}
+
+			a, err := toAny(env, o)
+			if err != nil {
+				return nil, err
+			}
+
+			ret = append(ret, a)
+		}
+
+		return ret, nil
+	case Seqable:
+		return toAny(env, sv.Seq())
+	case *ReflectValue:
+		return sv.val, nil
+	default:
+		return o, nil
+	}
+}
+
+// from any to any
+func convertAnyIn(env *Env, index int, o Object) (reflect.Value, error) {
+	if rv, ok := o.(*ReflectValue); ok {
+		return rv.val, nil
 	}
 
-	return reflect.ValueOf(env.RT.NewError(err.Error())), nil
-}
-
-// from string to String
-func convertStringOut(env *Env, s reflect.Value) (reflect.Value, error) {
-	gs, ok := s.Interface().(string)
-	if !ok {
-		return reflect.Value{}, env.RT.NewError("wrong type, expecting string")
+	a, err := toAny(env, o)
+	if err != nil {
+		return reflect.Value{}, err
 	}
 
-	return reflect.ValueOf(MakeString(gs)), nil
+	return reflect.ValueOf(a), nil
 }
 
-// from []byte to String
-func convertBytesOut(env *Env, s reflect.Value) (reflect.Value, error) {
-	gs, ok := s.Interface().([]byte)
-	if !ok {
-		return reflect.Value{}, env.RT.NewError("wrong type, expecting string")
+func fromAny(env *Env, v any) (Object, error) {
+	switch sv := v.(type) {
+	case int:
+		return MakeInt(sv), nil
+	case int8:
+		return MakeInt(int(sv)), nil
+	case int16:
+		return MakeInt(int(sv)), nil
+	case int32:
+		return MakeInt(int(sv)), nil
+	case int64:
+		return MakeInt(int(sv)), nil
+	case uint:
+		return MakeInt(int(sv)), nil
+	case uint8:
+		return MakeInt(int(sv)), nil
+	case uint16:
+		return MakeInt(int(sv)), nil
+	case uint32:
+		return MakeInt(int(sv)), nil
+	case uint64:
+		return MakeInt(int(sv)), nil
+	case string:
+		return MakeString(sv), nil
+	case bool:
+		return MakeBoolean(sv), nil
+	case []byte:
+		return MakeString(string(sv)), nil
+	case float32:
+		return MakeDouble(float64(sv)), nil
+	case float64:
+		return MakeDouble(float64(sv)), nil
+	default:
+		rv := reflect.ValueOf(v)
+		switch rv.Kind() {
+		case reflect.Map:
+			m := EmptyArrayMap()
+
+			iter := rv.MapRange()
+
+			for iter.Next() {
+				k, err := fromAny(env, iter.Key().Interface())
+				if err != nil {
+					return nil, err
+				}
+				v, err := fromAny(env, iter.Value().Interface())
+				if err != nil {
+					return nil, err
+				}
+
+				m.Set(env, k, v)
+			}
+
+			return m, nil
+		case reflect.Slice, reflect.Array:
+			var objs []Object
+			for i := 0; i < rv.Len(); i++ {
+				o, err := fromAny(env, rv.Index(i).Interface())
+				if err != nil {
+					return nil, err
+				}
+
+				objs = append(objs, o)
+			}
+
+			return NewVectorFrom(objs...), nil
+		}
+		return &ReflectValue{val: reflect.ValueOf(v)}, nil
 	}
-
-	return reflect.ValueOf(MakeString(string(gs))), nil
 }
-
-// from *regexp.Regexp to *Regex
-func convertRegexpOut(env *Env, s reflect.Value) (reflect.Value, error) {
-	gs, ok := s.Interface().(*regexp.Regexp)
-	if !ok {
-		return reflect.Value{}, env.RT.NewError("wrong type, expecting string")
-	}
-
-	return reflect.ValueOf(MakeRegex(gs)), nil
-}
-
-// from Object to Object
-func convertObjectOut(env *Env, s reflect.Value) (reflect.Value, error) {
-	gs, ok := s.Interface().(Object)
-	if !ok {
-		return reflect.Value{}, env.RT.NewError("wrong type, expecting Object")
-	}
-
-	return reflect.ValueOf(gs), nil
-}
-
-// from bool to Boolean
-func convertBoolOut(env *Env, s reflect.Value) (reflect.Value, error) {
-	gb, ok := s.Interface().(bool)
-	if !ok {
-		return reflect.Value{}, env.RT.NewError("wrong type, expecting string")
-	}
-
-	return reflect.ValueOf(MakeBoolean(gb)), nil
-}
-
-// from String to string
-func convertStringIn(env *Env, index int, o Object) (reflect.Value, error) {
-	ls, ok := o.(String)
-	if !ok {
-		return reflect.Value{}, env.RT.NewArgTypeError(index, o, "String")
-	}
-
-	return reflect.ValueOf(ls.S), nil
-}
-
-// from Symbol to Symbol
-func convertSymbolIn(env *Env, index int, o Object) (reflect.Value, error) {
-	ls, ok := o.(Symbol)
-	if !ok {
-		spew.Dump(o)
-		return reflect.Value{}, env.RT.NewArgTypeError(index, o, "Symbol")
-	}
-
-	return reflect.ValueOf(ls), nil
-}
-
-// from Symbol to Symbol
-func convertKeywordIn(env *Env, index int, o Object) (reflect.Value, error) {
-	ls, ok := o.(Keyword)
-	if !ok {
-		spew.Dump(o)
-		return reflect.Value{}, env.RT.NewArgTypeError(index, o, "Symbol")
-	}
-
-	return reflect.ValueOf(ls), nil
-}
-
-// from String to []byte
-func convertBytesIn(env *Env, index int, o Object) (reflect.Value, error) {
-	ls, ok := o.(String)
-	if !ok {
-		return reflect.Value{}, env.RT.NewArgTypeError(index, o, "String")
-	}
-
-	return reflect.ValueOf([]byte(ls.S)), nil
-}
-
-// from Int to int
-func convertIntIn(env *Env, index int, o Object) (reflect.Value, error) {
-	ls, ok := o.(Int)
-	if !ok {
-		return reflect.Value{}, env.RT.NewArgTypeError(index, o, "Int")
-	}
-
-	return reflect.ValueOf(ls.Int()), nil
-}
-
-// from Object to Object
-func convertObjectIn(env *Env, index int, o Object) (reflect.Value, error) {
-	return reflect.ValueOf(o), nil
-}
-
-// from Env* to Env*
-func convertEnvIn(env *Env, index int, o Object) (reflect.Value, error) {
-	return reflect.ValueOf(env), nil
-}
-
-// from Seqable to Seqable
-func convertSeqableIn(env *Env, index int, o Object) (reflect.Value, error) {
-	ls, ok := o.(Seqable)
-	if !ok {
-		return reflect.Value{}, env.RT.NewArgTypeError(index, o, "Seqable")
-	}
-
-	return reflect.ValueOf(ls), nil
-}
-
-// from ReflectValue to *type
-func convertReflectTypeIn(env *Env, index int, o Object) (reflect.Value, error) {
-	ls, ok := o.(*ReflectType)
-	if !ok {
-		spew.Dump(o)
-		return reflect.Value{}, env.RT.NewArgTypeError(index, o, "ReflectType")
-	}
-
-	return reflect.ValueOf(ls.typ), nil
-}
-
-// from ReflectValue to *type
-func convertReflectValueIn(env *Env, index int, o Object, at reflect.Type) (reflect.Value, error) {
-	ls, ok := o.(*ReflectValue)
-	if !ok {
-		return reflect.Value{}, env.RT.NewArgTypeError(index, o, at.Name())
-	}
-
-	if ls.val.Type() != at {
-		return reflect.Value{}, env.RT.NewArgTypeError(index, o, at.Name())
-	}
-
-	return ls.val, nil
-}
-
-// from any to ReflectValue
-func convertReflectValueOut(env *Env, s reflect.Value) (reflect.Value, error) {
-	if _, ok := s.Interface().(Object); ok {
-		return s, nil
-	}
-
-	return reflect.ValueOf(&ReflectValue{val: s}), nil
-}
-
-func convertCallableIn(env *Env, index int, o Object) (reflect.Value, error) {
-	ls, ok := o.(Callable)
-	if !ok {
-		return reflect.Value{}, env.RT.NewArgTypeError(index, o, "Seqable")
-	}
-
-	return reflect.ValueOf(ls), nil
-}
-
-type inConv func(*Env, int, Object) (reflect.Value, error)
-type outConv func(*Env, reflect.Value) (reflect.Value, error)
 
 var procFnType = reflect.TypeFor[ProcFn]()
 
-func (n *NSBuilder) buildProc(fn any) (ProcFn, int, error) {
+func (n *NSBuilder) buildProc(fn any) (ProcFn, *conversionSet, error) {
 	v, ok := fn.(reflect.Value)
 	if !ok {
 		v = reflect.ValueOf(fn)
 	}
 
-	if v.Kind() != reflect.Func {
-		return nil, 0, fmt.Errorf("procs can only be built from Go funcs, is: %s (%s)", v, v.Kind())
-	}
-
-	t := v.Type()
-
-	argIn := make([]inConv, t.NumIn())
-
-	var passed int
-	var envIn bool
-
-	for i := 0; i < t.NumIn(); i++ {
-		at := t.In(i)
-
-		switch at {
-		case reflect.TypeFor[*Env]():
-			envIn = true
-			argIn[i] = convertEnvIn
-			continue
-		case reflect.TypeFor[Object]():
-			argIn[i] = convertObjectIn
-		case reflect.TypeFor[Seqable]():
-			argIn[i] = convertSeqableIn
-		case reflect.TypeFor[Callable]():
-			argIn[i] = convertCallableIn
-		case reflect.TypeFor[string]():
-			argIn[i] = convertStringIn
-		case reflect.TypeFor[Symbol]():
-			argIn[i] = convertSymbolIn
-		case reflect.TypeFor[Keyword]():
-			argIn[i] = convertKeywordIn
-		case reflect.TypeFor[[]byte]():
-			argIn[i] = convertBytesIn
-		case reflect.TypeFor[int]():
-			argIn[i] = convertIntIn
-		case reflect.TypeFor[reflect.Type]():
-			argIn[i] = convertReflectTypeIn
-		default:
-			argIn[i] = func(e *Env, i int, o Object) (reflect.Value, error) {
-				return convertReflectValueIn(e, i, o, at)
-			}
-		}
-
-		passed++
-	}
-
-	rets := make([]outConv, t.NumOut())
-
-	var valueReturns int
-
-	errorPos := -1
-
-	for i := 0; i < t.NumOut(); i++ {
-		at := t.Out(i)
-
-		switch at {
-		case reflect.TypeFor[Object]():
-			rets[i] = convertObjectOut
-		case reflect.TypeFor[string]():
-			rets[i] = convertStringOut
-		case reflect.TypeFor[[]byte]():
-			rets[i] = convertBytesOut
-		case reflect.TypeFor[bool]():
-			rets[i] = convertBoolOut
-		case reflect.TypeFor[*regexp.Regexp]():
-			rets[i] = convertRegexpOut
-		case reflect.TypeFor[error]():
-			rets[i] = convertErrorOut
-			errorPos = i
-			continue
-		default:
-			rets[i] = convertReflectValueOut
-		}
-
-		valueReturns++
-	}
-
-	nilErr := reflect.Zero(reflect.TypeFor[error]())
-	nilObject := reflect.Zero(reflect.TypeFor[Object]())
-
-	fnVal := v
-
-	var out reflect.Value
-
-	if t.NumIn() == 1 && t.NumOut() == 1 {
-		out = reflect.MakeFunc(reflect.TypeFor[ProcFn](), func(args []reflect.Value) (results []reflect.Value) {
-			env := args[0].Interface().(*Env)
-			objArgs := args[1].Interface().([]Object)
-
-			if len(objArgs) != 1 {
-				return []reflect.Value{nilObject, reflect.ValueOf(ErrorArityMinMax(env, len(objArgs), 1, 1))}
-			}
-
-			arg, err := argIn[0](env, 0, objArgs[0])
-			if err != nil {
-				return []reflect.Value{reflect.Zero(reflect.TypeFor[Object]()), reflect.ValueOf(err)}
-			}
-
-			ret := fnVal.Call([]reflect.Value{arg})
-
-			convRet, err := rets[0](env, ret[0])
-			if err != nil {
-				return []reflect.Value{reflect.Zero(reflect.TypeFor[Object]()), reflect.ValueOf(err)}
-			}
-
-			return []reflect.Value{convRet, nilErr}
-		})
-	} else {
-		out = reflect.MakeFunc(reflect.TypeFor[ProcFn](), func(args []reflect.Value) (results []reflect.Value) {
-			env := args[0].Interface().(*Env)
-			objArgs := args[1].Interface().([]Object)
-
-			if len(objArgs) != passed {
-				return []reflect.Value{nilObject, reflect.ValueOf(ErrorArityMinMax(env, len(objArgs), passed, passed))}
-			}
-
-			dest := make([]reflect.Value, t.NumIn())
-
-			var destOffset int
-			if envIn {
-				dest[0] = reflect.ValueOf(env)
-				destOffset = 1
-			}
-
-			for i, a := range objArgs {
-				sub, err := argIn[destOffset+i](env, i, a)
-				if err != nil {
-					return []reflect.Value{reflect.Zero(reflect.TypeFor[Object]()), reflect.ValueOf(err)}
-				}
-
-				dest[destOffset+i] = sub
-			}
-
-			output := make([]reflect.Value, 2)
-
-			ret := fnVal.Call(dest)
-
-			if errorPos >= 0 {
-				output[1] = ret[errorPos]
-			} else {
-				output[1] = nilErr
-			}
-
-			switch valueReturns {
-			case 0:
-				output[0] = reflect.ValueOf(NIL)
-			case 1:
-				sub, err := rets[0](env, ret[0])
-				if err != nil {
-					return []reflect.Value{reflect.Zero(reflect.TypeFor[Object]()), reflect.ValueOf(err)}
-				}
-				output[0] = sub
-			default:
-				var objects []Object
-
-				for i, rv := range ret {
-					if i == errorPos {
-						continue
-					}
-
-					v, err := rets[i](env, rv)
-					if err != nil {
-						if o, ok := v.Interface().(Object); ok {
-							objects = append(objects, o)
-						}
-					}
-				}
-
-				output[0] = reflect.ValueOf(NewListFrom(objects...))
-			}
-
-			return output
-		})
-	}
-
-	return out.Interface().(ProcFn), passed, nil
+	return convReg.ConverterForFunc(v)
 }
 
 func (nb *NSBuilder) makeMeta(b *DefnInfo) *ArrayMap {
@@ -534,6 +346,9 @@ func (b *NSBuilder) DefType(i *DefTypeInfo) *NSBuilder {
 	obj := &ReflectType{typ: i.Type}
 
 	b.ns.InternVar(b.env, i.Name, obj, m)
+	for _, a := range i.Aliases {
+		b.ns.InternVar(b.env, a, obj, m)
+	}
 
 	return b
 }
@@ -597,9 +412,15 @@ func (n *NSBuilder) Defn(b *DefnInfo) *NSBuilder {
 
 		meta := n.makeMeta(b)
 
-		n.ns.InternVar(n.env, b.Name, p, meta)
+		_, err = n.ns.InternVar(n.env, b.Name, p, meta)
+		if err != nil {
+			panic(err)
+		}
 		for _, a := range b.Aliases {
-			n.ns.InternVar(n.env, a, p, meta)
+			_, err = n.ns.InternVar(n.env, a, p, meta)
+			if err != nil {
+				panic(err)
+			}
 		}
 
 		return n
@@ -617,48 +438,33 @@ func (n *NSBuilder) Defn(b *DefnInfo) *NSBuilder {
 	var fns []fn
 
 	for _, f := range b.Fns {
-		pf, arity, err := n.buildProc(f.Fn)
+		pf, cs, err := n.buildProc(f.Fn)
 		if err != nil {
 			panic(err)
 		}
 
 		for _, pf := range fns {
-			if pf.arity == arity {
+			if pf.arity == cs.arity {
 				panic("supplied two functions with same arity")
 			}
 		}
 
-		fns = append(fns, fn{arity, pf})
+		fns = append(fns, fn{cs.arity, pf})
 	}
 
 	sort.Slice(fns, func(i, j int) bool {
 		return fns[i].arity < fns[j].arity
 	})
 
-	nilErr := reflect.Zero(reflect.TypeFor[error]())
-
-	dispatch := reflect.MakeFunc(reflect.TypeFor[ProcFn](), func(args []reflect.Value) (results []reflect.Value) {
-		env := args[0].Interface().(*Env)
-		objArgs := args[1].Interface().([]Object)
-
+	procFn := ProcFn(func(env *Env, args []Object) (Object, error) {
 		for _, fn := range fns {
-			if fn.arity == len(objArgs) {
-				ret, err := fn.proc(env, objArgs)
-				if err == nil {
-					return []reflect.Value{reflect.ValueOf(ret), nilErr}
-				} else {
-					return []reflect.Value{reflect.ValueOf(ret), reflect.ValueOf(err)}
-				}
+			if fn.arity == len(args) {
+				return fn.proc(env, args)
 			}
 		}
 
-		return []reflect.Value{
-			reflect.Zero(reflect.TypeFor[Object]()),
-			reflect.ValueOf(ErrorArityMinMax(env, len(objArgs), fns[0].arity, fns[len(fns)-1].arity)),
-		}
+		return nil, ErrorArityMinMax(env, len(args), fns[0].arity, fns[len(fns)-1].arity)
 	})
-
-	procFn := dispatch.Interface().(ProcFn)
 
 	// TODO we can do better than reporting the first function only as the location.
 	var (

@@ -2,13 +2,12 @@ package core
 
 import (
 	"fmt"
-	"math"
 	"reflect"
 	"sort"
 	"strings"
 
+	_ "github.com/lab47/lace/gen-reflect"
 	"github.com/lab47/lace/pkg/pkgreflect"
-	_ "github.com/lab47/lace/reflect"
 )
 
 type ReflectType struct {
@@ -48,6 +47,11 @@ func (r *ReflectType) WithInfo(i *ObjectInfo) Object {
 	return &d
 }
 
+func (r *ReflectType) Call(env *Env, args []Object) (Object, error) {
+	rv := reflect.New(r.typ)
+	return &ReflectValue{val: rv}, nil
+}
+
 type ReflectValue struct {
 	InfoHolder
 	MetaHolder
@@ -69,6 +73,62 @@ func (r *ReflectValue) GetType() *Type {
 	return TYPE.ReflectValue
 }
 
+func structPut(env *Env, r *ReflectValue, name string, fval Object) error {
+	val := r.val
+
+	for val.Kind() == reflect.Pointer {
+		val = val.Elem()
+	}
+
+	if val.Kind() != reflect.Struct {
+		return env.RT.NewError(fmt.Sprintf("value must be a struct, is a %T", val.Interface()))
+	}
+
+	field := val.FieldByName(name)
+	if !field.IsValid() {
+		return env.RT.NewError(fmt.Sprintf("unknown struct field %s", name))
+	}
+
+	var frv reflect.Value
+
+	cv, _ := convReg.convArg(field.Type())
+
+	frv, err := cv(env, 0, fval)
+	if err != nil {
+		return err
+	}
+
+	if !frv.Type().AssignableTo(field.Type()) {
+		return env.RT.NewError(
+			fmt.Sprintf("needed type %s, had %T", field.Type(), fval))
+	}
+
+	field.Set(frv)
+
+	return nil
+}
+
+func structGet(env *Env, r *ReflectValue, name string) (Object, error) {
+	val := r.val
+
+	for val.Kind() == reflect.Pointer {
+		val = val.Elem()
+	}
+
+	if val.Kind() != reflect.Struct {
+		return nil, env.RT.NewError(fmt.Sprintf("value must be a struct, is a %T", val.Interface()))
+	}
+
+	field := val.FieldByName(name)
+	if !field.IsValid() {
+		return nil, env.RT.NewError(fmt.Sprintf("unknown struct field %s", name))
+	}
+
+	rt := field.Type()
+
+	return convReg.convRet(rt)(env, field)
+}
+
 func (r *ReflectValue) ToString(env *Env, escape bool) (string, error) {
 	t := r.val.Type()
 	for t.Kind() == reflect.Pointer {
@@ -77,6 +137,10 @@ func (r *ReflectValue) ToString(env *Env, escape bool) (string, error) {
 
 	pkg := t.PkgPath()
 	name := t.Name()
+
+	if name == "" {
+		return fmt.Sprintf("#go.%s[%s]", t.Kind(), r.val.String()), nil
+	}
 
 	return fmt.Sprintf("#%s.%s[%s]", pkg, name, r.val), nil
 }
@@ -91,82 +155,6 @@ func (r *ReflectValue) WithInfo(i *ObjectInfo) Object {
 	d := *r
 	d.info = i
 	return &d
-}
-
-func convertToInt64(env *Env, index int, obj Object) (int64, error) {
-	switch sv := obj.(type) {
-	case Int:
-		return int64(sv.I), nil
-	case *BigInt:
-		return sv.b.Int64(), nil
-	default:
-		return 0, env.RT.NewArgTypeError(index, obj, "int")
-	}
-}
-
-func convertToUInt64(env *Env, index int, obj Object) (uint64, error) {
-	switch sv := obj.(type) {
-	case Int:
-		return uint64(sv.I), nil
-	case *BigInt:
-		return sv.b.Uint64(), nil
-	default:
-		return 0, env.RT.NewArgTypeError(index, obj, "int")
-	}
-}
-
-func convertToString(env *Env, index int, obj Object) (string, error) {
-	switch sv := obj.(type) {
-	case String:
-		return sv.S, nil
-	case Symbol:
-		return sv.Name(), nil
-	case Keyword:
-		return sv.Name(), nil
-	default:
-		return "", env.RT.NewArgTypeError(index, obj, "string/symbol/keyword")
-	}
-}
-
-func convertToBytes(env *Env, index int, obj Object) ([]byte, error) {
-	switch sv := obj.(type) {
-	case String:
-		return []byte(sv.S), nil
-	default:
-		return nil, env.RT.NewArgTypeError(index, obj, "string/symbol/keyword")
-	}
-}
-
-func convertFromInt(env *Env, rv reflect.Value) (Object, error) {
-	i := rv.Int()
-
-	if i > math.MaxInt {
-		return MakeBigInt(i), nil
-	}
-
-	return MakeInt(int(i)), nil
-}
-
-func convertFromUInt(env *Env, rv reflect.Value) (Object, error) {
-	i := rv.Uint()
-
-	if i > math.MaxUint {
-		return MakeBigInt(int64(i)), nil
-	}
-
-	return MakeInt(int(i)), nil
-}
-
-func convertFromString(env *Env, rv reflect.Value) (Object, error) {
-	return MakeString(rv.String()), nil
-}
-
-func convertFromBool(env *Env, rv reflect.Value) (Object, error) {
-	return MakeBoolean(rv.Bool()), nil
-}
-
-func convertFromAny(env *Env, rv reflect.Value) (Object, error) {
-	return &ReflectValue{val: rv}, nil
 }
 
 type reifiedFunc struct {
@@ -231,6 +219,64 @@ func castObjectToRef(env *Env, typ reflect.Type, obj Object) (Object, error) {
 	}
 }
 
+func makePtr(t reflect.Type) reflect.Value {
+	return reflect.New(t)
+}
+
+func makeMapType(k, v reflect.Type) reflect.Type {
+	return reflect.MapOf(k, v)
+}
+
+func makeSliceType(e reflect.Type) reflect.Type {
+	return reflect.SliceOf(e)
+}
+
+func makeChanType(e reflect.Type) reflect.Type {
+	return reflect.ChanOf(reflect.BothDir, e)
+}
+
+func makeStructType(env *Env, m Map) (reflect.Type, error) {
+	iter := m.Iter()
+
+	var fields []reflect.StructField
+
+	for iter.HasNext() {
+		p := iter.Next()
+
+		var f reflect.StructField
+
+		switch sv := p.Key.(type) {
+		case Symbol:
+			f.Name = sv.Name()
+		case Keyword:
+			f.Name = sv.Name()
+		case String:
+			f.Name = sv.S
+		default:
+			return nil, env.RT.NewError("name must be symbol/keyword/string only")
+		}
+
+		vt, ok := p.Value.(*ReflectType)
+		if !ok {
+			return nil, env.RT.NewError("value must be a ReflectType")
+		}
+
+		f.Type = vt.typ
+
+		fields = append(fields, f)
+	}
+
+	return reflect.StructOf(fields), nil
+}
+
+func derefPtr(env *Env, rv reflect.Value) (Object, error) {
+	if rv.Kind() != reflect.Pointer {
+		return nil, fmt.Errorf("derefPtr only takes pointers")
+	}
+
+	return fromAny(env, rv.Elem().Interface())
+}
+
 var nsSubs = strings.NewReplacer(
 	"github.com", "github",
 	"gitlab.com", "gitlab",
@@ -249,6 +295,8 @@ func SetupPkgReflect(env *Env) error {
 		pkgs = append(pkgs, MakeSymbolWithMeta(nsName, m))
 
 		b := NewNSBuilder(env, nsName)
+
+		b.NSMeta(pkg.Doc, "1.0")
 
 		for name, typ := range pkg.Types {
 			b.DefType(&DefTypeInfo{
@@ -358,6 +406,186 @@ func SetupPkgReflect(env *Env) error {
 		Doc:   "Cast a given value to a Go type.",
 		Added: "1.0",
 		Fn:    castObjectToRef,
+	})
+
+	b.Defn(&DefnInfo{
+		Name:  "deref",
+		Doc:   "Read the value of a pointer value.",
+		Added: "1.0",
+		Fn:    derefPtr,
+	})
+
+	b.Defn(&DefnInfo{
+		Name:  "ptr",
+		Doc:   "Create a pointer value of the given type.",
+		Added: "1.0",
+		Fn:    makePtr,
+	})
+
+	b.Defn(&DefnInfo{
+		Name:  "get",
+		Doc:   "Retrieve a field by name from the given value.",
+		Added: "1.0",
+		Fn:    structGet,
+	})
+
+	b.Defn(&DefnInfo{
+		Name:  "put",
+		Doc:   "Set a field by name in the given value.",
+		Added: "1.0",
+		Fn:    structPut,
+	})
+
+	b.Defn(&DefnInfo{
+		Name:  "struct-type",
+		Doc:   "Create a new Go struct type.",
+		Added: "1.0",
+		Fn:    makeStructType,
+	})
+
+	b.Defn(&DefnInfo{
+		Name:  "map-type",
+		Doc:   "Create a new Go map type.",
+		Added: "1.0",
+		Fn:    makeMapType,
+	})
+
+	b.Defn(&DefnInfo{
+		Name:  "chan-type",
+		Doc:   "Create a new Go chan type.",
+		Added: "1.0",
+		Fn:    makeChanType,
+	})
+
+	b.Defn(&DefnInfo{
+		Name:  "chan-type",
+		Doc:   "Create a new Go chan type.",
+		Added: "1.0",
+		Fn:    makeSliceType,
+	})
+
+	// The go builtin types
+
+	b.DefType(&DefTypeInfo{
+		Name:  "any",
+		Doc:   "The Go any type",
+		Added: "1.0",
+		Tag:   "ReflectType",
+		Type:  reflect.TypeFor[any](),
+	})
+
+	b.DefType(&DefTypeInfo{
+		Name:  "int",
+		Doc:   "The Go int",
+		Added: "1.0",
+		Tag:   "ReflectType",
+		Type:  reflect.TypeFor[int](),
+	})
+
+	b.DefType(&DefTypeInfo{
+		Name:  "uint",
+		Doc:   "The Go uint",
+		Added: "1.0",
+		Tag:   "ReflectType",
+		Type:  reflect.TypeFor[uint](),
+	})
+
+	b.DefType(&DefTypeInfo{
+		Name:  "bool",
+		Doc:   "The Go bool type",
+		Added: "1.0",
+		Tag:   "ReflectType",
+		Type:  reflect.TypeFor[bool](),
+	})
+
+	b.DefType(&DefTypeInfo{
+		Name:  "string",
+		Doc:   "The Go string type",
+		Added: "1.0",
+		Tag:   "ReflectType",
+		Type:  reflect.TypeFor[string](),
+	})
+
+	b.DefType(&DefTypeInfo{
+		Name:  "int8",
+		Doc:   "The Go int8",
+		Added: "1.0",
+		Tag:   "ReflectType",
+		Type:  reflect.TypeFor[int8](),
+	})
+
+	b.DefType(&DefTypeInfo{
+		Name:  "int16",
+		Doc:   "The Go int16",
+		Added: "1.0",
+		Tag:   "ReflectType",
+		Type:  reflect.TypeFor[int16](),
+	})
+
+	b.DefType(&DefTypeInfo{
+		Name:    "int32",
+		Doc:     "The Go int32",
+		Added:   "1.0",
+		Tag:     "ReflectType",
+		Type:    reflect.TypeFor[int32](),
+		Aliases: []string{"rune"},
+	})
+
+	b.DefType(&DefTypeInfo{
+		Name:  "int64",
+		Doc:   "The Go int64",
+		Added: "1.0",
+		Tag:   "ReflectType",
+		Type:  reflect.TypeFor[int64](),
+	})
+
+	b.DefType(&DefTypeInfo{
+		Name:    "uint8",
+		Doc:     "The Go uint8",
+		Added:   "1.0",
+		Tag:     "ReflectType",
+		Type:    reflect.TypeFor[uint8](),
+		Aliases: []string{"byte"},
+	})
+
+	b.DefType(&DefTypeInfo{
+		Name:  "uint16",
+		Doc:   "The Go uint16",
+		Added: "1.0",
+		Tag:   "ReflectType",
+		Type:  reflect.TypeFor[uint16](),
+	})
+
+	b.DefType(&DefTypeInfo{
+		Name:  "uint32",
+		Doc:   "The Go uint32",
+		Added: "1.0",
+		Tag:   "ReflectType",
+		Type:  reflect.TypeFor[uint32](),
+	})
+
+	b.DefType(&DefTypeInfo{
+		Name:  "uint64",
+		Doc:   "The Go uint64",
+		Added: "1.0",
+		Tag:   "ReflectType",
+		Type:  reflect.TypeFor[uint64](),
+	})
+
+	b.DefType(&DefTypeInfo{
+		Name:  "float32",
+		Doc:   "The Go float32",
+		Added: "1.0",
+		Tag:   "ReflectType",
+		Type:  reflect.TypeFor[float32](),
+	})
+
+	b.DefType(&DefTypeInfo{
+		Name:  "float64",
+		Doc:   "The Go float64",
+		Added: "1.0",
+		Tag:   "ReflectType",
+		Type:  reflect.TypeFor[float64](),
 	})
 
 	return nil

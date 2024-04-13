@@ -411,6 +411,7 @@ func (expr *MethodExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 	}
 
 	var rv reflect.Value
+	methName := expr.method
 
 	if orv, ok := obj.(*ReflectValue); ok {
 		rv = orv.val
@@ -420,229 +421,35 @@ func (expr *MethodExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 
 	rt := rv.Type()
 
-	meth := rv.MethodByName(expr.method)
+	if expr.lastType == rt {
+		objArgs, err := evalSeq(genv, expr.args, env)
+		if err != nil {
+			return nil, err
+		}
 
-	if meth == (reflect.Value{}) {
+		return expr.lastFn(genv, objArgs)
+	}
+
+	meth := rv.MethodByName(methName)
+
+	if !meth.IsValid() {
 		return nil, genv.RT.NewErrorFlushed(expr, fmt.Sprintf("unknown method %s on %s", expr.method, rt))
 	}
 
-	tmeth := meth.Type()
-	if len(expr.args) != tmeth.NumIn() {
-		return nil, genv.RT.NewErrorFlushed(expr,
-			fmt.Sprintf("given args: %d, expected args: %d", len(expr.args), rt.NumIn()))
+	procFn, _, err := convReg.ConverterForFunc(meth)
+	if err != nil {
+		return nil, err
 	}
+
+	expr.lastType = rt
+	expr.lastFn = procFn
+
 	objArgs, err := evalSeq(genv, expr.args, env)
 	if err != nil {
 		return nil, err
 	}
 
-	var args []reflect.Value
-
-	for i := 0; i < tmeth.NumIn(); i++ {
-		at := tmeth.In(i)
-
-		switch at {
-		case reflect.TypeFor[*Env]():
-			args = append(args, reflect.ValueOf(genv))
-		case reflect.TypeFor[int]():
-			v, err := convertToInt64(genv, i, objArgs[i])
-			if err != nil {
-				return nil, err
-			}
-
-			args = append(args, reflect.ValueOf(int(v)))
-		case reflect.TypeFor[int64]():
-			v, err := convertToInt64(genv, i, objArgs[i])
-			if err != nil {
-				return nil, err
-			}
-
-			args = append(args, reflect.ValueOf(v))
-		case reflect.TypeFor[int32]():
-			v, err := convertToInt64(genv, i, objArgs[i])
-			if err != nil {
-				return nil, err
-			}
-
-			args = append(args, reflect.ValueOf(int32(v)))
-		case reflect.TypeFor[int64]():
-			v, err := convertToInt64(genv, i, objArgs[i])
-			if err != nil {
-				return nil, err
-			}
-
-			args = append(args, reflect.ValueOf(v))
-		case reflect.TypeFor[int16]():
-			v, err := convertToInt64(genv, i, objArgs[i])
-			if err != nil {
-				return nil, err
-			}
-
-			args = append(args, reflect.ValueOf(int16(v)))
-		case reflect.TypeFor[int8]():
-			v, err := convertToInt64(genv, i, objArgs[i])
-			if err != nil {
-				return nil, err
-			}
-
-			args = append(args, reflect.ValueOf(int8(v)))
-		case reflect.TypeFor[uint]():
-			v, err := convertToInt64(genv, i, objArgs[i])
-			if err != nil {
-				return nil, err
-			}
-
-			args = append(args, reflect.ValueOf(uint(v)))
-		case reflect.TypeFor[uint64]():
-			v, err := convertToInt64(genv, i, objArgs[i])
-			if err != nil {
-				return nil, err
-			}
-
-			args = append(args, reflect.ValueOf(v))
-		case reflect.TypeFor[uint32]():
-			v, err := convertToInt64(genv, i, objArgs[i])
-			if err != nil {
-				return nil, err
-			}
-
-			args = append(args, reflect.ValueOf(uint32(v)))
-		case reflect.TypeFor[uint64]():
-			v, err := convertToInt64(genv, i, objArgs[i])
-			if err != nil {
-				return nil, err
-			}
-
-			args = append(args, reflect.ValueOf(v))
-		case reflect.TypeFor[uint16]():
-			v, err := convertToInt64(genv, i, objArgs[i])
-			if err != nil {
-				return nil, err
-			}
-
-			args = append(args, reflect.ValueOf(uint16(v)))
-		case reflect.TypeFor[uint8]():
-			v, err := convertToInt64(genv, i, objArgs[i])
-			if err != nil {
-				return nil, err
-			}
-
-			args = append(args, reflect.ValueOf(uint8(v)))
-		case reflect.TypeFor[string]():
-			v, err := convertToString(genv, i, objArgs[i])
-			if err != nil {
-				return nil, err
-			}
-
-			args = append(args, reflect.ValueOf(v))
-		case reflect.TypeFor[[]byte]():
-			v, err := convertToBytes(genv, i, objArgs[i])
-			if err != nil {
-				return nil, err
-			}
-
-			args = append(args, reflect.ValueOf(v))
-		default:
-			if rv, ok := objArgs[i].(*ReflectValue); ok {
-				if rv.val.Type() == at {
-					args = append(args, rv.val)
-					continue
-				}
-			}
-
-			return nil, genv.RT.NewErrorFlushed(expr,
-				fmt.Sprintf("needed type %s, had %T", at, objArgs[i]))
-		}
-	}
-
-	rets := meth.Call(args)
-
-	var (
-		errIdx = -1
-		values int
-	)
-
-	for i := 0; i < tmeth.NumOut(); i++ {
-		rt := tmeth.Out(i)
-		if rt == reflect.TypeFor[error]() {
-			errIdx = i
-		} else {
-			values++
-		}
-	}
-
-	var (
-		output  Object
-		outputs []Object
-	)
-
-	if errIdx != -1 {
-		err = rets[errIdx].Interface().(error)
-	}
-
-	if values == 0 {
-		output = NIL
-	} else {
-		for i := 0; i < tmeth.NumOut(); i++ {
-			if i == errIdx {
-				continue
-			}
-
-			rt := tmeth.Out(i)
-
-			var v Object
-			switch rt {
-			case reflect.TypeFor[bool]():
-				v, err = convertFromBool(genv, rets[i])
-				if err != nil {
-					return nil, err
-				}
-			case reflect.TypeFor[int](),
-				reflect.TypeFor[int64](),
-				reflect.TypeFor[int32](),
-				reflect.TypeFor[int16](),
-				reflect.TypeFor[int8]():
-
-				v, err = convertFromInt(genv, rets[i])
-				if err != nil {
-					return nil, err
-				}
-			case reflect.TypeFor[uint](),
-				reflect.TypeFor[uint64](),
-				reflect.TypeFor[uint32](),
-				reflect.TypeFor[uint16](),
-				reflect.TypeFor[uint8]():
-
-				v, err = convertFromUInt(genv, rets[i])
-				if err != nil {
-					return nil, err
-				}
-			case reflect.TypeFor[string]():
-				v, err = convertFromString(genv, rets[i])
-				if err != nil {
-					return nil, err
-				}
-			default:
-				v, err = convertFromAny(genv, rets[i])
-				if err != nil {
-					return nil, err
-				}
-			}
-
-			if values == 1 {
-				output = v
-				break
-			} else {
-				outputs = append(outputs, v)
-			}
-		}
-	}
-
-	if values > 1 {
-		return NewListFrom(outputs...), err
-	}
-
-	return output, err
+	return procFn(genv, objArgs)
 }
 
 func varCallableString(v *Var) string {

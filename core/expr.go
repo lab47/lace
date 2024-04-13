@@ -1,5 +1,7 @@
 package core
 
+import "reflect"
+
 func (expr *LiteralExpr) InferType() *Type {
 	if expr.isSurrogate {
 		return nil
@@ -129,6 +131,10 @@ type MethodExpr struct {
 
 	obj  Expr
 	args []Expr
+
+	// inline cache
+	lastType reflect.Type
+	lastFn   ProcFn
 }
 
 var _ Expr = &MethodExpr{}

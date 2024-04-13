@@ -34,6 +34,7 @@ type Type struct {
 
 type Package struct {
 	Name      string
+	Doc       string
 	Types     map[string]Type
 	Functions map[string]FuncValue
 	Variables map[string]Value

@@ -76,7 +76,7 @@ func NewEnv() (*Env, error) {
 		MakeMeta(nil, "Map of configuration key/value pairs for linter mode", "1.0"))
 	res.SetCurrentNamespace(res.EnsureNamespace(MakeSymbol("user")))
 	res.RT = &Runtime{
-		callstack: &Callstack{frames: make([]Frame, 0, 50)},
+		callstack: &Callstack{frames: make([]Frame, 1, 50)},
 	}
 
 	err = initEnv(res)
