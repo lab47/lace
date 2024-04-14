@@ -2037,7 +2037,10 @@ func checkCall(env *Env, expr Expr, isMacro bool, call *CallExpr, pos Position) 
 	argsCount := len(call.args)
 	switch expr := expr.(type) {
 	case *FnExpr:
-		reportWrongArity(env, expr, isMacro, call, pos)
+		_, err := reportWrongArity(env, expr, isMacro, call, pos)
+		if err != nil {
+			printParseWarning(pos, err.Error())
+		}
 	case *MapExpr:
 		if argsCount == 0 || argsCount > 2 {
 			printParseWarning(pos, fmt.Sprintf("Wrong number of args (%d) passed to a map", argsCount))
@@ -2349,7 +2352,10 @@ func parseList(env *Env, obj Object, ctx *ParseContext) (Expr, error) {
 							c.vr.Value.Equals(env, inNs.Value) ||
 							c.vr.Value.Equals(env, createNs.Value)) &&
 							areAllLiteralExprs(res.args) {
-							Eval(env, res, nil)
+							_, err = Eval(env, res, nil)
+							if err != nil {
+								return nil, err
+							}
 						}
 					}
 				case Callable:

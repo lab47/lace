@@ -3239,10 +3239,7 @@
 (defonce ^:dynamic
   ^{:private true
     :doc "A set of symbols representing currently loaded libs"}
-  *loaded-libs* #{'lace.base64 'lace.html 'lace.http 'lace.json 'lace.io
-                  'lace.math 'lace.os 'lace.string 'lace.time 'lace.url
-                  'lace.yaml 'lace.strconv 'lace.crypto 'lace.hex 'lace.filepath
-                  'lace.csv 'lace.uuid})
+  *loaded-libs* #{})
 
 (defonce ^:dynamic
   ^{:private true

@@ -270,7 +270,10 @@ func makeDialectKeyword(dialect core.Dialect) core.Keyword {
 }
 
 func configureLinterMode(env *core.Env, dialect core.Dialect, filename string, workingDir string) error {
-	core.ProcessLinterFiles(env, dialect, filename, workingDir)
+	if err := core.ProcessLinterFiles(env, dialect, filename, workingDir); err != nil {
+		return err
+	}
+
 	core.LINTER_MODE = true
 	core.DIALECT = dialect
 	lm, _ := env.Resolve(core.MakeSymbol("lace.core/*linter-mode*"))
@@ -299,17 +302,25 @@ func detectDialect(filename string) core.Dialect {
 	return core.CLJ
 }
 
-func lintFile(env *core.Env, filename string, dialect core.Dialect, workingDir string) {
+func lintFile(env *core.Env, filename string, dialect core.Dialect, workingDir string) error {
 	phase := core.PARSE
 	if dialect == core.EDN {
 		phase = core.READ
 	}
-	core.ReadConfig(env, filename, workingDir)
-	configureLinterMode(env, dialect, filename, workingDir)
+	err := core.ReadConfig(env, filename, workingDir)
+	if err != nil {
+		return err
+	}
+	err = configureLinterMode(env, dialect, filename, workingDir)
+	if err != nil {
+		return err
+	}
 	if processFile(env, filename, phase) == nil {
 		core.WarnOnUnusedNamespaces(env)
 		core.WarnOnUnusedVars(env)
 	}
+
+	return nil
 }
 
 func matchesDialect(path string, dialect core.Dialect) bool {
@@ -337,16 +348,23 @@ func isIgnored(path string) bool {
 	return false
 }
 
-func lintDir(env *core.Env, dirname string, dialect core.Dialect, reportGloballyUnused bool) {
+func lintDir(env *core.Env, dirname string, dialect core.Dialect, reportGloballyUnused bool) error {
 	var processErr error
 	phase := core.PARSE
 	if dialect == core.EDN {
 		phase = core.READ
 	}
 	ns := env.CurrentNamespace()
-	core.ReadConfig(env, "", dirname)
-	configureLinterMode(env, dialect, "", dirname)
-	filepath.Walk(dirname, func(path string, info os.FileInfo, err error) error {
+	err := core.ReadConfig(env, "", dirname)
+	if err != nil {
+		return err
+	}
+	err = configureLinterMode(env, dialect, "", dirname)
+	if err != nil {
+		return err
+	}
+
+	err = filepath.Walk(dirname, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			fmt.Fprintln(core.Stderr, "Error: ", err)
 			return nil
@@ -363,10 +381,15 @@ func lintDir(env *core.Env, dirname string, dialect core.Dialect, reportGlobally
 		}
 		return nil
 	})
+	if err != nil {
+		return err
+	}
 	if processErr == nil && reportGloballyUnused {
 		core.WarnOnGloballyUnusedNamespaces(env)
 		core.WarnOnGloballyUnusedVars(env)
 	}
+
+	return nil
 }
 
 func dialectFromArg(arg string) core.Dialect {
@@ -794,7 +817,10 @@ func main() {
 			if cpuProfileRateFlag {
 				runtime.SetCPUProfileRate(cpuProfileRate)
 			}
-			pprof.StartCPUProfile(f)
+			err = pprof.StartCPUProfile(f)
+			if err != nil {
+				panic(err)
+			}
 			fmt.Fprintf(core.Stderr, "Profiling started at rate=%d. See file `%s'.\n",
 				cpuProfileRate, cpuProfileName)
 			defer finish()
@@ -861,9 +887,15 @@ func main() {
 			dialect = detectDialect(filename)
 		}
 		if filename != "" {
-			lintFile(env, filename, dialect, workingDir)
+			err := lintFile(env, filename, dialect, workingDir)
+			if err != nil {
+				fmt.Fprintf(core.Stderr, "Error linting file: %s\n", err)
+			}
 		} else if workingDir != "" {
-			lintDir(env, workingDir, dialect, reportGloballyUnusedFlag)
+			err := lintDir(env, workingDir, dialect, reportGloballyUnusedFlag)
+			if err != nil {
+				fmt.Fprintf(core.Stderr, "Error linting dir: %s\n", err)
+			}
 		} else {
 			fmt.Fprintf(core.Stderr, "Error: Missing --file or --working-dir argument.\n")
 			core.Exit(16)

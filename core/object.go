@@ -173,7 +173,6 @@ type (
 	}
 	Nil struct {
 		InfoHolder
-		n struct{}
 	}
 	Keyword struct {
 		InfoHolder
@@ -1656,7 +1655,13 @@ func (k Keyword) Compare(env *Env, other Object) (int, error) {
 	}
 
 	ks, err := k.ToString(env, false)
+	if err != nil {
+		return 0, err
+	}
 	k2s, err := k2.ToString(env, false)
+	if err != nil {
+		return 0, err
+	}
 	return strings.Compare(ks, k2s), nil
 }
 
@@ -1765,7 +1770,14 @@ func (s Symbol) Compare(env *Env, other Object) (int, error) {
 	}
 
 	ks, err := s.ToString(env, false)
+	if err != nil {
+		return 0, err
+	}
+
 	k2s, err := s2.ToString(env, false)
+	if err != nil {
+		return 0, err
+	}
 	return strings.Compare(ks, k2s), nil
 }
 
@@ -1833,7 +1845,9 @@ func (s String) Nth(env *Env, i int) (Object, error) {
 	if i < 0 {
 		return nil, env.RT.NewError(fmt.Sprintf("Negative index: %d", i))
 	}
-	j, r := 0, 't'
+	j := 0
+	var r rune
+
 	for j, r = range s.S {
 		if i == j {
 			return Char{Ch: r}, nil

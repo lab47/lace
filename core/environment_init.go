@@ -9,10 +9,15 @@ func NewEnv() (*Env, error) {
 		Namespaces: make(map[*string]*Namespace),
 		Features:   features,
 	}
-	features.Add(res, MakeKeyword("default"))
-	features.Add(res, MakeKeyword("lace"))
+	_, err := features.Add(res, MakeKeyword("default"))
+	if err != nil {
+		return nil, err
+	}
+	_, err = features.Add(res, MakeKeyword("lace"))
+	if err != nil {
+		return nil, err
+	}
 
-	var err error
 	res.CoreNamespace = res.ensureNamespace(criticalSymbols.lace_core)
 	res.CoreNamespace.core = true
 	res.CoreNamespace.meta = MakeMeta(nil, "Core library of Lace.", "1.0")
@@ -70,10 +75,16 @@ func NewEnv() (*Env, error) {
 		return nil, err
 	}
 	res.printReadably.Value = Boolean{B: true}
-	res.CoreNamespace.InternVar(res, "*linter-mode*", Boolean{B: LINTER_MODE},
+	_, err = res.CoreNamespace.InternVar(res, "*linter-mode*", Boolean{B: LINTER_MODE},
 		MakeMeta(nil, "true if Lace is running in linter mode", "1.0"))
-	res.CoreNamespace.InternVar(res, "*linter-config*", EmptyArrayMap(),
+	if err != nil {
+		return nil, err
+	}
+	_, err = res.CoreNamespace.InternVar(res, "*linter-config*", EmptyArrayMap(),
 		MakeMeta(nil, "Map of configuration key/value pairs for linter mode", "1.0"))
+	if err != nil {
+		return nil, err
+	}
 	res.SetCurrentNamespace(res.EnsureNamespace(MakeSymbol("user")))
 	res.RT = &Runtime{
 		callstack: &Callstack{frames: make([]Frame, 1, 50)},
@@ -97,6 +108,11 @@ func NewEnv() (*Env, error) {
 				panic(err)
 			}
 		}
+	}
+
+	err = setCoreNamespaces(res)
+	if err != nil {
+		return nil, err
 	}
 
 	err = SetupPkgReflect(res)

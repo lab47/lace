@@ -289,8 +289,6 @@ func init() {
 	core.AddNativeNamespace("lace.string", Setup)
 }
 
-var newLine *regexp.Regexp
-
 func padRight(s, pad string, n int) (string, error) {
 	toAdd := n - utf8.RuneCountInString(s)
 	if toAdd <= 0 {
@@ -513,8 +511,4 @@ func reverse(s string) (string, error) {
 		runes[i], runes[j] = runes[j], runes[i]
 	}
 	return string(runes), nil
-}
-
-func init() {
-	newLine, _ = regexp.Compile("\r?\n")
 }

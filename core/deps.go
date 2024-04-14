@@ -18,7 +18,10 @@ func externalHttpSourceToPath(env *Env, lib string, url string) (string, error) 
 	libPathDir := filepath.Dir(libPath)
 
 	if _, err := os.Stat(libPathDir); os.IsNotExist(err) {
-		os.MkdirAll(libPathDir, 0777)
+		err := os.MkdirAll(libPathDir, 0777)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	if _, err := os.Stat(libPath); os.IsNotExist(err) {
@@ -36,12 +39,18 @@ func externalHttpSourceToPath(env *Env, lib string, url string) (string, error) 
 		}
 
 		out, err := os.Create(libPath)
-		defer out.Close()
 		if err != nil {
 			return "", err
 		}
 
+		defer out.Close()
+
 		_, err = io.Copy(out, resp.Body)
+		if err != nil {
+			return "", err
+		}
+
+		err = out.Close()
 		if err != nil {
 			return "", err
 		}

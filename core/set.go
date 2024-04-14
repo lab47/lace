@@ -80,6 +80,9 @@ func (set *MapSet) ToString(env *Env, escape bool) (string, error) {
 			return "", err
 		}
 		s, err := v.ToString(env, escape)
+		if err != nil {
+			return "", err
+		}
 		b.WriteString(s)
 		if iter.HasNext(env) {
 			b.WriteRune(' ')
@@ -169,7 +172,10 @@ func NewSetFromSeq(env *Env, s Seq) (*MapSet, error) {
 		if err != nil {
 			return nil, err
 		}
-		res.Add(env, v)
+		_, err = res.Add(env, v)
+		if err != nil {
+			return nil, err
+		}
 		s, err = s.Rest(env)
 		if err != nil {
 			return nil, err
@@ -192,7 +198,10 @@ func (set *MapSet) Pprint(env *Env, w io.Writer, indent int) (int, error) {
 		}
 		if iter.HasNext(env) {
 			fmt.Fprint(w, "\n")
-			writeIndent(w, indent+2)
+			err = writeIndent(w, indent+2)
+			if err != nil {
+				return 0, err
+			}
 		}
 	}
 	fmt.Fprint(w, "}")

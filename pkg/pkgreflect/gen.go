@@ -20,16 +20,6 @@ import (
 	"github.com/davecgh/go-spew/spew"
 )
 
-func typeList(fl *ast.FieldList) string {
-	var ret []string
-
-	for _, e := range fl.List {
-		ret = append(ret, typeName(e.Type))
-	}
-
-	return strings.Join(ret, ", ")
-}
-
 func Generate(name string, base, output string) error {
 	pkg, err := build.Import(name, base, build.ImportComment)
 	if err != nil {

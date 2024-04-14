@@ -12,11 +12,16 @@ func SetExit(fn func(rc int)) {
 	Exit = fn
 }
 
-func writeIndent(w io.Writer, n int) {
+func writeIndent(w io.Writer, n int) error {
 	space := []byte(" ")
 	for i := 0; i < n; i++ {
-		w.Write(space)
+		_, err := w.Write(space)
+		if err != nil {
+			return err
+		}
 	}
+
+	return nil
 }
 
 func pprintObject(env *Env, obj Object, indent int, w io.Writer) (int, error) {

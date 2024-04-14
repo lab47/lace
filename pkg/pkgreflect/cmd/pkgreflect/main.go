@@ -3,14 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
-	"go/ast"
 	"os"
 
 	"github.com/lab47/lace/pkg/pkgreflect"
-)
-
-var (
-	stdout bool
 )
 
 func main() {
@@ -29,29 +24,6 @@ func main() {
 	}
 
 	parseDir(pkg, output)
-}
-
-func typeName(x ast.Expr) string {
-	for {
-		switch sv := x.(type) {
-		case *ast.StarExpr:
-			x = sv.X
-		case *ast.Ident:
-			return sv.Name
-		case *ast.SelectorExpr:
-			return typeName(sv.X) + "." + sv.Sel.Name
-		case *ast.ArrayType:
-			return "[]" + typeName(sv.Elt)
-		case *ast.InterfaceType:
-			if len(sv.Methods.List) == 0 {
-				return "any"
-			}
-
-			return "interface"
-		default:
-			return "Unknown"
-		}
-	}
 }
 
 func parseDir(name, output string) {

@@ -1191,7 +1191,10 @@ var procHashMap = func(env *Env, args []Object) (Object, error) {
 var procHashSet = func(env *Env, args []Object) (Object, error) {
 	res := EmptySet()
 	for i := 0; i < len(args); i++ {
-		res.Add(env, args[i])
+		_, err := res.Add(env, args[i])
+		if err != nil {
+			return nil, err
+		}
 	}
 	return res, nil
 }
@@ -1967,7 +1970,10 @@ var procPprint = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	pprintObject(env, obj, 0, w)
+	_, err = pprintObject(env, obj, 0, w)
+	if err != nil {
+		return nil, err
+	}
 	fmt.Fprint(w, "\n")
 	return NIL, nil
 }
@@ -2020,7 +2026,7 @@ var procFlush = func(env *Env, args []Object) (Object, error) {
 
 	switch f := args[0].(type) {
 	case *File:
-		f.Sync()
+		return NIL, f.Sync()
 	}
 	return NIL, nil
 }
@@ -2448,8 +2454,6 @@ var procArrayMap = func(env *Env, args []Object) (Object, error) {
 	return res, nil
 }
 
-const bufferHashMask uint32 = 0x5ed19e84
-
 var procBuffer = func(env *Env, args []Object) (Object, error) {
 	if len(args) > 0 {
 		s, err := EnsureString(env, args, 0)
@@ -2599,7 +2603,10 @@ func loadFile(env *Env, filename string) (Object, error) {
 		return nil, err
 	}
 	reader = NewReader(bufio.NewReader(f), filename)
-	ProcessReaderFromEval(env, reader, filename)
+	err = ProcessReaderFromEval(env, reader, filename)
+	if err != nil {
+		return nil, err
+	}
 	return NIL, nil
 }
 
@@ -2669,7 +2676,10 @@ var procLoadLibFromPath = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 	reader := NewReader(bufio.NewReader(f), filename)
-	ProcessReaderFromEval(env, reader, filename)
+	err = ProcessReaderFromEval(env, reader, filename)
+	if err != nil {
+		return nil, err
+	}
 	return NIL, nil
 }
 
@@ -2812,7 +2822,7 @@ var procLibPath = func(env *Env, args []Object) (Object, error) {
 		ns := env.CurrentNamespace().Name
 
 		parts := strings.Split(ns.Name(), ".")
-		for _ = range parts {
+		for range parts {
 			file, _ = filepath.Split(file)
 			file = file[:len(file)-1]
 		}
@@ -3118,17 +3128,11 @@ func ProcessReaderFromEval(env *Env, reader *Reader, filename string) error {
 		if err != nil {
 			return err
 		}
-		obj, err = TryEval(env, expr)
+		_, err = TryEval(env, expr)
 		if err != nil {
 			return err
 		}
 	}
-}
-
-func processInEnv(env *Env, data []byte) error {
-	ns := env.CurrentNamespace()
-
-	return processInEnvInNS(env, ns, data)
 }
 
 func processInEnvInNS(env *Env, ns *Namespace, data []byte) error {
@@ -3163,25 +3167,10 @@ func setCoreNamespaces(env *Env) error {
 	ns := env.CoreNamespace
 	ns.MaybeLazy(env, "lace.core")
 
-	vr := ns.Resolve("*core-namespaces*")
-
 	var set *MapSet
-	if err := Cast(env, vr.Value, &set); err != nil {
-		return err
-	}
-	for _, ns := range coreNamespaces {
-		v, err := set.Conj(env, MakeSymbol(ns))
-		if err != nil {
-			return err
-		}
-		if err := Cast(env, v, &set); err != nil {
-			return err
-		}
-	}
-	vr.Value = set
 
 	// Add 'lace.core to *loaded-libs*, now that it's loaded.
-	vr = ns.Resolve("*loaded-libs*")
+	vr := ns.Resolve("*loaded-libs*")
 	if err := Cast(env, vr.Value, &set); err != nil {
 		return err
 	}
@@ -3483,28 +3472,40 @@ func NewReaderFromFile(filename string) (*Reader, error) {
 	return NewReader(bufio.NewReader(f), filename), nil
 }
 
-func ProcessLinterFile(env *Env, configDir string, filename string) {
+func ProcessLinterFile(env *Env, configDir string, filename string) error {
 	linterFileName := filepath.Join(configDir, filename)
 	if _, err := os.Stat(linterFileName); err == nil {
 		if reader, err := NewReaderFromFile(linterFileName); err == nil {
-			ProcessReader(env, reader, linterFileName, EVAL)
+			err := ProcessReader(env, reader, linterFileName, EVAL)
+			if err != nil {
+				return err
+			}
 		}
 	}
+	return nil
 }
 
-func ProcessLinterFiles(env *Env, dialect Dialect, filename string, workingDir string) {
+func ProcessLinterFiles(env *Env, dialect Dialect, filename string, workingDir string) error {
 	if dialect == EDN || dialect == LACE {
-		return
+		return nil
 	}
 	configDir := findConfigFile(filename, workingDir, true)
 	if configDir == "" {
-		return
+		return nil
 	}
-	ProcessLinterFile(env, configDir, "linter.cljc")
+	if err := ProcessLinterFile(env, configDir, "linter.cljc"); err != nil {
+		return err
+	}
 	switch dialect {
 	case CLJS:
-		ProcessLinterFile(env, configDir, "linter.cljs")
+		if err := ProcessLinterFile(env, configDir, "linter.cljs"); err != nil {
+			return err
+		}
 	case CLJ:
-		ProcessLinterFile(env, configDir, "linter.clj")
+		if err := ProcessLinterFile(env, configDir, "linter.clj"); err != nil {
+			return err
+		}
 	}
+
+	return nil
 }

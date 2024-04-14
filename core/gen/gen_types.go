@@ -80,8 +80,8 @@ func generateAssertions(types []string) {
 
 	var assert = template.Must(template.New("assert").Parse(assertTemplate))
 	var ensure = template.Must(template.New("ensure").Parse(ensureTemplate))
-	f.WriteString(header)
-	f.WriteString(importFmt)
+	_, _ = f.WriteString(header)
+	_, _ = f.WriteString(importFmt)
 	for _, t := range types {
 		typeInfo := TypeInfo{
 			Name:     t,
@@ -94,8 +94,14 @@ func generateAssertions(types []string) {
 		} else if strings.ContainsRune(t, '.') {
 			typeInfo.Name = strings.ReplaceAll(t, ".", "_")
 		}
-		assert.Execute(f, typeInfo)
-		ensure.Execute(f, typeInfo)
+		err := assert.Execute(f, typeInfo)
+		if err != nil {
+			panic(err)
+		}
+		err = ensure.Execute(f, typeInfo)
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 
@@ -107,7 +113,7 @@ func generateInfo(types []string) {
 
 	var info = template.Must(template.New("info").Parse(infoTemplate))
 
-	f.WriteString(header)
+	_, _ = f.WriteString(header)
 	for _, t := range types {
 		typeInfo := TypeInfo{
 			Name:     t,
@@ -116,7 +122,10 @@ func generateInfo(types []string) {
 		if t[0] == '*' {
 			typeInfo.Name = t[1:]
 		}
-		info.Execute(f, typeInfo)
+		err := info.Execute(f, typeInfo)
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 

@@ -2,7 +2,6 @@ package os
 
 import (
 	"io"
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -142,7 +141,7 @@ func mkdir(name string, perm int) (Object, error) {
 }
 
 func readDir(dirname string) (Object, error) {
-	files, err := ioutil.ReadDir(dirname)
+	files, err := os.ReadDir(dirname)
 	if err != nil {
 		return nil, err
 	}
@@ -153,12 +152,16 @@ func readDir(dirname string) (Object, error) {
 	isDir := MakeKeyword("dir?")
 	modTime := MakeKeyword("modtime")
 	for _, f := range files {
+		fi, err := f.Info()
+		if err != nil {
+			return nil, err
+		}
 		m := EmptyArrayMap()
 		m.AddEqu(name, MakeString(f.Name()))
-		m.AddEqu(size, MakeInt(int(f.Size())))
-		m.AddEqu(mode, MakeInt(int(f.Mode())))
+		m.AddEqu(size, MakeInt(int(fi.Size())))
+		m.AddEqu(mode, MakeInt(int(fi.Mode())))
 		m.AddEqu(isDir, MakeBoolean(f.IsDir()))
-		m.AddEqu(modTime, MakeInt(int(f.ModTime().Unix())))
+		m.AddEqu(modTime, MakeInt(int(fi.ModTime().Unix())))
 		res, err = res.Conjoin(m)
 		if err != nil {
 			return nil, err

@@ -221,7 +221,10 @@ func eatWhitespace(env *Env, reader *Reader) error {
 			continue
 		}
 		if r == '#' && reader.Peek() == '_' {
-			reader.Get()
+			_, err := reader.Get()
+			if err != nil {
+				return err
+			}
 			_, _, err = Read(env, reader)
 			if err != nil {
 				return err
@@ -265,7 +268,10 @@ func readUnicodeCharacter(reader *Reader, length, base int) (Object, error) {
 	if err != nil {
 		return nil, MakeReadError(reader, "Invalid unicode character: \\o"+str)
 	}
-	peekExpectedDelimiter(reader)
+	err = peekExpectedDelimiter(reader)
+	if err != nil {
+		return nil, err
+	}
 	return MakeReadObject(reader, Char{Ch: rune(i)}), nil
 }
 
@@ -633,7 +639,10 @@ func readString(reader *Reader) (Object, error) {
 
 func readList(env *Env, reader *Reader) (Object, error) {
 	s := make([]Object, 0, 10)
-	eatWhitespace(env, reader)
+	err := eatWhitespace(env, reader)
+	if err != nil {
+		return nil, err
+	}
 	r := reader.Peek()
 	for r != ')' {
 		obj, multi, err := Read(env, reader)
@@ -652,10 +661,16 @@ func readList(env *Env, reader *Reader) (Object, error) {
 		} else {
 			s = append(s, obj)
 		}
-		eatWhitespace(env, reader)
+		err = eatWhitespace(env, reader)
+		if err != nil {
+			return nil, err
+		}
 		r = reader.Peek()
 	}
-	reader.Get()
+	_, err = reader.Get()
+	if err != nil {
+		return nil, err
+	}
 	list := EmptyList
 	for i := len(s) - 1; i >= 0; i-- {
 		list = list.conj(s[i])
@@ -666,7 +681,10 @@ func readList(env *Env, reader *Reader) (Object, error) {
 
 func readVector(env *Env, reader *Reader) (Object, error) {
 	res := EmptyVector()
-	eatWhitespace(env, reader)
+	err := eatWhitespace(env, reader)
+	if err != nil {
+		return nil, err
+	}
 	r := reader.Peek()
 	for r != ']' {
 		obj, multi, err := Read(env, reader)
@@ -691,10 +709,16 @@ func readVector(env *Env, reader *Reader) (Object, error) {
 				return nil, err
 			}
 		}
-		eatWhitespace(env, reader)
+		err = eatWhitespace(env, reader)
+		if err != nil {
+			return nil, err
+		}
 		r = reader.Peek()
 	}
-	reader.Get()
+	_, err = reader.Get()
+	if err != nil {
+		return nil, err
+	}
 	return MakeReadObject(reader, res), nil
 }
 
@@ -726,7 +750,10 @@ func readMap(env *Env, reader *Reader) (Object, error) {
 }
 
 func readMapWithNamespace(env *Env, reader *Reader, nsname string) (Object, error) {
-	eatWhitespace(env, reader)
+	err := eatWhitespace(env, reader)
+	if err != nil {
+		return nil, err
+	}
 	r := reader.Peek()
 	objs := []Object{}
 	for r != '}' {
@@ -745,10 +772,16 @@ func readMapWithNamespace(env *Env, reader *Reader, nsname string) (Object, erro
 				objs = append(objs, v.at(i))
 			}
 		}
-		eatWhitespace(env, reader)
+		err = eatWhitespace(env, reader)
+		if err != nil {
+			return nil, err
+		}
 		r = reader.Peek()
 	}
-	reader.Get()
+	_, err = reader.Get()
+	if err != nil {
+		return nil, err
+	}
 	if len(objs)%2 != 0 {
 		return nil, MakeReadError(reader, "Map literal must contain an even number of forms")
 	}
@@ -784,7 +817,10 @@ func readMapWithNamespace(env *Env, reader *Reader, nsname string) (Object, erro
 
 func readSet(env *Env, reader *Reader) (Object, error) {
 	set := EmptySet()
-	eatWhitespace(env, reader)
+	err := eatWhitespace(env, reader)
+	if err != nil {
+		return nil, err
+	}
 	r := reader.Peek()
 	for r != '}' {
 		obj, multi, err := Read(env, reader)
@@ -814,10 +850,16 @@ func readSet(env *Env, reader *Reader) (Object, error) {
 				}
 			}
 		}
-		eatWhitespace(env, reader)
+		err = eatWhitespace(env, reader)
+		if err != nil {
+			return nil, err
+		}
 		r = reader.Peek()
 	}
-	reader.Get()
+	_, err = reader.Get()
+	if err != nil {
+		return nil, err
+	}
 	return MakeReadObject(reader, set), nil
 }
 
@@ -1115,10 +1157,16 @@ func readTagged(env *Env, reader *Reader) (Object, error) {
 func readConditional(env *Env, reader *Reader) (Object, bool, error) {
 	isSplicing := false
 	if reader.Peek() == '@' {
-		reader.Get()
+		_, err := reader.Get()
+		if err != nil {
+			return nil, false, err
+		}
 		isSplicing = true
 	}
-	eatWhitespace(env, reader)
+	err := eatWhitespace(env, reader)
+	if err != nil {
+		return nil, false, err
+	}
 	r, err := reader.Get()
 	if err != nil {
 		return nil, false, err
@@ -1363,7 +1411,10 @@ func readFirst(env *Env, reader *Reader) (Object, error) {
 }
 
 func Read(env *Env, reader *Reader) (Object, bool, error) {
-	eatWhitespace(env, reader)
+	err := eatWhitespace(env, reader)
+	if err != nil {
+		return nil, false, err
+	}
 	r, err := reader.Get()
 	if err != nil {
 		return nil, false, err
@@ -1453,7 +1504,10 @@ func Read(env *Env, reader *Reader) (Object, bool, error) {
 	case r == '~':
 		popPos(reader)
 		if reader.Peek() == '@' {
-			reader.Get()
+			_, err := reader.Get()
+			if err != nil {
+				return nil, false, err
+			}
 			nextObj, err := readFirst(env, reader)
 			if err != nil {
 				return nil, false, err
@@ -1494,7 +1548,10 @@ func Read(env *Env, reader *Reader) (Object, bool, error) {
 
 func TryRead(env *Env, reader *Reader) (obj Object, err error) {
 	for {
-		eatWhitespace(env, reader)
+		err := eatWhitespace(env, reader)
+		if err != nil {
+			return nil, err
+		}
 		if reader.Peek() == EOF {
 			return NIL, io.EOF
 		}

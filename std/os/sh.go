@@ -54,10 +54,10 @@ func sh(dir string, stdin io.Reader, stdout io.Writer, stderr io.Writer, name st
 	}
 	res.AddEqu(MakeKeyword("exit"), Int{I: exitCode})
 	if stdout == nil {
-		res.AddEqu(MakeKeyword("out"), String{S: string(stdoutBuffer.Bytes())})
+		res.AddEqu(MakeKeyword("out"), String{S: stdoutBuffer.String()})
 	}
 	if stderr == nil {
-		res.AddEqu(MakeKeyword("err"), String{S: string(stderrBuffer.Bytes())})
+		res.AddEqu(MakeKeyword("err"), String{S: stderrBuffer.String()})
 	}
 	return res, nil
 }

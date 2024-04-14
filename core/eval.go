@@ -203,7 +203,10 @@ func (expr *SetMacroExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 	if fn, ok := expr.vr.Value.(*Fn); ok {
 		fn.isMacro = true
 	}
-	setMacroMeta(genv, expr.vr)
+	err := setMacroMeta(genv, expr.vr)
+	if err != nil {
+		return nil, err
+	}
 	return expr.vr, nil
 }
 

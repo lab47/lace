@@ -127,7 +127,6 @@ func (c *ConvRegistry) convRet(at reflect.Type) outConv {
 	}
 }
 
-var nilErr = reflect.Zero(reflect.TypeFor[error]())
 var nilObject = reflect.Zero(reflect.TypeFor[Object]())
 
 type inConv func(*Env, int, Object) (reflect.Value, error)

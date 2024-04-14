@@ -462,7 +462,10 @@ func (v *Vector) Rseq() Seq {
 }
 
 func (v *Vector) Call(env *Env, args []Object) (Object, error) {
-	CheckArity(env, args, 1, 1)
+	if err := CheckArity(env, args, 1, 1); err != nil {
+		return nil, err
+	}
+
 	i, err := assertInteger(args[0])
 	if err != nil {
 		return nil, err
@@ -556,7 +559,10 @@ func (v *Vector) Pprint(env *Env, w io.Writer, indent int) (int, error) {
 				return 0, err
 			}
 			fmt.Fprint(w, "\n")
-			writeIndent(w, indent+1)
+			err = writeIndent(w, indent+1)
+			if err != nil {
+				return 0, err
+			}
 		}
 		ind, err = pprintObject(env, v.at(v.count-1), indent+1, w)
 		if err != nil {

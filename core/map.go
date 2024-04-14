@@ -114,7 +114,10 @@ func mapToString(env *Env, m Map, escape bool) (string, error) {
 }
 
 func callMap(env *Env, m Map, args []Object) (Object, error) {
-	CheckArity(env, args, 1, 2)
+	if err := CheckArity(env, args, 1, 2); err != nil {
+		return nil, err
+	}
+
 	ok, v, err := m.Get(env, args[0])
 	if err != nil {
 		return nil, err
@@ -148,7 +151,10 @@ func pprintMap(env *Env, m Map, w io.Writer, indent int) (int, error) {
 			}
 			if iter.HasNext() {
 				fmt.Fprint(w, ",\n")
-				writeIndent(w, indent+1)
+				err = writeIndent(w, indent+1)
+				if err != nil {
+					return 0, err
+				}
 			} else {
 				break
 			}

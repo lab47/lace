@@ -274,8 +274,6 @@ func fromAny(env *Env, v any) (Object, error) {
 	}
 }
 
-var procFnType = reflect.TypeFor[ProcFn]()
-
 func (n *NSBuilder) buildProc(fn any) (ProcFn, *conversionSet, error) {
 	v, ok := fn.(reflect.Value)
 	if !ok {
@@ -334,7 +332,10 @@ func (b *NSBuilder) Def(name string, obj Object) {
 		NewListFrom(),
 		"", "x",
 	)
-	b.ns.InternVar(b.env, name, obj, m)
+	_, err := b.ns.InternVar(b.env, name, obj, m)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (b *NSBuilder) DefType(i *DefTypeInfo) *NSBuilder {
@@ -345,9 +346,15 @@ func (b *NSBuilder) DefType(i *DefTypeInfo) *NSBuilder {
 
 	obj := &ReflectType{typ: i.Type}
 
-	b.ns.InternVar(b.env, i.Name, obj, m)
+	_, err := b.ns.InternVar(b.env, i.Name, obj, m)
+	if err != nil {
+		panic(err)
+	}
 	for _, a := range i.Aliases {
-		b.ns.InternVar(b.env, a, obj, m)
+		_, err = b.ns.InternVar(b.env, a, obj, m)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	return b
@@ -375,7 +382,10 @@ func (b *NSBuilder) DefVar(i *DefVarInfo) *NSBuilder {
 		}
 	}
 
-	b.ns.InternVar(b.env, i.Name, obj, m)
+	_, err := b.ns.InternVar(b.env, i.Name, obj, m)
+	if err != nil {
+		panic(err)
+	}
 
 	return b
 }
@@ -492,9 +502,13 @@ func (n *NSBuilder) Defn(b *DefnInfo) *NSBuilder {
 
 	meta := n.makeMeta(b)
 
-	n.ns.InternVar(n.env, b.Name, p, meta)
+	_, err := n.ns.InternVar(n.env, b.Name, p, meta)
+	if err != nil {
+		panic(err)
+	}
 	for _, a := range b.Aliases {
-		n.ns.InternVar(n.env, a, p, meta)
+		_, err = n.ns.InternVar(n.env, a, p, meta)
+		panic(err)
 	}
 
 	return n

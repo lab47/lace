@@ -151,7 +151,10 @@ func (env *Env) EnsureNamespace(sym Symbol) *Namespace {
 				return nil
 			}
 		} else {
-			PopulateNativeNamespaceToEnv(env, *sym.name)
+			_, err = PopulateNativeNamespaceToEnv(env, *sym.name)
+			if err != nil {
+				panic(err)
+			}
 		}
 	}
 	return env.Namespaces[sym.name]
@@ -223,7 +226,10 @@ func (env *Env) FindNamespace(s Symbol) *Namespace {
 				return nil
 			}
 		} else {
-			PopulateNativeNamespaceToEnv(env, *s.name)
+			_, err := PopulateNativeNamespaceToEnv(env, *s.name)
+			if err != nil {
+				panic(err)
+			}
 		}
 	}
 	return ns

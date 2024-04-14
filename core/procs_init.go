@@ -32,8 +32,11 @@ func initEnv(env *Env) error {
 		vr.meta = privateMeta
 	}
 
-	env.CoreNamespace.InternVar(env, "*assert*", Boolean{B: true},
+	_, err = env.CoreNamespace.InternVar(env, "*assert*", Boolean{B: true},
 		MakeMeta(nil, "When set to logical false, assert is a noop. Defaults to true.", "1.0"))
+	if err != nil {
+		return err
+	}
 
 	intern(env, "list__", procList, "procList")
 	intern(env, "cons__", procCons, "procCons")
@@ -212,3 +215,5 @@ func initEnv(env *Env) error {
 func lateInitializations() {
 	// none needed for !fast_init
 }
+
+var _ = lateInitializations

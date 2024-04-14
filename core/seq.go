@@ -605,10 +605,7 @@ func hashOrdered(env *Env, seq Seq) (uint32, error) {
 	return h.Sum32(), nil
 }
 
-var cnt int
-
 func pprintSeq(env *Env, seq Seq, w io.Writer, indent int) (int, error) {
-	cnt++
 	i := indent + 1
 	fmt.Fprint(w, "(")
 	for iter := iter(seq); iter.HasNext(env); {
@@ -622,7 +619,10 @@ func pprintSeq(env *Env, seq Seq, w io.Writer, indent int) (int, error) {
 		}
 		if iter.HasNext(env) {
 			fmt.Fprint(w, "\n")
-			writeIndent(w, indent+1)
+			err = writeIndent(w, indent+1)
+			if err != nil {
+				return 0, err
+			}
 		}
 	}
 	fmt.Fprint(w, ")")

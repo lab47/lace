@@ -81,18 +81,18 @@ func makeCompleter(env *core.Env) func(line string, pos int) (head string, c []s
 			return
 		}
 
-		for k, _ := range ns.Mappings() {
+		for k := range ns.Mappings() {
 			if strings.HasPrefix(*k, prefix) {
 				c = append(c, *k)
 			}
 		}
 		if addNamespaces {
-			for k, _ := range env.Namespaces {
+			for k := range env.Namespaces {
 				if strings.HasPrefix(*k, prefix) {
 					c = append(c, *k)
 				}
 			}
-			for k, _ := range ns.Aliases() {
+			for k := range ns.Aliases() {
 				if strings.HasPrefix(*k, prefix) {
 					c = append(c, *k)
 				}
@@ -111,7 +111,10 @@ func saveReplHistory(rl *liner.State, filename string) {
 		return
 	}
 	if f, err := os.Create(filename); err == nil {
-		rl.WriteHistory(f)
+		_, err = rl.WriteHistory(f)
+		if err != nil {
+			panic(err)
+		}
 		f.Close()
 	}
 }
