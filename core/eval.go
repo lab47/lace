@@ -65,9 +65,32 @@ func TypeError[T any](env *Env, obj Object) *EvalError {
 	return env.RT.NewError(fmt.Sprintf("object must have type %T, got %s", t, obj.GetType().Name()))
 }
 
+type TCContext struct {
+	Context string
+	Index   int
+}
+
 func (rt *Runtime) NewArgTypeError(index int, obj Object, expectedType string) *EvalError {
 	name := rt.topName()
-	return rt.NewError(fmt.Sprintf("Arg[%d] of %s must have type %s, got %s", index, name, expectedType, obj.GetType().Name()))
+	if index >= 0 {
+		return rt.NewError(fmt.Sprintf("Arg[%d] of %s must have type %s, got %s", index, name, expectedType, obj.GetType().Name()))
+	} else {
+		return rt.NewError(fmt.Sprintf("Value of %s must have type %s, got %s", name, expectedType, obj.GetType().Name()))
+	}
+}
+
+func (rt *Runtime) TypeError(ctx TCContext, obj Object, expectedType string) *EvalError {
+	name := rt.topName()
+
+	if ctx.Context != "" {
+		if ctx.Index >= 0 {
+			return rt.NewError(fmt.Sprintf("%s[%d] of %s must have type %s, got %s", ctx.Context, ctx.Index, name, expectedType, obj.GetType().Name()))
+		} else {
+			return rt.NewError(fmt.Sprintf("%s of %s must have type %s, got %s", ctx.Context, name, expectedType, obj.GetType().Name()))
+		}
+	} else {
+		return rt.NewError(fmt.Sprintf("Value of %s must have type %s, got %s", name, expectedType, obj.GetType().Name()))
+	}
 }
 
 func (rt *Runtime) topName() string {

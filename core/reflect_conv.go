@@ -307,12 +307,12 @@ func convertStringOut(env *Env, s reflect.Value) (Object, error) {
 
 // from []byte to String
 func convertBytesOut(env *Env, s reflect.Value) (Object, error) {
-	gs, ok := s.Interface().([]byte)
+	_, ok := s.Interface().([]byte)
 	if !ok {
 		return nil, env.RT.NewError("wrong type, expecting string")
 	}
 
-	return MakeString(string(gs)), nil
+	return &ReflectValue{val: s}, nil
 }
 
 // from *regexp.Regexp to *Regex
@@ -393,6 +393,11 @@ func convertKeywordIn(env *Env, index int, o Object) (reflect.Value, error) {
 func convertBytesIn(env *Env, index int, o Object) (reflect.Value, error) {
 	ls, ok := o.(String)
 	if !ok {
+		if rv, ok := o.(*ReflectValue); ok {
+			if rv.val.Type() == reflect.TypeFor[[]byte]() {
+				return rv.val, nil
+			}
+		}
 		return reflect.Value{}, env.RT.NewArgTypeError(index, o, "String")
 	}
 
@@ -566,6 +571,12 @@ func convertReflectValueIn(env *Env, index int, o Object, at reflect.Type) (refl
 		return reflect.Value{}, env.RT.NewArgTypeError(index, o, at.Name())
 	}
 
+	if at.Kind() == reflect.Interface {
+		if ls.val.Type().AssignableTo(at) {
+			return ls.val, nil
+		}
+	}
+
 	if ls.val.Type() != at {
 		return reflect.Value{}, env.RT.NewArgTypeError(index, o, at.Name())
 	}
@@ -617,4 +628,124 @@ func convertFromUInt(env *Env, rv reflect.Value) (Object, error) {
 	}
 
 	return MakeInt(int(i)), nil
+}
+
+func (c *ConvRegistry) makeFuncConvertIn(env *Env, target Callable, ft reflect.Type) reflect.Value {
+	var (
+		go2lace []outConv
+		lace2go []inConv
+	)
+
+	for i := 0; i < ft.NumIn(); i++ {
+		at := ft.In(i)
+		go2lace = append(go2lace, c.convRet(at))
+	}
+
+	var (
+		errIdx    int = -1
+		zeroRet   []reflect.Value
+		retIdx    int
+		retValues int
+	)
+
+	for i := 0; i < ft.NumOut(); i++ {
+		at := ft.Out(i)
+		zeroRet = append(zeroRet, reflect.Zero(at))
+
+		if at == reflect.TypeFor[error]() {
+			errIdx = i
+		} else {
+			retValues++
+			retIdx = i
+			fn, _ := c.convArg(at)
+			lace2go = append(lace2go, fn)
+		}
+	}
+
+	trampoline := reflect.MakeFunc(ft, func(args []reflect.Value) (results []reflect.Value) {
+		var objs []Object
+
+		var (
+			err  error
+			sequ Seqable
+			ok   bool
+			seq  Seq
+			ret  Object
+			obj  Object
+		)
+
+		rets := make([]reflect.Value, ft.NumOut())
+		copy(rets, zeroRet)
+
+		for i, f := range go2lace {
+			obj, err := f(env, args[i])
+			if err != nil {
+				goto returnErr
+			}
+
+			objs = append(objs, obj)
+		}
+
+		ret, err = target.Call(env, objs)
+		if err != nil {
+			goto returnErr
+		}
+
+		if retValues == 0 {
+			return rets
+		}
+
+		if retValues == 1 {
+			v, err := lace2go[0](env, -1, ret)
+			if err != nil {
+				goto returnErr
+			}
+
+			rets[retIdx] = v
+
+			return rets
+		}
+
+		sequ, ok = ret.(Seqable)
+		if !ok {
+			err = fmt.Errorf("function needed a seqable, did not return one")
+			goto returnErr
+		}
+
+		seq = sequ.Seq()
+
+		for i, oc := range lace2go {
+			var v reflect.Value
+
+			if i != errIdx {
+				obj, err = seq.First(env)
+				if err != nil {
+					goto returnErr
+				}
+
+				v, err = oc(env, -1, obj)
+				if err != nil {
+					goto returnErr
+				}
+
+				rets[i] = reflect.ValueOf(v)
+				seq, err = seq.Rest(env)
+				if err != nil {
+					goto returnErr
+				}
+			}
+		}
+
+		return rets
+
+	returnErr:
+		if errIdx >= 0 {
+			rets[errIdx] = reflect.ValueOf(err)
+			return rets
+		} else {
+			panic(err)
+		}
+	})
+
+	return trampoline
 }

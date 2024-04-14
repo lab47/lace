@@ -89,13 +89,24 @@ func structPut(env *Env, r *ReflectValue, name string, fval Object) error {
 		return env.RT.NewError(fmt.Sprintf("unknown struct field %s", name))
 	}
 
-	var frv reflect.Value
+	var (
+		frv reflect.Value
+		err error
+	)
 
-	cv, _ := convReg.convArg(field.Type())
+	if field.Type().Kind() == reflect.Func {
+		call, ok := fval.(Callable)
+		if !ok {
+			return env.RT.TypeError(TCContext{Context: "struct value"}, fval, "Callable")
+		}
+		frv = convReg.makeFuncConvertIn(env, call, field.Type())
+	} else {
+		cv, _ := convReg.convArg(field.Type())
 
-	frv, err := cv(env, 0, fval)
-	if err != nil {
-		return err
+		frv, err = cv(env, -1, fval)
+		if err != nil {
+			return err
+		}
 	}
 
 	if !frv.Type().AssignableTo(field.Type()) {
@@ -214,13 +225,68 @@ func castObjectToRef(env *Env, typ reflect.Type, obj Object) (Object, error) {
 		v.SetInt(int64(num.Int().I))
 
 		return &ReflectValue{val: v}, nil
-	default:
-		return nil, env.RT.NewError("unable to cast to type: " + typ.Name())
+	case reflect.Slice:
+		if typ.Elem() == reflect.TypeFor[byte]() {
+			str, err := AssertString(env, obj, "")
+			if err != nil {
+				return nil, err
+			}
+
+			v := reflect.MakeSlice(typ, 0, len(str.S))
+			v = reflect.AppendSlice(v, reflect.ValueOf([]byte(str.S)))
+
+			return &ReflectValue{val: v}, nil
+		}
+	case reflect.String:
+		if rv, ok := obj.(*ReflectValue); ok {
+			if sv, ok := rv.val.Interface().([]byte); ok {
+				return MakeString(string(sv)), nil
+			}
+		}
+
+		if _, ok := obj.(String); ok {
+			return obj, nil
+		}
+
+	case reflect.Interface:
+		if rv, ok := obj.(*ReflectValue); ok {
+			if rv.val.Type().AssignableTo(typ) {
+				return rv, nil
+			}
+		}
 	}
+
+	return nil, env.RT.NewError("unable to cast to type: " + typ.Name())
 }
 
 func makePtr(t reflect.Type) reflect.Value {
 	return reflect.New(t)
+}
+
+func newVal(t reflect.Type) reflect.Value {
+	switch t.Kind() {
+	case reflect.Slice:
+		return reflect.MakeSlice(t, 0, 0)
+	case reflect.Map:
+		return reflect.MakeMap(t)
+	case reflect.Chan:
+		return reflect.MakeChan(t, 0)
+	default:
+		return reflect.New(t)
+	}
+}
+
+func newVal2(t reflect.Type, size int) reflect.Value {
+	switch t.Kind() {
+	case reflect.Slice:
+		return reflect.MakeSlice(t, size, size)
+	case reflect.Map:
+		return reflect.MakeMap(t)
+	case reflect.Chan:
+		return reflect.MakeChan(t, 0)
+	default:
+		return reflect.New(t)
+	}
 }
 
 func makeMapType(k, v reflect.Type) reflect.Type {
@@ -275,6 +341,56 @@ func derefPtr(env *Env, rv reflect.Value) (Object, error) {
 	}
 
 	return fromAny(env, rv.Elem().Interface())
+}
+
+func appendVal(env *Env, rv reflect.Value, ov reflect.Value) (reflect.Value, error) {
+	if rv.Kind() != reflect.Slice {
+		return reflect.Value{}, fmt.Errorf("append only takes slices")
+	}
+
+	if ov.Kind() == reflect.Slice && ov.Elem().Type() != rv.Elem().Type() {
+		return reflect.AppendSlice(rv, ov), nil
+	}
+
+	if rv.Elem().Type() != ov.Type() {
+		return reflect.Value{}, fmt.Errorf("value not of correct type: %s", rv.Elem().Type().String())
+	}
+
+	return reflect.Append(rv, ov), nil
+}
+
+func copySlice(env *Env, rv reflect.Value, ov reflect.Value) (int, error) {
+	if rv.Kind() != reflect.Slice {
+		return 0, fmt.Errorf("append only takes slices")
+	}
+
+	if ov.Kind() == reflect.Slice && ov.Type().Elem() == rv.Type().Elem() {
+		return reflect.Copy(rv, ov), nil
+	}
+
+	if rv.Type().Elem() != ov.Type() {
+		return 0, fmt.Errorf("value not of correct type: %s, was: %s", rv.Type().Elem().String(), ov.Type())
+	}
+
+	rv.Index(0).Set(ov)
+
+	return 1, nil
+}
+
+func sliceSlice2(env *Env, rv reflect.Value, start, end int) (reflect.Value, error) {
+	if rv.Kind() != reflect.Slice {
+		return reflect.Value{}, fmt.Errorf("append only takes slices")
+	}
+
+	return rv.Slice(start, end), nil
+}
+
+func sliceSlice3(env *Env, rv reflect.Value, start, end, capa int) (reflect.Value, error) {
+	if rv.Kind() != reflect.Slice {
+		return reflect.Value{}, fmt.Errorf("append only takes slices")
+	}
+
+	return rv.Slice3(start, end, capa), nil
 }
 
 var nsSubs = strings.NewReplacer(
@@ -437,6 +553,52 @@ func SetupPkgReflect(env *Env) error {
 	})
 
 	b.Defn(&DefnInfo{
+		Name:  "append",
+		Doc:   "Append data to a slice value.",
+		Added: "1.0",
+		Fn:    appendVal,
+	})
+
+	b.Defn(&DefnInfo{
+		Name:  "copy",
+		Doc:   "Copy data into a slice.",
+		Added: "1.0",
+		Fn:    copySlice,
+	})
+
+	b.Defn(&DefnInfo{
+		Name:  "slice",
+		Doc:   "Create a subslice of a given slice.",
+		Added: "1.0",
+		Fns: []ArityFn{
+			{
+				Args: []string{"start", "end"},
+				Fn:   sliceSlice2,
+			},
+			{
+				Args: []string{"start", "end", "capa"},
+				Fn:   sliceSlice3,
+			},
+		},
+	})
+
+	b.Defn(&DefnInfo{
+		Name:  "new",
+		Doc:   "Make a new value of the given type.",
+		Added: "1.0",
+		Fns: []ArityFn{
+			{
+				Args: []string{"type"},
+				Fn:   newVal,
+			},
+			{
+				Args: []string{"type", "size"},
+				Fn:   newVal2,
+			},
+		},
+	})
+
+	b.Defn(&DefnInfo{
 		Name:  "struct-type",
 		Doc:   "Create a new Go struct type.",
 		Added: "1.0",
@@ -586,6 +748,14 @@ func SetupPkgReflect(env *Env) error {
 		Added: "1.0",
 		Tag:   "ReflectType",
 		Type:  reflect.TypeFor[float64](),
+	})
+
+	b.DefType(&DefTypeInfo{
+		Name:  "bytes",
+		Doc:   "A byte slice",
+		Added: "1.0",
+		Tag:   "ReflectType",
+		Type:  reflect.TypeFor[[]byte](),
 	})
 
 	return nil

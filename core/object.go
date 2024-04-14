@@ -846,25 +846,37 @@ func (exInfo *ExInfo) Message() Object {
 
 func (exInfo *ExInfo) Error() string {
 	var pos Position
-	_, data := exInfo.GetEqu(criticalKeywords.data)
-	ok, form := data.(Map).GetEqu(criticalKeywords.form)
-	if ok {
-		if form.GetInfo() != nil {
-			pos = form.GetInfo().Pos()
-		}
-	}
 	prefix := "Exception"
-	if ok, pr := data.(Map).GetEqu(criticalKeywords._prefix); ok {
-		s, err := pr.ToString(nil, false)
-		if err == nil {
-			prefix = s
+
+	_, data := exInfo.GetEqu(criticalKeywords.data)
+	dm, ok := data.(Map)
+	if ok {
+		ok, form := dm.GetEqu(criticalKeywords.form)
+		if ok {
+			if form.GetInfo() != nil {
+				pos = form.GetInfo().Pos()
+			}
+		}
+		if ok, pr := dm.GetEqu(criticalKeywords._prefix); ok {
+			s, err := pr.ToString(nil, false)
+			if err == nil {
+				prefix = s
+			}
 		}
 	}
 	_, msg := exInfo.GetEqu(criticalKeywords.message)
-	if len(exInfo.rt.callstack.frames) > 0 && !LINTER_MODE {
-		return fmt.Sprintf("%s:%d:%d: %s: %s\nStacktrace:\n%s", pos.Filename(), pos.startLine, pos.startColumn, prefix, msg.(String).S, exInfo.rt.stacktrace())
+	var strMsg string
+
+	if sv, ok := msg.(String); ok {
+		strMsg = sv.S
 	} else {
-		return fmt.Sprintf("%s:%d:%d: %s: %s", pos.Filename(), pos.startLine, pos.startColumn, prefix, msg.(String).S)
+		strMsg = "no proper message"
+	}
+
+	if len(exInfo.rt.callstack.frames) > 0 && !LINTER_MODE {
+		return fmt.Sprintf("%s:%d:%d: %s: %s\nStacktrace:\n%s", pos.Filename(), pos.startLine, pos.startColumn, prefix, strMsg, exInfo.rt.stacktrace())
+	} else {
+		return fmt.Sprintf("%s:%d:%d: %s: %s", pos.Filename(), pos.startLine, pos.startColumn, prefix, strMsg)
 	}
 }
 
