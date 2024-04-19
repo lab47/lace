@@ -3062,10 +3062,12 @@ func ProcessReader(env *Env, reader *Reader, filename string, phase Phase) error
 		parseContext.Env.SetFilename(MakeString(s))
 	}
 
+	var exprs []Expr
+
 	for {
 		obj, err := TryRead(env, reader)
 		if err == io.EOF {
-			return nil
+			break
 		}
 		if err != nil {
 			fmt.Fprintln(Stderr, err)
@@ -3083,24 +3085,97 @@ func ProcessReader(env *Env, reader *Reader, filename string, phase Phase) error
 			continue
 		}
 
-		env.RT.setTopPosition(expr.Pos())
+		exprs = append(exprs, expr)
+	}
 
-		obj, err = TryEval(env, expr)
-		if err != nil {
-			fmt.Fprintln(Stderr, err)
-			return err
-		}
-		if phase == EVAL {
-			continue
-		}
-		if _, ok := obj.(Nil); !ok {
-			s, err := obj.ToString(env, true)
+	/*
+		for _, expr := range exprs {
+			env.RT.setTopPosition(expr.Pos())
+
+			obj, err := TryEval(env, expr)
 			if err != nil {
+				fmt.Fprintln(Stderr, err)
 				return err
 			}
-			fmt.Fprintln(Stdout, s)
+			if phase == EVAL {
+				continue
+			}
+			if _, ok := obj.(Nil); !ok {
+				s, err := obj.ToString(env, true)
+				if err != nil {
+					return err
+				}
+				fmt.Fprintln(Stdout, s)
+			}
 		}
+	*/
+
+	fn := &Fn{
+		fnExpr: &FnExpr{
+			arities: []FnArityExpr{
+				{
+					body: exprs,
+				},
+			},
+		},
 	}
+
+	_, err := compileFn(env, fn, nil)
+	if err != nil {
+		fmt.Printf("error compiling: %s\n", err)
+		return err
+	}
+
+	//spew.Dump(code)
+
+	_, err = EngineRun(env, fn)
+	if err != nil {
+		fmt.Printf("error running: %s\n", err)
+		return err
+	}
+
+	return nil
+	/*
+		for {
+			obj, err := TryRead(env, reader)
+			if err == io.EOF {
+				return nil
+			}
+			if err != nil {
+				fmt.Fprintln(Stderr, err)
+				return err
+			}
+			if phase == READ {
+				continue
+			}
+			expr, err := TryParse(obj, parseContext)
+			if err != nil {
+				fmt.Fprintln(Stderr, err)
+				return err
+			}
+			if phase == PARSE {
+				continue
+			}
+
+			env.RT.setTopPosition(expr.Pos())
+
+			obj, err = TryEval(env, expr)
+			if err != nil {
+				fmt.Fprintln(Stderr, err)
+				return err
+			}
+			if phase == EVAL {
+				continue
+			}
+			if _, ok := obj.(Nil); !ok {
+				s, err := obj.ToString(env, true)
+				if err != nil {
+					return err
+				}
+				fmt.Fprintln(Stdout, s)
+			}
+		}
+	*/
 }
 
 func ProcessReaderFromEval(env *Env, reader *Reader, filename string) error {
@@ -3144,6 +3219,9 @@ func processInEnvInNS(env *Env, ns *Namespace, data []byte) error {
 	if err != nil {
 		return err
 	}
+
+	var exprs []Expr
+
 	for len(p) > 0 {
 		var expr Expr
 		expr, p, err = UnpackExpr(env, p, header)
@@ -3151,6 +3229,36 @@ func processInEnvInNS(env *Env, ns *Namespace, data []byte) error {
 			return err
 		}
 
+		exprs = append(exprs, expr)
+	}
+
+	/*
+		fn := &Fn{
+			fnExpr: &FnExpr{
+				arities: []FnArityExpr{
+					{
+						body: exprs,
+					},
+				},
+			},
+		}
+
+		_, err = compileFn(env, fn, nil)
+		if err != nil {
+			fmt.Printf("error compiling: %s\n", err)
+			return err
+		}
+
+		//spew.Dump(code)
+
+		_, err = EngineRun(env, fn)
+		if err != nil {
+			fmt.Printf("error running: %s\n", err)
+			return err
+		}
+
+	*/
+	for _, expr := range exprs {
 		_, err := TryEval(env, expr)
 		if err != nil {
 			return err

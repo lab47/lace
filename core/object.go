@@ -227,6 +227,9 @@ type (
 		isMacro bool
 		fnExpr  *FnExpr
 		env     *LocalEnv
+
+		code   *Code
+		upvals []*NamedPair
 	}
 	ExInfo struct {
 		ArrayMap
@@ -303,6 +306,7 @@ type (
 		ReflectValue   *Type
 		NodeSeq        *Type
 		ParseError     *Type
+		NamedPair      *Type
 		Proc           *Type
 		ProcFn         *Type
 		Ratio          *Type
@@ -911,6 +915,14 @@ func (fn *Fn) Hash(env *Env) (uint32, error) {
 }
 
 func (fn *Fn) Call(env *Env, args []Object) (Object, error) {
+	if env.Engine != nil {
+		return env.Engine.RunWithArgs(env, fn, args)
+	}
+
+	return fn.CallTree(env, args)
+}
+
+func (fn *Fn) CallTree(env *Env, args []Object) (Object, error) {
 	min := math.MaxInt32
 	max := -1
 	for _, arity := range fn.fnExpr.arities {
@@ -1975,4 +1987,16 @@ func MakeMeta(arglists Seq, docstring string, added string) *ArrayMap {
 	res.AddEqu(criticalKeywords.doc, String{S: docstring})
 	res.AddEqu(criticalKeywords.added, String{S: added})
 	return res
+}
+
+func (p Position) String() string {
+	if p.filename == nil {
+		return "<unknown>:-1"
+	}
+
+	if p.startLine != p.endLine {
+		return fmt.Sprintf("%s:%d-%d", p.Filename(), p.startLine, p.endLine)
+	} else {
+		return fmt.Sprintf("%s:%d", p.Filename(), p.startLine)
+	}
 }

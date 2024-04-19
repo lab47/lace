@@ -178,6 +178,20 @@ func processReplCommand(env *core.Env, reader *core.Reader, phase core.Phase, pa
 		return false, nil
 	}
 
+	/*
+		fn, err := core.Compile(env, []core.Expr{expr})
+		if err != nil {
+			fmt.Printf("error compiling: %s\n", err)
+		} else {
+			obj, err := core.EngineRun(env, fn)
+			if err != nil {
+				fmt.Printf("error running bytecode: %s\n", err)
+			} else {
+				spew.Dump(obj)
+			}
+		}
+	*/
+
 	res, err := core.TopEval(env, expr, nil)
 	if err != nil {
 		if _, ok := err.(*core.ExitError); ok {

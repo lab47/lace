@@ -759,16 +759,22 @@ func unpackSetMacroExpr(env *Env, p []byte, header *PackHeader) (*SetMacroExpr, 
 func (expr *BindingExpr) Pack(p []byte, env *PackEnv) []byte {
 	p = append(p, BINDING_EXPR)
 	p = expr.Pos().Pack(p, env)
+	p = expr.name.Pack(p, env)
 	p = appendInt(p, env.bindingIndex(expr.binding))
 	return p
 }
 
-func unpackBindingExpr(p []byte, header *PackHeader) (*BindingExpr, []byte, error) {
+func unpackBindingExpr(env *Env, p []byte, header *PackHeader) (*BindingExpr, []byte, error) {
 	p = p[1:]
 	pos, p := unpackPosition(p, header)
+	sym, p, err := unpackSymbol(env, p, header)
+	if err != nil {
+		return nil, nil, err
+	}
 	index, p := extractInt(p)
 	res := &BindingExpr{
 		Position: pos,
+		name:     sym,
 		binding:  &header.Bindings[index],
 	}
 	return res, p, nil
@@ -1118,7 +1124,7 @@ func UnpackExpr(env *Env, p []byte, header *PackHeader) (Expr, []byte, error) {
 	case SET_MACRO_EXPR:
 		return unpackSetMacroExpr(env, p, header)
 	case BINDING_EXPR:
-		return unpackBindingExpr(p, header)
+		return unpackBindingExpr(env, p, header)
 	default:
 		return nil, nil, env.RT.NewError(fmt.Sprintf("Unknown pack tag: %d", p[0]))
 	}

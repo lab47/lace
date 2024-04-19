@@ -98,6 +98,7 @@ func init() {
 		Keyword:       regType("Keyword", (*Keyword)(nil), "A possibly-namespace-qualified name prefixed by ':'"),
 		LazySeq:       RegRefType("LazySeq", (*LazySeq)(nil), ""),
 		List:          RegRefType("List", (*List)(nil), ""),
+		NamedPair:     RegRefType("NamedPair", (*List)(nil), ""),
 		Opaque:        RegRefType("Opaque", (*Opaque[bool])(nil), ""),
 		MappingSeq:    RegRefType("MappingSeq", (*MappingSeq)(nil), ""),
 		Namespace:     RegRefType("Namespace", (*Namespace)(nil), ""),

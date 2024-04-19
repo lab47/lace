@@ -29,19 +29,19 @@
 ;during bootstrap we don't have destructuring let, loop or fn, will redefine later
 (def
   ^{:added "1.0"}
-  let (fn* let [&form &env & decl] (cons 'let* decl)))
+  let (fn* [&form &env & decl] (cons 'let* decl)))
 
 (set-macro__ #'let)
 
 (def
   ^{:added "1.0"}
-  loop (fn* loop [&form &env & decl] (cons 'loop* decl)))
+  loop (fn* [&form &env & decl] (cons 'loop* decl)))
 
 (set-macro__ #'loop)
 
 (def
   ^{:added "1.0"}
-  fn (fn* fn [&form &env & decl]
+  fn (fn* [&form &env & decl]
           (with-meta__
             (cons 'fn* decl)
             (meta__ &form))))
@@ -78,7 +78,7 @@
          happen at different 'places' depending on the concrete type."
          :added "1.0"}
   ; TODO: types
-  conj (fn conj
+  conj (fn 
          (^Collection [coll x] (conj__ coll x))
          (^Collection [coll x & xs]
           (if xs
@@ -89,33 +89,33 @@
   ^{:doc "Same as (first (next x))"
     :arglists '([x])
     :added "1.0"}
-  second (fn second [^Seqable x] (first (next x))))
+  second (fn [^Seqable x] (first (next x))))
 
 (def
   ^{:doc "Same as (first (first x))"
     :arglists '([x])
     :added "1.0"}
-  ffirst (fn ffirst [^Seqable x] (first (first x))))
+  ffirst (fn [^Seqable x] (first (first x))))
 
 (def
   ^{:doc "Same as (next (first x))"
     :arglists '([x])
     :added "1.0"
     :tag Seq}
-  nfirst (fn nfirst [^Seqable x] (next (first x))))
+  nfirst (fn [^Seqable x] (next (first x))))
 
 (def
   ^{:doc "Same as (first (next x))"
     :arglists '([x])
     :added "1.0"}
-  fnext (fn fnext [^Seqable x] (first (next x))))
+  fnext (fn [^Seqable x] (first (next x))))
 
 (def
   ^{:doc "Same as (next (next x))"
     :arglists '([x])
     :added "1.0"
     :tag Seq}
-  nnext (fn nnext [^Seqable x] (next (next x))))
+  nnext (fn [^Seqable x] (next (next x))))
 
 (def
   ^{:arglists '([coll])
@@ -137,31 +137,31 @@
   ^{:arglists '([x])
     :doc "Returns true if x is a sequence"
     :added "1.0"}
-  seq? (fn seq? ^Boolean [x] (instance? Seq x)))
+  seq? (fn ^Boolean [x] (instance? Seq x)))
 
 (def
   ^{:arglists '([x])
     :doc "Returns true if x is a Char"
     :added "1.0"}
-  char? (fn char? ^Boolean [x] (instance? Char x)))
+  char? (fn ^Boolean [x] (instance? Char x)))
 
 (def
   ^{:arglists '([x])
     :doc "Returns true if x is a String"
     :added "1.0"}
-  string? (fn string? ^Boolean [x] (instance? String x)))
+  string? (fn ^Boolean [x] (instance? String x)))
 
 (def
   ^{:arglists '([x])
     :doc "Returns true if x is a map"
     :added "1.0"}
-  map? (fn map? ^Boolean [x] (instance? Map x)))
+  map? (fn ^Boolean [x] (instance? Map x)))
 
 (def
   ^{:arglists '([x])
     :doc "Returns true if x is a vector"
     :added "1.0"}
-  vector? (fn vector? ^Boolean [x] (instance? Vector x)))
+  vector? (fn ^Boolean [x] (instance? Vector x)))
 
 (def
   ^{:arglists '([msg map] [msg map cause])
@@ -178,7 +178,7 @@
          contains val at index. Note - index must be <= (count vector)."
          :added "1.0"}
   assoc
-  (fn assoc
+  (fn
     (^Map [^Associative map key val] (assoc__ map key val))
     (^Map [^Associative map key val & kvs]
      (let [ret (assoc__ map key val)]
@@ -234,7 +234,7 @@
   ^{:arglists '([coll])
     :doc "Return the last item in coll, in linear time."
     :added "1.0"}
-  last (fn last [^Seqable s]
+  last (fn [^Seqable s]
          (if (next s)
            (recur (next s))
            (first s))))
@@ -243,7 +243,7 @@
   ^{:arglists '([coll])
     :doc "Return a seq of all but the last item in coll, in linear time."
     :added "1.0"}
-  butlast (fn butlast ^Seq [^Seqable s]
+  butlast (fn ^Seq [^Seqable s]
             (loop [ret [] s s]
               (if (next s)
                 (recur (conj ret (first s)) (next s))
@@ -258,7 +258,7 @@
          :arglists '([name doc-string? attr-map? [params*] prepost-map? body]
                      [name doc-string? attr-map? ([params*] prepost-map? body)+ attr-map?])
          :added "1.0"}
-  defn (fn defn [&form &env name & fdecl]
+  defn (fn [&form &env name & fdecl]
          ;; Note: Cannot delegate this check to def because of the call to (with-meta name ..)
          (if (instance? Symbol name)
            nil

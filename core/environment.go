@@ -34,6 +34,8 @@ type (
 		Features      Set
 
 		RT *Runtime
+
+		Engine *Engine
 	}
 )
 

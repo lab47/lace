@@ -110,11 +110,6 @@ func NewEnv() (*Env, error) {
 		}
 	}
 
-	err = setCoreNamespaces(res)
-	if err != nil {
-		return nil, err
-	}
-
 	err = SetupPkgReflect(res)
 	if err != nil {
 		return nil, err

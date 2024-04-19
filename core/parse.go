@@ -71,6 +71,7 @@ type (
 	}
 	BindingExpr struct {
 		Position
+		name    Symbol
 		binding *Binding
 	}
 	MetaExpr struct {
@@ -2458,6 +2459,7 @@ func parseSymbol(obj Object, ctx *ParseContext) (Expr, error) {
 		b.isUsed = true
 		return &BindingExpr{
 			binding:  b,
+			name:     sym,
 			Position: GetPosition(obj),
 		}, nil
 	}
