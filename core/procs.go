@@ -2998,6 +2998,48 @@ var procExit = func(env *Env, args []Object) (Object, error) {
 	return nil, &ExitError{}
 }
 
+func ReadIntoBytecode(env *Env, reader *Reader, filename string) ([]byte, error) {
+	parseContext := &ParseContext{Env: env}
+	if filename != "" {
+		currentFilename := parseContext.Env.file.Value
+		defer func() {
+			parseContext.Env.SetFilename(currentFilename)
+		}()
+		s, err := filepath.Abs(filename)
+		if err != nil {
+			return nil, err
+		}
+		parseContext.Env.SetFilename(MakeString(s))
+	}
+
+	var exprs []Expr
+
+	for {
+		obj, err := TryRead(env, reader)
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			fmt.Fprintln(Stderr, err)
+			return nil, err
+		}
+		expr, err := TryParse(obj, parseContext)
+		if err != nil {
+			fmt.Fprintln(Stderr, err)
+			return nil, err
+		}
+		_, err = TryEval(env, expr)
+		if err != nil {
+			fmt.Fprintln(Stderr, err)
+			return nil, err
+		}
+
+		exprs = append(exprs, expr)
+	}
+
+	return nil, nil
+}
+
 func PackReader(env *Env, reader *Reader, filename string) ([]byte, error) {
 	var p []byte
 	packEnv := NewPackEnv(env)
@@ -3063,6 +3105,8 @@ func ProcessReader(env *Env, reader *Reader, filename string, phase Phase) error
 	}
 
 	var exprs []Expr
+
+	env.RT.engine = env.Engine
 
 	for {
 		obj, err := TryRead(env, reader)
@@ -3232,41 +3276,41 @@ func processInEnvInNS(env *Env, ns *Namespace, data []byte) error {
 		exprs = append(exprs, expr)
 	}
 
-	/*
-		fn := &Fn{
-			fnExpr: &FnExpr{
-				arities: []FnArityExpr{
-					{
-						body: exprs,
-					},
+	fn := &Fn{
+		fnExpr: &FnExpr{
+			arities: []FnArityExpr{
+				{
+					body: exprs,
 				},
 			},
+		},
+	}
+
+	_, err = compileFn(env, fn, nil)
+	if err != nil {
+		fmt.Printf("error compiling: %s\n", err)
+		return err
+	}
+
+	//spew.Dump(code)
+
+	_, err = EngineRun(env, fn)
+	if err != nil {
+		fmt.Printf("error running: %s\n", err)
+		return err
+	}
+
+	/*
+		for _, expr := range exprs {
+			_, err := TryEval(env, expr)
+			if err != nil {
+				return err
+			}
 		}
-
-		_, err = compileFn(env, fn, nil)
-		if err != nil {
-			fmt.Printf("error compiling: %s\n", err)
-			return err
+		if VerbosityLevel > 0 {
+			fmt.Fprintf(Stderr, "processData: Evaluated code for %s\n", env.CurrentNamespace().Qual())
 		}
-
-		//spew.Dump(code)
-
-		_, err = EngineRun(env, fn)
-		if err != nil {
-			fmt.Printf("error running: %s\n", err)
-			return err
-		}
-
 	*/
-	for _, expr := range exprs {
-		_, err := TryEval(env, expr)
-		if err != nil {
-			return err
-		}
-	}
-	if VerbosityLevel > 0 {
-		fmt.Fprintf(Stderr, "processData: Evaluated code for %s\n", env.CurrentNamespace().Qual())
-	}
 
 	return nil
 }

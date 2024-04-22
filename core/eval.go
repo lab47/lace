@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+
+	"github.com/davecgh/go-spew/spew"
 )
 
 type (
@@ -22,6 +24,7 @@ type (
 	Runtime struct {
 		callstack *Callstack
 		// GIL         sync.Mutex
+		engine *Engine
 	}
 )
 
@@ -71,6 +74,10 @@ type TCContext struct {
 }
 
 func (rt *Runtime) NewArgTypeError(index int, obj Object, expectedType string) *EvalError {
+	if rt.engine != nil {
+		spew.Dump(rt.engine.assembleBacktrace())
+	}
+
 	name := rt.topName()
 	if index >= 0 {
 		return rt.NewError(fmt.Sprintf("Arg[%d] of %s must have type %s, got %s", index, name, expectedType, obj.GetType().Name()))

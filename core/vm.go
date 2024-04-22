@@ -41,20 +41,8 @@ func (v *LiteralData) insData() {}
 
 func (v *LiteralData) String() string {
 	str, _ := v.obj.ToString(nil, false)
-	return "literal: " + str
+	return fmt.Sprintf("literal: %q", str)
 }
-
-type VectorData struct {
-	cnt int
-}
-
-func (v *VectorData) insData() {}
-
-type MapData struct {
-	cnt int
-}
-
-func (v *MapData) insData() {}
 
 type DefData struct {
 	Meta *ArrayMap
@@ -74,14 +62,13 @@ type MethodCallData struct {
 func (v *MethodCallData) insData() {}
 
 type FnData struct {
-	Code   *Code
-	Upvals int
+	Code *Code
 }
 
 func (v *FnData) insData() {}
 
 func (v *FnData) String() string {
-	return fmt.Sprintf("<fn %s upvals:%d>", v.Code.Position(), v.Upvals)
+	return fmt.Sprintf("<fn %s upvals:%d>", v.Code.Position(), v.Code.importUpvals)
 }
 
 type CheckTypeData struct {
@@ -136,6 +123,7 @@ const (
 	ThrowArity
 	MakeFn
 	RefUpval
+	PushSelfFn
 	SetLabel // only used during bytecode generation
 	SetLine  // only used during bytecode generation
 )
@@ -159,46 +147,10 @@ type Engine struct {
 	stack  []Object
 }
 
-type varBind struct {
-	index int
-
-	name Symbol
-	home *fnFrame
-
-	upval bool
-	upidx int
-
-	uses []*Instruction
-
-	ref *varBind
-}
-
-type varFrame struct {
-	parent   *varFrame
-	args     []Symbol
-	bindings map[string]*varBind
-	top      int
-	expr     Expr
-}
-
-type fnFrame struct {
-	parent *fnFrame
-	top    *varFrame
-
-	importUpvals []*varBind
-	upvals       []*varBind
-	letUpvals    []*varBind
-
-	selfUpvals int
-	refUpvals  int
-}
-
 type Compiler struct {
-	arity         int
-	varadic       bool
-	insns         []*Instruction
-	curBindings   int
-	totalBindings int
+	arity   int
+	varadic bool
+	insns   []*Instruction
 
 	fnExpr *FnExpr
 	fn     *fnFrame
@@ -246,34 +198,6 @@ func (e *Compiler) setLine(line, ip int) {
 	}
 }
 
-func (c *Compiler) Init(expr Expr, args []Symbol) {
-	var vf varFrame
-	vf.bindings = make(map[string]*varBind)
-	vf.args = args
-	vf.expr = expr
-	vf.top = int(c.newLabel())
-
-	c.insn(Instruction{
-		Op: SetLabel,
-		A0: int32(vf.top),
-	})
-
-	var fn fnFrame
-	fn.parent = c.fn
-	fn.top = &vf
-
-	c.fn = &fn
-
-	if len(args) > 0 {
-		c.arity = len(args)
-		start := c.addBindings(len(args))
-
-		for i, a := range args {
-			vf.bindings[a.Name()] = &varBind{index: start + i, name: a, home: c.fn}
-		}
-	}
-}
-
 func printInsns(stream []*Instruction) {
 	for ip, insn := range stream {
 		if insn.Data != nil {
@@ -284,66 +208,17 @@ func printInsns(stream []*Instruction) {
 	}
 }
 
+const debugCompile = false
+
 func (c *Compiler) Export() *Code {
 	// We now go through all the upvals (and their instructions) and
 	// set the upval indexes. We set this up such that all imported
 	// upvals are first, then all self upvals are second.
 
-	fmt.Printf("====== export %s\n", c.fnExpr.Pos())
-	printInsns(c.insns)
-
-	/*
-		upstream := map[*varBind]int{}
-
-		var importNames []Symbol
-
-		for _, b := range c.fn.importUpvals {
-			idx, ok := upstream[b.ref]
-			if !ok {
-				idx = len(upstream)
-				upstream[b.ref] = idx
-				importNames = append(importNames, b.name)
-			}
-
-			for _, i := range b.uses {
-				*i = Instruction{
-					Op: GetUpval,
-					A0: int32(idx),
-				}
-			}
-		}
-
-		for i, b := range c.fn.upvals {
-			idx := len(upstream) + i
-			upstream[b] = idx
-			fmt.Printf("! upval remapping local:%d => upval:%d\n", b.index, idx)
-			for _, j := range b.uses {
-				*j = Instruction{
-					Op: GetUpval,
-					A0: int32(idx),
-				}
-			}
-		}
-
-		// if any arguments are now upvals, we need to insert instructions
-		// to set them from the locals now.
-
-		var insns []Instruction
-
-		for _, vb := range c.fn.top.bindings {
-			if idx, ok := upstream[vb]; ok {
-				insns = append(insns,
-					Instruction{
-						Op: GetLocal,
-						A0: int32(vb.index),
-					},
-					Instruction{
-						Op: SetUpval,
-						A0: int32(idx),
-					})
-			}
-		}
-	*/
+	if debugCompile {
+		fmt.Printf("====== export %s\n", c.fnExpr.Pos())
+		printInsns(c.insns)
+	}
 
 	var insns []*Instruction
 
@@ -366,6 +241,15 @@ func (c *Compiler) Export() *Code {
 		}
 	}
 
+	insns = append(insns, &Instruction{Op: Return})
+
+	if debugCompile {
+		fmt.Println("--------")
+		printInsns(insns)
+	}
+
+	var be BytecodeEncoder
+
 	for idx := range insns {
 		i := insns[idx]
 
@@ -373,24 +257,31 @@ func (c *Compiler) Export() *Code {
 		case Jump, JumpIfFalse, JumpIfTrue, PushHandler:
 			i.A0 = int32(label2ip[int(i.A0)])
 		}
-	}
 
-	insns = append(insns, &Instruction{Op: Return})
+		err := be.Encode(i)
+		if err != nil {
+			panic(fmt.Sprintf("unable to encode instruction at %d: %s", idx, err))
+		}
+	}
 
 	c.lines = append(c.lines, len(c.insns))
 
-	fmt.Println("--------")
-	printInsns(insns)
-	fmt.Println("====== export done")
+	if debugCompile {
+		fmt.Println("====== export done")
+	}
+
+	var importNames []Symbol
+
+	for _, vb := range c.fn.importUpvals {
+		importNames = append(importNames, vb.name)
+	}
 
 	return &Code{
-		arity:       c.arity,
-		insns:       insns,
-		numBindings: c.totalBindings,
-		lines:       c.lines,
-		filename:    c.filename,
-
-		//importBindings: importNames,
+		numBindings:    c.fn.totalBindings,
+		lines:          c.lines,
+		filename:       c.filename,
+		data:           be.CodeData,
+		importBindings: importNames,
 	}
 }
 
@@ -411,7 +302,6 @@ func printBindings(fn *fnFrame) {
 func (c *Compiler) Process(env *Env, expr Expr) error {
 	c.updatePos(expr.Pos())
 
-proc:
 	switch e := expr.(type) {
 	case *VarRefExpr:
 		c.insns = append(c.insns, &Instruction{
@@ -424,123 +314,15 @@ proc:
 			Data: &VarData{vr: e.vr},
 		})
 	case *BindingExpr:
-		fn := c.fn
-
-		// see if it's a binding in the current frame
-		for vf := fn.top; vf != nil; vf = vf.parent {
-			if b, ok := vf.bindings[e.name.Name()]; ok {
-				if b.upval {
-					b.uses = append(b.uses, c.insn(Instruction{
-						Op: GetUpval,
-					}))
-				} else {
-					b.uses = append(b.uses, c.insn(Instruction{
-						Op: GetLocal,
-						A0: int32(b.index),
-					}))
-				}
-				break proc
-			}
+		vb := c.fn.lookup(e.name)
+		if vb == nil {
+			pos := e.Pos()
+			fmt.Printf("Unable to find binding for %s at %s:%d\n", e.name.Name(), pos.Filename(), pos.startLine)
+			printBindings(c.fn)
+			return fmt.Errorf("Unable to find binding for %s at %s:%d", e.name.Name(), pos.Filename(), pos.startLine)
 		}
 
-		// Ok, it's not local, let's see if we can find it in a parent
-		fn = c.fn.parent
-
-		for fn != nil {
-			for vf := fn.top; vf != nil; vf = vf.parent {
-				if b, ok := vf.bindings[e.name.Name()]; ok {
-					if !b.upval {
-						b.upval = true
-						fn.upvals = append(fn.upvals, b)
-					}
-
-					vb := &varBind{
-						ref:   b,
-						upval: true,
-						name:  e.name,
-						home:  c.fn,
-					}
-
-					c.fn.importUpvals = append(c.fn.importUpvals, vb)
-
-					vb.uses = append(vb.uses, c.insn(Instruction{
-						Op: GetUpval,
-					}))
-
-					// Add a binding between the current fn and the origin fn.
-					// This is so we know to pass the upval along the function chain
-					// even if the in-between ones don't use it.
-
-					for parent := c.fn.parent; parent != fn; parent = parent.parent {
-						vb := &varBind{
-							ref:   b,
-							upval: true,
-							name:  e.name,
-							home:  parent,
-						}
-
-						parent.importUpvals = append(parent.importUpvals, vb)
-					}
-
-					/*
-						// ok! found it in a parent, let's tag the parents binding as being an upval
-						if !b.upval {
-							b.upval = true
-							b.upidx = len(fn.upvals)
-							fn.upvals = append(fn.upvals, b)
-
-							// insert a binding the current frame that reference the binding
-							// in the parent.
-							vb := &varBind{
-								ref:   b,
-								upval: true,
-								upidx: len(c.fn.upvals),
-							}
-							c.fn.upvals = append(c.fn.upvals, vb)
-
-							fn.top.bindings[e.name.Name()] = vb
-
-							//fn.selfUpvals++
-
-							//c.fn.refUpvals++
-
-							// Backpatch the previous users to now get this variable from
-							// an upval
-							for _, i := range b.uses {
-								switch c.insns[i].Op {
-								case GetBinding:
-									c.insns[i] = Instruction{
-										Op:    GetUpval,
-										Count: int32(b.upidx),
-									}
-								case SetLocal:
-									c.insns[i] = Instruction{
-										Op:    SetUpval,
-										Count: int32(b.upidx),
-									}
-								default:
-									return fmt.Errorf("Unknown op in varbind uses: %s", c.insns[i])
-								}
-							}
-						}
-
-						c.insn(Instruction{
-							Op:    GetUpval,
-							Count: int32(b.upidx),
-						})
-					*/
-
-					break proc
-				}
-			}
-
-			fn = fn.parent
-		}
-
-		pos := e.Pos()
-		fmt.Printf("Unable to find binding for %s at %s:%d\n", e.name.Name(), pos.Filename(), pos.startLine)
-		printBindings(c.fn)
-		return fmt.Errorf("Unable to find binding for %s at %s:%d", e.name.Name(), pos.Filename(), pos.startLine)
+		c.append(vb.read())
 	case *LiteralExpr:
 		c.insns = append(c.insns, &Instruction{
 			Op:   PushLiteral,
@@ -554,9 +336,9 @@ proc:
 			}
 		}
 
-		c.insns = append(c.insns, &Instruction{
-			Op:   MakeVector,
-			Data: &VectorData{cnt: len(e.v)},
+		c.insn(Instruction{
+			Op: MakeVector,
+			A0: int32(len(e.v)),
 		})
 	case *MapExpr:
 		for i, k := range e.keys {
@@ -571,14 +353,14 @@ proc:
 			}
 		}
 		if int64(len(e.keys)) > HASHMAP_THRESHOLD/2 {
-			c.insns = append(c.insns, &Instruction{
-				Op:   MakeLargeMap,
-				Data: &MapData{cnt: len(e.keys) * 2},
+			c.insn(Instruction{
+				Op: MakeLargeMap,
+				A0: int32(len(e.keys) * 2),
 			})
 		} else {
-			c.insns = append(c.insns, &Instruction{
-				Op:   MakeSmallMap,
-				Data: &MapData{cnt: len(e.keys) * 2},
+			c.insn(Instruction{
+				Op: MakeSmallMap,
+				A0: int32(len(e.keys) * 2),
 			})
 		}
 	case *SetExpr:
@@ -589,15 +371,15 @@ proc:
 			}
 		}
 
-		c.insns = append(c.insns, &Instruction{
-			Op:   MakeVector,
-			Data: &VectorData{cnt: len(e.elements)},
+		c.insn(Instruction{
+			Op: MakeSet,
+			A0: int32(len(e.elements)),
 		})
 
 	case *DefExpr:
 		var (
 			op   OpCode
-			data DefData
+			data VarData
 		)
 
 		data.vr = e.vr
@@ -609,7 +391,7 @@ proc:
 		meta.Add(env, criticalKeywords.ns, e.vr.ns)
 		meta.Add(env, criticalKeywords.name, e.vr.name)
 
-		data.Meta = meta
+		//data.Meta = meta
 
 		if e.value != nil {
 			err := c.Process(env, e.value)
@@ -617,6 +399,11 @@ proc:
 				return err
 			}
 		}
+
+		c.insn(Instruction{
+			Op:   PushLiteral,
+			Data: &LiteralData{obj: meta},
+		})
 
 		if e.meta != nil {
 			err := c.Process(env, e.meta)
@@ -783,23 +570,11 @@ proc:
 				},
 			})
 
-			var vf varFrame
-			vf.top = -1
-			vf.args = []Symbol{ce.excSymbol}
-			vf.bindings = map[string]*varBind{}
-			vf.parent = c.fn.top
-			vf.expr = e
-			c.fn.top = &vf
+			c.fn.bindingFrame(1)
 
-			start := c.addBindings(1)
+			vb := c.fn.set(ce.excSymbol)
 
-			vb := &varBind{index: start, name: ce.excSymbol, home: c.fn}
-			vf.bindings[ce.excSymbol.Name()] = vb
-
-			vb.uses = append(vb.uses, c.insn(Instruction{
-				Op: SetLocal,
-				A0: int32(start),
-			}))
+			c.append(vb.set())
 
 			for i, b := range ce.body {
 				if i > 0 {
@@ -822,8 +597,7 @@ proc:
 				})
 			}
 
-			c.fn.top = c.fn.top.parent
-			c.removeBindings(1)
+			c.fn.popBindingFrame()
 		}
 
 		if nextCase != -1 {
@@ -911,32 +685,17 @@ proc:
 			return err
 		}
 
-		vbs := make([]*varBind, len(closure.importedVars))
-
-		for vb, pos := range closure.importedVars {
-			vbs[pos] = vb
-		}
-
-		for _, vb := range vbs {
-			vb.uses = append(vb.uses, c.insn(Instruction{
-				Op: RefUpval,
-			}))
+		for _, vb := range closure.importedVars {
+			c.append(vb.refUpval())
 		}
 
 		c.insn(Instruction{
 			Op:   MakeFn,
-			Data: &FnData{Code: fn.code, Upvals: len(vbs)},
+			Data: &FnData{Code: fn.code},
 		})
 	case *LetExpr:
-		start := c.addBindings(len(e.names))
-
-		var vf varFrame
-		vf.top = -1
-		vf.args = e.names
-		vf.bindings = map[string]*varBind{}
-		vf.parent = c.fn.top
-		vf.expr = e
-		c.fn.top = &vf
+		c.fn.bindingFrame(len(e.names))
+		defer c.fn.popBindingFrame()
 
 		for i, be := range e.values {
 			err := c.Process(env, be)
@@ -944,14 +703,9 @@ proc:
 				return err
 			}
 
-			vb := &varBind{index: start + i, name: e.names[i], home: c.fn}
+			vb := c.fn.set(e.names[i])
 
-			vf.bindings[e.names[i].Name()] = vb
-
-			vb.uses = append(vb.uses, c.insn(Instruction{
-				Op: SetLocal,
-				A0: int32(start + i),
-			}))
+			c.append(vb.set())
 		}
 
 		for i, b := range e.body {
@@ -966,29 +720,9 @@ proc:
 				return err
 			}
 		}
-
-		for _, vb := range vf.bindings {
-			if vb.upval {
-				c.fn.letUpvals = append(c.fn.letUpvals, vb)
-			}
-		}
-
-		// See if we need to promote any of these to upvals
-
-		// TODO could clear the locals here, for gc and safety reasons
-
-		c.removeBindings(len(e.names))
-		c.fn.top = c.fn.top.parent
-
 	case *LoopExpr:
-		start := c.addBindings(len(e.names))
-
-		var vf varFrame
-		vf.bindings = map[string]*varBind{}
-		vf.args = e.names
-		vf.parent = c.fn.top
-		vf.expr = e
-		c.fn.top = &vf
+		vf := c.fn.bindingFrame(len(e.names))
+		defer c.fn.popBindingFrame()
 
 		// TODO this doesn't match up with the indexes
 		// that GetBinding uses!
@@ -998,21 +732,17 @@ proc:
 				return err
 			}
 
-			vb := &varBind{index: start + i, name: e.names[i], home: c.fn}
+			vb := c.fn.set(e.names[i])
 
-			vf.bindings[e.names[i].Name()] = vb
-
-			vb.uses = append(vb.uses, c.insn(Instruction{
-				Op: SetLocal,
-				A0: int32(start + i),
-			}))
+			c.append(vb.set())
 		}
 
-		vf.top = int(c.newLabel())
+		vf.args = e.names
+		vf.recurDest = int(c.newLabel())
 
 		c.insn(Instruction{
 			Op: SetLabel,
-			A0: int32(vf.top),
+			A0: int32(vf.recurDest),
 		})
 
 		for i, b := range e.body {
@@ -1027,17 +757,11 @@ proc:
 				return err
 			}
 		}
-
-		// TODO could clear the locals here, for gc and safety reasons
-
-		c.removeBindings(len(e.names))
-		c.fn.top = c.fn.top.parent
-
 	case *RecurExpr:
 		v := c.fn.top
 
 		for v != nil {
-			if v.top >= 0 {
+			if v.recurDest >= 0 {
 				break
 			}
 
@@ -1064,7 +788,7 @@ proc:
 
 		c.insn(Instruction{
 			Op: Jump,
-			A0: int32(v.top),
+			A0: int32(v.recurDest),
 		})
 
 	default:
@@ -1074,27 +798,16 @@ proc:
 	return nil
 }
 
-func (c *Compiler) addBindings(cnt int) int {
-	cur := c.curBindings
-
-	c.curBindings += cnt
-	if c.curBindings > c.totalBindings {
-		c.totalBindings = c.curBindings
-	}
-
-	return cur
-}
-
-func (c *Compiler) removeBindings(cnt int) {
-	c.curBindings -= cnt
-}
-
 func (c *Compiler) currentIP() int {
 	return len(c.insns) - 1
 }
 
 func (c *Compiler) nextIP() int {
 	return len(c.insns)
+}
+
+func (c *Compiler) append(in *Instruction) {
+	c.insns = append(c.insns, in)
 }
 
 func (c *Compiler) insn(in Instruction) *Instruction {
@@ -1113,34 +826,6 @@ func (c *Compiler) patchToHere(pos int32) {
 
 type Upval struct {
 	Obj Object
-}
-
-type Code struct {
-	arity       int
-	varadic     bool
-	insns       []*Instruction
-	numBindings int
-
-	totalUpvals int
-
-	filename string
-	lines    []int
-
-	importBindings []Symbol
-}
-
-func (c *Code) Position() string {
-	return fmt.Sprintf("%s:%d", c.filename, c.lineForIp(0))
-}
-
-func (c *Code) lineForIp(ip int) int {
-	for i := 0; i < len(c.lines); i += 2 {
-		if c.lines[i] <= ip && c.lines[i+2] > ip {
-			return c.lines[i+1]
-		}
-	}
-
-	return -1
 }
 
 func (e *Engine) stackPush(obj Object) {
@@ -1224,506 +909,14 @@ func EngineRun(env *Env, fn *Fn) (Object, error) {
 	env.Engine = &e
 	e.stack = make([]Object, 0, 100)
 	e.pushFrame(fn)
-	return e.Run(env, fn)
+	return e.RunBC(env, fn)
 }
 
 func (e *Engine) RunWithArgs(env *Env, fn *Fn, args []Object) (Object, error) {
 	fr := e.pushFrame(fn)
 	fr.Args = slices.Clone(args)
 	fr.Arity = int32(len(args))
-	return e.Run(env, fn)
-}
-
-func (e *Engine) Run(env *Env, fn *Fn) (Object, error) {
-	c := fn.code
-
-	//fmt.Printf("==== enter frame %d %s:%d =====\n", len(e.frames), c.filename, c.lineForIp(0))
-	//defer fmt.Printf("==== exit frame %d =====\n", len(e.frames))
-	defer e.popFrame()
-
-	var (
-		ip  int
-		tmp Object
-		err error
-	)
-
-loop:
-	for {
-		insn := c.insns[ip]
-
-		//fmt.Printf("% 2d |% 4d |% 3d| %s %d %s\n", len(e.frames), ip, c.lineForIp(ip), insn.Op, insn.A0, insn.Data)
-		//e.printStack(env)
-
-		switch insn.Op {
-		case Pop:
-			e.stackPop()
-		case Return:
-			return e.stackPop(), nil
-		case Jump:
-			ip = int(insn.A0)
-			continue loop
-		case JumpIfTrue:
-			if ToBool(e.stackPop()) {
-				ip = int(insn.A0)
-				continue loop
-			}
-		case JumpIfFalse:
-			if !ToBool(e.stackPop()) {
-				ip = int(insn.A0)
-				continue loop
-			}
-		case GetUpval:
-			e.stackPush(fn.upvals[insn.A0].Value)
-		case RefUpval:
-			e.stackPush(fn.upvals[insn.A0])
-		case SetUpval:
-			uv := fn.upvals[insn.A0]
-			if uv == nil {
-				uv = &NamedPair{}
-				fn.upvals[insn.A0] = uv
-			}
-
-			uv.Value = e.stackPop()
-		case ResolveVar:
-			tmp = insn.Data.(*VarData).vr.Resolve()
-			e.stackPush(tmp)
-		case SetMacro:
-			vr := insn.Data.(*VarData).vr
-			vr.isMacro = true
-			vr.isUsed = false
-			if fn, ok := vr.Value.(*Fn); ok {
-				fn.isMacro = true
-			}
-			err := setMacroMeta(env, vr)
-			if err != nil {
-				return nil, err
-			}
-			e.stack = append(e.stack, vr)
-		case GetBinding:
-			// THIS IS WRONG. ITS NOT THE CALLER, IT'S THE CLOSURE
-			b := insn.Data.(*BindingData)
-			fr, err := e.frameBack(b.up)
-			if err != nil {
-				return nil, err
-			}
-
-			e.stackPush(fr.Bindings[b.in])
-		case GetLocal:
-			fr, err := e.frameBack(0)
-			if err != nil {
-				return nil, err
-			}
-
-			e.stackPush(fr.Bindings[insn.A0])
-		case SetLocal:
-			fr, err := e.frameBack(0)
-			if err != nil {
-				return nil, err
-			}
-
-			fr.Bindings[insn.A0] = e.stackPop()
-		case PushLiteral:
-			d := insn.Data.(*LiteralData)
-			e.stackPush(d.obj)
-		case MakeVector:
-			d := insn.Data.(*VectorData)
-
-			vec := NewVectorFrom(e.topSlackSlice(d.cnt)...)
-
-			e.stackPush(vec)
-		case MakeLargeMap:
-			d := insn.Data.(*MapData)
-
-			data := e.topSlackSlice(d.cnt)
-
-			res := EmptyHashMap
-			for i := 0; i < len(data); i += 2 {
-				key := data[i]
-				val := data[i+1]
-
-				if res.containsKey(env, key) {
-					s, err := key.ToString(env, false)
-					if err != nil {
-						return nil, err
-					}
-					return nil, env.RT.NewError("Duplicate key: " + s)
-				}
-
-				up, err := res.Assoc(env, key, val)
-				if err != nil {
-					return nil, err
-				}
-
-				if err := Cast(env, up, &res); err != nil {
-					return nil, err
-				}
-			}
-
-			e.stackPush(res)
-		case MakeSmallMap:
-			d := insn.Data.(*MapData)
-
-			res := EmptyArrayMap()
-
-			if d.cnt > 0 {
-				data := e.stackPopN(d.cnt)
-
-				for i := 0; i < len(data); i += 2 {
-					key := data[i]
-					val := data[i+1]
-
-					if !res.Add(env, key, val) {
-						s, err := key.ToString(env, false)
-						if err != nil {
-							return nil, err
-						}
-
-						return nil, env.RT.NewError("Duplicate key: " + s)
-					}
-				}
-			}
-
-			e.stackPush(res)
-		case MakeSet:
-			d := insn.Data.(*VectorData)
-
-			data := e.topSlackSlice(d.cnt)
-
-			res := EmptySet()
-
-			for i := 0; i < len(data); i++ {
-				ele := data[i]
-
-				ok, err := res.Add(env, ele)
-				if err != nil {
-					return nil, err
-				}
-
-				if !ok {
-					s, err := ele.ToString(env, false)
-					if err != nil {
-						return nil, err
-					}
-
-					return nil, env.RT.NewError("Duplicate set element: " + s)
-				}
-			}
-
-			e.stackPush(res)
-		case Def:
-			d := insn.Data.(*DefData)
-
-			// isMacro can be set by set-macro__ during parse stage
-			if d.vr.isMacro {
-				v, err := d.vr.meta.Assoc(env, criticalKeywords.macro, Boolean{B: true})
-				if err != nil {
-					return nil, err
-				}
-				var m Map
-				if err := Cast(env, v, &m); err != nil {
-					return nil, err
-				}
-				d.vr.meta = m
-			}
-
-			e.stackPush(d.vr)
-		case Def3:
-			d := insn.Data.(*DefData)
-
-			d.vr.meta = d.Meta
-
-			v := e.stackPop()
-
-			var m Map
-			if err := Cast(env, v, &m); err != nil {
-				return nil, err
-			}
-			d.vr.meta, err = d.vr.meta.Merge(env, m)
-			if err != nil {
-				return nil, err
-			}
-
-			// isMacro can be set by set-macro__ during parse stage
-			if d.vr.isMacro {
-				v, err := d.vr.meta.Assoc(env, criticalKeywords.macro, Boolean{B: true})
-				if err != nil {
-					return nil, err
-				}
-				var m Map
-				if err := Cast(env, v, &m); err != nil {
-					return nil, err
-				}
-				d.vr.meta = m
-			}
-
-			e.stackPush(d.vr)
-		case DefValue:
-			d := insn.Data.(*DefData)
-			val := e.stackPop()
-
-			d.vr.Value = val
-
-			// isMacro can be set by set-macro__ during parse stage
-			if d.vr.isMacro {
-				v, err := d.vr.meta.Assoc(env, criticalKeywords.macro, Boolean{B: true})
-				if err != nil {
-					return nil, err
-				}
-				var m Map
-				if err := Cast(env, v, &m); err != nil {
-					return nil, err
-				}
-				d.vr.meta = m
-			}
-
-			e.stackPush(d.vr)
-		case DefValue3:
-			d := insn.Data.(*DefData)
-			v := e.stackPop()
-			val := e.stackPop()
-			d.vr.Value = val
-
-			d.vr.meta = d.Meta
-
-			var m Map
-			if err := Cast(env, v, &m); err != nil {
-				return nil, err
-			}
-
-			d.vr.meta, err = d.vr.meta.Merge(env, m)
-			if err != nil {
-				return nil, err
-			}
-
-			// isMacro can be set by set-macro__ during parse stage
-			if d.vr.isMacro {
-				v, err := d.vr.meta.Assoc(env, criticalKeywords.macro, Boolean{B: true})
-				if err != nil {
-					return nil, err
-				}
-				var m Map
-				if err := Cast(env, v, &m); err != nil {
-					return nil, err
-				}
-				d.vr.meta = m
-			}
-
-			e.stackPush(d.vr)
-		case SetMeta:
-			res := e.stackPop()
-			meta := e.stackPop()
-
-			var metao Meta
-			if err := Cast(env, res, &metao); err != nil {
-				return nil, err
-			}
-
-			var m Map
-			if err := Cast(env, meta, &m); err != nil {
-				return nil, err
-			}
-
-			mo, err := metao.WithMeta(env, m)
-			if err != nil {
-				return nil, err
-			}
-
-			e.stackPush(mo)
-		case Call:
-			obj := e.stackPop()
-
-			switch callable := obj.(type) {
-			case Callable:
-				args := e.stackPopN(int(insn.A0))
-
-				fr, err := e.frameBack(0)
-				if err != nil {
-					panic(err)
-				}
-
-				fr.Ip = ip
-
-				obj, err := e.call(env, callable, args)
-				if err != nil {
-					newIp, err := e.unwind(err)
-					if err != nil {
-						return nil, err
-					}
-
-					ip = newIp
-					continue loop
-				}
-
-				e.stackPush(obj)
-			default:
-				s, err := callable.ToString(env, false)
-				if err != nil {
-					return nil, err
-				}
-
-				return nil, env.RT.NewError(s + " is not a Fn")
-			}
-		case Apply:
-			args := e.stackPop()
-			obj := e.stackPop()
-
-			seqable, ok := args.(Seqable)
-			if !ok {
-				newIp, err := e.unwind(env.RT.NewArgTypeError(1, args, "Seqable"))
-				if err != nil {
-					return nil, err
-				}
-
-				ip = newIp
-				continue loop
-			}
-
-			sq := seqable.Seq()
-
-			callArgs, err := ToSlice(env, sq)
-			if err != nil {
-				newIp, err := e.unwind(env.RT.NewArgTypeError(1, args, "Seqable"))
-				if err != nil {
-					return nil, err
-				}
-
-				ip = newIp
-				continue loop
-			}
-
-			switch callable := obj.(type) {
-			case Callable:
-				fr, err := e.frameBack(0)
-				if err != nil {
-					panic(err)
-				}
-
-				fr.Ip = ip
-
-				obj, err := e.call(env, callable, callArgs)
-				if err != nil {
-					newIp, err := e.unwind(err)
-					if err != nil {
-						return nil, err
-					}
-
-					ip = newIp
-					continue loop
-				}
-
-				e.stackPush(obj)
-			default:
-				s, err := callable.ToString(env, false)
-				if err != nil {
-					return nil, err
-				}
-
-				return nil, env.RT.NewError(s + " is not a Fn")
-			}
-		case MethodCall:
-			d := insn.Data.(*MethodCallData)
-
-			obj := e.stackPop()
-
-			res, err := e.methodCall(env, d.Method, obj, e.stackPopN(int(insn.A0)))
-			if err != nil {
-				newIp, err := e.unwind(err)
-				if err != nil {
-					return nil, err
-				}
-
-				ip = newIp
-				continue loop
-			}
-
-			e.stackPush(res)
-		case Throw:
-			newIp, err := e.unwind(&VMError{obj: e.stackPop()})
-			if err != nil {
-				return nil, err
-			}
-
-			ip = newIp
-			continue loop
-
-		case PushHandler:
-			fr, err := e.frameBack(0)
-			if err != nil {
-				return nil, err
-			}
-
-			fr.Handlers = append(fr.Handlers, handler{
-				ip: int(insn.A0),
-				sp: len(e.stack),
-			})
-
-		case PopHandler:
-			fr, err := e.frameBack(0)
-			if err != nil {
-				return nil, err
-			}
-
-			fr.Handlers = fr.Handlers[:len(fr.Handlers)-1]
-		case MakeFn:
-			d := insn.Data.(*FnData)
-
-			upvals := make([]*NamedPair, d.Code.totalUpvals)
-
-			for i := 0; i < d.Upvals; i++ {
-				upvals[i] = e.stackPop().(*NamedPair)
-			}
-
-			fn := &Fn{
-				code:   d.Code,
-				upvals: upvals,
-			}
-
-			e.stackPush(fn)
-		case CheckArityFixed:
-			fr, err := e.frameBack(0)
-			if err != nil {
-				return nil, err
-			}
-
-			if fr.Arity == insn.A0 {
-				for i, a := range fr.Args {
-					fr.Bindings[i] = a
-				}
-
-				e.stackPush(MakeBoolean(true))
-			} else {
-				e.stackPush(MakeBoolean(false))
-			}
-		case CheckArityMin:
-			fr, err := e.frameBack(0)
-			if err != nil {
-				return nil, err
-			}
-
-			if fr.Arity >= insn.A0 {
-				for i, a := range fr.Args[:insn.A0] {
-					fr.Bindings[i] = a
-				}
-
-				fr.Bindings[insn.A0] = &ArraySeq{arr: fr.Args, index: int(insn.A0)}
-
-				e.stackPush(MakeBoolean(true))
-			} else {
-				e.stackPush(MakeBoolean(false))
-			}
-		case ThrowArity:
-			fr, err := e.frameBack(0)
-			if err != nil {
-				return nil, err
-			}
-
-			return nil, ErrorArity(env, int(fr.Arity))
-		default:
-			return nil, fmt.Errorf("unimplemented instruction: %d", insn.Op)
-		}
-
-		ip++
-	}
+	return e.RunBC(env, fn)
 }
 
 type VMError struct {
@@ -1770,6 +963,18 @@ func (e *Engine) printBacktrace(last int) {
 	}
 }
 
+func (e *Engine) assembleBacktrace() []string {
+	var ret []string
+
+	for _, fr := range e.frames {
+		ret = append(ret,
+			fmt.Sprintf("%s:%d (ip: %d)", fr.Code.code.filename, fr.Code.code.lineForIp(fr.Ip), fr.Ip),
+		)
+	}
+
+	return ret
+}
+
 func (e *Engine) call(env *Env, callable Callable, objArgs []Object) (Object, error) {
 	if fn, ok := callable.(*Fn); ok {
 		if fn.code == nil {
@@ -1789,7 +994,7 @@ func (e *Engine) call(env *Env, callable Callable, objArgs []Object) (Object, er
 		fr.Args = slices.Clone(objArgs)
 		fr.Arity = int32(len(objArgs))
 
-		return e.Run(env, fn)
+		return e.RunBC(env, fn)
 	}
 
 	return callable.Call(env, objArgs)
@@ -1882,7 +1087,7 @@ func (e *Engine) methodCall(env *Env, methName string, obj Object, objArgs []Obj
 }
 
 type fnClosure struct {
-	importedVars map[*varBind]int
+	importedVars []*varBind
 }
 
 func Compile(env *Env, exprs []Expr) (*Fn, error) {
@@ -1909,13 +1114,18 @@ func compileFn(env *Env, fn *Fn, parent *Compiler) (*fnClosure, error) {
 		parentFn = parent.fn
 	}
 
+	var fnf *fnFrame
+	if parentFn != nil {
+		fnf = parentFn.childFrame(nil)
+	} else {
+		fnf = newFrame(nil)
+	}
+
+	c.fn = fnf
+
 	var nextArity int32 = -1
 
-	var maxArgUpvals int
-
-	importBinds := map[*varBind]int{}
-
-	for _, arity := range fn.fnExpr.arities {
+	genFn := func(arity *FnArityExpr, checkOp OpCode) error {
 		c.updatePos(arity.Position)
 
 		if nextArity != -1 {
@@ -1925,53 +1135,41 @@ func compileFn(env *Env, fn *Fn, parent *Compiler) (*fnClosure, error) {
 			})
 		}
 
-		var fnf fnFrame
-		fnf.parent = parentFn
-		c.fn = &fnf
+		locals := len(arity.args)
+		if fn.fnExpr.self.name != nil {
+			locals++
+		}
 
-		fnTop := c.newLabel()
+		af := fnf.bindingFrame(locals)
+		defer fnf.popBindingFrame()
 
-		var af varFrame
-		af.bindings = make(map[string]*varBind)
 		af.args = arity.args
-		af.top = int(fnTop)
-		af.expr = &arity
 
-		af.parent = c.fn.top
-		c.fn.top = &af
-
-		binds := len(af.args)
-		if fn.fnExpr.self.name != nil {
-			binds++
-		}
-
-		start := c.addBindings(binds)
-
-		for i, a := range af.args {
-			af.bindings[a.Name()] = &varBind{index: start + i, name: a, home: c.fn}
+		for _, a := range arity.args {
+			fnf.set(a)
 		}
 
 		if fn.fnExpr.self.name != nil {
-			selfIndex := start + len(af.args)
+			selfVar := fnf.set(fn.fnExpr.self)
 
 			c.insn(Instruction{
-				Op:   PushLiteral,
-				Data: &LiteralData{obj: fn},
+				Op: PushSelfFn,
 			})
 
-			vb := &varBind{index: selfIndex, name: fn.fnExpr.self, home: c.fn}
-			af.bindings[fn.fnExpr.self.Name()] = vb
-
-			vb.uses = append(vb.uses, c.insn(Instruction{
-				Op: SetLocal,
-				A0: int32(selfIndex),
-			}))
+			c.append(selfVar.set())
 		}
 
-		c.insn(Instruction{
-			Op: CheckArityFixed,
-			A0: int32(len(af.args)),
-		})
+		if checkOp == CheckArityMin {
+			c.insn(Instruction{
+				Op: checkOp,
+				A0: int32(len(arity.args) - 1), // because the Nth local is where rest goes
+			})
+		} else {
+			c.insn(Instruction{
+				Op: checkOp,
+				A0: int32(len(arity.args)),
+			})
+		}
 
 		nextArity = c.newLabel()
 
@@ -1982,32 +1180,23 @@ func compileFn(env *Env, fn *Fn, parent *Compiler) (*fnClosure, error) {
 
 		bodyStart := c.nextIP()
 
+		recurDest := c.newLabel()
+		af.recurDest = int(recurDest)
+
 		c.insn(Instruction{
 			Op: SetLabel,
-			A0: fnTop,
+			A0: recurDest,
 		})
 
 		err := c.Process(env, &DoExpr{body: arity.body})
 		if err != nil {
-			return nil, err
+			return err
 		}
-
-		for _, vb := range fnf.importUpvals {
-			idx, ok := importBinds[vb.ref]
-			if !ok {
-				idx = len(importBinds)
-				importBinds[vb.ref] = idx
-			}
-
-			//fmt.Printf("* %s arity %d imports an upval: %s (%d)\n", arity.Pos(), len(af.args), vb.name.Name(), idx)
-		}
-
-		cnt := len(fnf.importUpvals)
 
 		var prelude []*Instruction
 
-		for _, a := range af.args {
-			vfb := af.bindings[a.Name()]
+		for _, a := range arity.args {
+			vfb := fnf.lookup(a)
 			if vfb.upval {
 				//fmt.Printf("* %s arity %d provides an upval: %s (%d)\n", arity.Pos(), len(af.args), vfb.name.Name(), vfb.index)
 
@@ -2016,197 +1205,33 @@ func compileFn(env *Env, fn *Fn, parent *Compiler) (*fnClosure, error) {
 						Op: GetLocal,
 						A0: int32(vfb.index),
 					},
-					&Instruction{
+					vfb.u(&Instruction{
 						Op: SetUpval,
-						A0: int32(cnt),
-					},
+						A0: int32(vfb.upidx),
+					}),
 				)
-
-				for _, i := range vfb.uses {
-					if i.Op == GetLocal {
-						i.Op = GetUpval
-					}
-
-					i.A0 = int32(cnt)
-				}
-
-				cnt++
 			}
-		}
-
-		for _, vb := range fnf.letUpvals {
-			for _, i := range vb.uses {
-				switch i.Op {
-				case SetLocal:
-					i.Op = SetUpval
-				case GetLocal:
-					i.Op = GetUpval
-				}
-
-				i.A0 = int32(cnt)
-			}
-
-			cnt++
 		}
 
 		c.insns = slices.Insert(c.insns, bodyStart, prelude...)
 
-		if cnt > maxArgUpvals {
-			maxArgUpvals = cnt
-		}
-
 		c.insn(Instruction{Op: Return})
 
-		c.fn.top = af.parent
-		c.removeBindings(len(af.args))
+		return nil
 	}
 
-	if v := fn.fnExpr.variadic; v != nil {
-		c.updatePos(v.Position)
-
-		if nextArity != -1 {
-			c.insn(Instruction{
-				Op: SetLabel,
-				A0: nextArity,
-			})
-		}
-
-		var fnf fnFrame
-		fnf.parent = parentFn
-		c.fn = &fnf
-
-		fnTop := c.newLabel()
-
-		var af varFrame
-		af.bindings = make(map[string]*varBind)
-		af.args = v.args
-		af.top = int(fnTop)
-		af.expr = v
-
-		af.parent = c.fn.top
-		c.fn.top = &af
-
-		binds := len(af.args)
-		if fn.fnExpr.self.name != nil {
-			binds++
-		}
-
-		start := c.addBindings(binds)
-
-		for i, a := range af.args {
-			af.bindings[a.Name()] = &varBind{index: start + i, name: a, home: c.fn}
-		}
-
-		/*
-			if fn.fnExpr.self.name != nil {
-				start := c.addBindings(1)
-
-				c.insn(Instruction{
-					Op:   PushLiteral,
-					Data: &LiteralData{obj: fn},
-				})
-
-				vb := &varBind{index: start, name: fn.fnExpr.self}
-				c.fn.top.bindings[fn.fnExpr.self.Name()] = vb
-
-				vb.uses = append(vb.uses, c.insn(Instruction{
-					Op: SetLocal,
-					A0: int32(start),
-				}))
-			}
-		*/
-		if fn.fnExpr.self.name != nil {
-			selfIndex := start + len(af.args)
-
-			c.insn(Instruction{
-				Op:   PushLiteral,
-				Data: &LiteralData{obj: fn},
-			})
-
-			vb := &varBind{index: selfIndex, name: fn.fnExpr.self, home: c.fn}
-			af.bindings[fn.fnExpr.self.Name()] = vb
-
-			vb.uses = append(vb.uses, c.insn(Instruction{
-				Op: SetLocal,
-				A0: int32(selfIndex),
-			}))
-		}
-
-		c.insn(Instruction{
-			Op: CheckArityMin,
-			A0: int32(len(af.args) - 1),
-		})
-
-		nextArity = c.newLabel()
-
-		c.insn(Instruction{
-			Op: JumpIfFalse,
-			A0: nextArity,
-		})
-
-		bodyStart := c.nextIP()
-
-		c.insn(Instruction{
-			Op: SetLabel,
-			A0: fnTop,
-		})
-
-		err := c.Process(env, &DoExpr{body: v.body})
+	for _, arity := range fn.fnExpr.arities {
+		err := genFn(&arity, CheckArityFixed)
 		if err != nil {
 			return nil, err
 		}
+	}
 
-		for _, vb := range fnf.importUpvals {
-			idx, ok := importBinds[vb.ref]
-			if !ok {
-				idx = len(importBinds)
-				importBinds[vb.ref] = idx
-			}
-			//fmt.Printf("* %s arity %d imports an upval: %s (%d)\n", v.Pos(), len(af.args), vb.name.Name(), idx)
+	if v := fn.fnExpr.variadic; v != nil {
+		err := genFn(v, CheckArityMin)
+		if err != nil {
+			return nil, err
 		}
-
-		cnt := len(fnf.importUpvals)
-
-		var prelude []*Instruction
-
-		for _, a := range af.args {
-			vfb := af.bindings[a.Name()]
-			if vfb.upval {
-				//fmt.Printf("* %s arity %d fn needs upval: %s (%d)\n", v.Pos(), len(af.args), vfb.name.Name(), vfb.index)
-
-				prelude = append(prelude,
-					&Instruction{
-						Op: GetLocal,
-						A0: int32(vfb.index),
-					},
-					&Instruction{
-						Op: SetUpval,
-						A0: int32(cnt),
-					},
-				)
-
-				for _, i := range vfb.uses {
-					if i.Op == GetLocal {
-						i.Op = GetUpval
-					}
-
-					i.A0 = int32(cnt)
-				}
-
-				cnt++
-			}
-		}
-
-		c.insns = slices.Insert(c.insns, bodyStart, prelude...)
-
-		if cnt > maxArgUpvals {
-			maxArgUpvals = cnt
-		}
-
-		c.insn(Instruction{Op: Return})
-
-		c.fn.top = c.fn.top.parent
-		c.removeBindings(len(af.args))
 	}
 
 	c.insn(Instruction{
@@ -2222,12 +1247,17 @@ func compileFn(env *Env, fn *Fn, parent *Compiler) (*fnClosure, error) {
 	//fmt.Printf("*- binding provided by parent: %s = upval:%d\n", vb.name.Name(), pos)
 	//}
 
+	totalUpvals := fnf.assignUpvals()
+
+	parentVBs := fnf.closeFrame()
+
 	fn.code = c.Export()
-	fn.code.totalUpvals = maxArgUpvals
-	fn.upvals = make([]*NamedPair, maxArgUpvals)
+	fn.code.totalUpvals = totalUpvals
+	fn.upvals = make([]*NamedPair, fn.code.totalUpvals)
+	fn.code.importUpvals = len(parentVBs)
 
 	cl := &fnClosure{
-		importedVars: importBinds,
+		importedVars: parentVBs,
 	}
 	return cl, nil
 }

@@ -480,6 +480,19 @@ func hashSymbol(ns, name *string) uint32 {
 	return h.Sum32()
 }
 
+func AssembleSymbol(ns, name string) Symbol {
+	if ns == "" {
+		return Symbol{
+			ns:   nil,
+			name: STRINGS.Intern(name),
+		}
+	}
+	return Symbol{
+		ns:   STRINGS.Intern(ns),
+		name: STRINGS.Intern(name),
+	}
+}
+
 func MakeSymbol(nsname string) Symbol {
 	index := strings.IndexRune(nsname, '/')
 	if index == -1 || nsname == "/" {

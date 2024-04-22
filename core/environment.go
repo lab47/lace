@@ -214,6 +214,11 @@ func (env *Env) Resolve(s Symbol) (*Var, bool) {
 	return env.ResolveIn(ns, s)
 }
 
+func (env *Env) MakeVar(s Symbol) (*Var, error) {
+	ns := env.CurrentNamespace()
+	return ns.Intern(env, s)
+}
+
 func (env *Env) FindNamespace(s Symbol) *Namespace {
 	if s.ns != nil {
 		return nil
