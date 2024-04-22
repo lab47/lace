@@ -3,6 +3,8 @@
 
 package core
 
+import "fmt"
+
 func NewEnv() (*Env, error) {
 	features := EmptySet()
 	res := &Env{
@@ -99,13 +101,13 @@ func NewEnv() (*Env, error) {
 
 	res.EnsureNamespace(MakeSymbol("lace.string"))
 
-	builtinNS := []string{"lace.core", "lace.repl"}
+	builtinNS := []string{"lace.core"}
 
 	for _, name := range builtinNS {
 		if fn, ok := builtinNSSetup[name]; ok {
 			err := fn(res)
 			if err != nil {
-				panic(err)
+				panic(fmt.Sprintf("error loading %s: %s", name, err))
 			}
 		}
 	}

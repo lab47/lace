@@ -36,14 +36,22 @@ func main() {
 
 	for _, f := range gen_common.CoreSourceFiles {
 		env.SetCurrentNamespace(env.CoreNamespace)
-		content, err := os.ReadFile("data/" + f.Filename)
+		data, err := os.ReadFile("data/" + f.Filename)
 		if err != nil {
 			panic(err)
 		}
-		content, err = core.PackReader(env, core.NewReader(bytes.NewReader(content), f.Name), "")
+
+		content, err := core.ReadIntoBytecode(env, core.NewReader(bytes.NewReader(data), f.Name), "")
 		if err != nil {
 			panic(err)
 		}
+
+		/*
+			content, err = core.PackReader(env, core.NewReader(bytes.NewReader(content), f.Name), "")
+			if err != nil {
+				panic(err)
+			}
+		*/
 
 		dataTemplate := template
 

@@ -21,6 +21,8 @@ import (
 
 var coreNamespaces []string
 
+var _ = coreNamespaces
+
 type (
 	Phase        int
 	Dialect      int
@@ -3037,7 +3039,12 @@ func ReadIntoBytecode(env *Env, reader *Reader, filename string) ([]byte, error)
 		exprs = append(exprs, expr)
 	}
 
-	return nil, nil
+	fn, err := CompileScript(env, exprs)
+	if err != nil {
+		return nil, err
+	}
+
+	return MarshalCode(env, fn.code)
 }
 
 func PackReader(env *Env, reader *Reader, filename string) ([]byte, error) {
@@ -3259,40 +3266,49 @@ func processInEnvInNS(env *Env, ns *Namespace, data []byte) error {
 	env.SetCurrentNamespace(ns)
 	defer func() { env.SetCurrentNamespace(cur) }()
 
-	header, p, err := UnpackHeader(data, env)
+	fn, err := UnmarshalCode(env, data)
 	if err != nil {
 		return err
 	}
 
-	var exprs []Expr
+	/*
 
-	for len(p) > 0 {
-		var expr Expr
-		expr, p, err = UnpackExpr(env, p, header)
+		header, p, err := UnpackHeader(data, env)
 		if err != nil {
 			return err
 		}
 
-		exprs = append(exprs, expr)
-	}
+		var exprs []Expr
 
-	fn := &Fn{
-		fnExpr: &FnExpr{
-			arities: []FnArityExpr{
-				{
-					body: exprs,
+		for len(p) > 0 {
+			var expr Expr
+			expr, p, err = UnpackExpr(env, p, header)
+			if err != nil {
+				return err
+			}
+
+			exprs = append(exprs, expr)
+		}
+
+		fn := &Fn{
+			fnExpr: &FnExpr{
+				arities: []FnArityExpr{
+					{
+						body: exprs,
+					},
 				},
 			},
-		},
-	}
+		}
 
-	_, err = compileFn(env, fn, nil)
-	if err != nil {
-		fmt.Printf("error compiling: %s\n", err)
-		return err
-	}
+		_, err = compileFn(env, fn, nil)
+		if err != nil {
+			fmt.Printf("error compiling: %s\n", err)
+			return err
+		}
 
-	//spew.Dump(code)
+		//spew.Dump(code)
+
+	*/
 
 	_, err = EngineRun(env, fn)
 	if err != nil {
@@ -3315,6 +3331,7 @@ func processInEnvInNS(env *Env, ns *Namespace, data []byte) error {
 	return nil
 }
 
+/*
 func setCoreNamespaces(env *Env) error {
 	ns := env.CoreNamespace
 	ns.MaybeLazy(env, "lace.core")
@@ -3336,6 +3353,7 @@ func setCoreNamespaces(env *Env) error {
 	vr.Value = set
 	return nil
 }
+*/
 
 var procIsNamespaceInitialized = func(env *Env, args []Object) (Object, error) {
 	if err := CheckArity(env, args, 1, 1); err != nil {

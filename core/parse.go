@@ -762,7 +762,8 @@ func isCreatedByMacro(env *Env, formSeq Seq) bool {
 	if err != nil {
 		return false
 	}
-	return f.GetInfo().Pos().filename == STR.coreFilename
+	info := f.GetInfo()
+	return info.Pos().filename == STR.coreFilename
 }
 
 func parseDef(obj Object, ctx *ParseContext, isForLinter bool) (*DefExpr, error) {

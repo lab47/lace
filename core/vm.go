@@ -3,7 +3,6 @@ package core
 import (
 	"fmt"
 	"reflect"
-	"strings"
 
 	"golang.org/x/exp/slices"
 )
@@ -148,9 +147,7 @@ type Engine struct {
 }
 
 type Compiler struct {
-	arity   int
-	varadic bool
-	insns   []*Instruction
+	insns []*Instruction
 
 	fnExpr *FnExpr
 	fn     *fnFrame
@@ -284,8 +281,6 @@ func (c *Compiler) Export() *Code {
 		importBindings: importNames,
 	}
 }
-
-var fnExprCompiles = map[*FnExpr]*Fn{}
 
 func printBindings(fn *fnFrame) {
 	i := 0
@@ -798,10 +793,6 @@ func (c *Compiler) Process(env *Env, expr Expr) error {
 	return nil
 }
 
-func (c *Compiler) currentIP() int {
-	return len(c.insns) - 1
-}
-
 func (c *Compiler) nextIP() int {
 	return len(c.insns)
 }
@@ -840,6 +831,7 @@ func (e *Engine) stackPop() Object {
 	return val
 }
 
+/*
 func (e *Engine) printStack(env *Env) {
 	var strs []string
 
@@ -854,6 +846,7 @@ func (e *Engine) printStack(env *Env) {
 
 	fmt.Printf("      [ %s ]\n", strings.Join(strs, ", "))
 }
+*/
 
 func (e *Engine) pushFrame(fn *Fn) *EngineFrame {
 	idx := len(e.frames)
@@ -1105,6 +1098,21 @@ func Compile(env *Env, exprs []Expr) (*Fn, error) {
 	return fn, err
 }
 
+func CompileScript(env *Env, exprs []Expr) (*Fn, error) {
+	fn := &Fn{
+		fnExpr: &FnExpr{
+			arities: []FnArityExpr{
+				{
+					body: exprs,
+				},
+			},
+		},
+	}
+
+	_, err := compileFn(env, fn, nil)
+	return fn, err
+}
+
 func compileFn(env *Env, fn *Fn, parent *Compiler) (*fnClosure, error) {
 	var c Compiler
 	c.fnExpr = fn.fnExpr
@@ -1242,10 +1250,6 @@ func compileFn(env *Env, fn *Fn, parent *Compiler) (*fnClosure, error) {
 	c.insn(Instruction{
 		Op: ThrowArity,
 	})
-
-	//for vb, pos := range importBinds {
-	//fmt.Printf("*- binding provided by parent: %s = upval:%d\n", vb.name.Name(), pos)
-	//}
 
 	totalUpvals := fnf.assignUpvals()
 

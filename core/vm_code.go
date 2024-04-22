@@ -3,6 +3,8 @@ package core
 import (
 	"bytes"
 	"fmt"
+
+	"github.com/fxamacker/cbor/v2"
 )
 
 type Code struct {
@@ -33,13 +35,61 @@ func (c *Code) lineForIp(ip int) int {
 	return -1
 }
 
+type CodePosition struct {
+	StartLine   int    `json:"start_line" cbor:"1,keyasint"`
+	EndLine     int    `json:"end_line" cbor:"2,keyasint"`
+	StartColumn int    `json:"start_column" cbor:"3,keyasint"`
+	EndColumn   int    `json:"end_column" cbor:"4,keyasint"`
+	Filename    string `json:"filename" cbor:"5,keyasint"`
+}
+
+func (c *CodePosition) Position() Position {
+	pos := Position{
+		startLine:   c.StartLine,
+		endLine:     c.EndLine,
+		startColumn: c.StartColumn,
+		endColumn:   c.EndColumn,
+	}
+
+	if c.Filename != "" {
+		pos.filename = STRINGS.Intern(c.Filename)
+	}
+
+	return pos
+}
+
+func (c *CodePosition) Set(pos Position) {
+	c.StartLine = pos.startLine
+	c.EndLine = pos.endLine
+	c.StartColumn = pos.startColumn
+	c.EndColumn = pos.endColumn
+	c.Filename = *pos.filename
+}
+
 type CodeSymbol struct {
+	Position  *CodePosition
 	Namespace string `json:"ns" cbor:"1,keyasint"`
 	Name      string `json:"name" cbor:"2,keyasint"`
 }
 
 func (c *CodeSymbol) Symbol() Symbol {
-	return AssembleSymbol(c.Namespace, c.Name)
+	sym := AssembleSymbol(c.Namespace, c.Name)
+	if c.Position != nil {
+		sym.info = &ObjectInfo{
+			Position: c.Position.Position(),
+		}
+	}
+
+	return sym
+}
+
+func (c *CodeSymbol) Set(sym Symbol) {
+	if sym.info != nil {
+		c.Position = &CodePosition{}
+		c.Position.Set(sym.info.Position)
+	}
+	c.Name = sym.Name()
+	c.Namespace = sym.Namespace()
 }
 
 type CodeVar struct {
@@ -47,7 +97,7 @@ type CodeVar struct {
 }
 
 type CodeType struct {
-	Name CodeSymbol `json:"name" cbor:"1,keyasint"`
+	Name string `json:"name" cbor:"1,keyasint"`
 }
 
 type CodeEncoded struct {
@@ -107,29 +157,18 @@ func (c *Code) AsData(env *Env) *CodeAsData {
 
 		switch o := lit.(type) {
 		case Symbol:
-			cl.Symbol = &CodeSymbol{
-				Namespace: o.Namespace(),
-				Name:      o.Name(),
-			}
+			cl.Symbol = &CodeSymbol{}
+			cl.Symbol.Set(o)
 		case *Var:
-			ns := o.ns.Name.Name()
-			name := o.name.Name()
+			cl.Var = &CodeVar{}
+			cl.Var.Name.Set(o.name)
 
-			cl.Var = &CodeVar{
-				Name: CodeSymbol{
-					Namespace: ns,
-					Name:      name,
-				},
-			}
 		case *Type:
 			name := o.Name()
 
-			cl.Var = &CodeVar{
-				Name: CodeSymbol{
-					Name: name,
-				},
+			cl.Type = &CodeType{
+				Name: name,
 			}
-
 		default:
 			var buf bytes.Buffer
 			PrintObject(env, o, &buf)
@@ -138,6 +177,8 @@ func (c *Code) AsData(env *Env) *CodeAsData {
 				Data: buf.Bytes(),
 			}
 		}
+
+		cad.Literals = append(cad.Literals, &cl)
 	}
 
 	for _, sub := range c.data.codes {
@@ -145,10 +186,7 @@ func (c *Code) AsData(env *Env) *CodeAsData {
 	}
 
 	for _, meth := range c.data.methods {
-		cad.Methods = append(cad.Methods, CodeMethod{
-			Method: meth.Method,
-			Arity:  meth.Arity,
-		})
+		cad.Methods = append(cad.Methods, CodeMethod(meth))
 	}
 
 	cad.Instructions = c.data.insns
@@ -169,6 +207,19 @@ func (cad *CodeAsData) AsCode(env *Env) (*Code, error) {
 		c.importBindings = append(c.importBindings, MakeSymbol(str))
 	}
 
+	for _, str := range cad.DefVarNames {
+		sym := MakeSymbol(str)
+		c.data.defVarNames = append(c.data.defVarNames, sym)
+
+		ns := env.CurrentNamespace()
+		vr, err := ns.Intern(env, sym)
+		if err != nil {
+			return nil, err
+		}
+
+		c.data.defVars = append(c.data.defVars, vr)
+	}
+
 	for _, str := range cad.VarNames {
 		sym := MakeSymbol(str)
 		c.data.varNames = append(c.data.varNames, sym)
@@ -181,19 +232,6 @@ func (cad *CodeAsData) AsCode(env *Env) (*Code, error) {
 		c.data.vars = append(c.data.vars, vr)
 	}
 
-	for _, str := range cad.VarNames {
-		sym := MakeSymbol(str)
-		c.data.varNames = append(c.data.varNames, sym)
-
-		ns := env.CurrentNamespace()
-		vr, err := ns.Intern(env, sym)
-		if err != nil {
-			return nil, err
-		}
-
-		c.data.defVars = append(c.data.defVars, vr)
-	}
-
 	for _, lit := range cad.Literals {
 		switch {
 		case lit.Symbol != nil:
@@ -201,19 +239,21 @@ func (cad *CodeAsData) AsCode(env *Env) (*Code, error) {
 		case lit.Var != nil:
 			vr, ok := env.Resolve(lit.Var.Name.Symbol())
 			if !ok {
-				return nil, fmt.Errorf("missing var: %s", lit.Var.Name.Symbol())
+				return nil, fmt.Errorf("missing var: %s", lit.Var.Name.Symbol().String())
 			}
 
 			c.data.literals = append(c.data.literals, vr)
-		case lit.Type == nil:
-			sym := lit.Type.Name.Symbol()
-			c.data.literals = append(c.data.literals, TYPES[*&sym.name])
+		case lit.Type != nil:
+			name := STRINGS.Intern(lit.Type.Name)
+			c.data.literals = append(c.data.literals, TYPES[name])
 		case lit.Encoded != nil:
 			obj, err := readFromReader(env, bytes.NewReader(lit.Encoded.Data))
 			if err != nil {
 				return nil, err
 			}
 			c.data.literals = append(c.data.literals, obj)
+		default:
+			panic("bad literal")
 		}
 	}
 
@@ -226,11 +266,36 @@ func (cad *CodeAsData) AsCode(env *Env) (*Code, error) {
 	}
 
 	for _, meth := range cad.Methods {
-		c.data.methods = append(c.data.methods, MethodSite{
-			Method: meth.Method,
-			Arity:  meth.Arity,
-		})
+		c.data.methods = append(c.data.methods, MethodSite(meth))
 	}
 
+	c.data.insns = cad.Instructions
+
 	return c, nil
+}
+
+func MarshalCode(env *Env, code *Code) ([]byte, error) {
+	data := code.AsData(env)
+	return cbor.Marshal(data)
+}
+
+func UnmarshalCode(env *Env, data []byte) (*Fn, error) {
+	var cad CodeAsData
+
+	err := cbor.Unmarshal(data, &cad)
+	if err != nil {
+		return nil, err
+	}
+
+	code, err := cad.AsCode(env)
+	if err != nil {
+		return nil, err
+	}
+
+	fn := &Fn{
+		code:   code,
+		upvals: make([]*NamedPair, code.totalUpvals),
+	}
+
+	return fn, nil
 }

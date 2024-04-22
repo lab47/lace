@@ -571,10 +571,7 @@ loop:
 			}
 
 			if fr.Arity == int32(a) {
-				for i, a := range fr.Args {
-					fr.Bindings[i] = a
-				}
-
+				copy(fr.Bindings, fr.Args)
 				e.stackPush(MakeBoolean(true))
 			} else {
 				e.stackPush(MakeBoolean(false))
@@ -586,9 +583,7 @@ loop:
 			}
 
 			if fr.Arity >= int32(a) {
-				for i, a := range fr.Args[:a] {
-					fr.Bindings[i] = a
-				}
+				copy(fr.Bindings, fr.Args[:a])
 
 				fr.Bindings[a] = &ArraySeq{arr: fr.Args, index: int(a)}
 

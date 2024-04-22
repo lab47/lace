@@ -10,8 +10,6 @@ type varBind struct {
 	upidx int
 
 	uses []*Instruction
-
-	ref *varBind
 }
 
 type varFrame struct {
@@ -19,7 +17,6 @@ type varFrame struct {
 	args      []Symbol
 	bindings  map[string]*varBind
 	recurDest int
-	expr      Expr
 
 	arity int
 	start int
@@ -33,23 +30,12 @@ type fnFrame struct {
 	root   *varFrame
 
 	importUpvals []*varBind
-	upvals       []*varBind
 	letUpvals    []*varBind
-
-	selfUpvals int
-	refUpvals  int
 
 	arity int
 
 	totalBindings int
 	curBindings   int
-
-	nextLabel int
-}
-
-func (f *fnFrame) newLabel() int {
-	f.nextLabel++
-	return f.nextLabel
 }
 
 func (f *fnFrame) addBindings(cnt int) int {
