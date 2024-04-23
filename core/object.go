@@ -487,12 +487,12 @@ func AssembleSymbol(ns, name string) Symbol {
 		}
 
 		return Symbol{
-			name: STRINGS.Intern(name),
+			name: name,
 		}
 	}
 	return Symbol{
-		ns:   STRINGS.Intern(ns),
-		name: STRINGS.Intern(name),
+		ns:   ns,
+		name: name,
 	}
 }
 
@@ -500,12 +500,12 @@ func MakeSymbol(nsname string) Symbol {
 	index := strings.IndexRune(nsname, '/')
 	if index == -1 || nsname == "/" {
 		return Symbol{
-			name: STRINGS.Intern(nsname),
+			name: nsname,
 		}
 	}
 	return Symbol{
-		ns:   STRINGS.Intern(nsname[0:index]),
-		name: STRINGS.Intern(nsname[index+1:]),
+		ns:   nsname[0:index],
+		name: nsname[index+1:],
 	}
 }
 
@@ -514,12 +514,12 @@ func MakeSymbolWithMeta(nsname string, m Map) Symbol {
 	var sym Symbol
 	if index == -1 || nsname == "/" {
 		sym = Symbol{
-			name: STRINGS.Intern(nsname),
+			name: nsname,
 		}
 	} else {
 		sym = Symbol{
-			ns:   STRINGS.Intern(nsname[0:index]),
-			name: STRINGS.Intern(nsname[index+1:]),
+			ns:   nsname[0:index],
+			name: nsname[index+1:],
 		}
 	}
 
@@ -534,12 +534,12 @@ func MakeTaggedSymbol(nsname string, tag Symbol) Symbol {
 	index := strings.IndexRune(nsname, '/')
 	if index == -1 || nsname == "/" {
 		sym = Symbol{
-			name: STRINGS.Intern(nsname),
+			name: nsname,
 		}
 	} else {
 		sym = Symbol{
-			ns:   STRINGS.Intern(nsname[0:index]),
-			name: STRINGS.Intern(nsname[index+1:]),
+			ns:   nsname[0:index],
+			name: nsname[index+1:],
 		}
 	}
 
@@ -568,14 +568,14 @@ const KeywordHashMask uint32 = 0x7334c790
 func MakeKeyword(nsname string) Keyword {
 	index := strings.IndexRune(nsname, '/')
 	if index == -1 || nsname == "/" {
-		name := STRINGS.Intern(nsname)
+		name := nsname
 		return Keyword{
 			name: name,
 			hash: hashSymbol("", name) ^ KeywordHashMask,
 		}
 	}
-	ns := STRINGS.Intern(nsname[0:index])
-	name := STRINGS.Intern(nsname[index+1:])
+	ns := nsname[0:index]
+	name := nsname[index+1:]
 	return Keyword{
 		ns:   ns,
 		name: name,

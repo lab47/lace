@@ -115,7 +115,7 @@ func UnpackHeader(p []byte, env *Env) (*PackHeader, []byte, error) {
 		if length == -1 {
 			strs[index] = ""
 		} else {
-			strs[index] = STRINGS.Intern(string(p[:length]))
+			strs[index] = string(p[:length])
 			p = p[length:]
 		}
 	}
@@ -835,7 +835,7 @@ func (expr *FnArityExpr) Pack(p []byte, env *PackEnv) []byte {
 	p = packSeq(p, expr.body, env)
 	if expr.taggedType != nil {
 		p = append(p, NOT_NULL)
-		p = appendUint16(p, env.stringIndex(STRINGS.Intern(expr.taggedType.name)))
+		p = appendUint16(p, env.stringIndex(expr.taggedType.name))
 	} else {
 		p = append(p, NULL)
 	}
@@ -1005,7 +1005,7 @@ func unpackThrowExpr(env *Env, p []byte, header *PackHeader) (*ThrowExpr, []byte
 func (expr *CatchExpr) Pack(p []byte, env *PackEnv) []byte {
 	p = append(p, CATCH_EXPR)
 	p = expr.Pos().Pack(p, env)
-	p = appendUint16(p, env.stringIndex(STRINGS.Intern(expr.excType.name)))
+	p = appendUint16(p, env.stringIndex(expr.excType.name))
 	p = expr.excSymbol.Pack(p, env)
 	p = packSeq(p, expr.body, env)
 	return p

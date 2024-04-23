@@ -1237,7 +1237,7 @@ var procSymbol = func(env *Env, args []Object) (Object, error) {
 		if err != nil {
 			return nil, err
 		}
-		ns = STRINGS.Intern(se.S)
+		ns = se.S
 	}
 	name, err := EnsureString(env, args, 1)
 	if err != nil {
@@ -1245,7 +1245,7 @@ var procSymbol = func(env *Env, args []Object) (Object, error) {
 	}
 	return Symbol{
 		ns:   ns,
-		name: STRINGS.Intern(name.S),
+		name: name.S,
 	}, nil
 }
 
@@ -1275,13 +1275,13 @@ var procKeyword = func(env *Env, args []Object) (Object, error) {
 		if err != nil {
 			return nil, err
 		}
-		ns = STRINGS.Intern(s.S)
+		ns = s.S
 	}
 	sn, err := EnsureString(env, args, 1)
 	if err != nil {
 		return nil, err
 	}
-	name := STRINGS.Intern(sn.S)
+	name := sn.S
 	return Keyword{
 		ns:   ns,
 		name: name,

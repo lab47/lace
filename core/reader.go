@@ -25,7 +25,7 @@ func NewReader(runeReader io.RuneReader, filename string) *Reader {
 		runeReader: runeReader,
 		rw:         &RuneWindow{},
 		rewind:     -1,
-		filename:   STRINGS.Intern(filename),
+		filename:   filename,
 		posStack:   make([]pos, 0, 8),
 	}
 }

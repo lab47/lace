@@ -2413,7 +2413,7 @@ func InternFakeSymbol(env *Env, ns *Namespace, sym Symbol) (*Var, error) {
 		return ns.Intern(env, fakeSym)
 	}
 	fakeSym := Symbol{
-		name: STRINGS.Intern(sym.String()),
+		name: sym.String(),
 	}
 	return env.CurrentNamespace().Intern(env, fakeSym)
 }

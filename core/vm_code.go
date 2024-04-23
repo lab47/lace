@@ -52,7 +52,7 @@ func (c *CodePosition) Position() Position {
 	}
 
 	if c.Filename != "" {
-		pos.filename = STRINGS.Intern(c.Filename)
+		pos.filename = c.Filename
 	}
 
 	return pos
@@ -259,7 +259,7 @@ func (cad *CodeAsData) AsCode(env *Env) (*Code, error) {
 
 			c.data.literals = append(c.data.literals, vr)
 		case lit.Type != nil:
-			name := STRINGS.Intern(lit.Type.Name)
+			name := lit.Type.Name
 			c.data.literals = append(c.data.literals, TYPES[name])
 		case lit.Encoded != nil:
 			obj, err := readFromReader(env, bytes.NewReader(lit.Encoded.Data))

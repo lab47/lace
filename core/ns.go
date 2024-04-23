@@ -185,7 +185,7 @@ func (ns *Namespace) AddAlias(env *Env, alias Symbol, namespace *Namespace) erro
 }
 
 func (ns *Namespace) Resolve(name string) *Var {
-	return ns.mappings[STRINGS.Intern(name)]
+	return ns.mappings[name]
 }
 
 func (ns *Namespace) Mappings() map[string]*Var {

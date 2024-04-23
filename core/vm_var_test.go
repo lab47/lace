@@ -35,7 +35,7 @@ func TestCompilerVars(t *testing.T) {
 
 		r.True(parent != vb)
 
-		r.Exactly(vb, chfr.top.bindings[*foo.name])
+		r.Exactly(vb, chfr.top.bindings[foo.name])
 
 		t.Run("looking up again returns same varbind", func(t *testing.T) {
 			vb2 := chfr.lookup(foo)
