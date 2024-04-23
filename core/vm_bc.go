@@ -30,7 +30,10 @@ type BytecodeEncoder struct {
 func (e *BytecodeEncoder) addVar(vr *Var) uint {
 	idx := uint(len(e.vars))
 	e.vars = append(e.vars, vr)
-	e.varNames = append(e.varNames, vr.name)
+
+	sym := AssembleSymbol(vr.ns.Name.Name(), vr.name.String())
+
+	e.varNames = append(e.varNames, sym)
 
 	return idx
 }

@@ -150,7 +150,7 @@ func (env *Env) EnsureNamespace(sym Symbol) *Namespace {
 		if setup, ok := builtinNSSetup[*sym.name]; ok {
 			err := setup(env)
 			if err != nil {
-				return nil
+				panic(err)
 			}
 		} else {
 			_, err = PopulateNativeNamespaceToEnv(env, *sym.name)
@@ -227,11 +227,10 @@ func (env *Env) FindNamespace(s Symbol) *Namespace {
 	if ns != nil {
 		ns.MaybeLazy(env, "FindNameSpace")
 	} else {
-		if setup, ok := builtinNSSetup[*s.name]; ok {
-			err := setup(env)
-			if err != nil {
-				return nil
-			}
+		if _, ok := builtinNSSetup[*s.name]; ok {
+			// don't call setup! just create the namespace because EnsureNamespace will call
+			// the setup.
+			ns = env.EnsureNamespace(s)
 		} else {
 			_, err := PopulateNativeNamespaceToEnv(env, *s.name)
 			if err != nil {
@@ -239,6 +238,10 @@ func (env *Env) FindNamespace(s Symbol) *Namespace {
 			}
 		}
 	}
+
+	//if ns == nil {
+	//panic("nope " + *s.name)
+	//}
 	return ns
 }
 

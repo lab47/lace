@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/fxamacker/cbor/v2"
 )
 
@@ -123,7 +124,7 @@ type CodeAsData struct {
 	Filename       string         `json:"filename" cbor:"4,keyasint,omitempty"`
 	Lines          []int          `json:"lines" cbor:"5,keyasint,omitempty"`
 	ImportBindings []string       `json:"import_bindings" cbor:"6,keyasint,omitempty"`
-	VarNames       []string       `json:"var_names" cbor:"7,keyasint,omitempty"`
+	VarNames       []CodeSymbol   `json:"var_names" cbor:"7,keyasint,omitempty"`
 	DefVarNames    []string       `json:"def_var_names" cbor:"8,keyasint,omitempty"`
 	Literals       []*CodeLiteral `json:"literals" cbor:"9,keyasint,omitempty"`
 	Codes          []*CodeAsData  `json:"codes" cbor:"10,keyasint,omitempty"`
@@ -145,7 +146,10 @@ func (c *Code) AsData(env *Env) *CodeAsData {
 	}
 
 	for _, sym := range c.data.varNames {
-		cad.VarNames = append(cad.VarNames, sym.String())
+		var cs CodeSymbol
+		cs.Set(sym)
+
+		cad.VarNames = append(cad.VarNames, cs)
 	}
 
 	for _, sym := range c.data.defVarNames {
@@ -161,8 +165,11 @@ func (c *Code) AsData(env *Env) *CodeAsData {
 			cl.Symbol.Set(o)
 		case *Var:
 			cl.Var = &CodeVar{}
-			cl.Var.Name.Set(o.name)
 
+			sym := AssembleSymbol(o.ns.Name.Name(), o.name.String())
+
+			spew.Dump(sym)
+			cl.Var.Name.Set(sym)
 		case *Type:
 			name := o.Name()
 
@@ -220,13 +227,18 @@ func (cad *CodeAsData) AsCode(env *Env) (*Code, error) {
 		c.data.defVars = append(c.data.defVars, vr)
 	}
 
-	for _, str := range cad.VarNames {
-		sym := MakeSymbol(str)
+	for _, csym := range cad.VarNames {
+		ns := env.FindNamespace(MakeSymbol(csym.Namespace))
+		if ns == nil {
+			panic("bad ns: " + csym.Namespace)
+		}
+
+		sym := csym.Symbol()
 		c.data.varNames = append(c.data.varNames, sym)
 
-		vr, ok := env.Resolve(sym)
-		if !ok {
-			return nil, fmt.Errorf("missing var: %s", sym.String())
+		vr := ns.Resolve(csym.Name)
+		if vr == nil {
+			return nil, fmt.Errorf("missing var 1: %s", sym.String())
 		}
 
 		c.data.vars = append(c.data.vars, vr)
@@ -237,9 +249,14 @@ func (cad *CodeAsData) AsCode(env *Env) (*Code, error) {
 		case lit.Symbol != nil:
 			c.data.literals = append(c.data.literals, lit.Symbol.Symbol())
 		case lit.Var != nil:
-			vr, ok := env.Resolve(lit.Var.Name.Symbol())
-			if !ok {
-				return nil, fmt.Errorf("missing var: %s", lit.Var.Name.Symbol().String())
+			ns := env.FindNamespace(MakeSymbol(lit.Var.Name.Namespace))
+			if ns == nil {
+				panic("unknown ns")
+			}
+
+			vr := ns.Resolve(lit.Var.Name.Name)
+			if vr == nil {
+				return nil, fmt.Errorf("missing var 2: %s", lit.Var.Name.Symbol().String())
 			}
 
 			c.data.literals = append(c.data.literals, vr)

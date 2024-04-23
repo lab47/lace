@@ -482,6 +482,10 @@ func hashSymbol(ns, name *string) uint32 {
 
 func AssembleSymbol(ns, name string) Symbol {
 	if ns == "" {
+		if strings.ContainsRune(name, '/') {
+			panic("bad symbol name")
+		}
+
 		return Symbol{
 			ns:   nil,
 			name: STRINGS.Intern(name),
