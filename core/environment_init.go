@@ -8,7 +8,7 @@ import "fmt"
 func NewEnv() (*Env, error) {
 	features := EmptySet()
 	res := &Env{
-		Namespaces: make(map[*string]*Namespace),
+		Namespaces: make(map[string]*Namespace),
 		Features:   features,
 	}
 	_, err := features.Add(res, MakeKeyword("default"))

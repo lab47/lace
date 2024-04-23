@@ -38,7 +38,7 @@ const (
 type (
 	PackEnv struct {
 		Env              *Env
-		Strings          map[*string]uint16
+		Strings          map[string]uint16
 		Bindings         map[*Binding]int
 		nextStringIndex  uint16
 		nextBindingIndex int
@@ -46,7 +46,7 @@ type (
 
 	PackHeader struct {
 		GlobalEnv *Env
-		Strings   []*string
+		Strings   []string
 		Bindings  []Binding
 	}
 )
@@ -78,7 +78,7 @@ func unpackBinding(env *Env, p []byte, header *PackHeader) (Binding, []byte, err
 func NewPackEnv(env *Env) *PackEnv {
 	return &PackEnv{
 		Env:      env,
-		Strings:  make(map[*string]uint16),
+		Strings:  make(map[string]uint16),
 		Bindings: make(map[*Binding]int),
 	}
 }
@@ -93,11 +93,11 @@ func (env *PackEnv) Pack(p []byte) []byte {
 	p = appendInt(p, len(env.Strings))
 	for k, v := range env.Strings {
 		p = appendUint16(p, v)
-		if k == nil {
+		if k == "" {
 			p = appendInt(p, -1)
 		} else {
-			p = appendInt(p, len(*k))
-			p = append(p, *k...)
+			p = appendInt(p, len(k))
+			p = append(p, k...)
 		}
 	}
 	p = append(p, bp...)
@@ -106,14 +106,14 @@ func (env *PackEnv) Pack(p []byte) []byte {
 
 func UnpackHeader(p []byte, env *Env) (*PackHeader, []byte, error) {
 	stringCount, p := extractInt(p)
-	strs := make([]*string, stringCount)
+	strs := make([]string, stringCount)
 	for i := 0; i < stringCount; i++ {
 		var index uint16
 		var length int
 		index, p = extractUInt16(p)
 		length, p = extractInt(p)
 		if length == -1 {
-			strs[index] = nil
+			strs[index] = ""
 		} else {
 			strs[index] = STRINGS.Intern(string(p[:length]))
 			p = p[length:]
@@ -140,7 +140,7 @@ func UnpackHeader(p []byte, env *Env) (*PackHeader, []byte, error) {
 	return header, p, nil
 }
 
-func (env *PackEnv) stringIndex(s *string) uint16 {
+func (env *PackEnv) stringIndex(s string) uint16 {
 	index, ok := env.Strings[s]
 	if ok {
 		return index
@@ -576,7 +576,7 @@ func unpackDefExpr(env *Env, p []byte, header *PackHeader) (*DefExpr, []byte, er
 		return nil, nil, err
 	}
 	varName := name
-	varName.ns = nil
+	varName.ns = ""
 	ns := header.GlobalEnv.CurrentNamespace()
 	vr, err := ns.Intern(env, varName)
 	if err != nil {
@@ -704,12 +704,12 @@ func unpackVar(env *Env, p []byte, header *PackHeader) (*Var, []byte, error) {
 
 	ns := env.FindNamespace(nsName)
 	if ns == nil {
-		panic("unknown namespace: " + *nsName.name)
+		panic("unknown namespace: " + nsName.name)
 	}
 
 	vr := ns.mappings[name.name]
 	if vr == nil {
-		return nil, nil, env.RT.NewError("Error unpacking var: cannot find var " + *nsName.name + "/" + *name.name)
+		return nil, nil, env.RT.NewError("Error unpacking var: cannot find var " + nsName.name + "/" + name.name)
 	}
 	return vr, p, nil
 }

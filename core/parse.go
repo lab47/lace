@@ -137,7 +137,7 @@ type (
 		isUsed bool
 	}
 	Bindings struct {
-		bindings map[*string]*Binding
+		bindings map[string]*Binding
 		parent   *Bindings
 		frame    int
 	}
@@ -236,21 +236,21 @@ type (
 		deref              Symbol
 	}
 	Str struct {
-		_if          *string
-		quote        *string
-		fn_          *string
-		let_         *string
-		letfn_       *string
-		loop_        *string
-		recur        *string
-		setMacro_    *string
-		def          *string
-		defLinter    *string
-		_var         *string
-		do           *string
-		throw        *string
-		try          *string
-		coreFilename *string
+		_if          string
+		quote        string
+		fn_          string
+		let_         string
+		letfn_       string
+		loop_        string
+		recur        string
+		setMacro_    string
+		def          string
+		defLinter    string
+		_var         string
+		do           string
+		throw        string
+		try          string
+		coreFilename string
 	}
 )
 
@@ -342,7 +342,7 @@ func (b *Bindings) PushFrame() *Bindings {
 		frame = b.frame + 1
 	}
 	return &Bindings{
-		bindings: make(map[*string]*Binding),
+		bindings: make(map[string]*Binding),
 		parent:   b,
 		frame:    frame,
 	}
@@ -393,7 +393,7 @@ func (b *Bindings) GetBinding(sym Symbol) *Binding {
 }
 
 func (ctx *ParseContext) GetLocalBinding(sym Symbol) *Binding {
-	if sym.ns != nil {
+	if sym.ns != "" {
 		return nil
 	}
 	return ctx.localBindings.GetBinding(sym)
@@ -548,8 +548,8 @@ func WarnOnUnusedVars(env *Env) {
 			if vr.ns == ns && !vr.isUsed && vr.isPrivate {
 				pos := vr.GetInfo()
 				if pos != nil {
-					names = append(names, *vr.name.name)
-					positions[*vr.name.name] = pos.Position
+					names = append(names, vr.name.name)
+					positions[vr.name.name] = pos.Position
 				}
 			}
 		}
@@ -782,14 +782,14 @@ func parseDef(obj Object, ctx *ParseContext, isForLinter bool) (*DefExpr, error)
 	var meta Map
 	switch sym := s.(type) {
 	case Symbol:
-		if sym.ns != nil && (Symbol{name: sym.ns} != ctx.Env.CurrentNamespace().Name) {
+		if sym.ns != "" && (Symbol{name: sym.ns} != ctx.Env.CurrentNamespace().Name) {
 			return nil, &ParseError{
 				msg: "Can't create defs outside of current ns",
 				obj: obj,
 			}
 		}
 		symWithoutNs := sym
-		symWithoutNs.ns = nil
+		symWithoutNs.ns = ""
 		vr, err := ctx.Env.CurrentNamespace().Intern(ctx.Env, symWithoutNs)
 		if err != nil {
 			return nil, err
@@ -968,9 +968,9 @@ func parseParams(env *Env, params Object) ([]Symbol, bool, error) {
 
 func needsUnusedWarning(b *Binding) bool {
 	return !b.isUsed &&
-		!strings.HasPrefix(*b.name.name, "_") &&
-		!strings.HasPrefix(*b.name.name, "&form") &&
-		!strings.HasPrefix(*b.name.name, "&env") &&
+		!strings.HasPrefix(b.name.name, "_") &&
+		!strings.HasPrefix(b.name.name, "&form") &&
+		!strings.HasPrefix(b.name.name, "&env") &&
 		!isSkipUnused(b.name)
 }
 
@@ -1469,7 +1469,7 @@ func parseLetLoop(obj Object, formName string, ctx *ParseContext) (*LetExpr, err
 			s := b.at(i * 2)
 			switch sym := s.(type) {
 			case Symbol:
-				if sym.ns != nil {
+				if sym.ns != "" {
 					msg := "Can't let qualified name: " + sym.String()
 					if LINTER_MODE {
 						printParseError(GetPosition(s), msg)
@@ -1975,7 +1975,7 @@ func isUnknownCallable(env *Env, expr Expr) (bool, Seq) {
 				name: c.vr.name.name,
 			}
 		} else {
-			sym = MakeSymbol(*c.vr.name.name)
+			sym = MakeSymbol(c.vr.name.name)
 		}
 		b, s := isKnownMacros(env, sym)
 		if b {
@@ -1984,7 +1984,7 @@ func isUnknownCallable(env *Env, expr Expr) (bool, Seq) {
 		if c.vr.expr != nil {
 			return false, nil
 		}
-		if sym.ns == nil && c.vr.ns != env.CoreNamespace {
+		if sym.ns == "" && c.vr.ns != env.CoreNamespace {
 			return true, nil
 		}
 	}
@@ -2104,7 +2104,7 @@ func parseList(env *Env, obj Object, ctx *ParseContext) (Expr, error) {
 		return nil, err
 	}
 
-	if v, ok := first.(Symbol); ok && v.ns == nil {
+	if v, ok := first.(Symbol); ok && v.ns == "" {
 		switch v.name {
 		case STR.quote:
 			sec, err := Second(env, seq)
@@ -2255,7 +2255,7 @@ func parseList(env *Env, obj Object, ctx *ParseContext) (Expr, error) {
 		}
 	}
 
-	if sym, ok := first.(Symbol); ok && sym.ns == nil && strings.HasPrefix(sym.Name(), ".") {
+	if sym, ok := first.(Symbol); ok && sym.ns == "" && strings.HasPrefix(sym.Name(), ".") {
 		r, err := seq.Rest(env)
 		if err != nil {
 			return nil, err
@@ -2408,32 +2408,30 @@ func convertMethodName(sym Symbol) string {
 func InternFakeSymbol(env *Env, ns *Namespace, sym Symbol) (*Var, error) {
 	if ns != nil {
 		fakeSym := Symbol{
-			ns:   nil,
 			name: sym.name,
 		}
 		return ns.Intern(env, fakeSym)
 	}
 	fakeSym := Symbol{
-		ns:   nil,
 		name: STRINGS.Intern(sym.String()),
 	}
 	return env.CurrentNamespace().Intern(env, fakeSym)
 }
 
 func isInteropSymbol(sym Symbol) bool {
-	return sym.ns == nil && (strings.HasPrefix(*sym.name, ".") || strings.HasSuffix(*sym.name, ".") || strings.Contains(*sym.name, "$"))
+	return sym.ns == "" && (strings.HasPrefix(sym.name, ".") || strings.HasSuffix(sym.name, ".") || strings.Contains(sym.name, "$"))
 }
 
 func isRecordConstructor(sym Symbol) bool {
-	return sym.ns == nil && (strings.HasPrefix(*sym.name, "->") || strings.HasPrefix(*sym.name, "map->"))
+	return sym.ns == "" && (strings.HasPrefix(sym.name, "->") || strings.HasPrefix(sym.name, "map->"))
 }
 
 var fullClassNameRe = regexp.MustCompile(`.+\..+\.[A-Z].+`)
 
 func isJavaSymbol(sym Symbol) bool {
-	s := *sym.name
-	if sym.ns != nil {
-		s = *sym.ns
+	s := sym.name
+	if sym.ns != "" {
+		s = sym.ns
 	}
 	return fullClassNameRe.MatchString(s)
 }
@@ -2467,7 +2465,7 @@ func parseSymbol(obj Object, ctx *ParseContext) (Expr, error) {
 	if vr, ok := ctx.Env.Resolve(sym); ok {
 		return MakeVarRefExpr(vr, obj), nil
 	}
-	if sym.ns == nil && TYPES[sym.name] != nil {
+	if sym.ns == "" && TYPES[sym.name] != nil {
 		return &LiteralExpr{
 			Position: GetPosition(obj),
 			obj:      TYPES[sym.name],
@@ -2477,7 +2475,7 @@ func parseSymbol(obj Object, ctx *ParseContext) (Expr, error) {
 	if !LINTER_MODE {
 		return nil, &ParseError{obj: obj, msg: "Unable to resolve symbol: " + sym.String()}
 	}
-	if DIALECT == CLJS && sym.ns == nil {
+	if DIALECT == CLJS && sym.ns == "" {
 		// Check if this is a "callable namespace"
 		ns := ctx.Env.FindNamespace(sym)
 		if ns == nil {

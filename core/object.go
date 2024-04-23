@@ -123,7 +123,7 @@ type (
 		endColumn   int
 		startLine   int
 		startColumn int
-		filename    *string
+		filename    string
 	}
 	Atom struct {
 		MetaHolder
@@ -176,15 +176,15 @@ type (
 	}
 	Keyword struct {
 		InfoHolder
-		ns   *string
-		name *string
+		ns   string
+		name string
 		hash uint32
 	}
 	Symbol struct {
 		InfoHolder
 		MetaHolder
-		ns   *string
-		name *string
+		ns   string
+		name string
 		hash uint32
 	}
 	String struct {
@@ -448,10 +448,10 @@ var (
 )
 
 func (pos Position) Filename() string {
-	if pos.filename == nil {
+	if pos.filename == "" {
 		return "<file>"
 	}
-	return *pos.filename
+	return pos.filename
 }
 
 var hasher hash.Hash32 = fnv.New32a()
@@ -471,12 +471,12 @@ func getHash() hash.Hash32 {
 	return hasher
 }
 
-func hashSymbol(ns, name *string) uint32 {
+func hashSymbol(ns, name string) uint32 {
 	h := getHash()
-	if ns != nil {
-		h.Write([]byte(*ns))
+	if ns != "" {
+		h.Write([]byte(ns))
 	}
-	h.Write([]byte("/" + *name))
+	h.Write([]byte("/" + name))
 	return h.Sum32()
 }
 
@@ -487,7 +487,6 @@ func AssembleSymbol(ns, name string) Symbol {
 		}
 
 		return Symbol{
-			ns:   nil,
 			name: STRINGS.Intern(name),
 		}
 	}
@@ -501,7 +500,6 @@ func MakeSymbol(nsname string) Symbol {
 	index := strings.IndexRune(nsname, '/')
 	if index == -1 || nsname == "/" {
 		return Symbol{
-			ns:   nil,
 			name: STRINGS.Intern(nsname),
 		}
 	}
@@ -516,7 +514,6 @@ func MakeSymbolWithMeta(nsname string, m Map) Symbol {
 	var sym Symbol
 	if index == -1 || nsname == "/" {
 		sym = Symbol{
-			ns:   nil,
 			name: STRINGS.Intern(nsname),
 		}
 	} else {
@@ -537,7 +534,6 @@ func MakeTaggedSymbol(nsname string, tag Symbol) Symbol {
 	index := strings.IndexRune(nsname, '/')
 	if index == -1 || nsname == "/" {
 		sym = Symbol{
-			ns:   nil,
 			name: STRINGS.Intern(nsname),
 		}
 	} else {
@@ -574,9 +570,8 @@ func MakeKeyword(nsname string) Keyword {
 	if index == -1 || nsname == "/" {
 		name := STRINGS.Intern(nsname)
 		return Keyword{
-			ns:   nil,
 			name: name,
-			hash: hashSymbol(nil, name) ^ KeywordHashMask,
+			hash: hashSymbol("", name) ^ KeywordHashMask,
 		}
 	}
 	ns := STRINGS.Intern(nsname[0:index])
@@ -1618,26 +1613,26 @@ func (t Time) Compare(env *Env, other Object) (int, error) {
 }
 
 func (k Keyword) ToString(env *Env, escape bool) (string, error) {
-	if k.ns != nil {
-		return ":" + *k.ns + "/" + *k.name, nil
+	if k.ns != "" {
+		return ":" + k.ns + "/" + k.name, nil
 	}
-	return ":" + *k.name, nil
+	return ":" + k.name, nil
 }
 
 func (k Keyword) String() string {
-	if k.ns != nil {
-		return ":" + *k.ns + "/" + *k.name
+	if k.ns != "" {
+		return ":" + k.ns + "/" + k.name
 	}
-	return ":" + *k.name
+	return ":" + k.name
 }
 
 func (k Keyword) Name() string {
-	return *k.name
+	return k.name
 }
 
 func (k Keyword) Namespace() string {
-	if k.ns != nil {
-		return *k.ns
+	if k.ns != "" {
+		return k.ns
 	}
 	return ""
 }
@@ -1733,26 +1728,26 @@ func (rx *Regex) Hash(env *Env) (uint32, error) {
 }
 
 func (s Symbol) ToString(env *Env, escape bool) (string, error) {
-	if s.ns != nil {
-		return *s.ns + "/" + *s.name, nil
+	if s.ns != "" {
+		return s.ns + "/" + s.name, nil
 	}
-	return *s.name, nil
+	return s.name, nil
 }
 
 func (s Symbol) String() string {
-	if s.ns != nil {
-		return *s.ns + "/" + *s.name
+	if s.ns != "" {
+		return s.ns + "/" + s.name
 	}
-	return *s.name
+	return s.name
 }
 
 func (s Symbol) Name() string {
-	return *s.name
+	return s.name
 }
 
 func (s Symbol) Namespace() string {
-	if s.ns != nil {
-		return *s.ns
+	if s.ns != "" {
+		return s.ns
 	}
 	return ""
 }
@@ -1961,7 +1956,7 @@ func IsInstance(env *Env, t *Type, obj Object) bool {
 	return IsEqualOrImplements(t, obj.GetType())
 }
 
-var specialSymbols = make(map[*string]struct{})
+var specialSymbols = make(map[string]struct{})
 
 func init() {
 	specialSymbols[criticalSymbols._if.name] = struct{}{}
@@ -1985,7 +1980,7 @@ func init() {
 func IsSpecialSymbol(obj Object) bool {
 	switch obj := obj.(type) {
 	case Symbol:
-		if obj.ns != nil {
+		if obj.ns != "" {
 			return false
 		}
 
@@ -2007,7 +2002,7 @@ func MakeMeta(arglists Seq, docstring string, added string) *ArrayMap {
 }
 
 func (p Position) String() string {
-	if p.filename == nil {
+	if p.filename == "" {
 		return "<unknown>:-1"
 	}
 

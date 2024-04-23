@@ -11,8 +11,8 @@ type (
 		MetaHolder
 		Name           Symbol
 		Lazy           func(env *Env, ns *Namespace)
-		mappings       map[*string]*Var
-		aliases        map[*string]*Namespace
+		mappings       map[string]*Var
+		aliases        map[string]*Namespace
 		isUsed         bool
 		isGloballyUsed bool
 		hash           uint32
@@ -78,7 +78,7 @@ func (ns *Namespace) MaybeLazy(env *Env, doc string) {
 		ns.Lazy = nil
 		lazyFn(env, ns)
 		if VerbosityLevel > 0 {
-			fmt.Fprintf(Stderr, "NamespaceFor: Lazily initialized %s for %s\n", *ns.Name.name, doc)
+			fmt.Fprintf(Stderr, "NamespaceFor: Lazily initialized %s for %s\n", ns.Name.name, doc)
 		}
 	}
 }
@@ -97,14 +97,14 @@ func NewNamespace(env *Env, sym Symbol) (*Namespace, error) {
 
 	return &Namespace{
 		Name:     sym,
-		mappings: make(map[*string]*Var),
-		aliases:  make(map[*string]*Namespace),
+		mappings: make(map[string]*Var),
+		aliases:  make(map[string]*Namespace),
 		hash:     h ^ nsHashMask,
 	}, nil
 }
 
 func (ns *Namespace) Refer(env *Env, sym Symbol, vr *Var) (*Var, error) {
-	if sym.ns != nil {
+	if sym.ns != "" {
 		return nil, env.RT.NewError("Can't intern namespace-qualified symbol " + sym.String())
 	}
 	ns.mappings[sym.name] = vr
@@ -120,7 +120,7 @@ func (ns *Namespace) ReferAll(other *Namespace) {
 }
 
 func (ns *Namespace) Intern(env *Env, sym Symbol) (*Var, error) {
-	if sym.ns != nil {
+	if sym.ns != "" {
 		return nil, StubNewError("Can't intern namespace-qualified symbol " + sym.String())
 	}
 	sym.meta = nil
@@ -168,7 +168,7 @@ func (ns *Namespace) InternVar(env *Env, name string, val Object, meta *ArrayMap
 }
 
 func (ns *Namespace) AddAlias(env *Env, alias Symbol, namespace *Namespace) error {
-	if alias.ns != nil {
+	if alias.ns != "" {
 		return env.RT.NewError("Alias can't be namespace-qualified")
 	}
 	existing := ns.aliases[alias.name]
@@ -188,10 +188,10 @@ func (ns *Namespace) Resolve(name string) *Var {
 	return ns.mappings[STRINGS.Intern(name)]
 }
 
-func (ns *Namespace) Mappings() map[*string]*Var {
+func (ns *Namespace) Mappings() map[string]*Var {
 	return ns.mappings
 }
 
-func (ns *Namespace) Aliases() map[*string]*Var {
+func (ns *Namespace) Aliases() map[string]*Var {
 	return ns.mappings
 }

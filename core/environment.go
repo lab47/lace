@@ -17,7 +17,7 @@ var (
 
 type (
 	Env struct {
-		Namespaces    map[*string]*Namespace
+		Namespaces    map[string]*Namespace
 		CoreNamespace *Namespace
 		stdout        *Var
 		stdin         *Var
@@ -138,7 +138,7 @@ func (env *Env) SetCurrentNamespace(ns *Namespace) {
 }
 
 func (env *Env) EnsureNamespace(sym Symbol) *Namespace {
-	if sym.ns != nil {
+	if sym.ns != "" {
 		panic(env.RT.NewError("Namespace's name cannot be qualified: " + sym.String()))
 	}
 	var err error
@@ -147,13 +147,13 @@ func (env *Env) EnsureNamespace(sym Symbol) *Namespace {
 		if err != nil {
 			panic(err)
 		}
-		if setup, ok := builtinNSSetup[*sym.name]; ok {
+		if setup, ok := builtinNSSetup[sym.name]; ok {
 			err := setup(env)
 			if err != nil {
 				panic(err)
 			}
 		} else {
-			_, err = PopulateNativeNamespaceToEnv(env, *sym.name)
+			_, err = PopulateNativeNamespaceToEnv(env, sym.name)
 			if err != nil {
 				panic(err)
 			}
@@ -163,7 +163,7 @@ func (env *Env) EnsureNamespace(sym Symbol) *Namespace {
 }
 
 func (env *Env) ensureNamespace(sym Symbol) *Namespace {
-	if sym.ns != nil {
+	if sym.ns != "" {
 		panic(env.RT.NewError("Namespace's name cannot be qualified: " + sym.String()))
 	}
 	var err error
@@ -178,7 +178,7 @@ func (env *Env) ensureNamespace(sym Symbol) *Namespace {
 
 func (env *Env) NamespaceFor(ns *Namespace, s Symbol) *Namespace {
 	var res *Namespace
-	if s.ns == nil {
+	if s.ns == "" {
 		res = ns
 	} else {
 		res = ns.aliases[s.ns]
@@ -220,19 +220,19 @@ func (env *Env) MakeVar(s Symbol) (*Var, error) {
 }
 
 func (env *Env) FindNamespace(s Symbol) *Namespace {
-	if s.ns != nil {
+	if s.ns != "" {
 		return nil
 	}
 	ns := env.Namespaces[s.name]
 	if ns != nil {
 		ns.MaybeLazy(env, "FindNameSpace")
 	} else {
-		if _, ok := builtinNSSetup[*s.name]; ok {
+		if _, ok := builtinNSSetup[s.name]; ok {
 			// don't call setup! just create the namespace because EnsureNamespace will call
 			// the setup.
 			ns = env.EnsureNamespace(s)
 		} else {
-			_, err := PopulateNativeNamespaceToEnv(env, *s.name)
+			_, err := PopulateNativeNamespaceToEnv(env, s.name)
 			if err != nil {
 				panic(err)
 			}
@@ -246,7 +246,7 @@ func (env *Env) FindNamespace(s Symbol) *Namespace {
 }
 
 func (env *Env) RemoveNamespace(s Symbol) *Namespace {
-	if s.ns != nil {
+	if s.ns != "" {
 		return nil
 	}
 	if s.Is(criticalSymbols.lace_core) {
@@ -258,15 +258,15 @@ func (env *Env) RemoveNamespace(s Symbol) *Namespace {
 }
 
 func (env *Env) ResolveSymbol(s Symbol) (Symbol, error) {
-	if strings.ContainsRune(*s.name, '.') {
+	if strings.ContainsRune(s.name, '.') {
 		return s, nil
 	}
-	if s.ns == nil && TYPES[s.name] != nil {
+	if s.ns == "" && TYPES[s.name] != nil {
 		return s, nil
 	}
 	currentNs := env.CurrentNamespace()
 
-	if s.ns != nil {
+	if s.ns != "" {
 		ns := env.NamespaceFor(currentNs, s)
 		if ns == nil || ns.Name.name == s.ns {
 			if ns != nil {

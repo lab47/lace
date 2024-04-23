@@ -1231,7 +1231,7 @@ var procSymbol = func(env *Env, args []Object) (Object, error) {
 		return MakeSymbol(s.S), nil
 	}
 
-	var ns *string = nil
+	var ns string
 	if !args[0].Equals(env, NIL) {
 		se, err := EnsureString(env, args, 0)
 		if err != nil {
@@ -1269,7 +1269,7 @@ var procKeyword = func(env *Env, args []Object) (Object, error) {
 		}
 	}
 
-	var ns *string = nil
+	var ns string
 	if !args[0].Equals(env, NIL) {
 		s, err := EnsureString(env, args, 0)
 		if err != nil {
@@ -1903,7 +1903,7 @@ var procFindVar = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	if sym.ns == nil {
+	if sym.ns == "" {
 		return nil, env.RT.NewError("find-var argument must be namespace-qualified symbol")
 	}
 	if v, ok := env.Resolve(sym); ok {
@@ -2278,7 +2278,7 @@ var procNamespaceMap = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 	for k, v := range ns.mappings {
-		r.Add(env, MakeSymbol(*k), v)
+		r.Add(env, MakeSymbol(k), v)
 	}
 	return r, nil
 }
@@ -2296,7 +2296,7 @@ var procNamespaceUnmap = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	if sym.ns != nil {
+	if sym.ns != "" {
 		return nil, env.RT.NewError("Can't unintern namespace-qualified symbol")
 	}
 	delete(ns.mappings, sym.name)
@@ -2373,7 +2373,7 @@ var procNamespaceAliases = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 	for k, v := range ns.aliases {
-		r.Add(env, MakeSymbol(*k), v)
+		r.Add(env, MakeSymbol(k), v)
 	}
 	return r, nil
 }
@@ -2391,7 +2391,7 @@ var procNamespaceUnalias = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	if sym.ns != nil {
+	if sym.ns != "" {
 		return nil, env.RT.NewError("Alias can't be namespace-qualified")
 	}
 	delete(ns.aliases, sym.name)
@@ -2436,7 +2436,7 @@ var procNsResolve = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	if sym.ns == nil && TYPES[sym.name] != nil {
+	if sym.ns == "" && TYPES[sym.name] != nil {
 		return TYPES[sym.name], nil
 	}
 	if vr, ok := env.ResolveIn(ns, sym); ok {
@@ -2881,7 +2881,7 @@ var procTypes = func(env *Env, args []Object) (Object, error) {
 	}
 	res := EmptyArrayMap()
 	for k, v := range TYPES {
-		res.Add(env, String{S: *k}, v)
+		res.Add(env, String{S: k}, v)
 	}
 	return res, nil
 }
@@ -3365,7 +3365,7 @@ var procIsNamespaceInitialized = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 
-	if sym.ns != nil {
+	if sym.ns != "" {
 		return nil, env.RT.NewError("Can't ask for namespace info on namespace-qualified symbol")
 	}
 	// First look for registered (e.g. std) libs
@@ -3618,7 +3618,7 @@ func ReadConfig(env *Env, filename string, workingDir string) error {
 
 func removeLaceNamespaces(env *Env) {
 	for k, ns := range env.Namespaces {
-		if ns != env.CoreNamespace && strings.HasPrefix(*k, "lace.") {
+		if ns != env.CoreNamespace && strings.HasPrefix(k, "lace.") {
 			delete(env.Namespaces, k)
 		}
 	}
@@ -3626,7 +3626,7 @@ func removeLaceNamespaces(env *Env) {
 
 func markLaceNamespacesAsUsed(env *Env) {
 	for k, ns := range env.Namespaces {
-		if ns != env.CoreNamespace && strings.HasPrefix(*k, "lace.") {
+		if ns != env.CoreNamespace && strings.HasPrefix(k, "lace.") {
 			ns.isUsed = true
 			ns.isGloballyUsed = true
 		}

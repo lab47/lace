@@ -382,7 +382,7 @@ func (c *Compiler) Process(env *Env, expr Expr) error {
 		meta := EmptyArrayMap()
 		meta.Add(env, criticalKeywords.line, Int{I: e.startLine})
 		meta.Add(env, criticalKeywords.column, Int{I: e.startColumn})
-		meta.Add(env, criticalKeywords.file, String{S: *e.filename})
+		meta.Add(env, criticalKeywords.file, String{S: e.filename})
 		meta.Add(env, criticalKeywords.ns, e.vr.ns)
 		meta.Add(env, criticalKeywords.name, e.vr.name)
 
@@ -1144,7 +1144,7 @@ func compileFn(env *Env, fn *Fn, parent *Compiler) (*fnClosure, error) {
 		}
 
 		locals := len(arity.args)
-		if fn.fnExpr.self.name != nil {
+		if fn.fnExpr.self.name != "" {
 			locals++
 		}
 
@@ -1157,7 +1157,7 @@ func compileFn(env *Env, fn *Fn, parent *Compiler) (*fnClosure, error) {
 			fnf.set(a)
 		}
 
-		if fn.fnExpr.self.name != nil {
+		if fn.fnExpr.self.name != "" {
 			selfVar := fnf.set(fn.fnExpr.self)
 
 			c.insn(Instruction{

@@ -334,7 +334,7 @@ func (expr *DefExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 	meta := EmptyArrayMap()
 	meta.Add(genv, criticalKeywords.line, Int{I: expr.startLine})
 	meta.Add(genv, criticalKeywords.column, Int{I: expr.startColumn})
-	meta.Add(genv, criticalKeywords.file, String{S: *expr.filename})
+	meta.Add(genv, criticalKeywords.file, String{S: expr.filename})
 	meta.Add(genv, criticalKeywords.ns, expr.vr.ns)
 	meta.Add(genv, criticalKeywords.name, expr.vr.name)
 	expr.vr.meta = meta
@@ -596,7 +596,7 @@ func (expr *IfExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 
 func (expr *FnExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 	res := &Fn{fnExpr: expr}
-	if expr.self.name != nil {
+	if expr.self.name != "" {
 		env = env.addFrame([]Object{res})
 	}
 	res.env = env

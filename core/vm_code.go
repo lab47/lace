@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/fxamacker/cbor/v2"
 )
 
@@ -64,7 +63,7 @@ func (c *CodePosition) Set(pos Position) {
 	c.EndLine = pos.endLine
 	c.StartColumn = pos.startColumn
 	c.EndColumn = pos.endColumn
-	c.Filename = *pos.filename
+	c.Filename = pos.filename
 }
 
 type CodeSymbol struct {
@@ -168,7 +167,6 @@ func (c *Code) AsData(env *Env) *CodeAsData {
 
 			sym := AssembleSymbol(o.ns.Name.Name(), o.name.String())
 
-			spew.Dump(sym)
 			cl.Var.Name.Set(sym)
 		case *Type:
 			name := o.Name()

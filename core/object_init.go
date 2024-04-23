@@ -8,7 +8,7 @@ import (
 	"reflect"
 )
 
-var TYPES = map[*string]*Type{}
+var TYPES = map[string]*Type{}
 var TYPE Types
 
 func RegRefType(name string, inst interface{}, doc string) *Type {

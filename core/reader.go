@@ -13,7 +13,7 @@ type (
 		column         int
 		isEof          bool
 		rewind         int
-		filename       *string
+		filename       string
 		args           map[int]Symbol
 		posStack       []pos
 	}
