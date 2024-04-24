@@ -228,8 +228,8 @@ type (
 		fnExpr  *FnExpr
 		env     *LocalEnv
 
-		code   *Code
-		upvals []*NamedPair
+		code           *Code
+		importedUpvals []*NamedPair
 	}
 	ExInfo struct {
 		ArrayMap
@@ -897,6 +897,15 @@ func (exInfo *ExInfo) Error() string {
 
 func (fn *Fn) ToString(env *Env, escape bool) (string, error) {
 	return "#object[Fn]", nil
+}
+
+func (fn *Fn) String() string {
+	if fn.code != nil {
+		return fmt.Sprintf("<fn bc @ %s:%d>", fn.code.filename, fn.code.lineForIp(0))
+	} else {
+		pos := fn.fnExpr.Pos()
+		return fmt.Sprintf("<fn tree @ %s:%d>", pos.filename, pos.startLine)
+	}
 }
 
 func (fn *Fn) Equals(env *Env, other interface{}) bool {

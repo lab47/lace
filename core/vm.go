@@ -133,8 +133,10 @@ type handler struct {
 
 type EngineFrame struct {
 	Ip       int
+	Stack    []Object
 	Code     *Fn
 	Bindings []Object
+	Upvals   []*NamedPair
 	Arity    int32
 	Args     []Object
 
@@ -478,9 +480,12 @@ func (c *Compiler) Process(env *Env, expr Expr) error {
 			return err
 		}
 
-		c.insns = append(c.insns, &Instruction{
+		c.insn(Instruction{
 			Op: MethodCall,
 			A0: int32(len(e.args)),
+			Data: &MethodCallData{
+				Method: e.method,
+			},
 		})
 	case *ThrowExpr:
 		err := c.Process(env, e.e)
@@ -850,8 +855,14 @@ func (e *Engine) printStack(env *Env) {
 
 func (e *Engine) pushFrame(fn *Fn) *EngineFrame {
 	idx := len(e.frames)
+
+	upvals := make([]*NamedPair, fn.code.totalUpvals)
+	copy(upvals, fn.importedUpvals)
+
 	e.frames = append(e.frames, EngineFrame{
 		Code:     fn,
+		Stack:    e.stack,
+		Upvals:   upvals,
 		Bindings: make([]Object, fn.code.numBindings),
 	})
 
@@ -1257,7 +1268,7 @@ func compileFn(env *Env, fn *Fn, parent *Compiler) (*fnClosure, error) {
 
 	fn.code = c.Export()
 	fn.code.totalUpvals = totalUpvals
-	fn.upvals = make([]*NamedPair, fn.code.totalUpvals)
+	fn.importedUpvals = make([]*NamedPair, len(parentVBs))
 	fn.code.importUpvals = len(parentVBs)
 
 	cl := &fnClosure{

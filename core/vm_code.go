@@ -308,8 +308,8 @@ func UnmarshalCode(env *Env, data []byte) (*Fn, error) {
 	}
 
 	fn := &Fn{
-		code:   code,
-		upvals: make([]*NamedPair, code.totalUpvals),
+		code:           code,
+		importedUpvals: make([]*NamedPair, code.totalUpvals),
 	}
 
 	return fn, nil

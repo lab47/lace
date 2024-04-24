@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/lab47/lace/core/insn"
 )
@@ -109,17 +110,33 @@ func (e *BytecodeEncoder) Encode(i *Instruction) error {
 
 const debugBC = false
 
+func (e *Engine) printStack(env *Env) {
+	var parts []string
+
+	for _, o := range e.stack {
+		parts = append(parts, fmt.Sprintf("%v", o))
+	}
+
+	fmt.Println("[ " + strings.Join(parts, ", ") + " ]")
+}
+
 func (e *Engine) RunBC(env *Env, fn *Fn) (Object, error) {
 	c := fn.code.data
 
-	//fmt.Printf("==== enter frame %d %s:%d =====\n", len(e.frames), fn.code.filename, fn.code.lineForIp(0))
+	fr, err := e.frameBack(0)
+	if err != nil {
+		return nil, err
+	}
+
+	//e.stack = fr.Stack
+
+	//fmt.Printf("==== enter frame %d %s:%d (upvals: %d) =====\n", len(e.frames), fn.code.filename, fn.code.lineForIp(0), len(fr.Upvals))
 	//defer fmt.Printf("==== exit frame %d =====\n", len(e.frames))
 	defer e.popFrame()
 
 	var (
 		ip  int
 		tmp Object
-		err error
 	)
 
 loop:
@@ -130,7 +147,7 @@ loop:
 
 		if debugBC {
 			fmt.Printf("% 2d|% 4d|% 4d| %s %d\n", len(e.frames), ip, fn.code.lineForIp(ip), OpCode(op), a)
-			// e.printStack(env)
+			//e.printStack(env)
 		}
 
 		switch OpCode(op) {
@@ -152,14 +169,14 @@ loop:
 				continue loop
 			}
 		case GetUpval:
-			e.stackPush(fn.upvals[a].Value)
+			e.stackPush(fr.Upvals[a].Value)
 		case RefUpval:
-			e.stackPush(fn.upvals[a])
+			e.stackPush(fr.Upvals[a])
 		case SetUpval:
-			uv := fn.upvals[a]
+			uv := fr.Upvals[a]
 			if uv == nil {
 				uv = &NamedPair{}
-				fn.upvals[a] = uv
+				fr.Upvals[a] = uv
 			}
 
 			uv.Value = e.stackPop()
@@ -422,6 +439,16 @@ loop:
 			case Callable:
 				args := e.stackPopN(int(a))
 
+				if false {
+					for _, a := range args {
+						if str, ok := a.(fmt.Stringer); ok {
+							fmt.Printf("             | %s\n", str)
+						} else {
+							fmt.Printf("             | %T %v\n", a, a)
+						}
+					}
+				}
+
 				fr, err := e.frameBack(0)
 				if err != nil {
 					panic(err)
@@ -555,15 +582,15 @@ loop:
 		case MakeFn:
 			code := c.codes[a]
 
-			upvals := make([]*NamedPair, code.totalUpvals)
+			upvals := make([]*NamedPair, code.importUpvals)
 
 			for i := code.importUpvals - 1; i >= 0; i-- {
 				upvals[i] = e.stackPop().(*NamedPair)
 			}
 
 			fn := &Fn{
-				code:   code,
-				upvals: upvals,
+				code:           code,
+				importedUpvals: upvals,
 			}
 
 			e.stackPush(fn)
