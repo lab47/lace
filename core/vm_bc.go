@@ -130,8 +130,11 @@ func (e *Engine) RunBC(env *Env, fn *Fn) (Object, error) {
 
 	//e.stack = fr.Stack
 
-	//fmt.Printf("==== enter frame %d %s:%d (upvals: %d) =====\n", len(e.frames), fn.code.filename, fn.code.lineForIp(0), len(fr.Upvals))
-	//defer fmt.Printf("==== exit frame %d =====\n", len(e.frames))
+	if debugBC {
+		fmt.Printf("==== enter frame %d %s:%d (upvals: %d) =====\n", len(e.frames), fn.code.filename, fn.code.lineForIp(0), len(fr.Upvals))
+		defer fmt.Printf("==== exit frame %d =====\n", len(e.frames))
+	}
+
 	defer e.popFrame()
 
 	var (
@@ -197,7 +200,7 @@ loop:
 			if err != nil {
 				return nil, err
 			}
-			e.stack = append(e.stack, vr)
+			e.stackPush(vr)
 		case GetLocal:
 			fr, err := e.frameBack(0)
 			if err != nil {
@@ -221,11 +224,11 @@ loop:
 			}
 			e.stackPush(fr.Code)
 		case MakeVector:
-			vec := NewVectorFrom(e.topSlackSlice(int(a))...)
+			vec := NewVectorFrom(e.stackPopN(int(a))...)
 
 			e.stackPush(vec)
 		case MakeLargeMap:
-			data := e.topSlackSlice(int(a))
+			data := e.stackPopN(int(a))
 
 			res := EmptyHashMap
 			for i := 0; i < len(data); i += 2 {
@@ -275,7 +278,7 @@ loop:
 
 			e.stackPush(res)
 		case MakeSet:
-			data := e.topSlackSlice(int(a))
+			data := e.stackPopN(int(a))
 
 			res := EmptySet()
 
@@ -584,8 +587,21 @@ loop:
 
 			upvals := make([]*NamedPair, code.importUpvals)
 
-			for i := code.importUpvals - 1; i >= 0; i-- {
-				upvals[i] = e.stackPop().(*NamedPair)
+			imports := e.stackPopN(code.importUpvals)
+
+			for i, o := range imports {
+				np, ok := o.(*NamedPair)
+				if !ok {
+					newIp, err := e.unwind(fmt.Errorf("value should have been NamedPair for upval"))
+					if err != nil {
+						return nil, err
+					}
+
+					ip = newIp
+					continue loop
+				}
+
+				upvals[i] = np
 			}
 
 			fn := &Fn{
