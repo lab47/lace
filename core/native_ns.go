@@ -459,6 +459,10 @@ func (n *NSBuilder) Defn(b *DefnInfo) *NSBuilder {
 			}
 		}
 
+		if cs == nil {
+			fns = append(fns, fn{-1, pf})
+		}
+
 		fns = append(fns, fn{cs.arity, pf})
 	}
 
@@ -466,15 +470,21 @@ func (n *NSBuilder) Defn(b *DefnInfo) *NSBuilder {
 		return fns[i].arity < fns[j].arity
 	})
 
-	procFn := ProcFn(func(env *Env, args []Object) (Object, error) {
-		for _, fn := range fns {
-			if fn.arity == len(args) {
-				return fn.proc(env, args)
-			}
-		}
+	var procFn ProcFn
 
-		return nil, ErrorArityMinMax(env, len(args), fns[0].arity, fns[len(fns)-1].arity)
-	})
+	if len(fns) == 1 || fns[0].arity == -1 {
+		procFn = fns[0].proc
+	} else {
+		procFn = ProcFn(func(env *Env, args []Object) (Object, error) {
+			for _, fn := range fns {
+				if fn.arity == len(args) {
+					return fn.proc(env, args)
+				}
+			}
+
+			return nil, ErrorArityMinMax(env, len(args), fns[0].arity, fns[len(fns)-1].arity)
+		})
+	}
 
 	// TODO we can do better than reporting the first function only as the location.
 	var (

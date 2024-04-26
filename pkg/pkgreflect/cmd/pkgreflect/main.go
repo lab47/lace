@@ -8,6 +8,8 @@ import (
 	"github.com/lab47/lace/pkg/pkgreflect"
 )
 
+var laceName = flag.String("lace-name", "", "default to same as name")
+
 func main() {
 	flag.Parse()
 
@@ -34,7 +36,12 @@ func parseDir(name, output string) {
 		return
 	}
 
-	err = pkgreflect.Generate(name, wd, output)
+	ln := *laceName
+	if ln == "" {
+		ln = name
+	}
+
+	err = pkgreflect.Generate(name, ln, wd, output)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)

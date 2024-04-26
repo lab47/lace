@@ -3,7 +3,7 @@ package reflect
 
 import "reflect"
 import "github.com/lab47/lace/pkg/pkgreflect"
-import p "time"
+import time "time"
 
 func init() {
 	ParseError_methods := map[string]pkgreflect.Func{}
@@ -80,106 +80,106 @@ func init() {
 	pkgreflect.AddPackage("time", &pkgreflect.Package{
 		Doc: "Package time provides functionality for measuring and displaying time.",
 		Types: map[string]pkgreflect.Type{
-			"Duration":   {Doc: "", Value: reflect.TypeOf((*p.Duration)(nil)).Elem(), Methods: Duration_methods},
-			"Location":   {Doc: "", Value: reflect.TypeOf((*p.Location)(nil)).Elem(), Methods: Location_methods},
-			"Month":      {Doc: "", Value: reflect.TypeOf((*p.Month)(nil)).Elem(), Methods: Month_methods},
-			"ParseError": {Doc: "", Value: reflect.TypeOf((*p.ParseError)(nil)).Elem(), Methods: ParseError_methods},
-			"Ticker":     {Doc: "", Value: reflect.TypeOf((*p.Ticker)(nil)).Elem(), Methods: Ticker_methods},
-			"Time":       {Doc: "", Value: reflect.TypeOf((*p.Time)(nil)).Elem(), Methods: Time_methods},
-			"Timer":      {Doc: "", Value: reflect.TypeOf((*p.Timer)(nil)).Elem(), Methods: Timer_methods},
-			"Weekday":    {Doc: "", Value: reflect.TypeOf((*p.Weekday)(nil)).Elem(), Methods: Weekday_methods},
+			"Duration":   {Doc: "", Value: reflect.TypeOf((*time.Duration)(nil)).Elem(), Methods: Duration_methods},
+			"Location":   {Doc: "", Value: reflect.TypeOf((*time.Location)(nil)).Elem(), Methods: Location_methods},
+			"Month":      {Doc: "", Value: reflect.TypeOf((*time.Month)(nil)).Elem(), Methods: Month_methods},
+			"ParseError": {Doc: "", Value: reflect.TypeOf((*time.ParseError)(nil)).Elem(), Methods: ParseError_methods},
+			"Ticker":     {Doc: "", Value: reflect.TypeOf((*time.Ticker)(nil)).Elem(), Methods: Ticker_methods},
+			"Time":       {Doc: "", Value: reflect.TypeOf((*time.Time)(nil)).Elem(), Methods: Time_methods},
+			"Timer":      {Doc: "", Value: reflect.TypeOf((*time.Timer)(nil)).Elem(), Methods: Timer_methods},
+			"Weekday":    {Doc: "", Value: reflect.TypeOf((*time.Weekday)(nil)).Elem(), Methods: Weekday_methods},
 		},
 
 		Functions: map[string]pkgreflect.FuncValue{
-			"After": {Doc: "After waits for the duration to elapse and then sends the current time\non the returned channel.\nIt is equivalent to NewTimer(d).C.\nThe underlying Timer is not recovered by the garbage collector\nuntil the timer fires. If efficiency is a concern, use NewTimer\ninstead and call Timer.Stop if the timer is no longer needed.", Args: []pkgreflect.Arg{{Name: "d", Tag: "Duration"}}, Tag: "Unknown", Value: reflect.ValueOf(p.After)},
+			"After": {Doc: "After waits for the duration to elapse and then sends the current time\non the returned channel.\nIt is equivalent to NewTimer(d).C.\nThe underlying Timer is not recovered by the garbage collector\nuntil the timer fires. If efficiency is a concern, use NewTimer\ninstead and call Timer.Stop if the timer is no longer needed.", Args: []pkgreflect.Arg{{Name: "d", Tag: "Duration"}}, Tag: "Unknown", Value: reflect.ValueOf(time.After)},
 
-			"AfterFunc": {Doc: "AfterFunc waits for the duration to elapse and then calls f\nin its own goroutine. It returns a Timer that can\nbe used to cancel the call using its Stop method.\nThe returned Timer's C field is not used and will be nil.", Args: []pkgreflect.Arg{{Name: "d", Tag: "Duration"}, {Name: "f", Tag: "Unknown"}}, Tag: "Timer", Value: reflect.ValueOf(p.AfterFunc)},
+			"AfterFunc": {Doc: "AfterFunc waits for the duration to elapse and then calls f\nin its own goroutine. It returns a Timer that can\nbe used to cancel the call using its Stop method.\nThe returned Timer's C field is not used and will be nil.", Args: []pkgreflect.Arg{{Name: "d", Tag: "Duration"}, {Name: "f", Tag: "Unknown"}}, Tag: "Timer", Value: reflect.ValueOf(time.AfterFunc)},
 
-			"Date": {Doc: "Date returns the Time corresponding to\n\n\tyyyy-mm-dd hh:mm:ss + nsec nanoseconds\n\nin the appropriate zone for that time in the given location.\n\nThe month, day, hour, min, sec, and nsec values may be outside\ntheir usual ranges and will be normalized during the conversion.\nFor example, October 32 converts to November 1.\n\nA daylight savings time transition skips or repeats times.\nFor example, in the United States, March 13, 2011 2:15am never occurred,\nwhile November 6, 2011 1:15am occurred twice. In such cases, the\nchoice of time zone, and therefore the time, is not well-defined.\nDate returns a time that is correct in one of the two zones involved\nin the transition, but it does not guarantee which.\n\nDate panics if loc is nil.", Args: []pkgreflect.Arg{{Name: "year", Tag: "int"}, {Name: "month", Tag: "Month"}, {Name: "day", Tag: "int"}, {Name: "hour", Tag: "int"}, {Name: "min", Tag: "int"}, {Name: "sec", Tag: "int"}, {Name: "nsec", Tag: "int"}, {Name: "loc", Tag: "Location"}}, Tag: "Time", Value: reflect.ValueOf(p.Date)},
+			"Date": {Doc: "Date returns the Time corresponding to\n\n\tyyyy-mm-dd hh:mm:ss + nsec nanoseconds\n\nin the appropriate zone for that time in the given location.\n\nThe month, day, hour, min, sec, and nsec values may be outside\ntheir usual ranges and will be normalized during the conversion.\nFor example, October 32 converts to November 1.\n\nA daylight savings time transition skips or repeats times.\nFor example, in the United States, March 13, 2011 2:15am never occurred,\nwhile November 6, 2011 1:15am occurred twice. In such cases, the\nchoice of time zone, and therefore the time, is not well-defined.\nDate returns a time that is correct in one of the two zones involved\nin the transition, but it does not guarantee which.\n\nDate panics if loc is nil.", Args: []pkgreflect.Arg{{Name: "year", Tag: "int"}, {Name: "month", Tag: "Month"}, {Name: "day", Tag: "int"}, {Name: "hour", Tag: "int"}, {Name: "min", Tag: "int"}, {Name: "sec", Tag: "int"}, {Name: "nsec", Tag: "int"}, {Name: "loc", Tag: "Location"}}, Tag: "Time", Value: reflect.ValueOf(time.Date)},
 
-			"FixedZone": {Doc: "FixedZone returns a Location that always uses\nthe given zone name and offset (seconds east of UTC).", Args: []pkgreflect.Arg{{Name: "name", Tag: "string"}, {Name: "offset", Tag: "int"}}, Tag: "Location", Value: reflect.ValueOf(p.FixedZone)},
+			"FixedZone": {Doc: "FixedZone returns a Location that always uses\nthe given zone name and offset (seconds east of UTC).", Args: []pkgreflect.Arg{{Name: "name", Tag: "string"}, {Name: "offset", Tag: "int"}}, Tag: "Location", Value: reflect.ValueOf(time.FixedZone)},
 
-			"LoadLocation": {Doc: "LoadLocation returns the Location with the given name.\n\nIf the name is \"\" or \"UTC\", LoadLocation returns UTC.\nIf the name is \"Local\", LoadLocation returns Local.\n\nOtherwise, the name is taken to be a location name corresponding to a file\nin the IANA Time Zone database, such as \"America/New_York\".\n\nLoadLocation looks for the IANA Time Zone database in the following\nlocations in order:\n\n  - the directory or uncompressed zip file named by the ZONEINFO environment variable\n  - on a Unix system, the system standard installation location\n  - $GOROOT/lib/time/zoneinfo.zip\n  - the time/tzdata package, if it was imported", Args: []pkgreflect.Arg{{Name: "name", Tag: "string"}}, Tag: "any", Value: reflect.ValueOf(p.LoadLocation)},
+			"LoadLocation": {Doc: "LoadLocation returns the Location with the given name.\n\nIf the name is \"\" or \"UTC\", LoadLocation returns UTC.\nIf the name is \"Local\", LoadLocation returns Local.\n\nOtherwise, the name is taken to be a location name corresponding to a file\nin the IANA Time Zone database, such as \"America/New_York\".\n\nLoadLocation looks for the IANA Time Zone database in the following\nlocations in order:\n\n  - the directory or uncompressed zip file named by the ZONEINFO environment variable\n  - on a Unix system, the system standard installation location\n  - $GOROOT/lib/time/zoneinfo.zip\n  - the time/tzdata package, if it was imported", Args: []pkgreflect.Arg{{Name: "name", Tag: "string"}}, Tag: "any", Value: reflect.ValueOf(time.LoadLocation)},
 
-			"LoadLocationFromTZData": {Doc: "LoadLocationFromTZData returns a Location with the given name\ninitialized from the IANA Time Zone database-formatted data.\nThe data should be in the format of a standard IANA time zone file\n(for example, the content of /etc/localtime on Unix systems).", Args: []pkgreflect.Arg{{Name: "name", Tag: "string"}, {Name: "data", Tag: "[]byte"}}, Tag: "any", Value: reflect.ValueOf(p.LoadLocationFromTZData)},
+			"LoadLocationFromTZData": {Doc: "LoadLocationFromTZData returns a Location with the given name\ninitialized from the IANA Time Zone database-formatted data.\nThe data should be in the format of a standard IANA time zone file\n(for example, the content of /etc/localtime on Unix systems).", Args: []pkgreflect.Arg{{Name: "name", Tag: "string"}, {Name: "data", Tag: "[]byte"}}, Tag: "any", Value: reflect.ValueOf(time.LoadLocationFromTZData)},
 
-			"NewTicker": {Doc: "NewTicker returns a new Ticker containing a channel that will send\nthe current time on the channel after each tick. The period of the\nticks is specified by the duration argument. The ticker will adjust\nthe time interval or drop ticks to make up for slow receivers.\nThe duration d must be greater than zero; if not, NewTicker will\npanic. Stop the ticker to release associated resources.", Args: []pkgreflect.Arg{{Name: "d", Tag: "Duration"}}, Tag: "Ticker", Value: reflect.ValueOf(p.NewTicker)},
+			"NewTicker": {Doc: "NewTicker returns a new Ticker containing a channel that will send\nthe current time on the channel after each tick. The period of the\nticks is specified by the duration argument. The ticker will adjust\nthe time interval or drop ticks to make up for slow receivers.\nThe duration d must be greater than zero; if not, NewTicker will\npanic. Stop the ticker to release associated resources.", Args: []pkgreflect.Arg{{Name: "d", Tag: "Duration"}}, Tag: "Ticker", Value: reflect.ValueOf(time.NewTicker)},
 
-			"NewTimer": {Doc: "NewTimer creates a new Timer that will send\nthe current time on its channel after at least duration d.", Args: []pkgreflect.Arg{{Name: "d", Tag: "Duration"}}, Tag: "Timer", Value: reflect.ValueOf(p.NewTimer)},
+			"NewTimer": {Doc: "NewTimer creates a new Timer that will send\nthe current time on its channel after at least duration d.", Args: []pkgreflect.Arg{{Name: "d", Tag: "Duration"}}, Tag: "Timer", Value: reflect.ValueOf(time.NewTimer)},
 
-			"Now": {Doc: "Now returns the current local time.", Args: []pkgreflect.Arg{}, Tag: "Time", Value: reflect.ValueOf(p.Now)},
+			"Now": {Doc: "Now returns the current local time.", Args: []pkgreflect.Arg{}, Tag: "Time", Value: reflect.ValueOf(time.Now)},
 
-			"Parse": {Doc: "Parse parses a formatted string and returns the time value it represents.\nSee the documentation for the constant called Layout to see how to\nrepresent the format. The second argument must be parseable using\nthe format string (layout) provided as the first argument.\n\nThe example for Time.Format demonstrates the working of the layout string\nin detail and is a good reference.\n\nWhen parsing (only), the input may contain a fractional second\nfield immediately after the seconds field, even if the layout does not\nsignify its presence. In that case either a comma or a decimal point\nfollowed by a maximal series of digits is parsed as a fractional second.\nFractional seconds are truncated to nanosecond precision.\n\nElements omitted from the layout are assumed to be zero or, when\nzero is impossible, one, so parsing \"3:04pm\" returns the time\ncorresponding to Jan 1, year 0, 15:04:00 UTC (note that because the year is\n0, this time is before the zero Time).\nYears must be in the range 0000..9999. The day of the week is checked\nfor syntax but it is otherwise ignored.\n\nFor layouts specifying the two-digit year 06, a value NN >= 69 will be treated\nas 19NN and a value NN < 69 will be treated as 20NN.\n\nThe remainder of this comment describes the handling of time zones.\n\nIn the absence of a time zone indicator, Parse returns a time in UTC.\n\nWhen parsing a time with a zone offset like -0700, if the offset corresponds\nto a time zone used by the current location (Local), then Parse uses that\nlocation and zone in the returned time. Otherwise it records the time as\nbeing in a fabricated location with time fixed at the given zone offset.\n\nWhen parsing a time with a zone abbreviation like MST, if the zone abbreviation\nhas a defined offset in the current location, then that offset is used.\nThe zone abbreviation \"UTC\" is recognized as UTC regardless of location.\nIf the zone abbreviation is unknown, Parse records the time as being\nin a fabricated location with the given zone abbreviation and a zero offset.\nThis choice means that such a time can be parsed and reformatted with the\nsame layout losslessly, but the exact instant used in the representation will\ndiffer by the actual zone offset. To avoid such problems, prefer time layouts\nthat use a numeric zone offset, or use ParseInLocation.", Args: []pkgreflect.Arg{{Name: "layout", Tag: "string"}, {Name: "value", Tag: "string"}}, Tag: "any", Value: reflect.ValueOf(p.Parse)},
+			"Parse": {Doc: "Parse parses a formatted string and returns the time value it represents.\nSee the documentation for the constant called Layout to see how to\nrepresent the format. The second argument must be parseable using\nthe format string (layout) provided as the first argument.\n\nThe example for Time.Format demonstrates the working of the layout string\nin detail and is a good reference.\n\nWhen parsing (only), the input may contain a fractional second\nfield immediately after the seconds field, even if the layout does not\nsignify its presence. In that case either a comma or a decimal point\nfollowed by a maximal series of digits is parsed as a fractional second.\nFractional seconds are truncated to nanosecond precision.\n\nElements omitted from the layout are assumed to be zero or, when\nzero is impossible, one, so parsing \"3:04pm\" returns the time\ncorresponding to Jan 1, year 0, 15:04:00 UTC (note that because the year is\n0, this time is before the zero Time).\nYears must be in the range 0000..9999. The day of the week is checked\nfor syntax but it is otherwise ignored.\n\nFor layouts specifying the two-digit year 06, a value NN >= 69 will be treated\nas 19NN and a value NN < 69 will be treated as 20NN.\n\nThe remainder of this comment describes the handling of time zones.\n\nIn the absence of a time zone indicator, Parse returns a time in UTC.\n\nWhen parsing a time with a zone offset like -0700, if the offset corresponds\nto a time zone used by the current location (Local), then Parse uses that\nlocation and zone in the returned time. Otherwise it records the time as\nbeing in a fabricated location with time fixed at the given zone offset.\n\nWhen parsing a time with a zone abbreviation like MST, if the zone abbreviation\nhas a defined offset in the current location, then that offset is used.\nThe zone abbreviation \"UTC\" is recognized as UTC regardless of location.\nIf the zone abbreviation is unknown, Parse records the time as being\nin a fabricated location with the given zone abbreviation and a zero offset.\nThis choice means that such a time can be parsed and reformatted with the\nsame layout losslessly, but the exact instant used in the representation will\ndiffer by the actual zone offset. To avoid such problems, prefer time layouts\nthat use a numeric zone offset, or use ParseInLocation.", Args: []pkgreflect.Arg{{Name: "layout", Tag: "string"}, {Name: "value", Tag: "string"}}, Tag: "any", Value: reflect.ValueOf(time.Parse)},
 
-			"ParseDuration": {Doc: "ParseDuration parses a duration string.\nA duration string is a possibly signed sequence of\ndecimal numbers, each with optional fraction and a unit suffix,\nsuch as \"300ms\", \"-1.5h\" or \"2h45m\".\nValid time units are \"ns\", \"us\" (or \"µs\"), \"ms\", \"s\", \"m\", \"h\".", Args: []pkgreflect.Arg{{Name: "s", Tag: "string"}}, Tag: "any", Value: reflect.ValueOf(p.ParseDuration)},
+			"ParseDuration": {Doc: "ParseDuration parses a duration string.\nA duration string is a possibly signed sequence of\ndecimal numbers, each with optional fraction and a unit suffix,\nsuch as \"300ms\", \"-1.5h\" or \"2h45m\".\nValid time units are \"ns\", \"us\" (or \"µs\"), \"ms\", \"s\", \"m\", \"h\".", Args: []pkgreflect.Arg{{Name: "s", Tag: "string"}}, Tag: "any", Value: reflect.ValueOf(time.ParseDuration)},
 
-			"ParseInLocation": {Doc: "ParseInLocation is like Parse but differs in two important ways.\nFirst, in the absence of time zone information, Parse interprets a time as UTC;\nParseInLocation interprets the time as in the given location.\nSecond, when given a zone offset or abbreviation, Parse tries to match it\nagainst the Local location; ParseInLocation uses the given location.", Args: []pkgreflect.Arg{{Name: "layout", Tag: "string"}, {Name: "value", Tag: "string"}, {Name: "loc", Tag: "Location"}}, Tag: "any", Value: reflect.ValueOf(p.ParseInLocation)},
+			"ParseInLocation": {Doc: "ParseInLocation is like Parse but differs in two important ways.\nFirst, in the absence of time zone information, Parse interprets a time as UTC;\nParseInLocation interprets the time as in the given location.\nSecond, when given a zone offset or abbreviation, Parse tries to match it\nagainst the Local location; ParseInLocation uses the given location.", Args: []pkgreflect.Arg{{Name: "layout", Tag: "string"}, {Name: "value", Tag: "string"}, {Name: "loc", Tag: "Location"}}, Tag: "any", Value: reflect.ValueOf(time.ParseInLocation)},
 
-			"Since": {Doc: "Since returns the time elapsed since t.\nIt is shorthand for time.Now().Sub(t).", Args: []pkgreflect.Arg{{Name: "t", Tag: "Time"}}, Tag: "Duration", Value: reflect.ValueOf(p.Since)},
+			"Since": {Doc: "Since returns the time elapsed since t.\nIt is shorthand for time.Now().Sub(t).", Args: []pkgreflect.Arg{{Name: "t", Tag: "Time"}}, Tag: "Duration", Value: reflect.ValueOf(time.Since)},
 
-			"Sleep": {Doc: "Sleep pauses the current goroutine for at least the duration d.\nA negative or zero duration causes Sleep to return immediately.", Args: []pkgreflect.Arg{{Name: "d", Tag: "Duration"}}, Tag: "any", Value: reflect.ValueOf(p.Sleep)},
+			"Sleep": {Doc: "Sleep pauses the current goroutine for at least the duration d.\nA negative or zero duration causes Sleep to return immediately.", Args: []pkgreflect.Arg{{Name: "d", Tag: "Duration"}}, Tag: "any", Value: reflect.ValueOf(time.Sleep)},
 
-			"Tick": {Doc: "Tick is a convenience wrapper for NewTicker providing access to the ticking\nchannel only. While Tick is useful for clients that have no need to shut down\nthe Ticker, be aware that without a way to shut it down the underlying\nTicker cannot be recovered by the garbage collector; it \"leaks\".\nUnlike NewTicker, Tick will return nil if d <= 0.", Args: []pkgreflect.Arg{{Name: "d", Tag: "Duration"}}, Tag: "Unknown", Value: reflect.ValueOf(p.Tick)},
+			"Tick": {Doc: "Tick is a convenience wrapper for NewTicker providing access to the ticking\nchannel only. While Tick is useful for clients that have no need to shut down\nthe Ticker, be aware that without a way to shut it down the underlying\nTicker cannot be recovered by the garbage collector; it \"leaks\".\nUnlike NewTicker, Tick will return nil if d <= 0.", Args: []pkgreflect.Arg{{Name: "d", Tag: "Duration"}}, Tag: "Unknown", Value: reflect.ValueOf(time.Tick)},
 
-			"Unix": {Doc: "Unix returns the local Time corresponding to the given Unix time,\nsec seconds and nsec nanoseconds since January 1, 1970 UTC.\nIt is valid to pass nsec outside the range [0, 999999999].\nNot all sec values have a corresponding time value. One such\nvalue is 1<<63-1 (the largest int64 value).", Args: []pkgreflect.Arg{{Name: "sec", Tag: "int64"}, {Name: "nsec", Tag: "int64"}}, Tag: "Time", Value: reflect.ValueOf(p.Unix)},
+			"Unix": {Doc: "Unix returns the local Time corresponding to the given Unix time,\nsec seconds and nsec nanoseconds since January 1, 1970 UTC.\nIt is valid to pass nsec outside the range [0, 999999999].\nNot all sec values have a corresponding time value. One such\nvalue is 1<<63-1 (the largest int64 value).", Args: []pkgreflect.Arg{{Name: "sec", Tag: "int64"}, {Name: "nsec", Tag: "int64"}}, Tag: "Time", Value: reflect.ValueOf(time.Unix)},
 
-			"UnixMicro": {Doc: "UnixMicro returns the local Time corresponding to the given Unix time,\nusec microseconds since January 1, 1970 UTC.", Args: []pkgreflect.Arg{{Name: "usec", Tag: "int64"}}, Tag: "Time", Value: reflect.ValueOf(p.UnixMicro)},
+			"UnixMicro": {Doc: "UnixMicro returns the local Time corresponding to the given Unix time,\nusec microseconds since January 1, 1970 UTC.", Args: []pkgreflect.Arg{{Name: "usec", Tag: "int64"}}, Tag: "Time", Value: reflect.ValueOf(time.UnixMicro)},
 
-			"UnixMilli": {Doc: "UnixMilli returns the local Time corresponding to the given Unix time,\nmsec milliseconds since January 1, 1970 UTC.", Args: []pkgreflect.Arg{{Name: "msec", Tag: "int64"}}, Tag: "Time", Value: reflect.ValueOf(p.UnixMilli)},
+			"UnixMilli": {Doc: "UnixMilli returns the local Time corresponding to the given Unix time,\nmsec milliseconds since January 1, 1970 UTC.", Args: []pkgreflect.Arg{{Name: "msec", Tag: "int64"}}, Tag: "Time", Value: reflect.ValueOf(time.UnixMilli)},
 
-			"Until": {Doc: "Until returns the duration until t.\nIt is shorthand for t.Sub(time.Now()).", Args: []pkgreflect.Arg{{Name: "t", Tag: "Time"}}, Tag: "Duration", Value: reflect.ValueOf(p.Until)},
+			"Until": {Doc: "Until returns the duration until t.\nIt is shorthand for t.Sub(time.Now()).", Args: []pkgreflect.Arg{{Name: "t", Tag: "Time"}}, Tag: "Duration", Value: reflect.ValueOf(time.Until)},
 		},
 
 		Variables: map[string]pkgreflect.Value{
-			"Local": {Doc: "", Value: reflect.ValueOf(&p.Local)},
-			"UTC":   {Doc: "", Value: reflect.ValueOf(&p.UTC)},
+			"Local": {Doc: "", Value: reflect.ValueOf(&time.Local)},
+			"UTC":   {Doc: "", Value: reflect.ValueOf(&time.UTC)},
 		},
 
 		Consts: map[string]pkgreflect.Value{
-			"ANSIC":       {Doc: "", Value: reflect.ValueOf(p.ANSIC)},
-			"April":       {Doc: "", Value: reflect.ValueOf(p.April)},
-			"August":      {Doc: "", Value: reflect.ValueOf(p.August)},
-			"DateOnly":    {Doc: "", Value: reflect.ValueOf(p.DateOnly)},
-			"DateTime":    {Doc: "", Value: reflect.ValueOf(p.DateTime)},
-			"December":    {Doc: "", Value: reflect.ValueOf(p.December)},
-			"February":    {Doc: "", Value: reflect.ValueOf(p.February)},
-			"Friday":      {Doc: "", Value: reflect.ValueOf(p.Friday)},
-			"Hour":        {Doc: "", Value: reflect.ValueOf(p.Hour)},
-			"January":     {Doc: "", Value: reflect.ValueOf(p.January)},
-			"July":        {Doc: "", Value: reflect.ValueOf(p.July)},
-			"June":        {Doc: "", Value: reflect.ValueOf(p.June)},
-			"Kitchen":     {Doc: "", Value: reflect.ValueOf(p.Kitchen)},
-			"Layout":      {Doc: "", Value: reflect.ValueOf(p.Layout)},
-			"March":       {Doc: "", Value: reflect.ValueOf(p.March)},
-			"May":         {Doc: "", Value: reflect.ValueOf(p.May)},
-			"Microsecond": {Doc: "", Value: reflect.ValueOf(p.Microsecond)},
-			"Millisecond": {Doc: "", Value: reflect.ValueOf(p.Millisecond)},
-			"Minute":      {Doc: "", Value: reflect.ValueOf(p.Minute)},
-			"Monday":      {Doc: "", Value: reflect.ValueOf(p.Monday)},
-			"Nanosecond":  {Doc: "", Value: reflect.ValueOf(p.Nanosecond)},
-			"November":    {Doc: "", Value: reflect.ValueOf(p.November)},
-			"October":     {Doc: "", Value: reflect.ValueOf(p.October)},
-			"RFC1123":     {Doc: "", Value: reflect.ValueOf(p.RFC1123)},
-			"RFC1123Z":    {Doc: "", Value: reflect.ValueOf(p.RFC1123Z)},
-			"RFC3339":     {Doc: "", Value: reflect.ValueOf(p.RFC3339)},
-			"RFC3339Nano": {Doc: "", Value: reflect.ValueOf(p.RFC3339Nano)},
-			"RFC822":      {Doc: "", Value: reflect.ValueOf(p.RFC822)},
-			"RFC822Z":     {Doc: "", Value: reflect.ValueOf(p.RFC822Z)},
-			"RFC850":      {Doc: "", Value: reflect.ValueOf(p.RFC850)},
-			"RubyDate":    {Doc: "", Value: reflect.ValueOf(p.RubyDate)},
-			"Saturday":    {Doc: "", Value: reflect.ValueOf(p.Saturday)},
-			"Second":      {Doc: "", Value: reflect.ValueOf(p.Second)},
-			"September":   {Doc: "", Value: reflect.ValueOf(p.September)},
-			"Stamp":       {Doc: "Handy time stamps.", Value: reflect.ValueOf(p.Stamp)},
-			"StampMicro":  {Doc: "", Value: reflect.ValueOf(p.StampMicro)},
-			"StampMilli":  {Doc: "", Value: reflect.ValueOf(p.StampMilli)},
-			"StampNano":   {Doc: "", Value: reflect.ValueOf(p.StampNano)},
-			"Sunday":      {Doc: "", Value: reflect.ValueOf(p.Sunday)},
-			"Thursday":    {Doc: "", Value: reflect.ValueOf(p.Thursday)},
-			"TimeOnly":    {Doc: "", Value: reflect.ValueOf(p.TimeOnly)},
-			"Tuesday":     {Doc: "", Value: reflect.ValueOf(p.Tuesday)},
-			"UnixDate":    {Doc: "", Value: reflect.ValueOf(p.UnixDate)},
-			"Wednesday":   {Doc: "", Value: reflect.ValueOf(p.Wednesday)},
+			"ANSIC":       {Doc: "", Value: reflect.ValueOf(time.ANSIC)},
+			"April":       {Doc: "", Value: reflect.ValueOf(time.April)},
+			"August":      {Doc: "", Value: reflect.ValueOf(time.August)},
+			"DateOnly":    {Doc: "", Value: reflect.ValueOf(time.DateOnly)},
+			"DateTime":    {Doc: "", Value: reflect.ValueOf(time.DateTime)},
+			"December":    {Doc: "", Value: reflect.ValueOf(time.December)},
+			"February":    {Doc: "", Value: reflect.ValueOf(time.February)},
+			"Friday":      {Doc: "", Value: reflect.ValueOf(time.Friday)},
+			"Hour":        {Doc: "", Value: reflect.ValueOf(time.Hour)},
+			"January":     {Doc: "", Value: reflect.ValueOf(time.January)},
+			"July":        {Doc: "", Value: reflect.ValueOf(time.July)},
+			"June":        {Doc: "", Value: reflect.ValueOf(time.June)},
+			"Kitchen":     {Doc: "", Value: reflect.ValueOf(time.Kitchen)},
+			"Layout":      {Doc: "", Value: reflect.ValueOf(time.Layout)},
+			"March":       {Doc: "", Value: reflect.ValueOf(time.March)},
+			"May":         {Doc: "", Value: reflect.ValueOf(time.May)},
+			"Microsecond": {Doc: "", Value: reflect.ValueOf(time.Microsecond)},
+			"Millisecond": {Doc: "", Value: reflect.ValueOf(time.Millisecond)},
+			"Minute":      {Doc: "", Value: reflect.ValueOf(time.Minute)},
+			"Monday":      {Doc: "", Value: reflect.ValueOf(time.Monday)},
+			"Nanosecond":  {Doc: "", Value: reflect.ValueOf(time.Nanosecond)},
+			"November":    {Doc: "", Value: reflect.ValueOf(time.November)},
+			"October":     {Doc: "", Value: reflect.ValueOf(time.October)},
+			"RFC1123":     {Doc: "", Value: reflect.ValueOf(time.RFC1123)},
+			"RFC1123Z":    {Doc: "", Value: reflect.ValueOf(time.RFC1123Z)},
+			"RFC3339":     {Doc: "", Value: reflect.ValueOf(time.RFC3339)},
+			"RFC3339Nano": {Doc: "", Value: reflect.ValueOf(time.RFC3339Nano)},
+			"RFC822":      {Doc: "", Value: reflect.ValueOf(time.RFC822)},
+			"RFC822Z":     {Doc: "", Value: reflect.ValueOf(time.RFC822Z)},
+			"RFC850":      {Doc: "", Value: reflect.ValueOf(time.RFC850)},
+			"RubyDate":    {Doc: "", Value: reflect.ValueOf(time.RubyDate)},
+			"Saturday":    {Doc: "", Value: reflect.ValueOf(time.Saturday)},
+			"Second":      {Doc: "", Value: reflect.ValueOf(time.Second)},
+			"September":   {Doc: "", Value: reflect.ValueOf(time.September)},
+			"Stamp":       {Doc: "Handy time stamps.", Value: reflect.ValueOf(time.Stamp)},
+			"StampMicro":  {Doc: "", Value: reflect.ValueOf(time.StampMicro)},
+			"StampMilli":  {Doc: "", Value: reflect.ValueOf(time.StampMilli)},
+			"StampNano":   {Doc: "", Value: reflect.ValueOf(time.StampNano)},
+			"Sunday":      {Doc: "", Value: reflect.ValueOf(time.Sunday)},
+			"Thursday":    {Doc: "", Value: reflect.ValueOf(time.Thursday)},
+			"TimeOnly":    {Doc: "", Value: reflect.ValueOf(time.TimeOnly)},
+			"Tuesday":     {Doc: "", Value: reflect.ValueOf(time.Tuesday)},
+			"UnixDate":    {Doc: "", Value: reflect.ValueOf(time.UnixDate)},
+			"Wednesday":   {Doc: "", Value: reflect.ValueOf(time.Wednesday)},
 		},
 	})
 }

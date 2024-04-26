@@ -39,6 +39,10 @@ func (c *ConvRegistry) ConverterForFunc(v reflect.Value) (ProcFn, *conversionSet
 	return f, cs, nil
 }
 
+type Args struct {
+	Objects []Object
+}
+
 func (c *ConvRegistry) convArg(at reflect.Type) (inConv, bool) {
 	switch at {
 	case reflect.TypeFor[*Env]():
@@ -285,6 +289,16 @@ func (c *ConvRegistry) buildCS(t reflect.Type) *conversionSet {
 func (c *ConvRegistry) buildProc(v reflect.Value) (ProcFn, *conversionSet, error) {
 	if v.Kind() != reflect.Func {
 		return nil, nil, fmt.Errorf("procs can only be built from Go funcs, is: %s (%s)", v, v.Kind())
+	}
+
+	vt := v.Type()
+
+	if vt == rawFunc {
+		vc := v.Interface().(func(*Env, Args) (Object, error))
+
+		return func(env *Env, args []Object) (Object, error) {
+			return vc(env, Args{Objects: args})
+		}, nil, nil
 	}
 
 	cs := c.buildCS(v.Type())
@@ -628,6 +642,8 @@ func convertFromUInt(env *Env, rv reflect.Value) (Object, error) {
 
 	return MakeInt(int(i)), nil
 }
+
+var rawFunc = reflect.TypeFor[func(*Env, Args) (Object, error)]()
 
 func (c *ConvRegistry) makeFuncConvertIn(env *Env, target Callable, ft reflect.Type) reflect.Value {
 	var (

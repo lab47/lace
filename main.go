@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/lab47/lace/core"
+	_ "github.com/lab47/lace/gen-reflect"
 	_ "github.com/lab47/lace/std-ng/all"
 	_ "github.com/lab47/lace/std/csv"
 	_ "github.com/lab47/lace/std/filepath"

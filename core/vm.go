@@ -439,11 +439,18 @@ func (c *Compiler) Process(env *Env, expr Expr) error {
 			Op: SetMeta,
 		})
 	case *CallExpr:
+		tgt := e.callable
+
 		isApply := false
 		// 99% of all calls are to varrefexprs
 		if rv, ok := e.callable.(*VarRefExpr); ok {
-			if rv.vr == env.CoreNamespace.Resolve("apply__") {
+			switch rv.vr {
+			case env.CoreNamespace.Resolve("apply__"):
 				isApply = true
+			case env.CoreNamespace.Resolve("="):
+				if len(e.args) == 2 {
+					tgt = &LiteralExpr{obj: MakeSymbol("lace.lang/Equal")}
+				}
 			}
 		}
 
@@ -457,7 +464,7 @@ func (c *Compiler) Process(env *Env, expr Expr) error {
 		if isApply {
 			c.insn(Instruction{Op: Apply})
 		} else {
-			err := c.Process(env, e.callable)
+			err := c.Process(env, tgt)
 			if err != nil {
 				return err
 			}
@@ -772,12 +779,14 @@ func (c *Compiler) Process(env *Env, expr Expr) error {
 			return fmt.Errorf("unable to find loop to recur to")
 		}
 
-		for i, a := range e.args {
+		for _, a := range e.args {
 			err := c.Process(env, a)
 			if err != nil {
 				return nil
 			}
+		}
 
+		for i := len(e.args) - 1; i >= 0; i-- {
 			vb := v.bindings[v.args[i].Name()]
 
 			vb.uses = append(vb.uses, c.insn(Instruction{
@@ -881,15 +890,6 @@ func (e *Engine) frameBack(cnt int) (*EngineFrame, error) {
 	}
 
 	return &e.frames[idx], nil
-}
-
-func (e *Engine) topSlackSlice(cnt int) []Object {
-	idx := len(e.stack) - cnt
-	if idx < 0 {
-		panic(fmt.Sprintf("bad top slice request %d (total: %d)", cnt, len(e.stack)))
-	}
-
-	return e.stack[idx:]
 }
 
 func (e *Engine) stackPopN(cnt int) []Object {

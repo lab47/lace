@@ -3,7 +3,7 @@ package reflect
 
 import "reflect"
 import "github.com/lab47/lace/pkg/pkgreflect"
-import p "bytes"
+import bytes "bytes"
 
 func init() {
 	Buffer_methods := map[string]pkgreflect.Func{}
@@ -45,128 +45,128 @@ func init() {
 	pkgreflect.AddPackage("bytes", &pkgreflect.Package{
 		Doc: "Package bytes implements functions for the manipulation of byte slices.",
 		Types: map[string]pkgreflect.Type{
-			"Buffer": {Doc: "", Value: reflect.TypeOf((*p.Buffer)(nil)).Elem(), Methods: Buffer_methods},
-			"Reader": {Doc: "", Value: reflect.TypeOf((*p.Reader)(nil)).Elem(), Methods: Reader_methods},
+			"Buffer": {Doc: "", Value: reflect.TypeOf((*bytes.Buffer)(nil)).Elem(), Methods: Buffer_methods},
+			"Reader": {Doc: "", Value: reflect.TypeOf((*bytes.Reader)(nil)).Elem(), Methods: Reader_methods},
 		},
 
 		Functions: map[string]pkgreflect.FuncValue{
-			"Clone": {Doc: "Clone returns a copy of b[:len(b)].\nThe result may have additional unused capacity.\nClone(nil) returns nil.", Args: []pkgreflect.Arg{{Name: "b", Tag: "[]byte"}}, Tag: "[]byte", Value: reflect.ValueOf(p.Clone)},
+			"Clone": {Doc: "Clone returns a copy of b[:len(b)].\nThe result may have additional unused capacity.\nClone(nil) returns nil.", Args: []pkgreflect.Arg{{Name: "b", Tag: "[]byte"}}, Tag: "[]byte", Value: reflect.ValueOf(bytes.Clone)},
 
-			"Compare": {Doc: "Compare returns an integer comparing two byte slices lexicographically.\nThe result will be 0 if a == b, -1 if a < b, and +1 if a > b.\nA nil argument is equivalent to an empty slice.", Args: []pkgreflect.Arg{{Name: "a", Tag: "[]byte"}, {Name: "b", Tag: "[]byte"}}, Tag: "int", Value: reflect.ValueOf(p.Compare)},
+			"Compare": {Doc: "Compare returns an integer comparing two byte slices lexicographically.\nThe result will be 0 if a == b, -1 if a < b, and +1 if a > b.\nA nil argument is equivalent to an empty slice.", Args: []pkgreflect.Arg{{Name: "a", Tag: "[]byte"}, {Name: "b", Tag: "[]byte"}}, Tag: "int", Value: reflect.ValueOf(bytes.Compare)},
 
-			"Contains": {Doc: "Contains reports whether subslice is within b.", Args: []pkgreflect.Arg{{Name: "b", Tag: "[]byte"}, {Name: "subslice", Tag: "[]byte"}}, Tag: "bool", Value: reflect.ValueOf(p.Contains)},
+			"Contains": {Doc: "Contains reports whether subslice is within b.", Args: []pkgreflect.Arg{{Name: "b", Tag: "[]byte"}, {Name: "subslice", Tag: "[]byte"}}, Tag: "bool", Value: reflect.ValueOf(bytes.Contains)},
 
-			"ContainsAny": {Doc: "ContainsAny reports whether any of the UTF-8-encoded code points in chars are within b.", Args: []pkgreflect.Arg{{Name: "b", Tag: "[]byte"}, {Name: "chars", Tag: "string"}}, Tag: "bool", Value: reflect.ValueOf(p.ContainsAny)},
+			"ContainsAny": {Doc: "ContainsAny reports whether any of the UTF-8-encoded code points in chars are within b.", Args: []pkgreflect.Arg{{Name: "b", Tag: "[]byte"}, {Name: "chars", Tag: "string"}}, Tag: "bool", Value: reflect.ValueOf(bytes.ContainsAny)},
 
-			"ContainsFunc": {Doc: "ContainsFunc reports whether any of the UTF-8-encoded code points r within b satisfy f(r).", Args: []pkgreflect.Arg{{Name: "b", Tag: "[]byte"}, {Name: "f", Tag: "Unknown"}}, Tag: "bool", Value: reflect.ValueOf(p.ContainsFunc)},
+			"ContainsFunc": {Doc: "ContainsFunc reports whether any of the UTF-8-encoded code points r within b satisfy f(r).", Args: []pkgreflect.Arg{{Name: "b", Tag: "[]byte"}, {Name: "f", Tag: "Unknown"}}, Tag: "bool", Value: reflect.ValueOf(bytes.ContainsFunc)},
 
-			"ContainsRune": {Doc: "ContainsRune reports whether the rune is contained in the UTF-8-encoded byte slice b.", Args: []pkgreflect.Arg{{Name: "b", Tag: "[]byte"}, {Name: "r", Tag: "rune"}}, Tag: "bool", Value: reflect.ValueOf(p.ContainsRune)},
+			"ContainsRune": {Doc: "ContainsRune reports whether the rune is contained in the UTF-8-encoded byte slice b.", Args: []pkgreflect.Arg{{Name: "b", Tag: "[]byte"}, {Name: "r", Tag: "rune"}}, Tag: "bool", Value: reflect.ValueOf(bytes.ContainsRune)},
 
-			"Count": {Doc: "Count counts the number of non-overlapping instances of sep in s.\nIf sep is an empty slice, Count returns 1 + the number of UTF-8-encoded code points in s.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "sep", Tag: "[]byte"}}, Tag: "int", Value: reflect.ValueOf(p.Count)},
+			"Count": {Doc: "Count counts the number of non-overlapping instances of sep in s.\nIf sep is an empty slice, Count returns 1 + the number of UTF-8-encoded code points in s.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "sep", Tag: "[]byte"}}, Tag: "int", Value: reflect.ValueOf(bytes.Count)},
 
-			"Cut": {Doc: "Cut slices s around the first instance of sep,\nreturning the text before and after sep.\nThe found result reports whether sep appears in s.\nIf sep does not appear in s, cut returns s, nil, false.\n\nCut returns slices of the original slice s, not copies.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "sep", Tag: "[]byte"}}, Tag: "any", Value: reflect.ValueOf(p.Cut)},
+			"Cut": {Doc: "Cut slices s around the first instance of sep,\nreturning the text before and after sep.\nThe found result reports whether sep appears in s.\nIf sep does not appear in s, cut returns s, nil, false.\n\nCut returns slices of the original slice s, not copies.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "sep", Tag: "[]byte"}}, Tag: "any", Value: reflect.ValueOf(bytes.Cut)},
 
-			"CutPrefix": {Doc: "CutPrefix returns s without the provided leading prefix byte slice\nand reports whether it found the prefix.\nIf s doesn't start with prefix, CutPrefix returns s, false.\nIf prefix is the empty byte slice, CutPrefix returns s, true.\n\nCutPrefix returns slices of the original slice s, not copies.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "prefix", Tag: "[]byte"}}, Tag: "any", Value: reflect.ValueOf(p.CutPrefix)},
+			"CutPrefix": {Doc: "CutPrefix returns s without the provided leading prefix byte slice\nand reports whether it found the prefix.\nIf s doesn't start with prefix, CutPrefix returns s, false.\nIf prefix is the empty byte slice, CutPrefix returns s, true.\n\nCutPrefix returns slices of the original slice s, not copies.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "prefix", Tag: "[]byte"}}, Tag: "any", Value: reflect.ValueOf(bytes.CutPrefix)},
 
-			"CutSuffix": {Doc: "CutSuffix returns s without the provided ending suffix byte slice\nand reports whether it found the suffix.\nIf s doesn't end with suffix, CutSuffix returns s, false.\nIf suffix is the empty byte slice, CutSuffix returns s, true.\n\nCutSuffix returns slices of the original slice s, not copies.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "suffix", Tag: "[]byte"}}, Tag: "any", Value: reflect.ValueOf(p.CutSuffix)},
+			"CutSuffix": {Doc: "CutSuffix returns s without the provided ending suffix byte slice\nand reports whether it found the suffix.\nIf s doesn't end with suffix, CutSuffix returns s, false.\nIf suffix is the empty byte slice, CutSuffix returns s, true.\n\nCutSuffix returns slices of the original slice s, not copies.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "suffix", Tag: "[]byte"}}, Tag: "any", Value: reflect.ValueOf(bytes.CutSuffix)},
 
-			"Equal": {Doc: "Equal reports whether a and b\nare the same length and contain the same bytes.\nA nil argument is equivalent to an empty slice.", Args: []pkgreflect.Arg{{Name: "a", Tag: "[]byte"}, {Name: "b", Tag: "[]byte"}}, Tag: "bool", Value: reflect.ValueOf(p.Equal)},
+			"Equal": {Doc: "Equal reports whether a and b\nare the same length and contain the same bytes.\nA nil argument is equivalent to an empty slice.", Args: []pkgreflect.Arg{{Name: "a", Tag: "[]byte"}, {Name: "b", Tag: "[]byte"}}, Tag: "bool", Value: reflect.ValueOf(bytes.Equal)},
 
-			"EqualFold": {Doc: "EqualFold reports whether s and t, interpreted as UTF-8 strings,\nare equal under simple Unicode case-folding, which is a more general\nform of case-insensitivity.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "t", Tag: "[]byte"}}, Tag: "bool", Value: reflect.ValueOf(p.EqualFold)},
+			"EqualFold": {Doc: "EqualFold reports whether s and t, interpreted as UTF-8 strings,\nare equal under simple Unicode case-folding, which is a more general\nform of case-insensitivity.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "t", Tag: "[]byte"}}, Tag: "bool", Value: reflect.ValueOf(bytes.EqualFold)},
 
-			"Fields": {Doc: "Fields interprets s as a sequence of UTF-8-encoded code points.\nIt splits the slice s around each instance of one or more consecutive white space\ncharacters, as defined by unicode.IsSpace, returning a slice of subslices of s or an\nempty slice if s contains only white space.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}}, Tag: "[][]byte", Value: reflect.ValueOf(p.Fields)},
+			"Fields": {Doc: "Fields interprets s as a sequence of UTF-8-encoded code points.\nIt splits the slice s around each instance of one or more consecutive white space\ncharacters, as defined by unicode.IsSpace, returning a slice of subslices of s or an\nempty slice if s contains only white space.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}}, Tag: "[][]byte", Value: reflect.ValueOf(bytes.Fields)},
 
-			"FieldsFunc": {Doc: "FieldsFunc interprets s as a sequence of UTF-8-encoded code points.\nIt splits the slice s at each run of code points c satisfying f(c) and\nreturns a slice of subslices of s. If all code points in s satisfy f(c), or\nlen(s) == 0, an empty slice is returned.\n\nFieldsFunc makes no guarantees about the order in which it calls f(c)\nand assumes that f always returns the same value for a given c.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "f", Tag: "Unknown"}}, Tag: "[][]byte", Value: reflect.ValueOf(p.FieldsFunc)},
+			"FieldsFunc": {Doc: "FieldsFunc interprets s as a sequence of UTF-8-encoded code points.\nIt splits the slice s at each run of code points c satisfying f(c) and\nreturns a slice of subslices of s. If all code points in s satisfy f(c), or\nlen(s) == 0, an empty slice is returned.\n\nFieldsFunc makes no guarantees about the order in which it calls f(c)\nand assumes that f always returns the same value for a given c.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "f", Tag: "Unknown"}}, Tag: "[][]byte", Value: reflect.ValueOf(bytes.FieldsFunc)},
 
-			"HasPrefix": {Doc: "HasPrefix reports whether the byte slice s begins with prefix.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "prefix", Tag: "[]byte"}}, Tag: "bool", Value: reflect.ValueOf(p.HasPrefix)},
+			"HasPrefix": {Doc: "HasPrefix reports whether the byte slice s begins with prefix.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "prefix", Tag: "[]byte"}}, Tag: "bool", Value: reflect.ValueOf(bytes.HasPrefix)},
 
-			"HasSuffix": {Doc: "HasSuffix reports whether the byte slice s ends with suffix.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "suffix", Tag: "[]byte"}}, Tag: "bool", Value: reflect.ValueOf(p.HasSuffix)},
+			"HasSuffix": {Doc: "HasSuffix reports whether the byte slice s ends with suffix.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "suffix", Tag: "[]byte"}}, Tag: "bool", Value: reflect.ValueOf(bytes.HasSuffix)},
 
-			"Index": {Doc: "Index returns the index of the first instance of sep in s, or -1 if sep is not present in s.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "sep", Tag: "[]byte"}}, Tag: "int", Value: reflect.ValueOf(p.Index)},
+			"Index": {Doc: "Index returns the index of the first instance of sep in s, or -1 if sep is not present in s.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "sep", Tag: "[]byte"}}, Tag: "int", Value: reflect.ValueOf(bytes.Index)},
 
-			"IndexAny": {Doc: "IndexAny interprets s as a sequence of UTF-8-encoded Unicode code points.\nIt returns the byte index of the first occurrence in s of any of the Unicode\ncode points in chars. It returns -1 if chars is empty or if there is no code\npoint in common.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "chars", Tag: "string"}}, Tag: "int", Value: reflect.ValueOf(p.IndexAny)},
+			"IndexAny": {Doc: "IndexAny interprets s as a sequence of UTF-8-encoded Unicode code points.\nIt returns the byte index of the first occurrence in s of any of the Unicode\ncode points in chars. It returns -1 if chars is empty or if there is no code\npoint in common.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "chars", Tag: "string"}}, Tag: "int", Value: reflect.ValueOf(bytes.IndexAny)},
 
-			"IndexByte": {Doc: "IndexByte returns the index of the first instance of c in b, or -1 if c is not present in b.", Args: []pkgreflect.Arg{{Name: "b", Tag: "[]byte"}, {Name: "c", Tag: "byte"}}, Tag: "int", Value: reflect.ValueOf(p.IndexByte)},
+			"IndexByte": {Doc: "IndexByte returns the index of the first instance of c in b, or -1 if c is not present in b.", Args: []pkgreflect.Arg{{Name: "b", Tag: "[]byte"}, {Name: "c", Tag: "byte"}}, Tag: "int", Value: reflect.ValueOf(bytes.IndexByte)},
 
-			"IndexFunc": {Doc: "IndexFunc interprets s as a sequence of UTF-8-encoded code points.\nIt returns the byte index in s of the first Unicode\ncode point satisfying f(c), or -1 if none do.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "f", Tag: "Unknown"}}, Tag: "int", Value: reflect.ValueOf(p.IndexFunc)},
+			"IndexFunc": {Doc: "IndexFunc interprets s as a sequence of UTF-8-encoded code points.\nIt returns the byte index in s of the first Unicode\ncode point satisfying f(c), or -1 if none do.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "f", Tag: "Unknown"}}, Tag: "int", Value: reflect.ValueOf(bytes.IndexFunc)},
 
-			"IndexRune": {Doc: "IndexRune interprets s as a sequence of UTF-8-encoded code points.\nIt returns the byte index of the first occurrence in s of the given rune.\nIt returns -1 if rune is not present in s.\nIf r is utf8.RuneError, it returns the first instance of any\ninvalid UTF-8 byte sequence.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "r", Tag: "rune"}}, Tag: "int", Value: reflect.ValueOf(p.IndexRune)},
+			"IndexRune": {Doc: "IndexRune interprets s as a sequence of UTF-8-encoded code points.\nIt returns the byte index of the first occurrence in s of the given rune.\nIt returns -1 if rune is not present in s.\nIf r is utf8.RuneError, it returns the first instance of any\ninvalid UTF-8 byte sequence.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "r", Tag: "rune"}}, Tag: "int", Value: reflect.ValueOf(bytes.IndexRune)},
 
-			"Join": {Doc: "Join concatenates the elements of s to create a new byte slice. The separator\nsep is placed between elements in the resulting slice.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[][]byte"}, {Name: "sep", Tag: "[]byte"}}, Tag: "[]byte", Value: reflect.ValueOf(p.Join)},
+			"Join": {Doc: "Join concatenates the elements of s to create a new byte slice. The separator\nsep is placed between elements in the resulting slice.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[][]byte"}, {Name: "sep", Tag: "[]byte"}}, Tag: "[]byte", Value: reflect.ValueOf(bytes.Join)},
 
-			"LastIndex": {Doc: "LastIndex returns the index of the last instance of sep in s, or -1 if sep is not present in s.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "sep", Tag: "[]byte"}}, Tag: "int", Value: reflect.ValueOf(p.LastIndex)},
+			"LastIndex": {Doc: "LastIndex returns the index of the last instance of sep in s, or -1 if sep is not present in s.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "sep", Tag: "[]byte"}}, Tag: "int", Value: reflect.ValueOf(bytes.LastIndex)},
 
-			"LastIndexAny": {Doc: "LastIndexAny interprets s as a sequence of UTF-8-encoded Unicode code\npoints. It returns the byte index of the last occurrence in s of any of\nthe Unicode code points in chars. It returns -1 if chars is empty or if\nthere is no code point in common.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "chars", Tag: "string"}}, Tag: "int", Value: reflect.ValueOf(p.LastIndexAny)},
+			"LastIndexAny": {Doc: "LastIndexAny interprets s as a sequence of UTF-8-encoded Unicode code\npoints. It returns the byte index of the last occurrence in s of any of\nthe Unicode code points in chars. It returns -1 if chars is empty or if\nthere is no code point in common.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "chars", Tag: "string"}}, Tag: "int", Value: reflect.ValueOf(bytes.LastIndexAny)},
 
-			"LastIndexByte": {Doc: "LastIndexByte returns the index of the last instance of c in s, or -1 if c is not present in s.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "c", Tag: "byte"}}, Tag: "int", Value: reflect.ValueOf(p.LastIndexByte)},
+			"LastIndexByte": {Doc: "LastIndexByte returns the index of the last instance of c in s, or -1 if c is not present in s.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "c", Tag: "byte"}}, Tag: "int", Value: reflect.ValueOf(bytes.LastIndexByte)},
 
-			"LastIndexFunc": {Doc: "LastIndexFunc interprets s as a sequence of UTF-8-encoded code points.\nIt returns the byte index in s of the last Unicode\ncode point satisfying f(c), or -1 if none do.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "f", Tag: "Unknown"}}, Tag: "int", Value: reflect.ValueOf(p.LastIndexFunc)},
+			"LastIndexFunc": {Doc: "LastIndexFunc interprets s as a sequence of UTF-8-encoded code points.\nIt returns the byte index in s of the last Unicode\ncode point satisfying f(c), or -1 if none do.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "f", Tag: "Unknown"}}, Tag: "int", Value: reflect.ValueOf(bytes.LastIndexFunc)},
 
-			"Map": {Doc: "Map returns a copy of the byte slice s with all its characters modified\naccording to the mapping function. If mapping returns a negative value, the character is\ndropped from the byte slice with no replacement. The characters in s and the\noutput are interpreted as UTF-8-encoded code points.", Args: []pkgreflect.Arg{{Name: "mapping", Tag: "Unknown"}, {Name: "s", Tag: "[]byte"}}, Tag: "[]byte", Value: reflect.ValueOf(p.Map)},
+			"Map": {Doc: "Map returns a copy of the byte slice s with all its characters modified\naccording to the mapping function. If mapping returns a negative value, the character is\ndropped from the byte slice with no replacement. The characters in s and the\noutput are interpreted as UTF-8-encoded code points.", Args: []pkgreflect.Arg{{Name: "mapping", Tag: "Unknown"}, {Name: "s", Tag: "[]byte"}}, Tag: "[]byte", Value: reflect.ValueOf(bytes.Map)},
 
-			"NewBuffer": {Doc: "NewBuffer creates and initializes a new [Buffer] using buf as its\ninitial contents. The new [Buffer] takes ownership of buf, and the\ncaller should not use buf after this call. NewBuffer is intended to\nprepare a [Buffer] to read existing data. It can also be used to set\nthe initial size of the internal buffer for writing. To do that,\nbuf should have the desired capacity but a length of zero.\n\nIn most cases, new([Buffer]) (or just declaring a [Buffer] variable) is\nsufficient to initialize a [Buffer].", Args: []pkgreflect.Arg{{Name: "buf", Tag: "[]byte"}}, Tag: "Buffer", Value: reflect.ValueOf(p.NewBuffer)},
+			"NewBuffer": {Doc: "NewBuffer creates and initializes a new [Buffer] using buf as its\ninitial contents. The new [Buffer] takes ownership of buf, and the\ncaller should not use buf after this call. NewBuffer is intended to\nprepare a [Buffer] to read existing data. It can also be used to set\nthe initial size of the internal buffer for writing. To do that,\nbuf should have the desired capacity but a length of zero.\n\nIn most cases, new([Buffer]) (or just declaring a [Buffer] variable) is\nsufficient to initialize a [Buffer].", Args: []pkgreflect.Arg{{Name: "buf", Tag: "[]byte"}}, Tag: "Buffer", Value: reflect.ValueOf(bytes.NewBuffer)},
 
-			"NewBufferString": {Doc: "NewBufferString creates and initializes a new [Buffer] using string s as its\ninitial contents. It is intended to prepare a buffer to read an existing\nstring.\n\nIn most cases, new([Buffer]) (or just declaring a [Buffer] variable) is\nsufficient to initialize a [Buffer].", Args: []pkgreflect.Arg{{Name: "s", Tag: "string"}}, Tag: "Buffer", Value: reflect.ValueOf(p.NewBufferString)},
+			"NewBufferString": {Doc: "NewBufferString creates and initializes a new [Buffer] using string s as its\ninitial contents. It is intended to prepare a buffer to read an existing\nstring.\n\nIn most cases, new([Buffer]) (or just declaring a [Buffer] variable) is\nsufficient to initialize a [Buffer].", Args: []pkgreflect.Arg{{Name: "s", Tag: "string"}}, Tag: "Buffer", Value: reflect.ValueOf(bytes.NewBufferString)},
 
-			"NewReader": {Doc: "NewReader returns a new [Reader.Reader] reading from b.", Args: []pkgreflect.Arg{{Name: "b", Tag: "[]byte"}}, Tag: "Reader", Value: reflect.ValueOf(p.NewReader)},
+			"NewReader": {Doc: "NewReader returns a new [Reader.Reader] reading from b.", Args: []pkgreflect.Arg{{Name: "b", Tag: "[]byte"}}, Tag: "Reader", Value: reflect.ValueOf(bytes.NewReader)},
 
-			"Repeat": {Doc: "Repeat returns a new byte slice consisting of count copies of b.\n\nIt panics if count is negative or if the result of (len(b) * count)\noverflows.", Args: []pkgreflect.Arg{{Name: "b", Tag: "[]byte"}, {Name: "count", Tag: "int"}}, Tag: "[]byte", Value: reflect.ValueOf(p.Repeat)},
+			"Repeat": {Doc: "Repeat returns a new byte slice consisting of count copies of b.\n\nIt panics if count is negative or if the result of (len(b) * count)\noverflows.", Args: []pkgreflect.Arg{{Name: "b", Tag: "[]byte"}, {Name: "count", Tag: "int"}}, Tag: "[]byte", Value: reflect.ValueOf(bytes.Repeat)},
 
-			"Replace": {Doc: "Replace returns a copy of the slice s with the first n\nnon-overlapping instances of old replaced by new.\nIf old is empty, it matches at the beginning of the slice\nand after each UTF-8 sequence, yielding up to k+1 replacements\nfor a k-rune slice.\nIf n < 0, there is no limit on the number of replacements.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "old", Tag: "[]byte"}, {Name: "new", Tag: "[]byte"}, {Name: "n", Tag: "int"}}, Tag: "[]byte", Value: reflect.ValueOf(p.Replace)},
+			"Replace": {Doc: "Replace returns a copy of the slice s with the first n\nnon-overlapping instances of old replaced by new.\nIf old is empty, it matches at the beginning of the slice\nand after each UTF-8 sequence, yielding up to k+1 replacements\nfor a k-rune slice.\nIf n < 0, there is no limit on the number of replacements.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "old", Tag: "[]byte"}, {Name: "new", Tag: "[]byte"}, {Name: "n", Tag: "int"}}, Tag: "[]byte", Value: reflect.ValueOf(bytes.Replace)},
 
-			"ReplaceAll": {Doc: "ReplaceAll returns a copy of the slice s with all\nnon-overlapping instances of old replaced by new.\nIf old is empty, it matches at the beginning of the slice\nand after each UTF-8 sequence, yielding up to k+1 replacements\nfor a k-rune slice.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "old", Tag: "[]byte"}, {Name: "new", Tag: "[]byte"}}, Tag: "[]byte", Value: reflect.ValueOf(p.ReplaceAll)},
+			"ReplaceAll": {Doc: "ReplaceAll returns a copy of the slice s with all\nnon-overlapping instances of old replaced by new.\nIf old is empty, it matches at the beginning of the slice\nand after each UTF-8 sequence, yielding up to k+1 replacements\nfor a k-rune slice.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "old", Tag: "[]byte"}, {Name: "new", Tag: "[]byte"}}, Tag: "[]byte", Value: reflect.ValueOf(bytes.ReplaceAll)},
 
-			"Runes": {Doc: "Runes interprets s as a sequence of UTF-8-encoded code points.\nIt returns a slice of runes (Unicode code points) equivalent to s.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}}, Tag: "[]rune", Value: reflect.ValueOf(p.Runes)},
+			"Runes": {Doc: "Runes interprets s as a sequence of UTF-8-encoded code points.\nIt returns a slice of runes (Unicode code points) equivalent to s.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}}, Tag: "[]rune", Value: reflect.ValueOf(bytes.Runes)},
 
-			"Split": {Doc: "Split slices s into all subslices separated by sep and returns a slice of\nthe subslices between those separators.\nIf sep is empty, Split splits after each UTF-8 sequence.\nIt is equivalent to SplitN with a count of -1.\n\nTo split around the first instance of a separator, see Cut.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "sep", Tag: "[]byte"}}, Tag: "[][]byte", Value: reflect.ValueOf(p.Split)},
+			"Split": {Doc: "Split slices s into all subslices separated by sep and returns a slice of\nthe subslices between those separators.\nIf sep is empty, Split splits after each UTF-8 sequence.\nIt is equivalent to SplitN with a count of -1.\n\nTo split around the first instance of a separator, see Cut.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "sep", Tag: "[]byte"}}, Tag: "[][]byte", Value: reflect.ValueOf(bytes.Split)},
 
-			"SplitAfter": {Doc: "SplitAfter slices s into all subslices after each instance of sep and\nreturns a slice of those subslices.\nIf sep is empty, SplitAfter splits after each UTF-8 sequence.\nIt is equivalent to SplitAfterN with a count of -1.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "sep", Tag: "[]byte"}}, Tag: "[][]byte", Value: reflect.ValueOf(p.SplitAfter)},
+			"SplitAfter": {Doc: "SplitAfter slices s into all subslices after each instance of sep and\nreturns a slice of those subslices.\nIf sep is empty, SplitAfter splits after each UTF-8 sequence.\nIt is equivalent to SplitAfterN with a count of -1.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "sep", Tag: "[]byte"}}, Tag: "[][]byte", Value: reflect.ValueOf(bytes.SplitAfter)},
 
-			"SplitAfterN": {Doc: "SplitAfterN slices s into subslices after each instance of sep and\nreturns a slice of those subslices.\nIf sep is empty, SplitAfterN splits after each UTF-8 sequence.\nThe count determines the number of subslices to return:\n\n\tn > 0: at most n subslices; the last subslice will be the unsplit remainder.\n\tn == 0: the result is nil (zero subslices)\n\tn < 0: all subslices", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "sep", Tag: "[]byte"}, {Name: "n", Tag: "int"}}, Tag: "[][]byte", Value: reflect.ValueOf(p.SplitAfterN)},
+			"SplitAfterN": {Doc: "SplitAfterN slices s into subslices after each instance of sep and\nreturns a slice of those subslices.\nIf sep is empty, SplitAfterN splits after each UTF-8 sequence.\nThe count determines the number of subslices to return:\n\n\tn > 0: at most n subslices; the last subslice will be the unsplit remainder.\n\tn == 0: the result is nil (zero subslices)\n\tn < 0: all subslices", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "sep", Tag: "[]byte"}, {Name: "n", Tag: "int"}}, Tag: "[][]byte", Value: reflect.ValueOf(bytes.SplitAfterN)},
 
-			"SplitN": {Doc: "SplitN slices s into subslices separated by sep and returns a slice of\nthe subslices between those separators.\nIf sep is empty, SplitN splits after each UTF-8 sequence.\nThe count determines the number of subslices to return:\n\n\tn > 0: at most n subslices; the last subslice will be the unsplit remainder.\n\tn == 0: the result is nil (zero subslices)\n\tn < 0: all subslices\n\nTo split around the first instance of a separator, see Cut.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "sep", Tag: "[]byte"}, {Name: "n", Tag: "int"}}, Tag: "[][]byte", Value: reflect.ValueOf(p.SplitN)},
+			"SplitN": {Doc: "SplitN slices s into subslices separated by sep and returns a slice of\nthe subslices between those separators.\nIf sep is empty, SplitN splits after each UTF-8 sequence.\nThe count determines the number of subslices to return:\n\n\tn > 0: at most n subslices; the last subslice will be the unsplit remainder.\n\tn == 0: the result is nil (zero subslices)\n\tn < 0: all subslices\n\nTo split around the first instance of a separator, see Cut.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "sep", Tag: "[]byte"}, {Name: "n", Tag: "int"}}, Tag: "[][]byte", Value: reflect.ValueOf(bytes.SplitN)},
 
-			"Title": {Doc: "Title treats s as UTF-8-encoded bytes and returns a copy with all Unicode letters that begin\nwords mapped to their title case.\n\nDeprecated: The rule Title uses for word boundaries does not handle Unicode\npunctuation properly. Use golang.org/x/text/cases instead.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}}, Tag: "[]byte", Value: reflect.ValueOf(p.Title)},
+			"Title": {Doc: "Title treats s as UTF-8-encoded bytes and returns a copy with all Unicode letters that begin\nwords mapped to their title case.\n\nDeprecated: The rule Title uses for word boundaries does not handle Unicode\npunctuation properly. Use golang.org/x/text/cases instead.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}}, Tag: "[]byte", Value: reflect.ValueOf(bytes.Title)},
 
-			"ToLower": {Doc: "ToLower returns a copy of the byte slice s with all Unicode letters mapped to\ntheir lower case.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}}, Tag: "[]byte", Value: reflect.ValueOf(p.ToLower)},
+			"ToLower": {Doc: "ToLower returns a copy of the byte slice s with all Unicode letters mapped to\ntheir lower case.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}}, Tag: "[]byte", Value: reflect.ValueOf(bytes.ToLower)},
 
-			"ToLowerSpecial": {Doc: "ToLowerSpecial treats s as UTF-8-encoded bytes and returns a copy with all the Unicode letters mapped to their\nlower case, giving priority to the special casing rules.", Args: []pkgreflect.Arg{{Name: "c", Tag: "unicode.SpecialCase"}, {Name: "s", Tag: "[]byte"}}, Tag: "[]byte", Value: reflect.ValueOf(p.ToLowerSpecial)},
+			"ToLowerSpecial": {Doc: "ToLowerSpecial treats s as UTF-8-encoded bytes and returns a copy with all the Unicode letters mapped to their\nlower case, giving priority to the special casing rules.", Args: []pkgreflect.Arg{{Name: "c", Tag: "unicode.SpecialCase"}, {Name: "s", Tag: "[]byte"}}, Tag: "[]byte", Value: reflect.ValueOf(bytes.ToLowerSpecial)},
 
-			"ToTitle": {Doc: "ToTitle treats s as UTF-8-encoded bytes and returns a copy with all the Unicode letters mapped to their title case.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}}, Tag: "[]byte", Value: reflect.ValueOf(p.ToTitle)},
+			"ToTitle": {Doc: "ToTitle treats s as UTF-8-encoded bytes and returns a copy with all the Unicode letters mapped to their title case.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}}, Tag: "[]byte", Value: reflect.ValueOf(bytes.ToTitle)},
 
-			"ToTitleSpecial": {Doc: "ToTitleSpecial treats s as UTF-8-encoded bytes and returns a copy with all the Unicode letters mapped to their\ntitle case, giving priority to the special casing rules.", Args: []pkgreflect.Arg{{Name: "c", Tag: "unicode.SpecialCase"}, {Name: "s", Tag: "[]byte"}}, Tag: "[]byte", Value: reflect.ValueOf(p.ToTitleSpecial)},
+			"ToTitleSpecial": {Doc: "ToTitleSpecial treats s as UTF-8-encoded bytes and returns a copy with all the Unicode letters mapped to their\ntitle case, giving priority to the special casing rules.", Args: []pkgreflect.Arg{{Name: "c", Tag: "unicode.SpecialCase"}, {Name: "s", Tag: "[]byte"}}, Tag: "[]byte", Value: reflect.ValueOf(bytes.ToTitleSpecial)},
 
-			"ToUpper": {Doc: "ToUpper returns a copy of the byte slice s with all Unicode letters mapped to\ntheir upper case.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}}, Tag: "[]byte", Value: reflect.ValueOf(p.ToUpper)},
+			"ToUpper": {Doc: "ToUpper returns a copy of the byte slice s with all Unicode letters mapped to\ntheir upper case.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}}, Tag: "[]byte", Value: reflect.ValueOf(bytes.ToUpper)},
 
-			"ToUpperSpecial": {Doc: "ToUpperSpecial treats s as UTF-8-encoded bytes and returns a copy with all the Unicode letters mapped to their\nupper case, giving priority to the special casing rules.", Args: []pkgreflect.Arg{{Name: "c", Tag: "unicode.SpecialCase"}, {Name: "s", Tag: "[]byte"}}, Tag: "[]byte", Value: reflect.ValueOf(p.ToUpperSpecial)},
+			"ToUpperSpecial": {Doc: "ToUpperSpecial treats s as UTF-8-encoded bytes and returns a copy with all the Unicode letters mapped to their\nupper case, giving priority to the special casing rules.", Args: []pkgreflect.Arg{{Name: "c", Tag: "unicode.SpecialCase"}, {Name: "s", Tag: "[]byte"}}, Tag: "[]byte", Value: reflect.ValueOf(bytes.ToUpperSpecial)},
 
-			"ToValidUTF8": {Doc: "ToValidUTF8 treats s as UTF-8-encoded bytes and returns a copy with each run of bytes\nrepresenting invalid UTF-8 replaced with the bytes in replacement, which may be empty.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "replacement", Tag: "[]byte"}}, Tag: "[]byte", Value: reflect.ValueOf(p.ToValidUTF8)},
+			"ToValidUTF8": {Doc: "ToValidUTF8 treats s as UTF-8-encoded bytes and returns a copy with each run of bytes\nrepresenting invalid UTF-8 replaced with the bytes in replacement, which may be empty.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "replacement", Tag: "[]byte"}}, Tag: "[]byte", Value: reflect.ValueOf(bytes.ToValidUTF8)},
 
-			"Trim": {Doc: "Trim returns a subslice of s by slicing off all leading and\ntrailing UTF-8-encoded code points contained in cutset.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "cutset", Tag: "string"}}, Tag: "[]byte", Value: reflect.ValueOf(p.Trim)},
+			"Trim": {Doc: "Trim returns a subslice of s by slicing off all leading and\ntrailing UTF-8-encoded code points contained in cutset.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "cutset", Tag: "string"}}, Tag: "[]byte", Value: reflect.ValueOf(bytes.Trim)},
 
-			"TrimFunc": {Doc: "TrimFunc returns a subslice of s by slicing off all leading and trailing\nUTF-8-encoded code points c that satisfy f(c).", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "f", Tag: "Unknown"}}, Tag: "[]byte", Value: reflect.ValueOf(p.TrimFunc)},
+			"TrimFunc": {Doc: "TrimFunc returns a subslice of s by slicing off all leading and trailing\nUTF-8-encoded code points c that satisfy f(c).", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "f", Tag: "Unknown"}}, Tag: "[]byte", Value: reflect.ValueOf(bytes.TrimFunc)},
 
-			"TrimLeft": {Doc: "TrimLeft returns a subslice of s by slicing off all leading\nUTF-8-encoded code points contained in cutset.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "cutset", Tag: "string"}}, Tag: "[]byte", Value: reflect.ValueOf(p.TrimLeft)},
+			"TrimLeft": {Doc: "TrimLeft returns a subslice of s by slicing off all leading\nUTF-8-encoded code points contained in cutset.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "cutset", Tag: "string"}}, Tag: "[]byte", Value: reflect.ValueOf(bytes.TrimLeft)},
 
-			"TrimLeftFunc": {Doc: "TrimLeftFunc treats s as UTF-8-encoded bytes and returns a subslice of s by slicing off\nall leading UTF-8-encoded code points c that satisfy f(c).", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "f", Tag: "Unknown"}}, Tag: "[]byte", Value: reflect.ValueOf(p.TrimLeftFunc)},
+			"TrimLeftFunc": {Doc: "TrimLeftFunc treats s as UTF-8-encoded bytes and returns a subslice of s by slicing off\nall leading UTF-8-encoded code points c that satisfy f(c).", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "f", Tag: "Unknown"}}, Tag: "[]byte", Value: reflect.ValueOf(bytes.TrimLeftFunc)},
 
-			"TrimPrefix": {Doc: "TrimPrefix returns s without the provided leading prefix string.\nIf s doesn't start with prefix, s is returned unchanged.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "prefix", Tag: "[]byte"}}, Tag: "[]byte", Value: reflect.ValueOf(p.TrimPrefix)},
+			"TrimPrefix": {Doc: "TrimPrefix returns s without the provided leading prefix string.\nIf s doesn't start with prefix, s is returned unchanged.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "prefix", Tag: "[]byte"}}, Tag: "[]byte", Value: reflect.ValueOf(bytes.TrimPrefix)},
 
-			"TrimRight": {Doc: "TrimRight returns a subslice of s by slicing off all trailing\nUTF-8-encoded code points that are contained in cutset.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "cutset", Tag: "string"}}, Tag: "[]byte", Value: reflect.ValueOf(p.TrimRight)},
+			"TrimRight": {Doc: "TrimRight returns a subslice of s by slicing off all trailing\nUTF-8-encoded code points that are contained in cutset.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "cutset", Tag: "string"}}, Tag: "[]byte", Value: reflect.ValueOf(bytes.TrimRight)},
 
-			"TrimRightFunc": {Doc: "TrimRightFunc returns a subslice of s by slicing off all trailing\nUTF-8-encoded code points c that satisfy f(c).", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "f", Tag: "Unknown"}}, Tag: "[]byte", Value: reflect.ValueOf(p.TrimRightFunc)},
+			"TrimRightFunc": {Doc: "TrimRightFunc returns a subslice of s by slicing off all trailing\nUTF-8-encoded code points c that satisfy f(c).", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "f", Tag: "Unknown"}}, Tag: "[]byte", Value: reflect.ValueOf(bytes.TrimRightFunc)},
 
-			"TrimSpace": {Doc: "TrimSpace returns a subslice of s by slicing off all leading and\ntrailing white space, as defined by Unicode.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}}, Tag: "[]byte", Value: reflect.ValueOf(p.TrimSpace)},
+			"TrimSpace": {Doc: "TrimSpace returns a subslice of s by slicing off all leading and\ntrailing white space, as defined by Unicode.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}}, Tag: "[]byte", Value: reflect.ValueOf(bytes.TrimSpace)},
 
-			"TrimSuffix": {Doc: "TrimSuffix returns s without the provided trailing suffix string.\nIf s doesn't end with suffix, s is returned unchanged.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "suffix", Tag: "[]byte"}}, Tag: "[]byte", Value: reflect.ValueOf(p.TrimSuffix)},
+			"TrimSuffix": {Doc: "TrimSuffix returns s without the provided trailing suffix string.\nIf s doesn't end with suffix, s is returned unchanged.", Args: []pkgreflect.Arg{{Name: "s", Tag: "[]byte"}, {Name: "suffix", Tag: "[]byte"}}, Tag: "[]byte", Value: reflect.ValueOf(bytes.TrimSuffix)},
 		},
 
 		Variables: map[string]pkgreflect.Value{
-			"ErrTooLarge": {Doc: "", Value: reflect.ValueOf(&p.ErrTooLarge)},
+			"ErrTooLarge": {Doc: "", Value: reflect.ValueOf(&bytes.ErrTooLarge)},
 		},
 
 		Consts: map[string]pkgreflect.Value{
-			"MinRead": {Doc: "", Value: reflect.ValueOf(p.MinRead)},
+			"MinRead": {Doc: "", Value: reflect.ValueOf(bytes.MinRead)},
 		},
 	})
 }

@@ -101,6 +101,11 @@ func NewEnv() (*Env, error) {
 
 	res.EnsureNamespace(MakeSymbol("lace.string"))
 
+	err = SetupPkgReflect(res)
+	if err != nil {
+		return nil, err
+	}
+
 	builtinNS := []string{"lace.core"}
 
 	for _, name := range builtinNS {
@@ -110,11 +115,6 @@ func NewEnv() (*Env, error) {
 				panic(fmt.Sprintf("error loading %s: %s", name, err))
 			}
 		}
-	}
-
-	err = SetupPkgReflect(res)
-	if err != nil {
-		return nil, err
 	}
 
 	return res, nil

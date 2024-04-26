@@ -996,7 +996,7 @@ func isCall(env *Env, obj Object, name Symbol) (bool, error) {
 	}
 }
 
-func syntaxQuoteSeq(tenv *Env, seq Seq, env map[string]Symbol, reader *Reader) (Seq, error) {
+func syntaxQuoteSeq(tenv *Env, seq Seq, env map[string]Symbol, reader *Reader) (*ArraySeq, error) {
 	res := make([]Object, 0)
 	for iter := iter(seq); iter.HasNext(tenv); {
 		obj, err := iter.Next(tenv)
@@ -1039,7 +1039,7 @@ func syntaxQuoteColl(tenv *Env, seq Seq, env map[string]Symbol, reader *Reader, 
 		return nil, err
 	}
 
-	concat := q.Cons(criticalSymbols.concat)
+	concat := q.Cons(criticalSymbols.concatS)
 	seqList := NewListFrom(criticalSymbols.seq, concat)
 	var res Object = seqList
 	if ctor != criticalSymbols.emptySymbol {

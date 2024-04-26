@@ -17,6 +17,8 @@ import (
 	"strings"
 	"time"
 	"unicode/utf8"
+
+	"github.com/davecgh/go-spew/spew"
 )
 
 var coreNamespaces []string
@@ -3121,6 +3123,7 @@ func ProcessReader(env *Env, reader *Reader, filename string, phase Phase) error
 			break
 		}
 		if err != nil {
+			spew.Dump(err)
 			fmt.Fprintln(Stderr, err)
 			return err
 		}
@@ -3129,7 +3132,12 @@ func ProcessReader(env *Env, reader *Reader, filename string, phase Phase) error
 		}
 		expr, err := TryParse(obj, parseContext)
 		if err != nil {
-			fmt.Fprintln(Stderr, err)
+			if ve, ok := err.(*VMError); ok {
+				str, _ := ve.obj.ToString(env, false)
+				fmt.Fprintln(Stderr, str)
+			} else {
+				fmt.Fprintln(Stderr, err)
+			}
 			return err
 		}
 		if phase == PARSE {

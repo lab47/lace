@@ -6,7 +6,6 @@ import (
 	"sort"
 	"strings"
 
-	_ "github.com/lab47/lace/gen-reflect"
 	"github.com/lab47/lace/pkg/pkgreflect"
 )
 

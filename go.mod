@@ -11,6 +11,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/mattn/go-runewidth v0.0.3 // indirect
 	github.com/vektra/tai64n v0.0.0-20180410233929-12133dfe3281 // indirect
+	golang.org/x/tools v0.20.0 // indirect
 )
 
 go 1.22

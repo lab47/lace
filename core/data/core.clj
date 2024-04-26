@@ -16,7 +16,7 @@
     :doc "Creates a new list containing the items."
     :added "1.0"
     :tag List}
-  list list__)
+  list lace.lang/List)
 
 (def
   ^{:arglists '([x seq])
@@ -24,7 +24,7 @@
          the rest."
          :added "1.0"
          :tag Seq}
-  cons cons__)
+  cons lace.lang/Cons)
 
 ;during bootstrap we don't have destructuring let, loop or fn, will redefine later
 (def
@@ -53,7 +53,7 @@
     :doc "Returns the first item in the collection. Calls seq on its
          argument. If coll is nil, returns nil."
          :added "1.0"}
-  first first__)
+  first lace.lang/First)
 
 (def
   ^{:arglists '([coll])
@@ -61,7 +61,7 @@
          argument.  If there are no more items, returns nil."
          :added "1.0"
          :tag Seq}
-  next next__)
+  next lace.lang/Next)
 
 (def
   ^{:arglists '([coll])
@@ -69,7 +69,7 @@
          argument."
          :added "1.0"
          :tag Seq}
-  rest rest__)
+  rest lace.lang/Rest)
 
 (def
   ^{:arglists '([coll x] [coll x & xs])
@@ -79,11 +79,11 @@
          :added "1.0"}
   ; TODO: types
   conj (fn 
-         (^Collection [coll x] (conj__ coll x))
+         (^Collection [coll x] (lace.lang/Conj coll x))
          (^Collection [coll x & xs]
           (if xs
-            (recur (conj__ coll x) (first xs) (next xs))
-            (conj__ coll x)))))
+            (recur (lace.lang/Conj coll x) (first xs) (next xs))
+            (lace.lang/Conj coll x)))))
 
 (def
   ^{:doc "Same as (first (next x))"
@@ -123,7 +123,7 @@
          empty, returns nil.  (seq nil) returns nil."
          :added "1.0"
          :tag Seq}
-  seq seq__)
+  seq lace.lang/Seq)
 
 (def
   ^{:arglists '([c x])

@@ -224,6 +224,7 @@ type (
 		unquoteSplicing    Symbol
 		list               Symbol
 		concat             Symbol
+		concatS            Symbol
 		seq                Symbol
 		apply              Symbol
 		emptySymbol        Symbol

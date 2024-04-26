@@ -65,6 +65,7 @@ var (
 		unquoteSplicing:    MakeSymbol("unquote-splicing"),
 		list:               MakeSymbol("list"),
 		concat:             MakeSymbol("concat"),
+		concatS:            MakeSymbol("lace.lang/ConcatSimple"),
 		seq:                MakeSymbol("seq"),
 		apply:              MakeSymbol("apply"),
 		emptySymbol:        MakeSymbol(""),
