@@ -2623,6 +2623,7 @@ var procLoadFile = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return loadFile(env, filename.S)
 }
 
@@ -2635,6 +2636,14 @@ var procLoadLibFromPath = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// Sometimes we load namespaces without telling the clojure code,
+	// so see if it's already loaded and if so, use it.
+
+	if env.FindNamespace(libnamev) != nil {
+		return NIL, err
+	}
+
 	libname := libnamev.Name()
 	pathnamev, err := EnsureString(env, args, 1)
 	if err != nil {
@@ -2664,6 +2673,7 @@ var procLoadLibFromPath = func(env *Env, args []Object) (Object, error) {
 		} else {
 			filename = filepath.Join(s, filepath.Join(strings.Split(libname, ".")...)) + ".clj" // could cache inner join....
 		}
+
 		f, err = os.Open(filename)
 		if err == nil {
 			canonicalErr = nil
@@ -3016,6 +3026,10 @@ func ReadIntoBytecode(env *Env, reader *Reader, filename string) ([]byte, error)
 		parseContext.Env.SetFilename(MakeString(s))
 	}
 
+	var e Engine
+	env.Engine = &e
+	e.allocstack = make([]Object, 0, 100)
+
 	var exprs []Expr
 
 	for {
@@ -3099,7 +3113,7 @@ var procIncProblemCount = func(env *Env, args []Object) (Object, error) {
 	return NIL, nil
 }
 
-func ProcessReader(env *Env, reader *Reader, filename string, phase Phase) error {
+func ProcessReader(env *Env, reader *Reader, filename string) (Object, error) {
 	parseContext := &ParseContext{Env: env}
 	if filename != "" {
 		currentFilename := parseContext.Env.file.Value
@@ -3108,7 +3122,7 @@ func ProcessReader(env *Env, reader *Reader, filename string, phase Phase) error
 		}()
 		s, err := filepath.Abs(filename)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		parseContext.Env.SetFilename(MakeString(s))
 	}
@@ -3125,10 +3139,7 @@ func ProcessReader(env *Env, reader *Reader, filename string, phase Phase) error
 		if err != nil {
 			spew.Dump(err)
 			fmt.Fprintln(Stderr, err)
-			return err
-		}
-		if phase == READ {
-			continue
+			return nil, err
 		}
 		expr, err := TryParse(obj, parseContext)
 		if err != nil {
@@ -3138,10 +3149,7 @@ func ProcessReader(env *Env, reader *Reader, filename string, phase Phase) error
 			} else {
 				fmt.Fprintln(Stderr, err)
 			}
-			return err
-		}
-		if phase == PARSE {
-			continue
+			return nil, err
 		}
 
 		exprs = append(exprs, expr)
@@ -3182,18 +3190,32 @@ func ProcessReader(env *Env, reader *Reader, filename string, phase Phase) error
 	_, err := compileFn(env, fn, nil)
 	if err != nil {
 		fmt.Printf("error compiling: %s\n", err)
-		return err
+		return nil, err
 	}
 
 	//spew.Dump(code)
 
-	_, err = EngineRun(env, fn)
+	obj, err := EngineRun(env, fn)
 	if err != nil {
-		fmt.Printf("error running: %s\n", err)
-		return err
+		var vms *VMStacktrace
+
+		if errors.As(err, &vms) {
+			vms.PrintTo(env, os.Stderr)
+			err = vms.Unwrap()
+		}
+
+		var ve *VMError
+
+		if errors.As(err, &ve) {
+			str, _ := ve.obj.ToString(env, false)
+			fmt.Fprintln(Stderr, str)
+		} else {
+			fmt.Fprintln(Stderr, err)
+		}
+		return nil, err
 	}
 
-	return nil
+	return obj, nil
 	/*
 		for {
 			obj, err := TryRead(env, reader)
@@ -3235,6 +3257,24 @@ func ProcessReader(env *Env, reader *Reader, filename string, phase Phase) error
 			}
 		}
 	*/
+}
+
+func DisplayError(env *Env, err error) {
+	var vms *VMStacktrace
+
+	if errors.As(err, &vms) {
+		vms.PrintTo(env, os.Stderr)
+		err = vms.Unwrap()
+	}
+
+	var ve *VMError
+
+	if errors.As(err, &ve) {
+		str, _ := ve.obj.ToString(env, false)
+		fmt.Fprintln(Stderr, str)
+	} else {
+		fmt.Fprintln(Stderr, err)
+	}
 }
 
 func ProcessReaderFromEval(env *Env, reader *Reader, filename string) error {
@@ -3654,7 +3694,7 @@ func ProcessLinterFile(env *Env, configDir string, filename string) error {
 	linterFileName := filepath.Join(configDir, filename)
 	if _, err := os.Stat(linterFileName); err == nil {
 		if reader, err := NewReaderFromFile(linterFileName); err == nil {
-			err := ProcessReader(env, reader, linterFileName, EVAL)
+			_, err := ProcessReader(env, reader, linterFileName)
 			if err != nil {
 				return err
 			}

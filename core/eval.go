@@ -158,10 +158,24 @@ func TopEval(genv *Env, expr Expr, env *LocalEnv) (Object, error) {
 		current:   expr.Pos(),
 	})
 
+	genv.pushTreeEval(expr)
+	defer genv.popTreeEval()
+
 	return expr.Eval(genv, env)
 }
 
+func (e *Env) pushTreeEval(expr Expr) {
+	e.treeEvalStack = append(e.treeEvalStack, expr)
+}
+
+func (e *Env) popTreeEval() {
+	e.treeEvalStack = e.treeEvalStack[:len(e.treeEvalStack)-1]
+}
+
 func Eval(genv *Env, expr Expr, env *LocalEnv) (Object, error) {
+	genv.pushTreeEval(expr)
+	defer genv.popTreeEval()
+
 	obj, err := expr.Eval(genv, env)
 	if err != nil {
 		if ee, ok := err.(*EvalError); ok {
@@ -336,7 +350,8 @@ func (expr *DefExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 	meta.Add(genv, criticalKeywords.column, Int{I: expr.startColumn})
 	meta.Add(genv, criticalKeywords.file, String{S: expr.filename})
 	meta.Add(genv, criticalKeywords.ns, expr.vr.ns)
-	meta.Add(genv, criticalKeywords.name, expr.vr.name)
+	fullName := AssembleSymbol(expr.vr.ns.Name.name, expr.vr.name.name)
+	meta.Add(genv, criticalKeywords.name, fullName)
 	expr.vr.meta = meta
 	if expr.meta != nil {
 		v, err := Eval(genv, expr.meta, env)
@@ -364,6 +379,18 @@ func (expr *DefExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 		}
 		expr.vr.meta = m
 	}
+
+	if m, ok := expr.vr.Value.(*Fn); ok {
+		if m.meta == nil {
+			m.meta = expr.vr.meta
+		} else {
+			nm, err := m.meta.Assoc(genv, criticalKeywords.name, fullName)
+			if err == nil {
+				m.meta = nm.(Map)
+			}
+		}
+	}
+
 	return expr.vr, nil
 }
 
@@ -595,7 +622,7 @@ func (expr *IfExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 }
 
 func (expr *FnExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
-	res := &Fn{fnExpr: expr}
+	res := &Fn{fnExpr: expr, code: expr.compiled}
 	if expr.self.name != "" {
 		env = env.addFrame([]Object{res})
 	}

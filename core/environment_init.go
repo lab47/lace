@@ -87,19 +87,20 @@ func NewEnv() (*Env, error) {
 	if err != nil {
 		return nil, err
 	}
-	res.SetCurrentNamespace(res.EnsureNamespace(MakeSymbol("user")))
+
+	res.classPath.Value = NewVectorFrom()
+
+	userNs := res.EnsureNamespace(MakeSymbol("user"))
+
+	res.SetCurrentNamespace(userNs)
 	res.RT = &Runtime{
 		callstack: &Callstack{frames: make([]Frame, 1, 50)},
 	}
 
-	err = initEnv(res)
+	err = createCoreFns(res)
 	if err != nil {
 		return nil, err
 	}
-
-	// Pull in lace.string because it needs to be defined to pack repl.clj
-
-	res.EnsureNamespace(MakeSymbol("lace.string"))
 
 	err = SetupPkgReflect(res)
 	if err != nil {
@@ -117,9 +118,7 @@ func NewEnv() (*Env, error) {
 		}
 	}
 
-	return res, nil
-}
+	userNs.ReferAll(res.CoreNamespace)
 
-func (env *Env) ReferCoreToUser() {
-	env.FindNamespace(MakeSymbol("user")).ReferAll(env.CoreNamespace)
+	return res, nil
 }

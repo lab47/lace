@@ -45,13 +45,16 @@ func _() {
 	_ = x[MakeFn-34]
 	_ = x[RefUpval-35]
 	_ = x[PushSelfFn-36]
-	_ = x[SetLabel-37]
-	_ = x[SetLine-38]
+	_ = x[PushNil-37]
+	_ = x[PushInt-38]
+	_ = x[SetLabel-39]
+	_ = x[SetLine-40]
+	_ = x[SetFile-41]
 }
 
-const _OpCode_name = "NoopPopDupJumpJumpIfTrueJumpIfFalseResolveVarSetMacroGetBindingGetUpvalSetUpvalPushLiteralMakeVectorMakeSmallMapMakeLargeMapMakeSetDefValueDefValue3DefDef3SetMetaCallApplyMethodCallThrowPushHandlerPopHandlerCheckTypeSetLocalGetLocalReturnCheckArityFixedCheckArityMinThrowArityMakeFnRefUpvalPushSelfFnSetLabelSetLine"
+const _OpCode_name = "NoopPopDupJumpJumpIfTrueJumpIfFalseResolveVarSetMacroGetBindingGetUpvalSetUpvalPushLiteralMakeVectorMakeSmallMapMakeLargeMapMakeSetDefValueDefValue3DefDef3SetMetaCallApplyMethodCallThrowPushHandlerPopHandlerCheckTypeSetLocalGetLocalReturnCheckArityFixedCheckArityMinThrowArityMakeFnRefUpvalPushSelfFnPushNilPushIntSetLabelSetLineSetFile"
 
-var _OpCode_index = [...]uint16{0, 4, 7, 10, 14, 24, 35, 45, 53, 63, 71, 79, 90, 100, 112, 124, 131, 139, 148, 151, 155, 162, 166, 171, 181, 186, 197, 207, 216, 224, 232, 238, 253, 266, 276, 282, 290, 300, 308, 315}
+var _OpCode_index = [...]uint16{0, 4, 7, 10, 14, 24, 35, 45, 53, 63, 71, 79, 90, 100, 112, 124, 131, 139, 148, 151, 155, 162, 166, 171, 181, 186, 197, 207, 216, 224, 232, 238, 253, 266, 276, 282, 290, 300, 307, 314, 322, 329, 336}
 
 func (i OpCode) String() string {
 	if i >= OpCode(len(_OpCode_index)-1) {

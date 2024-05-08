@@ -165,6 +165,22 @@ func (f *fnFrame) lookup(sym Symbol) *varBind {
 	return nil
 }
 
+func (f *fnFrame) createUnknownUpval(name Symbol) *varBind {
+	chvb := &varBind{
+		upval: true,
+		name:  name,
+		upidx: -1,
+		home:  f,
+	}
+
+	f.importUpvals = append(f.importUpvals, chvb)
+
+	// We install the binding in the root varFrame for the function
+	// because the binding is common for all binding frames in the function.
+	f.root.bindings[name.Name()] = chvb
+	return chvb
+}
+
 func (f *varFrame) processUpvals() {
 	for _, vb := range f.bindings {
 		if vb.upval {
@@ -229,16 +245,11 @@ func (f *fnFrame) importedNames() []Symbol {
 	return ret
 }
 
-func (f *fnFrame) closeFrame() []*varBind {
-	p := f.parent
-	if p == nil {
-		return nil
-	}
-
-	var vbs []*varBind
+func (f *fnFrame) closeFrame() []Symbol {
+	var vbs []Symbol
 
 	for _, name := range f.importedNames() {
-		vbs = append(vbs, p.lookup(name))
+		vbs = append(vbs, name)
 	}
 
 	return vbs

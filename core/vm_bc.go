@@ -2,9 +2,11 @@ package core
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/lab47/lace/core/insn"
+	"golang.org/x/exp/slices"
 )
 
 type MethodSite struct {
@@ -29,14 +31,19 @@ type BytecodeEncoder struct {
 }
 
 func (e *BytecodeEncoder) addVar(vr *Var) uint {
-	idx := uint(len(e.vars))
+	idx := slices.Index(e.vars, vr)
+	if idx != -1 {
+		return uint(idx)
+	}
+
+	idx = len(e.vars)
 	e.vars = append(e.vars, vr)
 
 	sym := AssembleSymbol(vr.ns.Name.Name(), vr.name.String())
 
 	e.varNames = append(e.varNames, sym)
 
-	return idx
+	return uint(idx)
 }
 
 func (e *BytecodeEncoder) addDefVar(vr *Var) uint {
@@ -108,30 +115,321 @@ func (e *BytecodeEncoder) Encode(i *Instruction) error {
 	return nil
 }
 
-const debugBC = false
+type EngineFrame struct {
+	Ip       int
+	Stack    []Object
+	SP       int32
+	Code     *Fn
+	Bindings []Object
+	Upvals   []*NamedPair
+	Arity    int32
+	Args     []Object
+
+	Handlers []handler
+}
+
+type Engine struct {
+	frames     []*EngineFrame
+	allocstack []Object
+}
 
 func (e *Engine) printStack(env *Env) {
 	var parts []string
 
-	for _, o := range e.stack {
+	for _, o := range e.allocstack {
 		parts = append(parts, fmt.Sprintf("%v", o))
 	}
 
 	fmt.Println("[ " + strings.Join(parts, ", ") + " ]")
 }
 
-func (e *Engine) RunBC(env *Env, fn *Fn) (Object, error) {
-	c := fn.code.data
+func (f *EngineFrame) stackPush(obj Object) {
+	f.SP++
+	f.Stack[f.SP] = obj
+	//f.Stack = append(f.Stack, obj)
+}
+
+func (f *EngineFrame) stackPop() Object {
+	if f.SP < 0 {
+		panic("stack underflow")
+	}
+
+	val := f.Stack[f.SP]
+	f.SP--
+
+	return val
+
+	/*
+		idx := len(f.Stack) - 1
+		if idx == -1 {
+			panic("stack underflow")
+		}
+		val := f.Stack[idx]
+		f.Stack = f.Stack[:idx]
+
+		return val
+	*/
+}
+
+func (f *EngineFrame) stackTop() Object {
+	if f.SP < 0 {
+		panic("stack underflow")
+	}
+
+	return f.Stack[f.SP]
+
+	/*
+		idx := len(f.Stack) - 1
+		return f.Stack[idx]
+	*/
+}
+
+func (f *EngineFrame) stackPopN(cnt int) []Object {
+	start := int(f.SP) - (cnt - 1)
+	if start < 0 {
+		panic(fmt.Sprintf("bad top slice request %d (total: %d)", cnt, len(f.Stack)))
+	}
+
+	objs := f.Stack[start : f.SP+1]
+	f.SP -= int32(cnt)
+
+	return objs
+
+	/*
+		idx := len(f.Stack) - cnt
+		if idx < 0 {
+			panic(fmt.Sprintf("bad top slice request %d (total: %d)", cnt, len(f.Stack)))
+		}
+
+		objs := f.Stack[idx:]
+		f.Stack = f.Stack[:idx]
+
+		return objs
+	*/
+}
+
+/*
+func (e *Engine) printStack(env *Env) {
+	var strs []string
+
+	for _, o := range e.stack {
+		str, err := o.ToString(env, false)
+		if err == nil {
+			strs = append(strs, str)
+		} else {
+			strs = append(strs, fmt.Sprint(o))
+		}
+	}
+
+	fmt.Printf("      [ %s ]\n", strings.Join(strs, ", "))
+}
+*/
+
+func (e *Engine) pushFrame(fn *Fn) *EngineFrame {
+	var stack []Object
+
+	stack = make([]Object, fn.code.stackSize)
+	idx := len(e.frames)
+
+	upvals := make([]*NamedPair, fn.code.totalUpvals)
+	copy(upvals, fn.importedUpvals)
+
+	e.frames = append(e.frames, &EngineFrame{
+		Code:     fn,
+		Stack:    stack,
+		SP:       -1,
+		Upvals:   upvals,
+		Bindings: make([]Object, fn.code.numBindings),
+	})
+
+	return e.frames[idx]
+}
+
+func (e *Engine) popFrame() {
+	e.frames = e.frames[:len(e.frames)-1]
+}
+
+func (e *Engine) frameBack(cnt int) (*EngineFrame, error) {
+	idx := len(e.frames) - cnt - 1
+
+	if idx < 0 {
+		return nil, fmt.Errorf("invalid upward frame request %d (have %d)", cnt, len(e.frames))
+	}
+
+	return e.frames[idx], nil
+}
+
+func EngineCode(env *Env, c *Code) (Object, error) {
+	return EngineRun(env, &Fn{code: c})
+}
+
+func EngineRun(env *Env, fn *Fn) (Object, error) {
+	var e Engine
+	env.Engine = &e
+	e.allocstack = make([]Object, 0, 100)
+	e.pushFrame(fn)
+	return e.RunBC(env, fn)
+}
+
+func (e *Engine) RunWithArgs(env *Env, fn *Fn, args []Object) (Object, error) {
+	fr := e.pushFrame(fn)
+	fr.Args = slices.Clone(args)
+	fr.Arity = int32(len(args))
+	return e.RunBC(env, fn)
+}
+
+type VMError struct {
+	obj Object
+}
+
+func (VMError) Error() string {
+	return "a VM error"
+}
+
+func (e *Engine) unwind(oerr error) (int, error) {
+	obj, ok := oerr.(Object)
+	if !ok {
+		return 0, oerr
+	}
 
 	fr, err := e.frameBack(0)
+	if err != nil {
+		return 0, err
+	}
+
+	if len(fr.Handlers) == 0 {
+		return 0, oerr
+	}
+
+	eh := fr.Handlers[len(fr.Handlers)-1]
+
+	fr.Handlers = fr.Handlers[:len(fr.Handlers)-1]
+
+	fr.SP = int32(eh.sp)
+
+	fr.stackPush(obj)
+
+	return eh.ip, nil
+}
+
+func (e *Engine) printBacktrace(last int) {
+	if last >= len(e.frames) {
+		last = len(e.frames)
+	}
+
+	for _, fr := range e.frames[len(e.frames)-last:] {
+		fmt.Printf("| %s:%d (ip: %d)\n", fr.Code.code.filename, fr.Code.code.lineForIp(fr.Ip), fr.Ip)
+	}
+}
+
+func (e *Engine) makeStackTrace() Object {
+	var vals []Object
+
+	for i := len(e.frames) - 1; i >= 0; i-- {
+		fr := e.frames[i]
+
+		vals = append(vals, NewVectorFrom(
+			fr.Code,
+			MakeInt(fr.Ip),
+		))
+		/*
+			var name string
+			if fr.Code.meta != nil {
+				if ok, val := fr.Code.meta.GetEqu(criticalKeywords.name); ok {
+					if sym, ok := val.(Symbol); ok {
+						name = sym.String()
+					}
+				}
+
+				if ok, val := fr.Code.meta.GetEqu(criticalKeywords.ns); ok {
+					if ns, ok := val.(Symbol); ok {
+						name = ns.Name() + "/" + name
+					}
+				}
+			}
+			vals = append(vals, MakeString(
+				fmt.Sprintf("% 30s %s:%d (ip: %d)", name, fr.Code.code.filename, fr.Code.code.lineForIp(fr.Ip), fr.Ip),
+			))
+		*/
+	}
+
+	return NewListFrom(vals...)
+}
+
+func (e *Engine) assembleBacktrace() []string {
+	var ret []string
+
+	for _, fr := range e.frames {
+		ret = append(ret,
+			fmt.Sprintf("%s:%d (ip: %d)", fr.Code.code.filename, fr.Code.code.lineForIp(fr.Ip), fr.Ip),
+		)
+	}
+
+	return ret
+}
+
+func (e *Engine) call(env *Env, callable Callable, objArgs []Object) (Object, error) {
+	if fn, ok := callable.(*Fn); ok {
+		if fn.code == nil {
+			if fn.env != nil && len(fn.env.bindings) > 0 {
+				panic("can't do this one")
+			}
+
+			_, err := compileFn(env, fn, nil)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		//e.printBacktrace(2)
+		//printInsns(fn.code.insns)
+		fr := e.pushFrame(fn)
+		fr.Args = slices.Clone(objArgs)
+		fr.Arity = int32(len(objArgs))
+
+		return e.RunBC(env, fn)
+	}
+
+	return callable.Call(env, objArgs)
+}
+
+func (e *Engine) methodCall(env *Env, methName string, obj Object, objArgs []Object) (Object, error) {
+	var rv reflect.Value
+
+	if orv, ok := obj.(*ReflectValue); ok {
+		rv = orv.val
+	} else {
+		rv = reflect.ValueOf(obj)
+	}
+
+	rt := rv.Type()
+
+	meth := rv.MethodByName(methName)
+
+	if !meth.IsValid() {
+		return nil, env.RT.NewError(fmt.Sprintf("unknown method %s on %s", methName, rt))
+	}
+
+	procFn, _, err := convReg.ConverterForFunc(meth)
 	if err != nil {
 		return nil, err
 	}
 
-	//e.stack = fr.Stack
+	return procFn(env, objArgs)
+}
+
+const debugBC = false
+
+func (e *Engine) RunBC(env *Env, fn *Fn) (Object, error) {
+	c := fn.code.data
+
+	frame, err := e.frameBack(0)
+	if err != nil {
+		return nil, err
+	}
 
 	if debugBC {
-		fmt.Printf("==== enter frame %d %s:%d (upvals: %d) =====\n", len(e.frames), fn.code.filename, fn.code.lineForIp(0), len(fr.Upvals))
+		fmt.Printf("==== enter frame %d %s:%d (upvals: %d) =====\n", len(e.frames), fn.code.filename, fn.code.lineForIp(0), len(frame.Upvals))
 		defer fmt.Printf("==== exit frame %d =====\n", len(e.frames))
 	}
 
@@ -141,6 +439,10 @@ func (e *Engine) RunBC(env *Env, fn *Fn) (Object, error) {
 		ip  int
 		tmp Object
 	)
+
+	defer func() {
+		frame.Ip = ip
+	}()
 
 loop:
 	for {
@@ -155,40 +457,42 @@ loop:
 
 		switch OpCode(op) {
 		case Pop:
-			e.stackPop()
+			frame.stackPop()
+		case Dup:
+			frame.stackPush(frame.stackTop())
 		case Return:
-			return e.stackPop(), nil
+			return frame.stackPop(), nil
 		case Jump:
 			ip = int(a)
 			continue loop
 		case JumpIfTrue:
-			if ToBool(e.stackPop()) {
+			if ToBool(frame.stackPop()) {
 				ip = int(a)
 				continue loop
 			}
 		case JumpIfFalse:
-			if !ToBool(e.stackPop()) {
+			if !ToBool(frame.stackPop()) {
 				ip = int(a)
 				continue loop
 			}
 		case GetUpval:
-			e.stackPush(fr.Upvals[a].Value)
+			frame.stackPush(frame.Upvals[a].Value)
 		case RefUpval:
-			e.stackPush(fr.Upvals[a])
+			frame.stackPush(frame.Upvals[a])
 		case SetUpval:
-			uv := fr.Upvals[a]
+			uv := frame.Upvals[a]
 			if uv == nil {
 				uv = &NamedPair{}
-				fr.Upvals[a] = uv
+				frame.Upvals[a] = uv
 			}
 
-			uv.Value = e.stackPop()
+			uv.Value = frame.stackPop()
 		case ResolveVar:
 			tmp = c.vars[a].Resolve()
 			if debugBC {
 				fmt.Printf("             | %s\n", c.vars[a].Name())
 			}
-			e.stackPush(tmp)
+			frame.stackPush(tmp)
 		case SetMacro:
 			vr := c.vars[a]
 			vr.isMacro = true
@@ -200,35 +504,25 @@ loop:
 			if err != nil {
 				return nil, err
 			}
-			e.stackPush(vr)
+			frame.stackPush(vr)
 		case GetLocal:
-			fr, err := e.frameBack(0)
-			if err != nil {
-				return nil, err
-			}
-
-			e.stackPush(fr.Bindings[a])
+			frame.stackPush(frame.Bindings[a])
 		case SetLocal:
-			fr, err := e.frameBack(0)
-			if err != nil {
-				return nil, err
-			}
-
-			fr.Bindings[a] = e.stackPop()
+			frame.Bindings[a] = frame.stackPop()
 		case PushLiteral:
-			e.stackPush(c.literals[a])
+			frame.stackPush(c.literals[a])
 		case PushSelfFn:
-			fr, err := e.frameBack(0)
-			if err != nil {
-				return nil, err
-			}
-			e.stackPush(fr.Code)
+			frame.stackPush(frame.Code)
+		case PushInt:
+			frame.stackPush(MakeInt(int(a)))
+		case PushNil:
+			frame.stackPush(NIL)
 		case MakeVector:
-			vec := NewVectorFrom(e.stackPopN(int(a))...)
+			vec := NewVectorFrom(frame.stackPopN(int(a))...)
 
-			e.stackPush(vec)
+			frame.stackPush(vec)
 		case MakeLargeMap:
-			data := e.stackPopN(int(a))
+			data := frame.stackPopN(int(a))
 
 			res := EmptyHashMap
 			for i := 0; i < len(data); i += 2 {
@@ -253,13 +547,13 @@ loop:
 				}
 			}
 
-			e.stackPush(res)
+			frame.stackPush(res)
 		case MakeSmallMap:
 			cnt := a
 			res := EmptyArrayMap()
 
 			if cnt > 0 {
-				data := e.stackPopN(int(cnt))
+				data := frame.stackPopN(int(cnt))
 
 				for i := 0; i < len(data); i += 2 {
 					key := data[i]
@@ -276,9 +570,9 @@ loop:
 				}
 			}
 
-			e.stackPush(res)
+			frame.stackPush(res)
 		case MakeSet:
-			data := e.stackPopN(int(a))
+			data := frame.stackPopN(int(a))
 
 			res := EmptySet()
 
@@ -300,11 +594,11 @@ loop:
 				}
 			}
 
-			e.stackPush(res)
+			frame.stackPush(res)
 		case Def:
 			vr := c.defVars[a]
 
-			basic := e.stackPop()
+			basic := frame.stackPop()
 			if err := Cast(env, basic, &vr.meta); err != nil {
 				return nil, err
 			}
@@ -322,13 +616,13 @@ loop:
 				vr.meta = m
 			}
 
-			e.stackPush(vr)
+			frame.stackPush(vr)
 		case Def3:
 			vr := c.defVars[a]
 
-			v := e.stackPop()
+			v := frame.stackPop()
 
-			if err := Cast(env, e.stackPop(), &vr.meta); err != nil {
+			if err := Cast(env, frame.stackPop(), &vr.meta); err != nil {
 				return nil, err
 			}
 
@@ -354,13 +648,13 @@ loop:
 				vr.meta = m
 			}
 
-			e.stackPush(vr)
+			frame.stackPush(vr)
 		case DefValue:
 			vr := c.defVars[a]
 
-			val := e.stackPop()
+			val := frame.stackPop()
 
-			if err := Cast(env, e.stackPop(), &vr.meta); err != nil {
+			if err := Cast(env, frame.stackPop(), &vr.meta); err != nil {
 				return nil, err
 			}
 
@@ -379,16 +673,20 @@ loop:
 				vr.meta = m
 			}
 
-			e.stackPush(vr)
+			if m, ok := val.(*Fn); ok {
+				m.meta = vr.meta
+			}
+
+			frame.stackPush(vr)
 		case DefValue3:
 			vr := c.defVars[a]
-			v := e.stackPop()
+			v := frame.stackPop()
 
-			if err := Cast(env, e.stackPop(), &vr.meta); err != nil {
+			if err := Cast(env, frame.stackPop(), &vr.meta); err != nil {
 				return nil, err
 			}
 
-			val := e.stackPop()
+			val := frame.stackPop()
 			vr.Value = val
 
 			var m Map
@@ -414,10 +712,14 @@ loop:
 				vr.meta = m
 			}
 
-			e.stackPush(vr)
+			if m, ok := val.(*Fn); ok {
+				m.meta = vr.meta
+			}
+
+			frame.stackPush(vr)
 		case SetMeta:
-			res := e.stackPop()
-			meta := e.stackPop()
+			res := frame.stackPop()
+			meta := frame.stackPop()
 
 			var metao Meta
 			if err := Cast(env, res, &metao); err != nil {
@@ -434,32 +736,25 @@ loop:
 				return nil, err
 			}
 
-			e.stackPush(mo)
+			frame.stackPush(mo)
 		case Call:
-			obj := e.stackPop()
+			args := frame.stackPopN(int(a))
+			obj := frame.stackPop()
+
+			frame.Ip = ip
 
 			switch callable := obj.(type) {
 			case Callable:
-				args := e.stackPopN(int(a))
+				if fn, ok := callable.(*Fn); ok {
+					fr := e.pushFrame(fn)
+					fr.Args = slices.Clone(args)
+					fr.Arity = int32(len(args))
 
-				if false {
-					for _, a := range args {
-						if str, ok := a.(fmt.Stringer); ok {
-							fmt.Printf("             | %s\n", str)
-						} else {
-							fmt.Printf("             | %T %v\n", a, a)
-						}
-					}
+					obj, err = e.RunBC(env, fn)
+				} else {
+					obj, err = callable.Call(env, args)
 				}
 
-				fr, err := e.frameBack(0)
-				if err != nil {
-					panic(err)
-				}
-
-				fr.Ip = ip
-
-				obj, err := e.call(env, callable, args)
 				if err != nil {
 					newIp, err := e.unwind(err)
 					if err != nil {
@@ -470,7 +765,7 @@ loop:
 					continue loop
 				}
 
-				e.stackPush(obj)
+				frame.stackPush(obj)
 			default:
 				e.printBacktrace(1000)
 				s, err := callable.ToString(env, false)
@@ -481,8 +776,10 @@ loop:
 				return nil, env.RT.NewError(s + " is not a Fn")
 			}
 		case Apply:
-			args := e.stackPop()
-			obj := e.stackPop()
+			frame.Ip = ip
+
+			args := frame.stackPop()
+			obj := frame.stackPop()
 
 			seqable, ok := args.(Seqable)
 			if !ok {
@@ -508,16 +805,21 @@ loop:
 				continue loop
 			}
 
+			frame.Ip = ip
+
 			switch callable := obj.(type) {
 			case Callable:
-				fr, err := e.frameBack(0)
-				if err != nil {
-					panic(err)
+				if fn, ok := callable.(*Fn); ok {
+					fr := e.pushFrame(fn)
+					fr.Args = slices.Clone(callArgs)
+					fr.Arity = int32(len(callArgs))
+
+					obj, err = e.RunBC(env, fn)
+				} else {
+
+					obj, err = callable.Call(env, callArgs)
 				}
 
-				fr.Ip = ip
-
-				obj, err := e.call(env, callable, callArgs)
 				if err != nil {
 					newIp, err := e.unwind(err)
 					if err != nil {
@@ -528,7 +830,7 @@ loop:
 					continue loop
 				}
 
-				e.stackPush(obj)
+				frame.stackPush(obj)
 			default:
 				e.printBacktrace(1000)
 				s, err := callable.ToString(env, false)
@@ -541,9 +843,12 @@ loop:
 		case MethodCall:
 			ms := c.methods[a]
 
-			obj := e.stackPop()
+			args := frame.stackPopN(int(a))
+			obj := frame.stackPop()
 
-			res, err := e.methodCall(env, ms.Method, obj, e.stackPopN(int(a)))
+			frame.Ip = ip
+
+			res, err := e.methodCall(env, ms.Method, obj, args)
 			if err != nil {
 				newIp, err := e.unwind(err)
 				if err != nil {
@@ -554,9 +859,11 @@ loop:
 				continue loop
 			}
 
-			e.stackPush(res)
+			frame.stackPush(res)
 		case Throw:
-			newIp, err := e.unwind(&VMError{obj: e.stackPop()})
+			frame.Ip = ip
+
+			newIp, err := e.unwind(&VMError{obj: frame.stackPop()})
 			if err != nil {
 				return nil, err
 			}
@@ -565,29 +872,19 @@ loop:
 			continue loop
 
 		case PushHandler:
-			fr, err := e.frameBack(0)
-			if err != nil {
-				return nil, err
-			}
-
-			fr.Handlers = append(fr.Handlers, handler{
+			frame.Handlers = append(frame.Handlers, handler{
 				ip: int(a),
-				sp: len(e.stack),
+				sp: int(frame.SP),
 			})
 
 		case PopHandler:
-			fr, err := e.frameBack(0)
-			if err != nil {
-				return nil, err
-			}
-
-			fr.Handlers = fr.Handlers[:len(fr.Handlers)-1]
+			frame.Handlers = frame.Handlers[:len(frame.Handlers)-1]
 		case MakeFn:
 			code := c.codes[a]
 
 			upvals := make([]*NamedPair, code.importUpvals)
 
-			imports := e.stackPopN(code.importUpvals)
+			imports := frame.stackPopN(code.importUpvals)
 
 			for i, o := range imports {
 				np, ok := o.(*NamedPair)
@@ -609,41 +906,31 @@ loop:
 				importedUpvals: upvals,
 			}
 
-			e.stackPush(fn)
+			frame.stackPush(fn)
 		case CheckArityFixed:
-			fr, err := e.frameBack(0)
-			if err != nil {
-				return nil, err
-			}
-
-			if fr.Arity == int32(a) {
-				copy(fr.Bindings, fr.Args)
-				e.stackPush(MakeBoolean(true))
+			if frame.Arity == int32(a) {
+				copy(frame.Bindings, frame.Args)
+				frame.stackPush(MakeBoolean(true))
 			} else {
-				e.stackPush(MakeBoolean(false))
+				frame.stackPush(MakeBoolean(false))
 			}
 		case CheckArityMin:
-			fr, err := e.frameBack(0)
-			if err != nil {
-				return nil, err
-			}
+			if frame.Arity >= int32(a) {
+				copy(frame.Bindings, frame.Args[:a])
 
-			if fr.Arity >= int32(a) {
-				copy(fr.Bindings, fr.Args[:a])
+				if frame.Arity == int32(a) {
+					frame.Bindings[a] = NIL
+				} else {
+					frame.Bindings[a] = &ArraySeq{arr: frame.Args, index: int(a)}
+				}
 
-				fr.Bindings[a] = &ArraySeq{arr: fr.Args, index: int(a)}
-
-				e.stackPush(MakeBoolean(true))
+				frame.stackPush(MakeBoolean(true))
 			} else {
-				e.stackPush(MakeBoolean(false))
+				frame.stackPush(MakeBoolean(false))
 			}
 		case ThrowArity:
-			fr, err := e.frameBack(0)
-			if err != nil {
-				return nil, err
-			}
-
-			return nil, ErrorArity(env, int(fr.Arity))
+			frame.Ip = ip
+			return nil, ErrorArity(env, int(frame.Arity))
 		default:
 			return nil, fmt.Errorf("unimplemented instruction: %d", op)
 		}

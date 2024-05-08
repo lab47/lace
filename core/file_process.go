@@ -14,5 +14,6 @@ func RunFile(env *Env, filename string) error {
 		return err
 	}
 	env.SetMainFilename(f)
-	return ProcessReader(env, reader, filename, EVAL)
+	_, err = ProcessReader(env, reader, filename)
+	return err
 }

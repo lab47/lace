@@ -581,6 +581,14 @@ func convertReflectValueInAny(env *Env, index int, o Object) (reflect.Value, err
 func convertReflectValueIn(env *Env, index int, o Object, at reflect.Type) (reflect.Value, error) {
 	ls, ok := o.(*ReflectValue)
 	if !ok {
+		if at.Kind() == reflect.Interface {
+			ov := reflect.ValueOf(o)
+
+			if ov.Type().Implements(at) {
+				return ov, nil
+			}
+		}
+
 		return reflect.Value{}, env.RT.NewArgTypeError(index, o, at.Name())
 	}
 

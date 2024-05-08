@@ -95,6 +95,9 @@ type (
 		arities  []FnArityExpr
 		variadic *FnArityExpr
 		self     Symbol
+
+		compiled *Code
+		closure  *fnClosure
 	}
 	LetExpr struct {
 		Position
@@ -1119,64 +1122,77 @@ func parseFn(obj Object, ctx *ParseContext) (Expr, error) {
 		if err := addArity(res, bodies, ctx); err != nil {
 			return nil, err
 		}
-		return wrapWithMeta(res, obj, ctx)
-	}
-	// multiple arities
-	ok, err := bodies.IsEmpty(ctx.Env)
-	if err != nil {
-		return nil, err
-	}
-
-	if ok {
-		return nil, &ParseError{obj: p, msg: "Parameter declaration missing"}
-	}
-
-	for {
-		empty, err := bodies.IsEmpty(ctx.Env)
+	} else {
+		// multiple arities
+		ok, err := bodies.IsEmpty(ctx.Env)
 		if err != nil {
 			return nil, err
 		}
 
-		if empty {
-			break
+		if ok {
+			return nil, &ParseError{obj: p, msg: "Parameter declaration missing"}
 		}
 
-		body, err := bodies.First(ctx.Env)
-		if err != nil {
-			return nil, err
-		}
-
-		switch s := body.(type) {
-		case Seq:
-			params, err := s.First(ctx.Env)
+		for {
+			empty, err := bodies.IsEmpty(ctx.Env)
 			if err != nil {
 				return nil, err
 			}
 
-			if !IsVector(params) {
-				s, err := params.ToString(ctx.Env, false)
+			if empty {
+				break
+			}
+
+			body, err := bodies.First(ctx.Env)
+			if err != nil {
+				return nil, err
+			}
+
+			switch s := body.(type) {
+			case Seq:
+				params, err := s.First(ctx.Env)
 				if err != nil {
 					return nil, err
 				}
 
-				return nil, &ParseError{obj: params, msg: "Parameter declaration must be a vector. Got: " + s}
+				if !IsVector(params) {
+					s, err := params.ToString(ctx.Env, false)
+					if err != nil {
+						return nil, err
+					}
+
+					return nil, &ParseError{obj: params, msg: "Parameter declaration must be a vector. Got: " + s}
+				}
+				if err := addArity(res, s, ctx); err != nil {
+					return nil, err
+				}
+			default:
+				ss, err := s.ToString(ctx.Env, false)
+				if err != nil {
+					return nil, err
+				}
+
+				return nil, &ParseError{obj: body, msg: "Function body must be a list. Got: " + ss}
 			}
-			if err := addArity(res, s, ctx); err != nil {
-				return nil, err
-			}
-		default:
-			ss, err := s.ToString(ctx.Env, false)
+			bodies, err = bodies.Rest(ctx.Env)
 			if err != nil {
 				return nil, err
 			}
-
-			return nil, &ParseError{obj: body, msg: "Function body must be a list. Got: " + ss}
-		}
-		bodies, err = bodies.Rest(ctx.Env)
-		if err != nil {
-			return nil, err
 		}
 	}
+
+	fn := &Fn{
+		fnExpr: res,
+	}
+
+	closure, err := compileFn(ctx.Env, fn, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	res.compiled = fn.code
+	res.closure = closure
+
 	return wrapWithMeta(res, obj, ctx)
 }
 
@@ -1563,7 +1579,10 @@ func parseLetLoop(obj Object, formName string, ctx *ParseContext) (*LetExpr, err
 		}
 
 	default:
-		return nil, &ParseError{obj: obj, msg: formName + " requires a vector for its bindings"}
+		return nil, &ParseError{
+			obj: obj,
+			msg: fmt.Sprintf("%s requires a vector for its bindings, got %T", formName, bindings),
+		}
 	}
 	return res, nil
 }
@@ -2081,6 +2100,9 @@ func parseList(env *Env, obj Object, ctx *ParseContext) (Expr, error) {
 		return nil, err
 	}
 	if expanded != obj {
+		//str, _ := expanded.ToString(env, true)
+		//fmt.Println(str)
+
 		return Parse(expanded, ctx)
 	}
 	empty, err := seq.IsEmpty(env)

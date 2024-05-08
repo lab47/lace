@@ -12,11 +12,20 @@ type (
 		Gettable
 		Has(key Equ) bool
 		Disjoin(env *Env, key Object) (Set, error)
+		SetIter() SetIter
+	}
+	SetIter interface {
+		HasNext(*Env) bool
+		Next(*Env) (Object, error)
 	}
 	MapSet struct {
 		InfoHolder
 		MetaHolder
 		m Map
+	}
+	MapSetIter struct {
+		ms *MapSet
+		s  *SeqIterator
 	}
 )
 
@@ -90,6 +99,42 @@ func (set *MapSet) ToString(env *Env, escape bool) (string, error) {
 	}
 	b.WriteRune('}')
 	return b.String(), nil
+}
+
+type EmptySetIterator struct{}
+
+var (
+	emptySetIterator = &EmptySetIterator{}
+)
+
+func (iter *EmptySetIterator) HasNext(env *Env) bool {
+	return false
+}
+
+func (iter *EmptySetIterator) Next(env *Env) (Object, error) {
+	panic(newIteratorError())
+}
+
+func (set *MapSet) SetIter() SetIter {
+	iter := iter(set.m.Keys())
+
+	return &MapSetIter{
+		ms: set,
+		s:  iter,
+	}
+}
+
+func (i *MapSetIter) HasNext(env *Env) bool {
+	return i.s.HasNext(env)
+}
+
+func (i *MapSetIter) Next(env *Env) (Object, error) {
+	k, err := i.s.Next(env)
+	if err != nil {
+		return nil, err
+	}
+
+	return k, nil
 }
 
 func (set *MapSet) Equals(env *Env, other interface{}) bool {

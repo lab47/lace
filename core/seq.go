@@ -49,6 +49,12 @@ type (
 )
 
 func SeqsEqual(env *Env, seq1, seq2 Seq) bool {
+	defer env.enableCycleDetection()()
+
+	if env.cycling(seq1, seq2) {
+		return true
+	}
+
 	iter2 := iter(seq2)
 	for iter1 := iter(seq1); iter1.HasNext(env); {
 		v, err := iter1.Next(env)
@@ -56,7 +62,7 @@ func SeqsEqual(env *Env, seq1, seq2 Seq) bool {
 			return false
 		}
 
-		if !iter2.HasNext(env) {
+		if iter2.HasNext(env) {
 			v2, err := iter2.Next(env)
 			if err != nil {
 				return false
@@ -300,6 +306,12 @@ func (seq *ArraySeq) Cons(obj Object) Seq {
 func (seq *ArraySeq) sequential() {}
 
 func SeqToString(env *Env, seq Seq, escape bool) (string, error) {
+	env.enableCycleDetection()()
+
+	if env.cycling(seq, NIL) {
+		return "(...)", nil
+	}
+
 	var b bytes.Buffer
 	b.WriteRune('(')
 	for iter := iter(seq); iter.HasNext(env); {

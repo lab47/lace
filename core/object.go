@@ -68,6 +68,10 @@ type (
 		Nth(env *Env, i int) (Object, error)
 		TryNth(env *Env, i int, d Object) (Object, error)
 	}
+	IndexCounted interface {
+		Indexed
+		Counted
+	}
 	Stack interface {
 		Object
 		Peek(env *Env) (Object, error)
@@ -637,6 +641,8 @@ func getMap(env *Env, k Object, args []Object) (Object, error) {
 		if ok {
 			return v, nil
 		}
+	default:
+		return nil, env.RT.NewArgTypeError(1, args[0], "Map")
 	}
 	if len(args) == 2 {
 		return args[1], nil
@@ -937,7 +943,12 @@ func (fn *Fn) Hash(env *Env) (uint32, error) {
 
 func (fn *Fn) Call(env *Env, args []Object) (Object, error) {
 	if env.Engine != nil {
-		return env.Engine.RunWithArgs(env, fn, args)
+		obj, err := env.Engine.RunWithArgs(env, fn, args)
+		if err != nil {
+			return nil, err
+		}
+
+		return obj, nil
 	}
 
 	return fn.CallTree(env, args)
@@ -1038,7 +1049,12 @@ func (p Proc) Call(env *Env, args []Object) (Object, error) {
 			panic(err)
 		}
 	}()
-	return p.Fn(env, args)
+	ret, err := p.Fn(env, args)
+	if err != nil {
+		err = env.populateStackTrace(err)
+	}
+
+	return ret, err
 }
 
 var _ Callable = (*Fn)(nil)
@@ -1284,6 +1300,10 @@ func (n Nil) Disjoin(env *Env, key Object) (Set, error) {
 	return n, nil
 }
 
+func (n Nil) SetIter() SetIter {
+	return emptySetIterator
+}
+
 func (n Nil) Has(key Equ) bool {
 	return false
 }
@@ -1294,6 +1314,11 @@ func (n Nil) Keys() Seq {
 
 func (n Nil) Vals() Seq {
 	return NIL
+}
+
+func MakeRatio(x, y *big.Int) *Ratio {
+	r := big.NewRat(x.Int64(), y.Int64())
+	return &Ratio{r: *r}
 }
 
 func (rat *Ratio) ToString(env *Env, escape bool) (string, error) {
@@ -1329,6 +1354,10 @@ func MakeBigInt(bi int64) *BigInt {
 	return &BigInt{b: *big.NewInt(bi)}
 }
 
+func MakeBigIntFrom(bi *big.Int) *BigInt {
+	return &BigInt{b: *bi}
+}
+
 func (bi *BigInt) ToString(env *Env, escape bool) (string, error) {
 	return bi.b.String() + "N", nil
 }
@@ -1355,6 +1384,10 @@ func (bi *BigInt) Compare(env *Env, other Object) (int, error) {
 		return 0, err
 	}
 	return CompareNumbers(bi, n), nil
+}
+
+func MakeBigFloatFrom(bi *big.Float) *BigFloat {
+	return &BigFloat{b: *bi}
 }
 
 func (bf *BigFloat) ToString(env *Env, escape bool) (string, error) {
@@ -1633,6 +1666,13 @@ func (k Keyword) String() string {
 		return ":" + k.ns + "/" + k.name
 	}
 	return ":" + k.name
+}
+
+func (k Keyword) RawString() string {
+	if k.ns != "" {
+		return k.ns + "/" + k.name
+	}
+	return k.name
 }
 
 func (k Keyword) Name() string {

@@ -64,6 +64,12 @@ func mapEquals(env *Env, m Map, other interface{}) bool {
 	case Nil:
 		return false
 	case Map:
+		defer env.enableCycleDetection()()
+
+		if env.cycling(m, otherMap) {
+			return true
+		}
+
 		if m.Count() != otherMap.Count() {
 			return false
 		}
@@ -84,6 +90,12 @@ func mapEquals(env *Env, m Map, other interface{}) bool {
 }
 
 func mapToString(env *Env, m Map, escape bool) (string, error) {
+	env.enableCycleDetection()()
+
+	if env.cycling(m, NIL) {
+		return "{...}", nil
+	}
+
 	var b bytes.Buffer
 	b.WriteRune('{')
 	if m.Count() > 0 {

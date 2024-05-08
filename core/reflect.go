@@ -58,6 +58,34 @@ type ReflectValue struct {
 	val reflect.Value
 }
 
+func MakeReflectValue(v any) *ReflectValue {
+	return &ReflectValue{
+		val: reflect.ValueOf(v),
+	}
+}
+
+func CastReflect[T any](env *Env, obj Object, v *T) error {
+	var rv *ReflectValue
+
+	err := Cast(env, obj, &rv)
+	if err != nil {
+		return err
+	}
+
+	x, ok := rv.Value().(T)
+	if !ok {
+		return fmt.Errorf("not a reflect value containing a *%T", v)
+	}
+
+	*v = x
+
+	return nil
+}
+
+func (r *ReflectValue) Value() any {
+	return r.val.Interface()
+}
+
 var _ Object = &ReflectValue{}
 
 func (r *ReflectValue) Equals(env *Env, other any) bool {

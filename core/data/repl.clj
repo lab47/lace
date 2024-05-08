@@ -1,7 +1,9 @@
 (ns
   ^{:doc "Utilities meant to be used interactively at the REPL."
     :added "1.0"}
-  lace.repl)
+  lace.repl
+  (:require [lace.string :as s]))
+  
 
 (def ^:private special-doc-map
   '{def {:forms [(def symbol doc-string? init?)]

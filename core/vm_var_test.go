@@ -231,12 +231,9 @@ func TestCompilerVars(t *testing.T) {
 
 		ch1vbs := ch2.closeFrame()
 
-		r.NotNil(ch1.root.bindings["foo"])
 		r.Len(ch1vbs, 1)
 
-		r.True(ch1vbs[0].home == ch1)
-		r.True(ch1vbs[0].upval)
-		r.Equal("foo", ch1vbs[0].name.Name())
+		r.Equal("foo", ch1vbs[0].Name())
 	})
 
 	t.Run("peer scopes reuse same local slots (critical for args", func(t *testing.T) {

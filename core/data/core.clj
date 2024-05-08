@@ -1403,11 +1403,11 @@
   values after f returned. Returns whatever f returns."
   {:added "1.0"}
   [^Map binding-map ^Callable f & args]
-  (let [existing-bindings (replace-bindings binding-map)]
+  (let [existing-bindings (lace.lang/PushBindings binding-map)]
     (try
       (apply f args)
       (finally
-        (replace-bindings existing-bindings)))))
+        (lace.lang/SetBindings existing-bindings)))))
 
 (def
   ^{:doc "The same as with-bindings*"

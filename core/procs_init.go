@@ -1,21 +1,13 @@
-//go:build !fast_init
-// +build !fast_init
-
 package core
 
-var privateMeta Map
-
-func init() {
+func createCoreFns(env *Env) error {
 	v, err := NewArrayMap(criticalKeywords.private, Boolean{B: true})
 	if err != nil {
 		panic(err)
 	}
 
-	privateMeta = v.(Map)
-}
+	privateMeta := v.(Map)
 
-func initEnv(env *Env) error {
-	var err error
 	intern := func(env *Env, name string, proc ProcFn, procName string) {
 		if err != nil {
 			return
@@ -211,9 +203,3 @@ func initEnv(env *Env) error {
 
 	return err
 }
-
-func lateInitializations() {
-	// none needed for !fast_init
-}
-
-var _ = lateInitializations

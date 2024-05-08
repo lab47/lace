@@ -533,7 +533,7 @@ func (b *NSBuilder) Run(code []byte) error {
 	}()
 	b.env.SetCurrentNamespace(b.ns)
 	b.ns.ReferAll(b.env.CoreNamespace)
-	err := ProcessReader(b.env, reader, filename, EVAL)
+	_, err := ProcessReader(b.env, reader, filename)
 	if err != nil {
 		return err
 	}

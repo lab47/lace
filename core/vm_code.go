@@ -3,11 +3,15 @@ package core
 import (
 	"bytes"
 	"fmt"
+	"sync/atomic"
 
 	"github.com/fxamacker/cbor/v2"
 )
 
+var nextFnId atomic.Int64
+
 type Code struct {
+	fnId        int64
 	numBindings int
 
 	importUpvals int
@@ -16,7 +20,14 @@ type Code struct {
 	filename string
 	lines    []int
 
+	macroLines []int
+
+	files      []string
+	fileFromIp []int
+
 	importBindings []Symbol
+
+	stackSize uint32
 
 	data CodeData
 }
@@ -33,6 +44,26 @@ func (c *Code) lineForIp(ip int) int {
 	}
 
 	return -1
+}
+
+func (c *Code) macroLineForIp(ip int) int {
+	for i := 0; i < len(c.macroLines); i += 2 {
+		if c.macroLines[i] <= ip && c.macroLines[i+2] > ip {
+			return c.macroLines[i+1]
+		}
+	}
+
+	return -1
+}
+
+func (c *Code) fileForIp(ip int) string {
+	for i := 0; i < len(c.fileFromIp); i += 2 {
+		if c.fileFromIp[i] <= ip && c.fileFromIp[i+2] > ip {
+			return c.files[c.fileFromIp[i+1]]
+		}
+	}
+
+	return c.filename
 }
 
 type CodePosition struct {
@@ -129,6 +160,7 @@ type CodeAsData struct {
 	Codes          []*CodeAsData  `json:"codes" cbor:"10,keyasint,omitempty"`
 	Methods        []CodeMethod   `json:"methods" cbor:"11,keyasint,omitempty"`
 	Instructions   []uint32       `json:"instructions" cbor:"12,keyasint,omitempty"`
+	StackSize      uint32         `json:"stack_size" cbor:"13,keyasint,omitempty"`
 }
 
 func (c *Code) AsData(env *Env) *CodeAsData {
@@ -196,16 +228,20 @@ func (c *Code) AsData(env *Env) *CodeAsData {
 
 	cad.Instructions = c.data.insns
 
+	cad.StackSize = c.stackSize
+
 	return cad
 }
 
 func (cad *CodeAsData) AsCode(env *Env) (*Code, error) {
 	c := &Code{
+		fnId:         nextFnId.Add(1),
 		numBindings:  cad.NumBindings,
 		importUpvals: cad.ImportUpvals,
 		totalUpvals:  cad.TotalUpvals,
 		filename:     cad.Filename,
 		lines:        cad.Lines,
+		stackSize:    cad.StackSize,
 	}
 
 	for _, str := range cad.ImportBindings {
@@ -226,7 +262,7 @@ func (cad *CodeAsData) AsCode(env *Env) (*Code, error) {
 	}
 
 	for _, csym := range cad.VarNames {
-		ns := env.FindNamespace(MakeSymbol(csym.Namespace))
+		ns := env.EnsureNamespace(MakeSymbol(csym.Namespace))
 		if ns == nil {
 			panic("bad ns: " + csym.Namespace)
 		}
