@@ -148,6 +148,81 @@ type conversionSet struct {
 	errorPos int
 }
 
+func WrapToProc3_2[E, A, B, O, O2 any](fn func(e E, a A, b B) (O, O2)) any {
+	if reflect.TypeFor[func(E, O, O2)]() == reflect.TypeFor[func(*Env, Object, error)]() {
+		cs := convReg.buildCS(reflect.TypeFor[func(A, B) (Object, error)]())
+
+		afn := cs.argIn[0]
+		bfn := cs.argIn[1]
+
+		return func(env *Env, args Args) (Object, error) {
+			if len(args.Objects) != cs.arity {
+				return nil, ErrorArityMinMax(env, len(args.Objects), cs.arity, cs.arity)
+			}
+
+			arv, err := afn(env, 0, args.Objects[0])
+			if err != nil {
+				return nil, err
+			}
+
+			brv, err := bfn(env, 1, args.Objects[1])
+			if err != nil {
+				return nil, err
+			}
+
+			o, oerr := fn(
+				any(env).(E),
+				arv.Interface().(A),
+				brv.Interface().(B),
+			)
+
+			if err, ok := any(oerr).(error); ok {
+				return nil, err
+			}
+
+			return any(o).(Object), nil
+		}
+	}
+
+	return fn
+}
+
+func WrapToProc2_2[E, A, O, O2 any](fn func(e E, a A) (O, O2)) any {
+	if reflect.TypeFor[func(E, A) (O, O2)]() == reflect.TypeFor[func(*Env, Args) (Object, error)]() {
+		return fn
+	}
+
+	if reflect.TypeFor[func(E, O, O2)]() == reflect.TypeFor[func(*Env, Object, error)]() {
+		cs := convReg.buildCS(reflect.TypeFor[func(A) (Object, error)]())
+
+		afn := cs.argIn[0]
+
+		return func(env *Env, args Args) (Object, error) {
+			if len(args.Objects) != cs.arity {
+				return nil, ErrorArityMinMax(env, len(args.Objects), cs.arity, cs.arity)
+			}
+
+			arv, err := afn(env, 0, args.Objects[0])
+			if err != nil {
+				return nil, err
+			}
+
+			o, oerr := fn(
+				any(env).(E),
+				arv.Interface().(A),
+			)
+
+			if err, ok := any(oerr).(error); ok {
+				return nil, err
+			}
+
+			return any(o).(Object), nil
+		}
+	}
+
+	return fn
+}
+
 func (c *ConvRegistry) wrapFunc(fnVal reflect.Value, cs *conversionSet) reflect.Value {
 	return reflect.ValueOf(ProcFn(func(env *Env, objArgs []Object) (Object, error) {
 		if len(objArgs) != cs.arity {
@@ -581,8 +656,12 @@ func convertReflectValueInAny(env *Env, index int, o Object) (reflect.Value, err
 func convertReflectValueIn(env *Env, index int, o Object, at reflect.Type) (reflect.Value, error) {
 	ls, ok := o.(*ReflectValue)
 	if !ok {
+		ov := reflect.ValueOf(o)
+		if ov.Type() == at {
+			return ov, nil
+		}
+
 		if at.Kind() == reflect.Interface {
-			ov := reflect.ValueOf(o)
 
 			if ov.Type().Implements(at) {
 				return ov, nil

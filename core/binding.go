@@ -12,27 +12,29 @@ func init() {
 		Types: map[string]pkgreflect.Type{},
 
 		Functions: map[string]pkgreflect.FuncValue{
-			"ConcatSimple": {Doc: "Concatinate N sequences together", Args: []pkgreflect.Arg{{Name: "env", Tag: "Env"}, {Name: "args", Tag: "Args"}}, Tag: "any", Value: reflect.ValueOf(ConcatSimple)},
+			"ConcatSimple": {Doc: "Concatinate N sequences together", Args: []pkgreflect.Arg{{Name: "args", Tag: "Args"}}, Tag: "any", Value: reflect.ValueOf(WrapToProc2_2(ConcatSimple))},
 
-			"Conj": {Doc: "Create a new Sequence by combine the value with the collection.", Args: []pkgreflect.Arg{{Name: "env", Tag: "Env"}, {Name: "col", Tag: "Object"}, {Name: "val", Tag: "Object"}}, Tag: "any", Value: reflect.ValueOf(Conj)},
+			"Conj": {Doc: "Create a new Sequence by combine the value with the collection.", Args: []pkgreflect.Arg{{Name: "col", Tag: "Object"}, {Name: "val", Tag: "Object"}}, Tag: "any", Value: reflect.ValueOf(WrapToProc3_2(Conj))},
 
-			"Cons": {Doc: "Add an element to a Seq value, returning a new Seq", Args: []pkgreflect.Arg{{Name: "env", Tag: "Env"}, {Name: "val", Tag: "Object"}, {Name: "seq", Tag: "Seqable"}}, Tag: "any", Value: reflect.ValueOf(Cons)},
+			"Cons": {Doc: "Add an element to a Seq value, returning a new Seq", Args: []pkgreflect.Arg{{Name: "val", Tag: "Object"}, {Name: "seq", Tag: "Seqable"}}, Tag: "any", Value: reflect.ValueOf(WrapToProc3_2(Cons))},
 
-			"Equals": {Doc: "Compare two values returning a boolean if they are equal or not", Args: []pkgreflect.Arg{{Name: "env", Tag: "Env"}, {Name: "a", Tag: "Object"}, {Name: "b", Tag: "Object"}}, Tag: "any", Value: reflect.ValueOf(Equals)},
+			"Equals": {Doc: "Compare two values returning a boolean if they are equal or not", Args: []pkgreflect.Arg{{Name: "a", Tag: "Object"}, {Name: "b", Tag: "Object"}}, Tag: "any", Value: reflect.ValueOf(WrapToProc3_2(Equals))},
 
-			"First": {Doc: "Return the first element in a Seq", Args: []pkgreflect.Arg{{Name: "env", Tag: "Env"}, {Name: "s", Tag: "Seqable"}}, Tag: "any", Value: reflect.ValueOf(First)},
+			"First": {Doc: "Return the first element in a Seq", Args: []pkgreflect.Arg{{Name: "s", Tag: "Seqable"}}, Tag: "any", Value: reflect.ValueOf(WrapToProc2_2(First))},
 
-			"List": {Doc: "Create a new lace List from the given arguments", Args: []pkgreflect.Arg{{Name: "env", Tag: "Env"}, {Name: "args", Tag: "Args"}}, Tag: "any", Value: reflect.ValueOf(MakeList)},
+			"List": {Doc: "Create a new lace List from the given arguments", Args: []pkgreflect.Arg{{Name: "args", Tag: "Args"}}, Tag: "any", Value: reflect.ValueOf(WrapToProc2_2(MakeList))},
 
-			"Next": {Doc: "Return elements other than the first one in a Seq", Args: []pkgreflect.Arg{{Name: "env", Tag: "Env"}, {Name: "s", Tag: "Seqable"}}, Tag: "any", Value: reflect.ValueOf(Next)},
+			"LoadLibFromPath": {Doc: "Attempt to load a given lib from a given path.", Args: []pkgreflect.Arg{{Name: "libnamev", Tag: "Symbol"}, {Name: "pathnamev", Tag: "String"}}, Tag: "any", Value: reflect.ValueOf(WrapToProc3_2(LoadLibFromPath))},
 
-			"PushBindings": {Doc: "Add given bindings to the set of current Var bindings, returning\nthe original set.", Args: []pkgreflect.Arg{{Name: "env", Tag: "Env"}, {Name: "assoc", Tag: "Map"}}, Tag: "any", Value: reflect.ValueOf(PushBindings)},
+			"Next": {Doc: "Return elements other than the first one in a Seq", Args: []pkgreflect.Arg{{Name: "s", Tag: "Seqable"}}, Tag: "any", Value: reflect.ValueOf(WrapToProc2_2(Next))},
 
-			"Rest": {Doc: "Return all elements of a seq except for the first one.", Args: []pkgreflect.Arg{{Name: "env", Tag: "Env"}, {Name: "s", Tag: "Seqable"}}, Tag: "any", Value: reflect.ValueOf(Rest)},
+			"PushBindings": {Doc: "Add given bindings to the set of current Var bindings, returning\nthe original set.", Args: []pkgreflect.Arg{{Name: "assoc", Tag: "Map"}}, Tag: "any", Value: reflect.ValueOf(WrapToProc2_2(PushBindings))},
 
-			"Seq": {Doc: "Convert the given value to a Seq", Args: []pkgreflect.Arg{{Name: "env", Tag: "Env"}, {Name: "s", Tag: "Seqable"}}, Tag: "any", Value: reflect.ValueOf(ConvertToSeq)},
+			"Rest": {Doc: "Return all elements of a seq except for the first one.", Args: []pkgreflect.Arg{{Name: "s", Tag: "Seqable"}}, Tag: "any", Value: reflect.ValueOf(WrapToProc2_2(Rest))},
 
-			"SetBindings": {Doc: "Reset the local var bindings to the given value.", Args: []pkgreflect.Arg{{Name: "env", Tag: "Env"}, {Name: "assoc", Tag: "Associative"}}, Tag: "any", Value: reflect.ValueOf(SetBindings)},
+			"Seq": {Doc: "Convert the given value to a Seq", Args: []pkgreflect.Arg{{Name: "s", Tag: "Seqable"}}, Tag: "any", Value: reflect.ValueOf(WrapToProc2_2(ConvertToSeq))},
+
+			"SetBindings": {Doc: "Reset the local var bindings to the given value.", Args: []pkgreflect.Arg{{Name: "assoc", Tag: "Associative"}}, Tag: "any", Value: reflect.ValueOf(WrapToProc2_2(SetBindings))},
 		},
 
 		Variables: map[string]pkgreflect.Value{},

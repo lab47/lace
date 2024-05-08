@@ -64,7 +64,12 @@ type Match struct {
 	Directive bool
 }
 
-func Generate(name, laceName string, base, output, outputPkg string, match *Match) error {
+type GenOptions struct {
+	Specialized bool
+	InCore      bool
+}
+
+func Generate(name, laceName string, base, output, outputPkg string, match *Match, opts GenOptions) error {
 	var pcfg packages.Config
 	pcfg.Mode = packages.NeedSyntax | packages.NeedFiles | packages.NeedTypes | packages.NeedTypesInfo | packages.NeedTypesSizes
 	pkgs, err := packages.Load(&pcfg, name)
@@ -292,7 +297,7 @@ func Generate(name, laceName string, base, output, outputPkg string, match *Matc
 
 	// Functions
 	fmt.Fprintln(&buf, "Functions: map[string]pkgreflect.FuncValue{")
-	fnprint(&buf, pkgName, files, ast.Fun, match)
+	fnprint(&buf, pkgName, files, ast.Fun, match, opts)
 	fmt.Fprintln(&buf, "},")
 	fmt.Fprintln(&buf, "")
 
@@ -425,7 +430,7 @@ func exportName(fn *ast.FuncDecl) string {
 	return fn.Name.Name
 }
 
-func fnprint(w io.Writer, pkgName string, files []*ast.File, kind ast.ObjKind, match *Match) {
+func fnprint(w io.Writer, pkgName string, files []*ast.File, kind ast.ObjKind, match *Match, opts GenOptions) {
 	var fns []string
 
 	for _, f := range files {
@@ -437,10 +442,12 @@ func fnprint(w io.Writer, pkgName string, files []*ast.File, kind ast.ObjKind, m
 					continue
 				}
 				var args []string
+				var params int
 				for _, f := range fn.Type.Params.List {
 					for _, n := range f.Names {
+						params++
 						tn := typeName(f.Type)
-						if tn == "core.Env" {
+						if tn == "core.Env" || tn == "Env" {
 							continue
 						}
 
@@ -457,10 +464,27 @@ func fnprint(w io.Writer, pkgName string, files []*ast.File, kind ast.ObjKind, m
 				}
 
 				arity := strings.Join(args, `,`)
-				fns = append(fns,
-					fmt.Sprintf("\t\"%s\": {Doc: %q, Args: []pkgreflect.Arg{%s}, Tag: \"%s\", Value: reflect.ValueOf(%s%s)},\n",
-						exportName(fn), strings.TrimSpace(fn.Doc.Text()), arity, rt, pkgName, fn.Name.Name),
-				)
+				if opts.Specialized {
+					corePkg := "core."
+					if opts.InCore {
+						corePkg = ""
+					}
+
+					fns = append(fns,
+						fmt.Sprintf("\t\"%s\": {Doc: %q, Args: []pkgreflect.Arg{%s}, Tag: \"%s\", Value: reflect.ValueOf(%sWrapToProc%d_%d(%s%s))},\n",
+							exportName(fn), strings.TrimSpace(fn.Doc.Text()), arity, rt,
+							corePkg,
+							params,
+							len(fn.Type.Results.List),
+							pkgName, fn.Name.Name),
+					)
+				} else {
+					fns = append(fns,
+						fmt.Sprintf("\t\"%s\": {Doc: %q, Args: []pkgreflect.Arg{%s}, Tag: \"%s\", Value: reflect.ValueOf(%s%s)},\n",
+							exportName(fn), strings.TrimSpace(fn.Doc.Text()), arity, rt,
+							pkgName, fn.Name.Name),
+					)
+				}
 			}
 		}
 	}

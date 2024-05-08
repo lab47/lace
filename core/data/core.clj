@@ -3554,7 +3554,7 @@
           (if *linter-mode*
             (in-ns lib)
             (when (not (lace.core/*core-namespaces* lib))
-              (load-lib-from-path__ lib path))))))))
+              (lace.lang/LoadLibFromPath lib path))))))))
 
 (defn get-in
   "Returns the value in a nested associative structure,

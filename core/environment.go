@@ -364,6 +364,11 @@ func (v *VMStacktrace) Error() string {
 	return v.upper.Error()
 }
 
+func (v *VMStacktrace) Is(other error) bool {
+	_, ok := other.(*VMStacktrace)
+	return ok
+}
+
 func (env *Env) populateStackTrace(err error) error {
 	if errors.Is(err, &VMStacktrace{}) {
 		return err
@@ -439,7 +444,7 @@ func (vs *VMStacktrace) renderFrame(env *Env, ele Object) outputFrame {
 					return outputFrame{
 						lace: true,
 						name: name,
-						loc:  fmt.Sprintf("%s:%d (fn: %d, ip: %d)", fn.code.filename, fn.code.lineForIp(ip.I), fn.code.fnId, ip.I),
+						loc:  fmt.Sprintf("%s:%d", fn.code.filename, fn.code.lineForIp(ip.I)),
 					}
 				}
 			}

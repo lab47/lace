@@ -53,3 +53,7 @@ func (err *EvalError) Error() string {
 		return fmt.Sprintf("%s:%d:%d: Eval error: %s", pos.Filename(), pos.startLine, pos.startColumn, err.msg)
 	}
 }
+
+func Errorf(env *Env, str string, args ...any) error {
+	return env.populateStackTrace(fmt.Errorf(str, args...))
+}

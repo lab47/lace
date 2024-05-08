@@ -3,7 +3,6 @@ package core
 import (
 	"bufio"
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
 	"math/big"
@@ -19,6 +18,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/pkg/errors"
 )
 
 var coreNamespaces []string
@@ -2641,7 +2641,7 @@ var procLoadLibFromPath = func(env *Env, args []Object) (Object, error) {
 	// so see if it's already loaded and if so, use it.
 
 	if env.FindNamespace(libnamev) != nil {
-		return NIL, err
+		return NIL, nil
 	}
 
 	libname := libnamev.Name()
@@ -2687,7 +2687,10 @@ var procLoadLibFromPath = func(env *Env, args []Object) (Object, error) {
 		return nil, canonicalErr
 	}
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "error attempting to open: %s", filename)
+	}
+	if filename == "" {
+		return nil, Errorf(env, "unable to find path for library: %s", libname)
 	}
 	reader := NewReader(bufio.NewReader(f), filename)
 	err = ProcessReaderFromEval(env, reader, filename)

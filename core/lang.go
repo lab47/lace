@@ -1,8 +1,17 @@
 package core
 
 import (
+	"bufio"
 	"fmt"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
+
+	"github.com/pkg/errors"
 )
+
+//go:generate go run .././pkg/pkgreflect/cmd/pkgreflect -lace-name lace.lang -honor-directive -in-core -specialized github.com/lab47/lace/core binding.go
 
 // Create a new lace List from the given arguments
 //
@@ -182,4 +191,68 @@ func PushBindings(env *Env, assoc Map) (Object, error) {
 func SetBindings(env *Env, assoc Associative) (Object, error) {
 	env.CurrentVar = assoc
 	return assoc, nil
+}
+
+// Attempt to load a given lib from a given path.
+//
+//lace:export
+func LoadLibFromPath(env *Env, libnamev Symbol, pathnamev String) (Object, error) {
+	// Sometimes we load namespaces without telling the clojure code,
+	// so see if it's already loaded and if so, use it.
+
+	if env.FindNamespace(libnamev) != nil {
+		return NIL, nil
+	}
+
+	libname := libnamev.Name()
+	pathname := pathnamev.S
+
+	cp := env.classPath.Value
+	cpvec, err := AssertVector(env, cp, "*classpath* must be a Vector, not a "+cp.GetType().Name())
+	if err != nil {
+		return nil, err
+	}
+
+	count := cpvec.Count()
+	var f *os.File
+	var canonicalErr error
+	var filename string
+	for i := 0; i < count; i++ {
+		elem := cpvec.at(i)
+		cpelem, err := AssertString(env, elem, "*classpath* must contain only Strings, not a "+elem.GetType().Name()+" (at element "+strconv.Itoa(i)+")")
+		if err != nil {
+			return nil, err
+		}
+		s := cpelem.S
+		if s == "" {
+			filename = pathname
+		} else {
+			filename = filepath.Join(s, filepath.Join(strings.Split(libname, ".")...)) + ".clj" // could cache inner join....
+		}
+
+		f, err = os.Open(filename)
+		if err == nil {
+			canonicalErr = nil
+			break
+		}
+		if s == "" {
+			canonicalErr = err
+		}
+	}
+	if canonicalErr != nil {
+		return nil, canonicalErr
+	}
+	if err != nil {
+		return nil, errors.Wrapf(err, "error attempting to open: %s", filename)
+	}
+	if filename == "" {
+		return nil, Errorf(env, "unable to find path for library: %s", libname)
+	}
+	reader := NewReader(bufio.NewReader(f), filename)
+	err = ProcessReaderFromEval(env, reader, filename)
+	if err != nil {
+		return nil, err
+	}
+	return NIL, nil
+
 }
