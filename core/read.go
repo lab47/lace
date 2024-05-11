@@ -1128,7 +1128,7 @@ func readTagged(env *Env, reader *Reader) (Object, error) {
 
 	switch s := obj.(type) {
 	case Symbol:
-		readersVar, ok := env.CoreNamespace.mappings[criticalSymbols.defaultDataReaders.name]
+		readersVar, ok := env.CoreNamespace.LookupVar(criticalSymbols.defaultDataReaders.name)
 		if !ok {
 			return handleNoReaderError(env, reader, s)
 		}
@@ -1283,7 +1283,7 @@ func readNamespacedMap(env *Env, reader *Reader) (Object, error) {
 			}
 			ns := env.CurrentNamespace().aliases[sym.name]
 			if ns == nil {
-				ns = env.Namespaces[sym.name]
+				ns = env.FindNamespace(sym)
 			}
 			if ns == nil {
 				return nil, MakeReadError3(env, reader, "Unknown auto-resolved namespace alias", sym)

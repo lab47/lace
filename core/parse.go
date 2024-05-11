@@ -445,18 +445,6 @@ func isIgnoredUnusedNamespace(ns *Namespace) bool {
 	return WARNINGS.ignoredUnusedNamespaces.Has(ns.Name)
 }
 
-func ResetUsage(env *Env) {
-	for _, ns := range env.Namespaces {
-		if ns == env.CoreNamespace {
-			continue
-		}
-		ns.isUsed = true
-		for _, vr := range ns.mappings {
-			vr.isUsed = true
-		}
-	}
-}
-
 func isEntryPointNs(ns *Namespace) bool {
 	return WARNINGS.entryPoints.Has(ns.Name)
 }
@@ -512,57 +500,6 @@ func isEntryPointVar(vr *Var) bool {
 		name: vr.name.name,
 	}
 	return WARNINGS.entryPoints.Has(sym)
-}
-
-func WarnOnGloballyUnusedVars(env *Env) {
-	var names []string
-	positions := make(map[string]Position)
-
-	for _, ns := range env.Namespaces {
-		if ns == env.CoreNamespace {
-			continue
-		}
-		for _, vr := range ns.mappings {
-			if vr.ns == ns && !vr.isGloballyUsed && !vr.isPrivate && !isRecordConstructor(vr.name) && !isEntryPointVar(vr) {
-				pos := vr.GetInfo()
-				if pos != nil {
-					varName := vr.Name()
-					names = append(names, varName)
-					positions[varName] = pos.Position
-				}
-			}
-		}
-	}
-
-	sort.Strings(names)
-	for _, name := range names {
-		printParseWarning(positions[name], "globally unused var "+name)
-	}
-}
-
-func WarnOnUnusedVars(env *Env) {
-	var names []string
-	positions := make(map[string]Position)
-
-	for _, ns := range env.Namespaces {
-		if ns == env.CoreNamespace {
-			continue
-		}
-		for _, vr := range ns.mappings {
-			if vr.ns == ns && !vr.isUsed && vr.isPrivate {
-				pos := vr.GetInfo()
-				if pos != nil {
-					names = append(names, vr.name.name)
-					positions[vr.name.name] = pos.Position
-				}
-			}
-		}
-	}
-
-	sort.Strings(names)
-	for _, name := range names {
-		printParseWarning(positions[name], "unused var "+name)
-	}
 }
 
 func NewLiteralExpr(obj Object) *LiteralExpr {

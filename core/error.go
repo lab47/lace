@@ -364,6 +364,10 @@ func (env *Env) populateStackTrace(err error) *EvalError {
 		ts = slices.Clone(env.treeEvalStack)
 	}
 
+	if env.Engine == nil {
+		return ee
+	}
+
 	ee.stackTrace = &VMStacktrace{
 		upper:      err,
 		StackTrace: env.Engine.makeStackTrace(),

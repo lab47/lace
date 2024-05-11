@@ -164,18 +164,18 @@ func makeCompleter(env *Env) func(line string, pos int) (head string, c []string
 			return
 		}
 
-		for k := range ns.Mappings() {
+		for _, k := range ns.VarNames() {
 			if strings.HasPrefix(k, prefix) {
 				c = append(c, k)
 			}
 		}
 		if addNamespaces {
-			for k := range env.Namespaces {
+			for _, k := range env.AllNamespaces() {
 				if strings.HasPrefix(k, prefix) {
 					c = append(c, k)
 				}
 			}
-			for k := range ns.Aliases() {
+			for _, k := range ns.AliasNames() {
 				if strings.HasPrefix(k, prefix) {
 					c = append(c, k)
 				}

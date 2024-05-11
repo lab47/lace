@@ -179,40 +179,35 @@ func (env *Env) SetCurrentNamespace(ns *Namespace) {
 }
 
 func (env *Env) EnsureNamespace(sym Symbol) *Namespace {
-	if sym.ns != "" {
-		panic(env.NewError("Namespace's name cannot be qualified: " + sym.String()))
+	ns, err := env.InitNamespace(sym)
+	if err != nil {
+		panic(WrapError(env, err))
 	}
-	var err error
-	if env.Namespaces[sym.name] == nil {
-		env.Namespaces[sym.name], err = NewNamespace(env, sym)
-		if err != nil {
-			panic(err)
-		}
-		if setup, ok := builtinNSSetup[sym.name]; ok {
-			err := setup(env)
-			if err != nil {
-				panic(err)
-			}
-		} else {
-			_, err = PopulateNativeNamespaceToEnv(env, sym.name)
-			if err != nil {
-				panic(err)
-			}
-		}
-	}
-	return env.Namespaces[sym.name]
+
+	return ns
 }
 
 func (env *Env) InitNamespace(sym Symbol) (*Namespace, error) {
 	if sym.ns != "" {
 		return nil, env.NewError("Namespace's name cannot be qualified: " + sym.String())
 	}
+
+	env.mu.Lock()
+	ns := env.Namespaces[sym.name]
+	env.mu.Unlock()
+
 	var err error
-	if env.Namespaces[sym.name] == nil {
-		env.Namespaces[sym.name], err = NewNamespace(env, sym)
+
+	if ns == nil {
+		ns, err = NewNamespace(env, sym)
 		if err != nil {
 			return nil, err
 		}
+
+		env.mu.Lock()
+		env.Namespaces[sym.name] = ns
+		env.mu.Unlock()
+
 		if setup, ok := builtinNSSetup[sym.name]; ok {
 			err := setup(env)
 			if err != nil {
@@ -225,21 +220,8 @@ func (env *Env) InitNamespace(sym Symbol) (*Namespace, error) {
 			}
 		}
 	}
-	return env.Namespaces[sym.name], nil
-}
 
-func (env *Env) ensureNamespace(sym Symbol) *Namespace {
-	if sym.ns != "" {
-		panic(env.NewError("Namespace's name cannot be qualified: " + sym.String()))
-	}
-	var err error
-	if env.Namespaces[sym.name] == nil {
-		env.Namespaces[sym.name], err = NewNamespace(env, sym)
-		if err != nil {
-			panic(err)
-		}
-	}
-	return env.Namespaces[sym.name]
+	return ns, nil
 }
 
 func (env *Env) NamespaceFor(ns *Namespace, s Symbol) *Namespace {
@@ -247,9 +229,14 @@ func (env *Env) NamespaceFor(ns *Namespace, s Symbol) *Namespace {
 	if s.ns == "" {
 		res = ns
 	} else {
+		ns.mu.Lock()
 		res = ns.aliases[s.ns]
+		ns.mu.Unlock()
+
 		if res == nil {
+			env.mu.Lock()
 			res = env.Namespaces[s.ns]
+			env.mu.Unlock()
 		}
 	}
 	if res != nil {
@@ -263,7 +250,7 @@ func (env *Env) ResolveIn(n *Namespace, s Symbol) (*Var, bool) {
 	if ns == nil {
 		return nil, false
 	}
-	if v, ok := ns.mappings[s.name]; ok {
+	if v, ok := ns.LookupVar(s.name); ok {
 		return v, true
 	}
 	if s.Is(env.IN_NS_VAR.name) {
@@ -285,11 +272,15 @@ func (env *Env) MakeVar(s Symbol) (*Var, error) {
 	return ns.Intern(env, s)
 }
 
-func (env *Env) FindNamespace(s Symbol) *Namespace {
+func (env *Env) LookupNamespace(s Symbol) (*Namespace, bool) {
 	if s.ns != "" {
-		return nil
+		return nil, false
 	}
+
+	env.mu.Lock()
 	ns := env.Namespaces[s.name]
+	env.mu.Unlock()
+
 	if ns != nil {
 		ns.MaybeLazy(env, "FindNameSpace")
 	} else {
@@ -300,14 +291,16 @@ func (env *Env) FindNamespace(s Symbol) *Namespace {
 		} else {
 			_, err := PopulateNativeNamespaceToEnv(env, s.name)
 			if err != nil {
-				panic(err)
+				panic(WrapError(env, err))
 			}
 		}
 	}
 
-	//if ns == nil {
-	//panic("nope " + *s.name)
-	//}
+	return ns, ns == nil
+}
+
+func (env *Env) FindNamespace(s Symbol) *Namespace {
+	ns, _ := env.LookupNamespace(s)
 	return ns
 }
 
@@ -315,6 +308,10 @@ func (env *Env) RemoveNamespace(s Symbol) *Namespace {
 	if s.ns != "" {
 		return nil
 	}
+
+	env.mu.Lock()
+	defer env.mu.Unlock()
+
 	if s.Is(criticalSymbols.lace_core) {
 		panic(env.NewError("Cannot remove core namespace"))
 	}
@@ -348,7 +345,7 @@ func (env *Env) ResolveSymbol(s Symbol) (Symbol, error) {
 			ns:   ns.Name.name,
 		}, nil
 	}
-	vr, ok := currentNs.mappings[s.name]
+	vr, ok := currentNs.LookupVar(s.name)
 	if !ok {
 		return Symbol{
 			name: s.name,

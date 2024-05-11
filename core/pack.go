@@ -707,8 +707,8 @@ func unpackVar(env *Env, p []byte, header *PackHeader) (*Var, []byte, error) {
 		panic("unknown namespace: " + nsName.name)
 	}
 
-	vr := ns.mappings[name.name]
-	if vr == nil {
+	vr, ok := ns.LookupVar(name.name)
+	if !ok {
 		return nil, nil, env.NewError("Error unpacking var: cannot find var " + nsName.name + "/" + name.name)
 	}
 	return vr, p, nil

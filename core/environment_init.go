@@ -26,7 +26,14 @@ func NewEnv() (*Env, error) {
 		return nil, err
 	}
 
-	res.CoreNamespace = res.ensureNamespace(criticalSymbols.lace_core)
+	coreNs, err := NewNamespace(res, criticalSymbols.lace_core)
+	if err != nil {
+		return nil, err
+	}
+
+	res.Namespaces[criticalSymbols.lace_core.name] = coreNs
+
+	res.CoreNamespace = coreNs
 	res.CoreNamespace.core = true
 	res.CoreNamespace.meta = MakeMeta(nil, "Core library of Lace.", "1.0")
 	res.NS_VAR, err = res.CoreNamespace.Intern(res, MakeSymbol("ns"))

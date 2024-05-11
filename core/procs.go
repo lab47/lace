@@ -2253,10 +2253,7 @@ var procAllNamespaces = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 
-	s := make([]Object, 0, len(env.Namespaces))
-	for _, ns := range env.Namespaces {
-		s = append(s, ns)
-	}
+	s := env.AllNamespaceValues()
 	return &ArraySeq{arr: s}, nil
 }
 
@@ -2277,16 +2274,12 @@ var procNamespaceMap = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 
-	r := &ArrayMap{}
-
 	ns, err := EnsureNamespace(env, args, 0)
 	if err != nil {
 		return nil, err
 	}
-	for k, v := range ns.mappings {
-		r.Add(env, MakeSymbol(k), v)
-	}
-	return r, nil
+
+	return ns.MappingsAsMap(env), nil
 }
 
 var procNamespaceUnmap = func(env *Env, args []Object) (Object, error) {
@@ -2305,7 +2298,7 @@ var procNamespaceUnmap = func(env *Env, args []Object) (Object, error) {
 	if sym.ns != "" {
 		return nil, env.NewError("Can't unintern namespace-qualified symbol")
 	}
-	delete(ns.mappings, sym.name)
+	ns.DeleteVar(sym.name)
 	return NIL, nil
 }
 
@@ -3347,30 +3340,6 @@ func processInEnvInNS(env *Env, ns *Namespace, data []byte) error {
 	return nil
 }
 
-/*
-func setCoreNamespaces(env *Env) error {
-	ns := env.CoreNamespace
-	ns.MaybeLazy(env, "lace.core")
-
-	var set *MapSet
-
-	// Add 'lace.core to *loaded-libs*, now that it's loaded.
-	vr := ns.Resolve("*loaded-libs*")
-	if err := Cast(env, vr.Value, &set); err != nil {
-		return err
-	}
-	v, err := set.Conj(env, ns.Name)
-	if err != nil {
-		return err
-	}
-	if err := Cast(env, v, &set); err != nil {
-		return err
-	}
-	vr.Value = set
-	return nil
-}
-*/
-
 var procIsNamespaceInitialized = func(env *Env, args []Object) (Object, error) {
 	if err := CheckArity(env, args, 1, 1); err != nil {
 		return nil, err
@@ -3385,7 +3354,7 @@ var procIsNamespaceInitialized = func(env *Env, args []Object) (Object, error) {
 		return nil, env.NewError("Can't ask for namespace info on namespace-qualified symbol")
 	}
 	// First look for registered (e.g. std) libs
-	ns, found := env.Namespaces[sym.name]
+	ns, found := env.LookupNamespace(sym)
 	return MakeBoolean(found && ns.Lazy == nil), nil
 }
 
@@ -3633,6 +3602,9 @@ func ReadConfig(env *Env, filename string, workingDir string) error {
 }
 
 func removeLaceNamespaces(env *Env) {
+	env.mu.Lock()
+	defer env.mu.Unlock()
+
 	for k, ns := range env.Namespaces {
 		if ns != env.CoreNamespace && strings.HasPrefix(k, "lace.") {
 			delete(env.Namespaces, k)
@@ -3641,6 +3613,9 @@ func removeLaceNamespaces(env *Env) {
 }
 
 func markLaceNamespacesAsUsed(env *Env) {
+	env.mu.Lock()
+	defer env.mu.Unlock()
+
 	for k, ns := range env.Namespaces {
 		if ns != env.CoreNamespace && strings.HasPrefix(k, "lace.") {
 			ns.isUsed = true
