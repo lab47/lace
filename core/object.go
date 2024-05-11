@@ -235,10 +235,6 @@ type (
 		code           *Code
 		importedUpvals []*NamedPair
 	}
-	ExInfo struct {
-		ArrayMap
-		rt *Runtime
-	}
 	RecurBindings []Object
 	Delay         struct {
 		fn    Callable
@@ -588,8 +584,7 @@ func MakeKeyword(nsname string) Keyword {
 }
 
 func ErrorArity(env *Env, n int) error {
-	name := env.RT.topName()
-	return env.RT.NewError(fmt.Sprintf("Wrong number of args (%d) passed to %s", n, name))
+	return env.NewError(fmt.Sprintf("Wrong number of args (%d)", n))
 }
 
 func rangeString(min, max int) string {
@@ -609,13 +604,11 @@ func rangeString(min, max int) string {
 }
 
 func ErrorArityMinMax(env *Env, n, min, max int) error {
-	name := env.RT.topName()
-	return env.RT.NewError(fmt.Sprintf("Wrong number of args (%d) passed to %s; expects %s", n, name, rangeString(min, max)))
+	return env.NewError(fmt.Sprintf("Wrong number of args (%d); expects %s", n, rangeString(min, max)))
 }
 
 func ReturnArityMinMax(env *Env, n, min, max int) error {
-	name := env.RT.topName()
-	return env.RT.NewError(fmt.Sprintf("Wrong number of args (%d) passed to %s; expects %s", n, name, rangeString(min, max)))
+	return env.NewError(fmt.Sprintf("Wrong number of args (%d); expects %s", n, rangeString(min, max)))
 }
 
 func CheckArity(env *Env, args []Object, min int, max int) error {
@@ -642,7 +635,7 @@ func getMap(env *Env, k Object, args []Object) (Object, error) {
 			return v, nil
 		}
 	default:
-		return nil, env.RT.NewArgTypeError(1, args[0], "Map")
+		return nil, env.NewArgTypeError(1, args[0], "Map")
 	}
 	if len(args) == 2 {
 		return args[1], nil
@@ -842,65 +835,6 @@ func (rb RecurBindings) Hash(env *Env) (uint32, error) {
 	return 0, nil
 }
 
-func (exInfo *ExInfo) ToString(env *Env, escape bool) (string, error) {
-	return exInfo.Error(), nil
-}
-
-func (exInfo *ExInfo) Equals(env *Env, other interface{}) bool {
-	return exInfo == other
-}
-
-func (exInfo *ExInfo) GetType() *Type {
-	return TYPE.ExInfo
-}
-
-func (exInfo *ExInfo) Hash(env *Env) (uint32, error) {
-	return HashPtr(uintptr(unsafe.Pointer(exInfo))), nil
-}
-
-func (exInfo *ExInfo) Message() Object {
-	if ok, res := exInfo.GetEqu(criticalKeywords.message); ok {
-		return res
-	}
-	return NIL
-}
-
-func (exInfo *ExInfo) Error() string {
-	var pos Position
-	prefix := "Exception"
-
-	_, data := exInfo.GetEqu(criticalKeywords.data)
-	dm, ok := data.(Map)
-	if ok {
-		ok, form := dm.GetEqu(criticalKeywords.form)
-		if ok {
-			if form.GetInfo() != nil {
-				pos = form.GetInfo().Pos()
-			}
-		}
-		if ok, pr := dm.GetEqu(criticalKeywords._prefix); ok {
-			s, err := pr.ToString(nil, false)
-			if err == nil {
-				prefix = s
-			}
-		}
-	}
-	_, msg := exInfo.GetEqu(criticalKeywords.message)
-	var strMsg string
-
-	if sv, ok := msg.(String); ok {
-		strMsg = sv.S
-	} else {
-		strMsg = "no proper message"
-	}
-
-	if len(exInfo.rt.callstack.frames) > 0 && !LINTER_MODE {
-		return fmt.Sprintf("%s:%d:%d: %s: %s\nStacktrace:\n%s", pos.Filename(), pos.startLine, pos.startColumn, prefix, strMsg, exInfo.rt.stacktrace())
-	} else {
-		return fmt.Sprintf("%s:%d:%d: %s: %s", pos.Filename(), pos.startLine, pos.startColumn, prefix, strMsg)
-	}
-}
-
 func (fn *Fn) ToString(env *Env, escape bool) (string, error) {
 	return "#object[Fn]", nil
 }
@@ -942,60 +876,12 @@ func (fn *Fn) Hash(env *Env) (uint32, error) {
 }
 
 func (fn *Fn) Call(env *Env, args []Object) (Object, error) {
-	if env.Engine != nil {
-		obj, err := env.Engine.RunWithArgs(env, fn, args)
-		if err != nil {
-			return nil, err
-		}
-
-		return obj, nil
+	obj, err := env.Engine.RunWithArgs(env, fn, args)
+	if err != nil {
+		return nil, err
 	}
 
-	return fn.CallTree(env, args)
-}
-
-func (fn *Fn) CallTree(env *Env, args []Object) (Object, error) {
-	min := math.MaxInt32
-	max := -1
-	for _, arity := range fn.fnExpr.arities {
-		a := len(arity.args)
-		if a == len(args) {
-			return evalLoop(env, arity.body, fn.env.addFrame(args))
-		}
-		if min > a {
-			min = a
-		}
-		if max < a {
-			max = a
-		}
-	}
-	v := fn.fnExpr.variadic
-	if v == nil || len(args) < len(v.args)-1 {
-		if v != nil {
-			min = len(v.args)
-			max = math.MaxInt32
-		}
-		c := len(args)
-		if fn.isMacro {
-			c -= 2
-			min -= 2
-			if max != math.MaxInt32 {
-				max -= 2
-			}
-		}
-
-		return nil, ErrorArityMinMax(env, c, min, max)
-	}
-	var restArgs Object = NIL
-	if len(v.args)-1 < len(args) {
-		restArgs = &ArraySeq{arr: args, index: len(v.args) - 1}
-	}
-	vargs := make([]Object, len(v.args))
-	for i := 0; i < len(vargs)-1; i++ {
-		vargs[i] = args[i]
-	}
-	vargs[len(vargs)-1] = restArgs
-	return evalLoop(env, v.body, fn.env.addFrame(vargs))
+	return obj, nil
 }
 
 func compare(env *Env, c Callable, a, b Object) (int, error) {
@@ -1916,7 +1802,7 @@ func (s String) Seq() Seq {
 
 func (s String) Nth(env *Env, i int) (Object, error) {
 	if i < 0 {
-		return nil, env.RT.NewError(fmt.Sprintf("Negative index: %d", i))
+		return nil, env.NewError(fmt.Sprintf("Negative index: %d", i))
 	}
 	j := 0
 	var r rune
@@ -1927,7 +1813,7 @@ func (s String) Nth(env *Env, i int) (Object, error) {
 		}
 	}
 
-	return nil, env.RT.NewError(fmt.Sprintf("Index %d exceeds string's length %d", i, j+1))
+	return nil, env.NewError(fmt.Sprintf("Index %d exceeds string's length %d", i, j+1))
 }
 
 func (s String) TryNth(env *Env, i int, d Object) (Object, error) {

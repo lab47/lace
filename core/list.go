@@ -113,7 +113,7 @@ func (list *List) Peek(env *Env) (Object, error) {
 
 func (list *List) Pop(env *Env) (Stack, error) {
 	if list.count == 0 {
-		return nil, env.RT.NewError("Can't pop empty list")
+		return nil, env.NewError("Can't pop empty list")
 	}
 	return list.rest, nil
 }

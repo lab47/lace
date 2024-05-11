@@ -358,7 +358,7 @@ func (v *Vector) popTail(level uint, node []interface{}) []interface{} {
 
 func (v *Vector) Pop(env *Env) (Stack, error) {
 	if v.count == 0 {
-		return nil, env.RT.NewError("Can't pop empty vector")
+		return nil, env.NewError("Can't pop empty vector")
 	}
 	if v.count == 1 {
 		return EmptyVectorWithMeta(v.meta), nil

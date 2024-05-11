@@ -12,7 +12,7 @@ func init() {
 		Types: map[string]pkgreflect.Type{},
 
 		Functions: map[string]pkgreflect.FuncValue{
-			"ConcatSimple": {Doc: "Concatinate N sequences together", Args: []pkgreflect.Arg{{Name: "args", Tag: "Args"}}, Tag: "any", Value: reflect.ValueOf(WrapToProc2_2(ConcatSimple))},
+			"ConcatSimple": {Doc: "Concatinate N sequences together", Args: []pkgreflect.Arg{{Name: "args", Tag: "[]Object"}}, Tag: "any", Value: reflect.ValueOf(WrapToProc2_2(ConcatSimple))},
 
 			"Conj": {Doc: "Create a new Sequence by combine the value with the collection.", Args: []pkgreflect.Arg{{Name: "col", Tag: "Object"}, {Name: "val", Tag: "Object"}}, Tag: "any", Value: reflect.ValueOf(WrapToProc3_2(Conj))},
 
@@ -22,7 +22,7 @@ func init() {
 
 			"First": {Doc: "Return the first element in a Seq", Args: []pkgreflect.Arg{{Name: "s", Tag: "Seqable"}}, Tag: "any", Value: reflect.ValueOf(WrapToProc2_2(First))},
 
-			"List": {Doc: "Create a new lace List from the given arguments", Args: []pkgreflect.Arg{{Name: "args", Tag: "Args"}}, Tag: "any", Value: reflect.ValueOf(WrapToProc2_2(MakeList))},
+			"List": {Doc: "Create a new lace List from the given arguments", Args: []pkgreflect.Arg{{Name: "args", Tag: "[]Object"}}, Tag: "any", Value: reflect.ValueOf(WrapToProc2_2(MakeList))},
 
 			"LoadLibFromPath": {Doc: "Attempt to load a given lib from a given path.", Args: []pkgreflect.Arg{{Name: "libnamev", Tag: "Symbol"}, {Name: "pathnamev", Tag: "String"}}, Tag: "any", Value: reflect.ValueOf(WrapToProc3_2(LoadLibFromPath))},
 

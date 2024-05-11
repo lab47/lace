@@ -114,7 +114,7 @@ func processReplCommand(env *Env, reader *Reader, parseContext *ParseContext, re
 		return false, nil
 	}
 
-	res, err := TopEval(env, expr, nil)
+	res, err := Eval(env, expr, nil)
 	if err != nil {
 		switch r := err.(type) {
 		case *ExitError:

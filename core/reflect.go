@@ -108,12 +108,12 @@ func structPut(env *Env, r *ReflectValue, name string, fval Object) error {
 	}
 
 	if val.Kind() != reflect.Struct {
-		return env.RT.NewError(fmt.Sprintf("value must be a struct, is a %T", val.Interface()))
+		return env.NewError(fmt.Sprintf("value must be a struct, is a %T", val.Interface()))
 	}
 
 	field := val.FieldByName(name)
 	if !field.IsValid() {
-		return env.RT.NewError(fmt.Sprintf("unknown struct field %s", name))
+		return env.NewError(fmt.Sprintf("unknown struct field %s", name))
 	}
 
 	var (
@@ -124,7 +124,7 @@ func structPut(env *Env, r *ReflectValue, name string, fval Object) error {
 	if field.Type().Kind() == reflect.Func {
 		call, ok := fval.(Callable)
 		if !ok {
-			return env.RT.TypeError(TCContext{Context: "struct value"}, fval, "Callable")
+			return env.TypeError(TCContext{Context: "struct value"}, fval, "Callable")
 		}
 		frv = convReg.makeFuncConvertIn(env, call, field.Type())
 	} else {
@@ -137,7 +137,7 @@ func structPut(env *Env, r *ReflectValue, name string, fval Object) error {
 	}
 
 	if !frv.Type().AssignableTo(field.Type()) {
-		return env.RT.NewError(
+		return env.NewError(
 			fmt.Sprintf("needed type %s, had %T", field.Type(), fval))
 	}
 
@@ -154,12 +154,12 @@ func structGet(env *Env, r *ReflectValue, name string) (Object, error) {
 	}
 
 	if val.Kind() != reflect.Struct {
-		return nil, env.RT.NewError(fmt.Sprintf("value must be a struct, is a %T", val.Interface()))
+		return nil, env.NewError(fmt.Sprintf("value must be a struct, is a %T", val.Interface()))
 	}
 
 	field := val.FieldByName(name)
 	if !field.IsValid() {
-		return nil, env.RT.NewError(fmt.Sprintf("unknown struct field %s", name))
+		return nil, env.NewError(fmt.Sprintf("unknown struct field %s", name))
 	}
 
 	rt := field.Type()
@@ -180,7 +180,7 @@ func (r *ReflectValue) ToString(env *Env, escape bool) (string, error) {
 		return fmt.Sprintf("#go.%s[%s]", t.Kind(), r.val.String()), nil
 	}
 
-	return fmt.Sprintf("#%s.%s[%s]", pkg, name, r.val), nil
+	return fmt.Sprintf("#%s.%s[%p]", pkg, name, r.val.Interface()), nil
 }
 
 func (r *ReflectValue) Hash(env *Env) (uint32, error) {
@@ -283,7 +283,7 @@ func castObjectToRef(env *Env, typ reflect.Type, obj Object) (Object, error) {
 		}
 	}
 
-	return nil, env.RT.NewError("unable to cast to type: " + typ.Name())
+	return nil, env.NewError("unable to cast to type: " + typ.Name())
 }
 
 func makePtr(t reflect.Type) reflect.Value {
@@ -346,12 +346,12 @@ func makeStructType(env *Env, m Map) (reflect.Type, error) {
 		case String:
 			f.Name = sv.S
 		default:
-			return nil, env.RT.NewError("name must be symbol/keyword/string only")
+			return nil, env.NewError("name must be symbol/keyword/string only")
 		}
 
 		vt, ok := p.Value.(*ReflectType)
 		if !ok {
-			return nil, env.RT.NewError("value must be a ReflectType")
+			return nil, env.NewError("value must be a ReflectType")
 		}
 
 		f.Type = vt.typ

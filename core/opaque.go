@@ -45,7 +45,7 @@ func MakeOpaque[T any](f T) *Opaque[T] {
 func ExtractOpaque[T any](env *Env, obj Object, dest *T) error {
 	box, ok := obj.(*Opaque[T])
 	if !ok {
-		return env.RT.NewError("expected typed opaque, was not")
+		return env.NewError("expected typed opaque, was not")
 	}
 
 	*dest = box.Value

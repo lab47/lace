@@ -48,6 +48,6 @@ func (iow *IOWriter) Close(env *Env) error {
 	if c, ok := iow.Writer.(io.Closer); ok {
 		return c.Close()
 	} else {
-		return env.RT.NewError("Object is not closable: #object[IOWriter]")
+		return env.NewError("Object is not closable: #object[IOWriter]")
 	}
 }

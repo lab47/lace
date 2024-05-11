@@ -3,13 +3,19 @@
 
 package core
 
-import "fmt"
+import (
+	"context"
+	"fmt"
+)
 
 func NewEnv() (*Env, error) {
 	features := EmptySet()
 	res := &Env{
-		Namespaces: make(map[string]*Namespace),
-		Features:   features,
+		State: &State{
+			Namespaces: make(map[string]*Namespace),
+			Features:   features,
+		},
+		Context: context.Background(),
 	}
 	_, err := features.Add(res, MakeKeyword("default"))
 	if err != nil {
@@ -55,6 +61,14 @@ func NewEnv() (*Env, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	vr, err := res.CoreNamespace.Intern(res, MakeSymbol("*context*"))
+	if err != nil {
+		return nil, err
+	}
+
+	vr.Value = MakeReflectValue(res.Context)
+
 	res.version, err = res.CoreNamespace.InternVar(res, "*lace-version*", versionMap(res),
 		MakeMeta(nil, `The version info for Clojure core, as a map containing :major :minor
 			:incremental and :qualifier keys. Feature releases may increment
@@ -93,9 +107,6 @@ func NewEnv() (*Env, error) {
 	userNs := res.EnsureNamespace(MakeSymbol("user"))
 
 	res.SetCurrentNamespace(userNs)
-	res.RT = &Runtime{
-		callstack: &Callstack{frames: make([]Frame, 1, 50)},
-	}
 
 	err = createCoreFns(res)
 	if err != nil {

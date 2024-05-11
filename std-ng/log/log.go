@@ -20,8 +20,8 @@ func Setup(env *core.Env) error {
 	b.Defn(&core.DefnInfo{
 		Name: "default",
 		Doc:  "Returns the default logger object",
-		Fn: func() core.Object {
-			return core.MakeOpaque(log)
+		Fn: func() logger.Logger {
+			return log
 		},
 	})
 
@@ -182,11 +182,11 @@ func emit(env *core.Env, logobj core.Object, level core.Keyword, message string,
 					}
 					args = append(args, a, b)
 				} else {
-					return env.RT.NewError("key value must be keyword, symbol, or string")
+					return env.NewError("key value must be keyword, symbol, or string")
 				}
 				expectKey = true
 			default:
-				return env.RT.NewError("key value must be keyword, symbol, or string")
+				return env.NewError("key value must be keyword, symbol, or string")
 			}
 		} else {
 			co, err := convertObj(env, r)

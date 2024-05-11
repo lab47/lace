@@ -153,7 +153,7 @@ func processReplCommand(env *core.Env, reader *core.Reader, parseContext *core.P
 		}
 	*/
 
-	res, err := core.TopEval(env, expr, nil)
+	res, err := core.Eval(env, expr, nil)
 	if err != nil {
 		if _, ok := err.(*core.ExitError); ok {
 			return true, err
@@ -263,6 +263,113 @@ func notOption(arg string) bool {
 
 var runningProfile interface {
 	Stop()
+}
+
+func MainIn(nsName string) {
+	env, err := core.NewEnv()
+	if err != nil {
+		fmt.Printf("unable to initialize environment: %s", err)
+		os.Exit(1)
+	}
+
+	env.InitEnv(core.Stdin, core.Stdout, core.Stderr, os.Args[1:])
+
+	fs := pflag.NewFlagSet("lace", pflag.ExitOnError)
+	version := fs.BoolP("version", "v", false, "report the version number")
+	cpuProfile := fs.String("cpuprofile", "", "Write CPU profile info to the specified path")
+	cpuProfileRate := fs.Int("cpuprofile-rate", 100, "Specify the sampling rate of the cpu profiler")
+	memProfile := fs.String("memprofile", "", "Write Memory profile info to the specified path")
+	debugBytecode := fs.Bool("debug-bytecode", false, "Display bytecode for functions are it is generated")
+
+	if err := fs.Parse(os.Args); err != nil {
+		fmt.Printf("error parsing arguments: %s\n", err)
+		os.Exit(1)
+	}
+
+	env.SetEnvArgs(fs.Args()[1:])
+
+	env.SetClassPath(".")
+
+	if *version {
+		println(core.VERSION)
+		return
+	}
+
+	/* Set up profiling. */
+
+	cpuProfileName := *cpuProfile
+	memProfileName := *memProfile
+
+	var teardown []func()
+
+	core.SetExit(func(code int) {
+		for _, x := range teardown {
+			x()
+		}
+
+		finish(memProfileName)
+		os.Exit(code)
+	})
+
+	env.DebugBytecode = *debugBytecode
+
+	if cpuProfileName != "" {
+		f, err := os.Create(cpuProfileName)
+		if err != nil {
+			fmt.Fprintf(core.Stderr, "Error: Could not create CPU profile `%s': %v\n",
+				cpuProfileName, err)
+			cpuProfileName = ""
+			core.Exit(96)
+		}
+		runtime.SetCPUProfileRate(*cpuProfileRate)
+		err = pprof.StartCPUProfile(f)
+		if err != nil {
+			panic(err)
+		}
+		teardown = append(teardown, pprof.StopCPUProfile)
+		fmt.Fprintf(core.Stderr, "Profiling started at rate=%d. See file `%s'.\n",
+			cpuProfileRate, cpuProfileName)
+		defer finish(memProfileName)
+	} else if memProfileName != "" {
+		defer finish(memProfileName)
+	}
+
+	_, err = core.Load(env, nsName)
+	if err != nil {
+		core.DisplayError(env, err)
+		os.Exit(1)
+	}
+
+	ns := env.FindNamespace(core.MakeSymbol(nsName))
+	if ns == nil {
+		fmt.Fprintf(core.Stderr, "Unable to find namespace to executed main: %s", nsName)
+		os.Exit(1)
+	}
+
+	vr, err := ns.Intern(env, core.MakeSymbol("main"))
+	if err != nil {
+		fmt.Fprintf(core.Stderr, "Unable to find %s/main", nsName)
+		os.Exit(1)
+	}
+
+	if vr.Value == nil || vr.Value == core.NIL {
+		fmt.Fprintf(core.Stderr, "%s/main is nil", nsName)
+		os.Exit(1)
+	}
+
+	cl, ok := vr.Value.(core.Callable)
+	if !ok {
+		fmt.Fprintf(core.Stderr, "%s/main is not callable", nsName)
+		os.Exit(1)
+	}
+
+	_, err = cl.Call(env, []core.Object{})
+	if err != nil {
+		core.DisplayError(env, err)
+		os.Exit(1)
+	}
+
+	os.Exit(0)
 }
 
 func Main() {

@@ -344,7 +344,7 @@ func unpackObject(env *Env, p []byte, header *PackHeader) (Object, []byte, error
 		}
 		return obj, p[size:], nil
 	default:
-		return nil, nil, env.RT.NewError(fmt.Sprintf("Unknown object tag: %d", p[0]))
+		return nil, nil, env.NewError(fmt.Sprintf("Unknown object tag: %d", p[0]))
 	}
 }
 
@@ -709,7 +709,7 @@ func unpackVar(env *Env, p []byte, header *PackHeader) (*Var, []byte, error) {
 
 	vr := ns.mappings[name.name]
 	if vr == nil {
-		return nil, nil, env.RT.NewError("Error unpacking var: cannot find var " + nsName.name + "/" + name.name)
+		return nil, nil, env.NewError("Error unpacking var: cannot find var " + nsName.name + "/" + name.name)
 	}
 	return vr, p, nil
 }
@@ -1126,6 +1126,6 @@ func UnpackExpr(env *Env, p []byte, header *PackHeader) (Expr, []byte, error) {
 	case BINDING_EXPR:
 		return unpackBindingExpr(env, p, header)
 	default:
-		return nil, nil, env.RT.NewError(fmt.Sprintf("Unknown pack tag: %d", p[0]))
+		return nil, nil, env.NewError(fmt.Sprintf("Unknown pack tag: %d", p[0]))
 	}
 }

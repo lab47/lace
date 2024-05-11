@@ -165,9 +165,9 @@
 
 (def
   ^{:arglists '([msg map] [msg map cause])
-    :doc "Create an instance of ExInfo, an Error that carries a map of additional data."
+    :doc "Create an instance of EvalError, an Error that carries a map of additional data."
     :added "1.0"
-    :tag ExInfo}
+    :tag EvalError}
   ex-info ex-info__)
 
 (def
@@ -2906,23 +2906,23 @@
   (apply println-err xs))
 
 (defn ex-data
-  "Returns exception data (a map) if ex is an ExInfo.
+  "Returns exception data (a map) if ex is an EvalError.
   Otherwise returns nil."
   {:added "1.0"}
   ^Map [ex]
-  (when (instance? ExInfo ex)
+  (when (instance? EvalError ex)
     (ex-data__ ex)))
 
 (defn ex-cause
-  "Returns the cause of ex if ex is an ExInfo.
+  "Returns the cause of ex if ex is an EvalError.
   Otherwise returns nil."
   {:added "1.0"}
   ^Error [ex]
-  (when (instance? ExInfo ex)
+  (when (instance? EvalError ex)
     (ex-cause__ ex)))
 
 (defn ex-message
-  "Returns the message attached to ex if ex is an ExInfo.
+  "Returns the message attached to ex if ex is an EvalError.
   Otherwise returns nil."
   {:added "1.0"}
   ^String [ex]
@@ -4521,15 +4521,7 @@
   Immediately returns a channel which will receive the result of the body when
   completed.
   If exception is thrown inside the body, it will be caught and re-thrown upon
-  reading from the returned channel.
-
-  Joker is single threaded and uses the GIL (Global Interpreter Lock) to make sure
-  only one goroutine (including the root one) executes at the same time.
-  However, channel operations and some I/O functions (lace.http/send, lace.os/sh*, lace.os/exec,
-  and lace.time/sleep) release the GIL and allow other goroutines to run.
-  So using goroutines only makes sense if you do I/O (specifically, calling the above functions)
-  inside them. Also, note that a goroutine may never have a chance to run if the root goroutine
-  (or another goroutine) doesn't do any I/O or channel operations (<! or >!)."
+  reading from the returned channel."
   {:added "1.0"}
   [& body]
   `(go__ (fn [] ~@body)))

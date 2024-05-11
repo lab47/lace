@@ -21,6 +21,7 @@ type GoImport struct {
 
 type Config struct {
 	Name      string     `yaml:"name"`
+	Main      string     `yaml:"main"`
 	GoImports []GoImport `yaml:"go-imports"`
 }
 
@@ -73,7 +74,7 @@ func (b *Builder) Run(ctx context.Context) error {
 		dest := filepath.Join(dir, fileCleanup.Replace(imp.Path)) + ".go"
 
 		b.log.Info("generating binding", "path", imp.Path, "name", name)
-		err = pkgreflect.Generate(imp.Path, name, b.dir, dest, "main", &pkgreflect.Match{})
+		err = pkgreflect.Generate(imp.Path, name, b.dir, dest, "main", &pkgreflect.Match{}, pkgreflect.GenOptions{})
 		if err != nil {
 			return err
 		}
@@ -96,7 +97,10 @@ func (b *Builder) Run(ctx context.Context) error {
 }
 
 func (b *Builder) writeMain(dir string) error {
-	data := []byte(fmt.Sprintf(`
+	var data []byte
+
+	if b.cfg.Main == "" {
+		data = []byte(fmt.Sprintf(`
 package main
 
 import "github.com/lab47/lace/cli"
@@ -107,6 +111,20 @@ func main() {
     cli.Main()
 }
     `, b.cfg.Name))
+	} else {
+		data = []byte(fmt.Sprintf(`
+package main
+
+import "github.com/lab47/lace/cli"
+
+var Program = "%s"
+
+func main() {
+    cli.MainIn(%q)
+}
+    `, b.cfg.Name, b.cfg.Main))
+
+	}
 
 	data, err := format.Source(data)
 	if err != nil {

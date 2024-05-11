@@ -1,161 +1,9 @@
 package core
 
 import (
-	"bytes"
 	"fmt"
 	"reflect"
-	"strings"
 )
-
-type (
-	Traceable interface {
-		Name() string
-		Pos() Position
-	}
-	Frame struct {
-		traceable Traceable
-		current   Position
-	}
-	Callstack struct {
-		frames []Frame
-	}
-	Runtime struct {
-		callstack *Callstack
-		// GIL         sync.Mutex
-		engine *Engine
-	}
-)
-
-func (rt *Runtime) clone() *Runtime {
-	return &Runtime{
-		callstack: rt.callstack.clone(),
-	}
-}
-
-func StubNewError(msg string) *EvalError {
-	res := &EvalError{
-		msg: msg,
-	}
-	return res
-}
-
-func (rt *Runtime) NewErrorFlushed(expr Expr, msg string) *EvalError {
-	rt.setTopPosition(expr.Pos())
-
-	res := &EvalError{
-		msg: msg,
-		rt:  rt.clone(),
-	}
-	return res
-}
-
-func (rt *Runtime) NewError(msg string) *EvalError {
-	res := &EvalError{
-		msg: msg,
-		rt:  rt.clone(),
-	}
-	return res
-}
-
-func StubNewArgTypeError(index int, obj Object, expectedType string) *EvalError {
-	return StubNewError(fmt.Sprintf("Arg[%d] of <<func_name>> must have type %s, got %s", index, expectedType, obj.GetType().Name()))
-}
-
-func TypeError[T any](env *Env, obj Object) *EvalError {
-	var t T
-	return env.RT.NewError(fmt.Sprintf("object must have type %T, got %s", t, obj.GetType().Name()))
-}
-
-type TCContext struct {
-	Context string
-	Index   int
-}
-
-func (rt *Runtime) NewArgTypeError(index int, obj Object, expectedType string) *EvalError {
-	if index >= 0 {
-		return rt.NewError(fmt.Sprintf("Arg[%d] must have type %s, got %s", index, expectedType, obj.GetType().Name()))
-	} else {
-		return rt.NewError(fmt.Sprintf("Value must have type %s, got %s", expectedType, obj.GetType().Name()))
-	}
-}
-
-func (rt *Runtime) TypeError(ctx TCContext, obj Object, expectedType string) *EvalError {
-	name := rt.topName()
-
-	if ctx.Context != "" {
-		if ctx.Index >= 0 {
-			return rt.NewError(fmt.Sprintf("%s[%d] of %s must have type %s, got %s", ctx.Context, ctx.Index, name, expectedType, obj.GetType().Name()))
-		} else {
-			return rt.NewError(fmt.Sprintf("%s of %s must have type %s, got %s", ctx.Context, name, expectedType, obj.GetType().Name()))
-		}
-	} else {
-		return rt.NewError(fmt.Sprintf("Value of %s must have type %s, got %s", name, expectedType, obj.GetType().Name()))
-	}
-}
-
-func (rt *Runtime) topName() string {
-	if len(rt.callstack.frames) == 0 {
-		return ""
-	}
-	fr := &rt.callstack.frames[len(rt.callstack.frames)-1]
-
-	if fr.traceable == nil {
-		return ""
-	}
-
-	return fr.traceable.Name()
-}
-
-func (rt *Runtime) topPos() Position {
-	if len(rt.callstack.frames) == 0 {
-		return Position{}
-	}
-	fr := &rt.callstack.frames[len(rt.callstack.frames)-1]
-
-	if fr.traceable == nil {
-		return Position{}
-	}
-
-	return fr.current
-}
-
-func (rt *Runtime) stacktrace() string {
-	var b bytes.Buffer
-	for _, f := range rt.callstack.frames {
-		framePos := f.current
-		name := "global"
-		if f.traceable != nil {
-			name = f.traceable.Name()
-		}
-		name = strings.TrimPrefix(name, "#'")
-
-		b.WriteString(fmt.Sprintf("  %s %s:%d:%d\n", name, framePos.Filename(), framePos.startLine, framePos.startColumn))
-	}
-	return b.String()
-}
-
-func (rt *Runtime) setTopPosition(pos Position) {
-	fr := &rt.callstack.frames[len(rt.callstack.frames)-1]
-	fr.current = pos
-}
-
-func (rt *Runtime) popFrame() {
-	rt.callstack.popFrame()
-}
-
-func TopEval(genv *Env, expr Expr, env *LocalEnv) (Object, error) {
-	tr, _ := expr.(Traceable)
-
-	genv.RT.callstack.pushFrame(Frame{
-		traceable: tr,
-		current:   expr.Pos(),
-	})
-
-	genv.pushTreeEval(expr)
-	defer genv.popTreeEval()
-
-	return expr.Eval(genv, env)
-}
 
 func (e *Env) pushTreeEval(expr Expr) {
 	e.treeEvalStack = append(e.treeEvalStack, expr)
@@ -170,41 +18,7 @@ func Eval(genv *Env, expr Expr, env *LocalEnv) (Object, error) {
 	defer genv.popTreeEval()
 
 	obj, err := expr.Eval(genv, env)
-	if err != nil {
-		if ee, ok := err.(*EvalError); ok {
-			if ee.rt == nil {
-				ee.rt = genv.RT.clone()
-			}
-		}
-	}
-
 	return obj, err
-}
-
-func (s *Callstack) pushFrame(frame Frame) {
-	s.frames = append(s.frames, frame)
-}
-
-func (s *Callstack) popFrame() {
-	s.frames = s.frames[:len(s.frames)-1]
-}
-
-func (s *Callstack) clone() *Callstack {
-	res := &Callstack{frames: make([]Frame, len(s.frames))}
-	copy(res.frames, s.frames)
-	return res
-}
-
-func (s *Callstack) String() string {
-	var b bytes.Buffer
-	for _, f := range s.frames {
-		pos := f.traceable.Pos()
-		b.WriteString(fmt.Sprintf("%s %s:%d:%d\n", f.traceable.Name(), pos.Filename(), pos.startLine, pos.startColumn))
-	}
-	if b.Len() > 0 {
-		b.Truncate(b.Len() - 1)
-	}
-	return b.String()
 }
 
 func (expr *VarRefExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
@@ -260,7 +74,7 @@ func (expr *MapExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 				if err != nil {
 					return nil, err
 				}
-				return nil, genv.RT.NewErrorFlushed(expr, "Duplicate key: "+s)
+				return nil, genv.NewError("Duplicate key: " + s)
 			}
 			v, err := Eval(genv, expr.values[i], env)
 			if err != nil {
@@ -292,7 +106,7 @@ func (expr *MapExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 				return nil, err
 			}
 
-			return nil, genv.RT.NewErrorFlushed(expr, "Duplicate key: "+s)
+			return nil, genv.NewError("Duplicate key: " + s)
 		}
 	}
 	return res, nil
@@ -315,7 +129,7 @@ func (expr *SetExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 				return nil, err
 			}
 
-			return nil, genv.RT.NewErrorFlushed(expr, "Duplicate set element: "+s)
+			return nil, genv.NewError("Duplicate set element: " + s)
 		}
 	}
 	return res, nil
@@ -423,8 +237,6 @@ func evalSeq(genv *Env, exprs []Expr, env *LocalEnv) ([]Object, error) {
 }
 
 func (expr *CallExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
-	genv.RT.setTopPosition(expr.Position)
-
 	obj, err := Eval(genv, expr.callable, env)
 	if err != nil {
 		return nil, err
@@ -437,13 +249,6 @@ func (expr *CallExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 			return nil, err
 		}
 
-		genv.RT.callstack.pushFrame(Frame{
-			traceable: expr,
-			current:   expr.callable.Pos(),
-		})
-
-		defer genv.RT.popFrame()
-
 		return callable.Call(genv, args)
 	default:
 		s, err := callable.ToString(genv, false)
@@ -451,13 +256,11 @@ func (expr *CallExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 			return nil, err
 		}
 
-		return nil, genv.RT.NewErrorFlushed(expr, s+" is not a Fn")
+		return nil, genv.NewError(s + " is not a Fn")
 	}
 }
 
 func (expr *MethodExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
-	genv.RT.setTopPosition(expr.Position)
-
 	obj, err := Eval(genv, expr.obj, env)
 	if err != nil {
 		return nil, err
@@ -486,7 +289,7 @@ func (expr *MethodExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 	meth := rv.MethodByName(methName)
 
 	if !meth.IsValid() {
-		return nil, genv.RT.NewErrorFlushed(expr, fmt.Sprintf("unknown method %s on %s", expr.method, rt))
+		return nil, genv.NewError(fmt.Sprintf("unknown method %s on %s", expr.method, rt))
 	}
 
 	procFn, _, err := convReg.ConverterForFunc(meth)
@@ -539,7 +342,7 @@ func (expr *ThrowExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 		if err != nil {
 			return nil, err
 		}
-		return nil, genv.RT.NewErrorFlushed(expr, "Cannot throw "+s)
+		return nil, genv.NewError("Cannot throw " + s)
 	}
 }
 
@@ -564,7 +367,7 @@ func (expr *TryExpr) Eval(genv *Env, env *LocalEnv) (obj Object, err error) {
 }
 
 func (expr *CatchExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
-	return nil, genv.RT.NewErrorFlushed(expr, "This should never happen!")
+	return nil, genv.NewError("This should never happen!")
 }
 
 func evalBody(genv *Env, body []Expr, env *LocalEnv) (Object, error) {
@@ -624,7 +427,7 @@ func (expr *FnExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 }
 
 func (expr *FnArityExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
-	return nil, genv.RT.NewErrorFlushed(expr, "This should never happen!")
+	return nil, genv.NewError("This should never happen!")
 }
 
 func (expr *LetExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {

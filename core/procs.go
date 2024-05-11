@@ -536,27 +536,31 @@ var procExInfo = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 
-	res := &ExInfo{
-		rt: env.RT.clone(),
-	}
 	s, err := EnsureString(env, args, 0)
 	if err != nil {
 		return nil, err
 	}
+
+	res := WrapError(env, errors.New(s.S))
+
+	var data ArrayMap
+
 	m, err := EnsureMap(env, args, 1)
 	if err != nil {
 		return nil, err
 	}
 
-	res.AddEqu(criticalKeywords.message, s)
-	res.AddEqu(criticalKeywords.data, m)
+	data.AddEqu(criticalKeywords.message, s)
+	data.AddEqu(criticalKeywords.data, m)
 	if len(args) == 3 {
 		e, err := EnsureError(env, args, 2)
 		if err != nil {
 			return nil, err
 		}
-		res.AddEqu(criticalKeywords.cause, e)
+		data.AddEqu(criticalKeywords.cause, e)
 	}
+
+	res.Map = &data
 	return res, nil
 }
 
@@ -565,7 +569,7 @@ var procExData = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 
-	var ex *ExInfo
+	var ex *EvalError
 	if err := Cast(env, args[0], &ex); err != nil {
 		return nil, err
 	}
@@ -581,7 +585,7 @@ var procExCause = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 
-	var ex *ExInfo
+	var ex *EvalError
 	if err := Cast(env, args[0], &ex); err != nil {
 		return nil, err
 	}
@@ -616,7 +620,7 @@ var procRegex = func(env *Env, args []Object) (Object, error) {
 	}
 	r, err := regexp.Compile(s.S)
 	if err != nil {
-		return nil, env.RT.NewError("Invalid regex: " + err.Error())
+		return nil, env.NewError("Invalid regex: " + err.Error())
 	}
 	return &Regex{R: r}, nil
 }
@@ -727,10 +731,10 @@ var procSubs = func(env *Env, args []Object) (Object, error) {
 		end = x.I
 	}
 	if start.I < 0 || start.I > slen {
-		return nil, env.RT.NewError(fmt.Sprintf("String index out of range: %d", start.I))
+		return nil, env.NewError(fmt.Sprintf("String index out of range: %d", start.I))
 	}
 	if end < 0 || end > slen {
-		return nil, env.RT.NewError(fmt.Sprintf("String index out of range: %d", end))
+		return nil, env.NewError(fmt.Sprintf("String index out of range: %d", end))
 	}
 	return String{S: string([]rune(s.S)[start.I:end])}, nil
 }
@@ -1042,7 +1046,7 @@ var procConj = func(env *Env, args []Object) (Object, error) {
 	case Seq:
 		return c.Cons(args[1]), nil
 	default:
-		return nil, env.RT.NewError("conj's first argument must be a collection, got " + c.GetType().Name())
+		return nil, env.NewError("conj's first argument must be a collection, got " + c.GetType().Name())
 	}
 }
 
@@ -1138,7 +1142,7 @@ var procSubvec = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 	if start.I > end.I {
-		return nil, env.RT.NewError(fmt.Sprintf("subvec's start index (%d) is greater than end index (%d)", start.I, end.I))
+		return nil, env.NewError(fmt.Sprintf("subvec's start index (%d) is greater than end index (%d)", start.I, end.I))
 	}
 	subv := make([]Object, 0, end.I-start.I)
 	for i := start.I; i < end.I; i++ {
@@ -1170,7 +1174,7 @@ var procCast = func(env *Env, args []Object) (Object, error) {
 		args[1].GetType().reflectType == t.reflectType {
 		return args[1], nil
 	}
-	return nil, env.RT.NewError("Cannot cast " + args[1].GetType().Name() + " to " + mustStr(env, t))
+	return nil, env.NewError("Cannot cast " + args[1].GetType().Name() + " to " + mustStr(env, t))
 }
 
 var procVec = func(env *Env, args []Object) (Object, error) {
@@ -1187,7 +1191,7 @@ var procVec = func(env *Env, args []Object) (Object, error) {
 
 var procHashMap = func(env *Env, args []Object) (Object, error) {
 	if len(args)%2 != 0 {
-		return nil, env.RT.NewError("No value supplied for key " + mustStr(env, args[len(args)-1]))
+		return nil, env.NewError("No value supplied for key " + mustStr(env, args[len(args)-1]))
 	}
 	return NewHashMap(env, args...)
 }
@@ -1402,7 +1406,7 @@ var procCompare = func(env *Env, args []Object) (Object, error) {
 		}
 		return Int{I: cmp}, nil
 	}
-	return nil, env.RT.NewError(fmt.Sprintf("%s (type: %s) is not a Comparable", mustStr(env, k1), k1.GetType().Name()))
+	return nil, env.NewError(fmt.Sprintf("%s (type: %s) is not a Comparable", mustStr(env, k1), k1.GetType().Name()))
 }
 
 var procInt = func(env *Env, args []Object) (Object, error) {
@@ -1416,7 +1420,7 @@ var procInt = func(env *Env, args []Object) (Object, error) {
 	case Number:
 		return obj.Int(), nil
 	default:
-		return nil, env.RT.NewError(fmt.Sprintf("Cannot cast %s (type: %s) to Int", mustStr(env, obj), obj.GetType().Name()))
+		return nil, env.NewError(fmt.Sprintf("Cannot cast %s (type: %s) to Int", mustStr(env, obj), obj.GetType().Name()))
 	}
 }
 
@@ -1451,11 +1455,11 @@ var procChar = func(env *Env, args []Object) (Object, error) {
 	case Number:
 		i := c.Int().I
 		if i < MIN_RUNE || i > MAX_RUNE {
-			return nil, env.RT.NewError(fmt.Sprintf("Value out of range for char: %d", i))
+			return nil, env.NewError(fmt.Sprintf("Value out of range for char: %d", i))
 		}
 		return Char{Ch: rune(i)}, nil
 	default:
-		return nil, env.RT.NewError(fmt.Sprintf("Cannot cast %s (type: %s) to Char", mustStr(env, c), c.GetType().Name()))
+		return nil, env.NewError(fmt.Sprintf("Cannot cast %s (type: %s) to Char", mustStr(env, c), c.GetType().Name()))
 	}
 }
 
@@ -1504,9 +1508,9 @@ var procBigInt = func(env *Env, args []Object) (Object, error) {
 		if _, ok := bi.SetString(n.S, 10); ok {
 			return &BigInt{b: bi}, nil
 		}
-		return nil, env.RT.NewError("Invalid number format " + n.S)
+		return nil, env.NewError("Invalid number format " + n.S)
 	default:
-		return nil, env.RT.NewError(fmt.Sprintf("Cannot cast %s (type: %s) to BigInt", mustStr(env, n), n.GetType().Name()))
+		return nil, env.NewError(fmt.Sprintf("Cannot cast %s (type: %s) to BigInt", mustStr(env, n), n.GetType().Name()))
 	}
 }
 
@@ -1523,9 +1527,9 @@ var procBigFloat = func(env *Env, args []Object) (Object, error) {
 		if _, ok := b.SetString(n.S); ok {
 			return &BigFloat{b: b}, nil
 		}
-		return nil, env.RT.NewError("Invalid number format " + n.S)
+		return nil, env.NewError("Invalid number format " + n.S)
 	default:
-		return nil, env.RT.NewError(fmt.Sprintf("Cannot cast %s (type: %s) to BigFloat", mustStr(env, n), n.GetType().Name()))
+		return nil, env.NewError(fmt.Sprintf("Cannot cast %s (type: %s) to BigFloat", mustStr(env, n), n.GetType().Name()))
 	}
 }
 
@@ -1558,7 +1562,7 @@ var procNth = func(env *Env, args []Object) (Object, error) {
 			return SeqNth(env, coll.Seq(), n)
 		}
 	}
-	return nil, env.RT.NewError("nth not supported on this type: " + args[0].GetType().Name())
+	return nil, env.NewError("nth not supported on this type: " + args[0].GetType().Name())
 }
 
 var procLt = func(env *Env, args []Object) (Object, error) {
@@ -1769,7 +1773,7 @@ var procContains = func(env *Env, args []Object) (Object, error) {
 		}
 		return Boolean{B: false}, nil
 	}
-	return nil, env.RT.NewError("contains? not supported on type " + args[0].GetType().Name())
+	return nil, env.NewError("contains? not supported on type " + args[0].GetType().Name())
 }
 
 var procGet = func(env *Env, args []Object) (Object, error) {
@@ -1906,7 +1910,7 @@ var procFindVar = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 	if sym.ns == "" {
-		return nil, env.RT.NewError("find-var argument must be namespace-qualified symbol")
+		return nil, env.NewError("find-var argument must be namespace-qualified symbol")
 	}
 	if v, ok := env.Resolve(sym); ok {
 		return v, nil
@@ -2299,7 +2303,7 @@ var procNamespaceUnmap = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 	if sym.ns != "" {
-		return nil, env.RT.NewError("Can't unintern namespace-qualified symbol")
+		return nil, env.NewError("Can't unintern namespace-qualified symbol")
 	}
 	delete(ns.mappings, sym.name)
 	return NIL, nil
@@ -2394,7 +2398,7 @@ var procNamespaceUnalias = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 	if sym.ns != "" {
-		return nil, env.RT.NewError("Alias can't be namespace-qualified")
+		return nil, env.NewError("Alias can't be namespace-qualified")
 	}
 	delete(ns.aliases, sym.name)
 	return NIL, nil
@@ -2449,7 +2453,7 @@ var procNsResolve = func(env *Env, args []Object) (Object, error) {
 
 var procArrayMap = func(env *Env, args []Object) (Object, error) {
 	if len(args)%2 == 1 {
-		return nil, env.RT.NewError("No value supplied for key " + mustStr(env, args[len(args)-1]))
+		return nil, env.NewError("No value supplied for key " + mustStr(env, args[len(args)-1]))
 	}
 	res := EmptyArrayMap()
 	for i := 0; i < len(args); i += 2 {
@@ -2478,7 +2482,7 @@ var procBufferedReader = func(env *Env, args []Object) (Object, error) {
 	case io.Reader:
 		return MakeBufferedReader(rdr), nil
 	default:
-		return nil, env.RT.NewArgTypeError(0, args[0], "IOReader")
+		return nil, env.NewArgTypeError(0, args[0], "IOReader")
 	}
 }
 
@@ -2785,7 +2789,7 @@ func libExternalPath(env *Env, sym Symbol) (path string, ok bool, err error) {
 			return "", false, err
 		}
 		if !ok {
-			return "", false, env.RT.NewError("Key :url not found in ns-sources for: " + sourceKey)
+			return "", false, env.NewError("Key :url not found in ns-sources for: " + sourceKey)
 		} else {
 			s, err := url.ToString(env, false)
 			if err != nil {
@@ -2936,7 +2940,7 @@ var procSend = func(env *Env, args []Object) (Object, error) {
 	}
 	v := args[1]
 	if v.Equals(env, NIL) {
-		return nil, env.RT.NewError("Can't put nil on channel")
+		return nil, env.NewError("Can't put nil on channel")
 	}
 	if ch.isClosed {
 		return MakeBoolean(false), nil
@@ -2982,7 +2986,7 @@ var procGo = func(env *Env, args []Object) (Object, error) {
 		var cerr Error
 		res, err := f.Call(env, []Object{})
 		if err != nil {
-			cerr = env.RT.NewError(err.Error())
+			cerr = env.NewError(err.Error())
 		}
 
 		ch.ch <- MakeFutureResult(res, cerr)
@@ -3132,8 +3136,6 @@ func ProcessReader(env *Env, reader *Reader, filename string) (Object, error) {
 
 	var exprs []Expr
 
-	env.RT.engine = env.Engine
-
 	for {
 		obj, err := TryRead(env, reader)
 		if err == io.EOF {
@@ -3146,12 +3148,7 @@ func ProcessReader(env *Env, reader *Reader, filename string) (Object, error) {
 		}
 		expr, err := TryParse(obj, parseContext)
 		if err != nil {
-			if ve, ok := err.(*VMError); ok {
-				str, _ := ve.obj.ToString(env, false)
-				fmt.Fprintln(Stderr, str)
-			} else {
-				fmt.Fprintln(Stderr, err)
-			}
+			fmt.Fprintln(Stderr, err)
 			return nil, err
 		}
 
@@ -3200,21 +3197,7 @@ func ProcessReader(env *Env, reader *Reader, filename string) (Object, error) {
 
 	obj, err := EngineRun(env, fn)
 	if err != nil {
-		var vms *VMStacktrace
-
-		if errors.As(err, &vms) {
-			vms.PrintTo(env, os.Stderr)
-			err = vms.Unwrap()
-		}
-
-		var ve *VMError
-
-		if errors.As(err, &ve) {
-			str, _ := ve.obj.ToString(env, false)
-			fmt.Fprintln(Stderr, str)
-		} else {
-			fmt.Fprintln(Stderr, err)
-		}
+		DisplayError(env, err)
 		return nil, err
 	}
 
@@ -3260,24 +3243,6 @@ func ProcessReader(env *Env, reader *Reader, filename string) (Object, error) {
 			}
 		}
 	*/
-}
-
-func DisplayError(env *Env, err error) {
-	var vms *VMStacktrace
-
-	if errors.As(err, &vms) {
-		vms.PrintTo(env, os.Stderr)
-		err = vms.Unwrap()
-	}
-
-	var ve *VMError
-
-	if errors.As(err, &ve) {
-		str, _ := ve.obj.ToString(env, false)
-		fmt.Fprintln(Stderr, str)
-	} else {
-		fmt.Fprintln(Stderr, err)
-	}
 }
 
 func ProcessReaderFromEval(env *Env, reader *Reader, filename string) error {
@@ -3417,7 +3382,7 @@ var procIsNamespaceInitialized = func(env *Env, args []Object) (Object, error) {
 	}
 
 	if sym.ns != "" {
-		return nil, env.RT.NewError("Can't ask for namespace info on namespace-qualified symbol")
+		return nil, env.NewError("Can't ask for namespace info on namespace-qualified symbol")
 	}
 	// First look for registered (e.g. std) libs
 	ns, found := env.Namespaces[sym.name]

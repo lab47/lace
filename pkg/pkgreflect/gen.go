@@ -463,8 +463,17 @@ func fnprint(w io.Writer, pkgName string, files []*ast.File, kind ast.ObjKind, m
 					rt = typeName(fn.Type.Results.List[0].Type)
 				}
 
+				var rets int
+				for _, f := range fn.Type.Results.List {
+					if f.Names != nil {
+						rets += len(f.Names)
+					} else {
+						rets++
+					}
+				}
+
 				arity := strings.Join(args, `,`)
-				if opts.Specialized {
+				if opts.Specialized && params <= 3 && rets <= 2 {
 					corePkg := "core."
 					if opts.InCore {
 						corePkg = ""

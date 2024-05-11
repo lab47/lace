@@ -16,8 +16,8 @@ import (
 // Create a new lace List from the given arguments
 //
 //lace:export List
-func MakeList(env *Env, args Args) (Object, error) {
-	l := NewListFrom(args.Objects...)
+func MakeList(env *Env, args []Object) (Object, error) {
+	l := NewListFrom(args...)
 
 	show(env, "list", l)
 
@@ -104,7 +104,7 @@ func Conj(env *Env, col Object, val Object) (Object, error) {
 	case Seq:
 		return c.Cons(val), nil
 	default:
-		return nil, env.RT.NewError("conj's first argument must be a collection, got " + c.GetType().Name())
+		return nil, env.NewError("conj's first argument must be a collection, got " + c.GetType().Name())
 	}
 }
 
@@ -129,10 +129,10 @@ func ConvertToSeq(env *Env, s Seqable) (Object, error) {
 // Concatinate N sequences together
 //
 //lace:export
-func ConcatSimple(env *Env, args Args) (Object, error) {
+func ConcatSimple(env *Env, args []Object) (Object, error) {
 	var data []Object
 
-	for _, o := range args.Objects {
+	for _, o := range args {
 		if s, ok := o.(Seqable); ok {
 			eles, err := ToSlice(env, s.Seq())
 			if err != nil {
@@ -245,13 +245,13 @@ func LoadLibFromPath(env *Env, libnamev Symbol, pathnamev String) (Object, error
 	if err != nil {
 		return nil, errors.Wrapf(err, "error attempting to open: %s", filename)
 	}
-	if filename == "" {
-		return nil, Errorf(env, "unable to find path for library: %s", libname)
+	if f == nil || filename == "" {
+		return nil, SError(env, "LoadError", "unable to find path for library", "library", libname)
 	}
 	reader := NewReader(bufio.NewReader(f), filename)
 	err = ProcessReaderFromEval(env, reader, filename)
 	if err != nil {
-		return nil, err
+		return nil, SError(env, "LoadError", "error loading file", "path", filename, "error", err.Error())
 	}
 	return NIL, nil
 

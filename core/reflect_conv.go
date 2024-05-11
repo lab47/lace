@@ -39,10 +39,6 @@ func (c *ConvRegistry) ConverterForFunc(v reflect.Value) (ProcFn, *conversionSet
 	return f, cs, nil
 }
 
-type Args struct {
-	Objects []Object
-}
-
 func (c *ConvRegistry) convArg(at reflect.Type) (inConv, bool) {
 	switch at {
 	case reflect.TypeFor[*Env]():
@@ -148,81 +144,6 @@ type conversionSet struct {
 	errorPos int
 }
 
-func WrapToProc3_2[E, A, B, O, O2 any](fn func(e E, a A, b B) (O, O2)) any {
-	if reflect.TypeFor[func(E, O, O2)]() == reflect.TypeFor[func(*Env, Object, error)]() {
-		cs := convReg.buildCS(reflect.TypeFor[func(A, B) (Object, error)]())
-
-		afn := cs.argIn[0]
-		bfn := cs.argIn[1]
-
-		return func(env *Env, args Args) (Object, error) {
-			if len(args.Objects) != cs.arity {
-				return nil, ErrorArityMinMax(env, len(args.Objects), cs.arity, cs.arity)
-			}
-
-			arv, err := afn(env, 0, args.Objects[0])
-			if err != nil {
-				return nil, err
-			}
-
-			brv, err := bfn(env, 1, args.Objects[1])
-			if err != nil {
-				return nil, err
-			}
-
-			o, oerr := fn(
-				any(env).(E),
-				arv.Interface().(A),
-				brv.Interface().(B),
-			)
-
-			if err, ok := any(oerr).(error); ok {
-				return nil, err
-			}
-
-			return any(o).(Object), nil
-		}
-	}
-
-	return fn
-}
-
-func WrapToProc2_2[E, A, O, O2 any](fn func(e E, a A) (O, O2)) any {
-	if reflect.TypeFor[func(E, A) (O, O2)]() == reflect.TypeFor[func(*Env, Args) (Object, error)]() {
-		return fn
-	}
-
-	if reflect.TypeFor[func(E, O, O2)]() == reflect.TypeFor[func(*Env, Object, error)]() {
-		cs := convReg.buildCS(reflect.TypeFor[func(A) (Object, error)]())
-
-		afn := cs.argIn[0]
-
-		return func(env *Env, args Args) (Object, error) {
-			if len(args.Objects) != cs.arity {
-				return nil, ErrorArityMinMax(env, len(args.Objects), cs.arity, cs.arity)
-			}
-
-			arv, err := afn(env, 0, args.Objects[0])
-			if err != nil {
-				return nil, err
-			}
-
-			o, oerr := fn(
-				any(env).(E),
-				arv.Interface().(A),
-			)
-
-			if err, ok := any(oerr).(error); ok {
-				return nil, err
-			}
-
-			return any(o).(Object), nil
-		}
-	}
-
-	return fn
-}
-
 func (c *ConvRegistry) wrapFunc(fnVal reflect.Value, cs *conversionSet) reflect.Value {
 	return reflect.ValueOf(ProcFn(func(env *Env, objArgs []Object) (Object, error) {
 		if len(objArgs) != cs.arity {
@@ -246,7 +167,7 @@ func (c *ConvRegistry) wrapFunc(fnVal reflect.Value, cs *conversionSet) reflect.
 
 				sub, err := cs.argIn[destIdx](env, inIdx, a)
 				if err != nil {
-					return nil, err
+					return nil, WrapError(env, err)
 				}
 
 				dest[destIdx] = sub
@@ -266,7 +187,7 @@ func (c *ConvRegistry) wrapFunc(fnVal reflect.Value, cs *conversionSet) reflect.
 
 				sub, err := cs.argIn[destIdx](env, inIdx, a)
 				if err != nil {
-					return nil, err
+					return nil, WrapError(env, err)
 				}
 
 				dest[destIdx] = sub
@@ -276,14 +197,18 @@ func (c *ConvRegistry) wrapFunc(fnVal reflect.Value, cs *conversionSet) reflect.
 		}
 
 		if cs.errorPos >= 0 && !ret[cs.errorPos].IsNil() {
-			return nil, ret[cs.errorPos].Interface().(error)
+			return nil, WrapError(env, ret[cs.errorPos].Interface().(error))
 		}
 
 		switch cs.values {
 		case 0:
 			return NIL, nil
 		case 1:
-			return cs.rets[0](env, ret[0])
+			obj, err := cs.rets[0](env, ret[0])
+			if err != nil {
+				return nil, WrapError(env, err)
+			}
+			return obj, nil
 		default:
 			var objects []Object
 
@@ -369,11 +294,8 @@ func (c *ConvRegistry) buildProc(v reflect.Value) (ProcFn, *conversionSet, error
 	vt := v.Type()
 
 	if vt == rawFunc {
-		vc := v.Interface().(func(*Env, Args) (Object, error))
-
-		return func(env *Env, args []Object) (Object, error) {
-			return vc(env, Args{Objects: args})
-		}, nil, nil
+		vc := v.Interface().(func(*Env, []Object) (Object, error))
+		return vc, nil, nil
 	}
 
 	cs := c.buildCS(v.Type())
@@ -387,7 +309,7 @@ func (c *ConvRegistry) buildProc(v reflect.Value) (ProcFn, *conversionSet, error
 func convertStringOut(env *Env, s reflect.Value) (Object, error) {
 	gs, ok := s.Interface().(string)
 	if !ok {
-		return nil, env.RT.NewError("wrong type, expecting string")
+		return nil, env.NewError("wrong type, expecting string")
 	}
 
 	return MakeString(gs), nil
@@ -397,7 +319,7 @@ func convertStringOut(env *Env, s reflect.Value) (Object, error) {
 func convertBytesOut(env *Env, s reflect.Value) (Object, error) {
 	_, ok := s.Interface().([]byte)
 	if !ok {
-		return nil, env.RT.NewError("wrong type, expecting string")
+		return nil, env.NewError("wrong type, expecting string")
 	}
 
 	return &ReflectValue{val: s}, nil
@@ -407,7 +329,7 @@ func convertBytesOut(env *Env, s reflect.Value) (Object, error) {
 func convertRegexpOut(env *Env, s reflect.Value) (Object, error) {
 	gs, ok := s.Interface().(*regexp.Regexp)
 	if !ok {
-		return nil, env.RT.NewError("wrong type, expecting string")
+		return nil, env.NewError("wrong type, expecting string")
 	}
 
 	return MakeRegex(gs), nil
@@ -417,7 +339,7 @@ func convertRegexpOut(env *Env, s reflect.Value) (Object, error) {
 func convertObjectOut(env *Env, s reflect.Value) (Object, error) {
 	gs, ok := s.Interface().(Object)
 	if !ok {
-		return nil, env.RT.NewError("wrong type, expecting Object")
+		return nil, env.NewError("wrong type, expecting Object")
 	}
 
 	return gs, nil
@@ -427,7 +349,7 @@ func convertObjectOut(env *Env, s reflect.Value) (Object, error) {
 func convertBoolOut(env *Env, s reflect.Value) (Object, error) {
 	gb, ok := s.Interface().(bool)
 	if !ok {
-		return nil, env.RT.NewError("wrong type, expecting string")
+		return nil, env.NewError("wrong type, expecting string")
 	}
 
 	return MakeBoolean(gb), nil
@@ -437,7 +359,7 @@ func convertBoolOut(env *Env, s reflect.Value) (Object, error) {
 func convertGoReflectTypeOut(env *Env, s reflect.Value) (Object, error) {
 	gb, ok := s.Interface().(reflect.Type)
 	if !ok {
-		return nil, env.RT.NewError("wrong type, expecting reflect.Type")
+		return nil, env.NewError("wrong type, expecting reflect.Type")
 	}
 
 	return &ReflectType{typ: gb}, nil
@@ -453,7 +375,7 @@ func convertStringIn(env *Env, index int, o Object) (reflect.Value, error) {
 	case Keyword:
 		return reflect.ValueOf(sv.Name()), nil
 	default:
-		return reflect.Value{}, env.RT.NewArgTypeError(index, o, "String")
+		return reflect.Value{}, env.NewArgTypeError(index, o, "String")
 	}
 }
 
@@ -461,7 +383,7 @@ func convertStringIn(env *Env, index int, o Object) (reflect.Value, error) {
 func convertSymbolIn(env *Env, index int, o Object) (reflect.Value, error) {
 	ls, ok := o.(Symbol)
 	if !ok {
-		return reflect.Value{}, env.RT.NewArgTypeError(index, o, "Symbol")
+		return reflect.Value{}, env.NewArgTypeError(index, o, "Symbol")
 	}
 
 	return reflect.ValueOf(ls), nil
@@ -471,7 +393,7 @@ func convertSymbolIn(env *Env, index int, o Object) (reflect.Value, error) {
 func convertKeywordIn(env *Env, index int, o Object) (reflect.Value, error) {
 	ls, ok := o.(Keyword)
 	if !ok {
-		return reflect.Value{}, env.RT.NewArgTypeError(index, o, "Symbol")
+		return reflect.Value{}, env.NewArgTypeError(index, o, "Symbol")
 	}
 
 	return reflect.ValueOf(ls), nil
@@ -486,7 +408,7 @@ func convertBytesIn(env *Env, index int, o Object) (reflect.Value, error) {
 				return rv.val, nil
 			}
 		}
-		return reflect.Value{}, env.RT.NewArgTypeError(index, o, "String")
+		return reflect.Value{}, env.NewArgTypeError(index, o, "String")
 	}
 
 	return reflect.ValueOf([]byte(ls.S)), nil
@@ -496,7 +418,7 @@ func convertBytesIn(env *Env, index int, o Object) (reflect.Value, error) {
 func convertIntIn(env *Env, index int, o Object) (reflect.Value, error) {
 	ls, ok := o.(Int)
 	if !ok {
-		return reflect.Value{}, env.RT.NewArgTypeError(index, o, "Int")
+		return reflect.Value{}, env.NewArgTypeError(index, o, "Int")
 	}
 
 	return reflect.ValueOf(ls.Int().I), nil
@@ -506,7 +428,7 @@ func convertIntIn(env *Env, index int, o Object) (reflect.Value, error) {
 func convertIntIn8(env *Env, index int, o Object) (reflect.Value, error) {
 	ls, ok := o.(Int)
 	if !ok {
-		return reflect.Value{}, env.RT.NewArgTypeError(index, o, "Int")
+		return reflect.Value{}, env.NewArgTypeError(index, o, "Int")
 	}
 
 	return reflect.ValueOf(int8(ls.Int().I)), nil
@@ -516,7 +438,7 @@ func convertIntIn8(env *Env, index int, o Object) (reflect.Value, error) {
 func convertIntIn16(env *Env, index int, o Object) (reflect.Value, error) {
 	ls, ok := o.(Int)
 	if !ok {
-		return reflect.Value{}, env.RT.NewArgTypeError(index, o, "Int")
+		return reflect.Value{}, env.NewArgTypeError(index, o, "Int")
 	}
 
 	return reflect.ValueOf(int16(ls.Int().I)), nil
@@ -526,7 +448,7 @@ func convertIntIn16(env *Env, index int, o Object) (reflect.Value, error) {
 func convertIntIn32(env *Env, index int, o Object) (reflect.Value, error) {
 	ls, ok := o.(Int)
 	if !ok {
-		return reflect.Value{}, env.RT.NewArgTypeError(index, o, "Int")
+		return reflect.Value{}, env.NewArgTypeError(index, o, "Int")
 	}
 
 	return reflect.ValueOf(int32(ls.Int().I)), nil
@@ -536,7 +458,7 @@ func convertIntIn32(env *Env, index int, o Object) (reflect.Value, error) {
 func convertIntIn64(env *Env, index int, o Object) (reflect.Value, error) {
 	ls, ok := o.(Int)
 	if !ok {
-		return reflect.Value{}, env.RT.NewArgTypeError(index, o, "Int")
+		return reflect.Value{}, env.NewArgTypeError(index, o, "Int")
 	}
 
 	return reflect.ValueOf(int64(ls.Int().I)), nil
@@ -546,7 +468,7 @@ func convertIntIn64(env *Env, index int, o Object) (reflect.Value, error) {
 func convertUintIn(env *Env, index int, o Object) (reflect.Value, error) {
 	ls, ok := o.(Int)
 	if !ok {
-		return reflect.Value{}, env.RT.NewArgTypeError(index, o, "Int")
+		return reflect.Value{}, env.NewArgTypeError(index, o, "Int")
 	}
 
 	return reflect.ValueOf(uint(ls.Int().I)), nil
@@ -556,7 +478,7 @@ func convertUintIn(env *Env, index int, o Object) (reflect.Value, error) {
 func convertUintIn8(env *Env, index int, o Object) (reflect.Value, error) {
 	ls, ok := o.(Int)
 	if !ok {
-		return reflect.Value{}, env.RT.NewArgTypeError(index, o, "Int")
+		return reflect.Value{}, env.NewArgTypeError(index, o, "Int")
 	}
 
 	return reflect.ValueOf(uint8(ls.Int().I)), nil
@@ -566,7 +488,7 @@ func convertUintIn8(env *Env, index int, o Object) (reflect.Value, error) {
 func convertUintIn16(env *Env, index int, o Object) (reflect.Value, error) {
 	ls, ok := o.(Int)
 	if !ok {
-		return reflect.Value{}, env.RT.NewArgTypeError(index, o, "Int")
+		return reflect.Value{}, env.NewArgTypeError(index, o, "Int")
 	}
 
 	return reflect.ValueOf(uint16(ls.Int().I)), nil
@@ -576,7 +498,7 @@ func convertUintIn16(env *Env, index int, o Object) (reflect.Value, error) {
 func convertUintIn32(env *Env, index int, o Object) (reflect.Value, error) {
 	ls, ok := o.(Int)
 	if !ok {
-		return reflect.Value{}, env.RT.NewArgTypeError(index, o, "Int")
+		return reflect.Value{}, env.NewArgTypeError(index, o, "Int")
 	}
 
 	return reflect.ValueOf(uint32(ls.Int().I)), nil
@@ -586,7 +508,7 @@ func convertUintIn32(env *Env, index int, o Object) (reflect.Value, error) {
 func convertUintIn64(env *Env, index int, o Object) (reflect.Value, error) {
 	ls, ok := o.(Int)
 	if !ok {
-		return reflect.Value{}, env.RT.NewArgTypeError(index, o, "Int")
+		return reflect.Value{}, env.NewArgTypeError(index, o, "Int")
 	}
 
 	return reflect.ValueOf(uint64(ls.Int().I)), nil
@@ -606,7 +528,7 @@ func convertEnvIn(env *Env, index int, o Object) (reflect.Value, error) {
 func convertSeqableIn(env *Env, index int, o Object) (reflect.Value, error) {
 	ls, ok := o.(Seqable)
 	if !ok {
-		return reflect.Value{}, env.RT.NewArgTypeError(index, o, "Seqable")
+		return reflect.Value{}, env.NewArgTypeError(index, o, "Seqable")
 	}
 
 	return reflect.ValueOf(ls), nil
@@ -616,7 +538,7 @@ func convertSeqableIn(env *Env, index int, o Object) (reflect.Value, error) {
 func convertMapIn(env *Env, index int, o Object) (reflect.Value, error) {
 	ls, ok := o.(Map)
 	if !ok {
-		return reflect.Value{}, env.RT.NewArgTypeError(index, o, "Map")
+		return reflect.Value{}, env.NewArgTypeError(index, o, "Map")
 	}
 
 	return reflect.ValueOf(ls), nil
@@ -626,7 +548,7 @@ func convertMapIn(env *Env, index int, o Object) (reflect.Value, error) {
 func convertReflectTypeIn(env *Env, index int, o Object) (reflect.Value, error) {
 	ls, ok := o.(*ReflectType)
 	if !ok {
-		return reflect.Value{}, env.RT.NewArgTypeError(index, o, "ReflectType")
+		return reflect.Value{}, env.NewArgTypeError(index, o, "ReflectType")
 	}
 
 	return reflect.ValueOf(ls.typ), nil
@@ -636,7 +558,7 @@ func convertReflectTypeIn(env *Env, index int, o Object) (reflect.Value, error) 
 func convertReflectValueInDirect(env *Env, index int, o Object) (reflect.Value, error) {
 	ls, ok := o.(*ReflectValue)
 	if !ok {
-		return reflect.Value{}, env.RT.NewArgTypeError(index, o, "ReflectValue")
+		return reflect.Value{}, env.NewArgTypeError(index, o, "ReflectValue")
 	}
 
 	return reflect.ValueOf(ls), nil
@@ -646,7 +568,7 @@ func convertReflectValueInDirect(env *Env, index int, o Object) (reflect.Value, 
 func convertReflectValueInAny(env *Env, index int, o Object) (reflect.Value, error) {
 	ls, ok := o.(*ReflectValue)
 	if !ok {
-		return reflect.Value{}, env.RT.NewArgTypeError(index, o, "ReflectValue")
+		return reflect.Value{}, env.NewArgTypeError(index, o, "ReflectValue")
 	}
 
 	return reflect.ValueOf(ls.val), nil
@@ -668,7 +590,7 @@ func convertReflectValueIn(env *Env, index int, o Object, at reflect.Type) (refl
 			}
 		}
 
-		return reflect.Value{}, env.RT.NewArgTypeError(index, o, at.Name())
+		return reflect.Value{}, env.NewArgTypeError(index, o, at.Name())
 	}
 
 	if at.Kind() == reflect.Interface {
@@ -678,7 +600,7 @@ func convertReflectValueIn(env *Env, index int, o Object, at reflect.Type) (refl
 	}
 
 	if ls.val.Type() != at {
-		return reflect.Value{}, env.RT.NewArgTypeError(index, o, at.Name())
+		return reflect.Value{}, env.NewArgTypeError(index, o, at.Name())
 	}
 
 	return ls.val, nil
@@ -704,7 +626,7 @@ func convertReflectValueOut(env *Env, s reflect.Value) (Object, error) {
 func convertCallableIn(env *Env, index int, o Object) (reflect.Value, error) {
 	ls, ok := o.(Callable)
 	if !ok {
-		return reflect.Value{}, env.RT.NewArgTypeError(index, o, "Seqable")
+		return reflect.Value{}, env.NewArgTypeError(index, o, "Seqable")
 	}
 
 	return reflect.ValueOf(ls), nil
@@ -730,7 +652,7 @@ func convertFromUInt(env *Env, rv reflect.Value) (Object, error) {
 	return MakeInt(int(i)), nil
 }
 
-var rawFunc = reflect.TypeFor[func(*Env, Args) (Object, error)]()
+var rawFunc = reflect.TypeFor[func(*Env, []Object) (Object, error)]()
 
 func (c *ConvRegistry) makeFuncConvertIn(env *Env, target Callable, ft reflect.Type) reflect.Value {
 	var (

@@ -530,7 +530,7 @@ func SeqNth(env *Env, seq Seq, n int) (Object, error) {
 		}
 		i--
 	}
-	return nil, env.RT.NewError(fmt.Sprintf("Index %d exceeds seq's length %d", n, (n - i)))
+	return nil, env.NewError(fmt.Sprintf("Index %d exceeds seq's length %d", n, (n - i)))
 }
 
 func SeqTryNth(env *Env, seq Seq, n int, d Object) (Object, error) {

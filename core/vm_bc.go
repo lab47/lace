@@ -278,14 +278,6 @@ func (e *Engine) RunWithArgs(env *Env, fn *Fn, args []Object) (Object, error) {
 	return e.RunBC(env, fn)
 }
 
-type VMError struct {
-	obj Object
-}
-
-func (VMError) Error() string {
-	return "a VM error"
-}
-
 func (e *Engine) unwind(oerr error) (int, error) {
 	obj, ok := oerr.(Object)
 	if !ok {
@@ -407,7 +399,7 @@ func (e *Engine) methodCall(env *Env, methName string, obj Object, objArgs []Obj
 	meth := rv.MethodByName(methName)
 
 	if !meth.IsValid() {
-		return nil, env.RT.NewError(fmt.Sprintf("unknown method %s on %s", methName, rt))
+		return nil, env.NewError(fmt.Sprintf("unknown method %s on %s", methName, rt))
 	}
 
 	procFn, _, err := convReg.ConverterForFunc(meth)
@@ -534,7 +526,7 @@ loop:
 					if err != nil {
 						return nil, err
 					}
-					return nil, env.RT.NewError("Duplicate key: " + s)
+					return nil, env.NewError("Duplicate key: " + s)
 				}
 
 				up, err := res.Assoc(env, key, val)
@@ -565,7 +557,7 @@ loop:
 							return nil, err
 						}
 
-						return nil, env.RT.NewError("Duplicate key: " + s)
+						return nil, env.NewError("Duplicate key: " + s)
 					}
 				}
 			}
@@ -590,7 +582,7 @@ loop:
 						return nil, err
 					}
 
-					return nil, env.RT.NewError("Duplicate set element: " + s)
+					return nil, env.NewError("Duplicate set element: " + s)
 				}
 			}
 
@@ -652,10 +644,11 @@ loop:
 		case DefValue:
 			vr := c.defVars[a]
 
+			meta := frame.stackPop()
 			val := frame.stackPop()
 
-			if err := Cast(env, frame.stackPop(), &vr.meta); err != nil {
-				return nil, err
+			if err := Cast(env, meta, &vr.meta); err != nil {
+				return nil, AddContext(env, err, "casting value for Var meta: %s", vr.Name())
 			}
 
 			vr.Value = val
@@ -743,38 +736,33 @@ loop:
 
 			frame.Ip = ip
 
-			switch callable := obj.(type) {
+			switch sv := obj.(type) {
+			case *Fn:
+				fr := e.pushFrame(sv)
+				fr.Args = slices.Clone(args)
+				fr.Arity = int32(len(args))
+
+				obj, err = e.RunBC(env, sv)
+			case Proc:
+				obj, err = sv.Fn(env, args)
 			case Callable:
-				if fn, ok := callable.(*Fn); ok {
-					fr := e.pushFrame(fn)
-					fr.Args = slices.Clone(args)
-					fr.Arity = int32(len(args))
-
-					obj, err = e.RunBC(env, fn)
-				} else {
-					obj, err = callable.Call(env, args)
-				}
-
-				if err != nil {
-					newIp, err := e.unwind(err)
-					if err != nil {
-						return nil, err
-					}
-
-					ip = newIp
-					continue loop
-				}
-
-				frame.stackPush(obj)
+				obj, err = sv.Call(env, args)
 			default:
-				e.printBacktrace(1000)
-				s, err := callable.ToString(env, false)
+				err = Errorf(env, "value is not callable")
+			}
+
+			if err != nil {
+				err = env.populateStackTrace(err)
+				newIp, err := e.unwind(err)
 				if err != nil {
 					return nil, err
 				}
 
-				return nil, env.RT.NewError(s + " is not a Fn")
+				ip = newIp
+				continue loop
 			}
+
+			frame.stackPush(obj)
 		case Apply:
 			frame.Ip = ip
 
@@ -783,7 +771,7 @@ loop:
 
 			seqable, ok := args.(Seqable)
 			if !ok {
-				newIp, err := e.unwind(env.RT.NewArgTypeError(1, args, "Seqable"))
+				newIp, err := e.unwind(env.NewArgTypeError(1, args, "Seqable"))
 				if err != nil {
 					return nil, err
 				}
@@ -796,7 +784,7 @@ loop:
 
 			callArgs, err := ToSlice(env, sq)
 			if err != nil {
-				newIp, err := e.unwind(env.RT.NewArgTypeError(1, args, "Seqable"))
+				newIp, err := e.unwind(err)
 				if err != nil {
 					return nil, err
 				}
@@ -838,12 +826,12 @@ loop:
 					return nil, err
 				}
 
-				return nil, env.RT.NewError(s + " is not a Fn")
+				return nil, env.NewError(s + " is not a Fn")
 			}
 		case MethodCall:
 			ms := c.methods[a]
 
-			args := frame.stackPopN(int(a))
+			args := frame.stackPopN(int(ms.Arity))
 			obj := frame.stackPop()
 
 			frame.Ip = ip
@@ -863,7 +851,18 @@ loop:
 		case Throw:
 			frame.Ip = ip
 
-			newIp, err := e.unwind(&VMError{obj: frame.stackPop()})
+			obj := frame.stackPop()
+
+			var err error
+			if ee, ok := obj.(error); ok {
+				err = ee
+			} else {
+				ee := NewEvalError(env, "thrown non-error value")
+				ee.AddData(env, obj)
+				err = ee
+			}
+
+			newIp, err := e.unwind(err)
 			if err != nil {
 				return nil, err
 			}
@@ -931,8 +930,17 @@ loop:
 		case ThrowArity:
 			frame.Ip = ip
 			return nil, ErrorArity(env, int(frame.Arity))
+		case CheckType:
+			obj := frame.stackPop()
+
+			if typ, ok := c.literals[a].(*Type); ok {
+				frame.stackPush(MakeBoolean(IsInstance(env, typ, obj)))
+			} else {
+				panic("nope")
+			}
+
 		default:
-			return nil, fmt.Errorf("unimplemented instruction: %d", op)
+			return nil, fmt.Errorf("unimplemented instruction: %s", OpCode(op))
 		}
 
 		ip++

@@ -19,7 +19,7 @@ func pipe() (Object, error) {
 func close(env *Env, f Object) (Nil, error) {
 	if c, ok := f.(io.Closer); ok {
 		if err := c.Close(); err != nil {
-			return NIL, env.RT.NewError(err.Error())
+			return NIL, env.NewError(err.Error())
 		}
 		return NIL, nil
 	}
@@ -28,5 +28,5 @@ func close(env *Env, f Object) (Nil, error) {
 		return NIL, err
 	}
 
-	return NIL, env.RT.NewError("Object is not closable: " + s)
+	return NIL, env.NewError("Object is not closable: " + s)
 }

@@ -48,6 +48,6 @@ func (ior *IOReader) Close(env *Env) error {
 	if c, ok := ior.Reader.(io.Closer); ok {
 		return c.Close()
 	} else {
-		return env.RT.NewError("Object is not closable: #object[IOReader]")
+		return env.NewError("Object is not closable: #object[IOReader]")
 	}
 }

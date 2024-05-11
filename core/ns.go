@@ -105,7 +105,7 @@ func NewNamespace(env *Env, sym Symbol) (*Namespace, error) {
 
 func (ns *Namespace) Refer(env *Env, sym Symbol, vr *Var) (*Var, error) {
 	if sym.ns != "" {
-		return nil, env.RT.NewError("Can't intern namespace-qualified symbol " + sym.String())
+		return nil, env.NewError("Can't intern namespace-qualified symbol " + sym.String())
 	}
 	ns.mappings[sym.name] = vr
 	return vr, nil
@@ -146,7 +146,7 @@ func (ns *Namespace) Intern(env *Env, sym Symbol) (*Var, error) {
 			}
 			return newVar, nil
 		}
-		return nil, env.RT.NewError(fmt.Sprintf("WARNING: %s already refers to: %s in namespace %s",
+		return nil, env.NewError(fmt.Sprintf("WARNING: %s already refers to: %s in namespace %s",
 			sym.String(), existingVar.String(), ns.Qual()))
 	}
 	if LINTER_MODE && existingVar.expr != nil && !existingVar.ns.Name.Equals(env, criticalSymbols.lace_core) {
@@ -161,6 +161,9 @@ func (ns *Namespace) InternVar(env *Env, name string, val Object, meta *ArrayMap
 		return nil, err
 	}
 	vr.Value = val
+	if meta == nil {
+		meta = &ArrayMap{}
+	}
 	meta.Add(env, criticalKeywords.ns, ns)
 	meta.Add(env, criticalKeywords.name, vr.name)
 	vr.meta = meta
@@ -169,7 +172,7 @@ func (ns *Namespace) InternVar(env *Env, name string, val Object, meta *ArrayMap
 
 func (ns *Namespace) AddAlias(env *Env, alias Symbol, namespace *Namespace) error {
 	if alias.ns != "" {
-		return env.RT.NewError("Alias can't be namespace-qualified")
+		return env.NewError("Alias can't be namespace-qualified")
 	}
 	existing := ns.aliases[alias.name]
 	if existing != nil && existing != namespace {
@@ -178,7 +181,7 @@ func (ns *Namespace) AddAlias(env *Env, alias Symbol, namespace *Namespace) erro
 			printParseError(GetPosition(alias), msg)
 			return nil
 		}
-		return env.RT.NewError(msg)
+		return env.NewError(msg)
 	}
 	ns.aliases[alias.name] = namespace
 	return nil

@@ -35,7 +35,7 @@ func externalHttpSourceToPath(env *Env, lib string, url string) (string, error) 
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			return "", env.RT.NewError(fmt.Sprintf("Unable to retrieve: %s\nServer response: %d", url, resp.StatusCode))
+			return "", env.NewError(fmt.Sprintf("Unable to retrieve: %s\nServer response: %d", url, resp.StatusCode))
 		}
 
 		out, err := os.Create(libPath)
