@@ -53,7 +53,7 @@ func ToBool(obj Object) bool {
 	case Nil:
 		return false
 	case Boolean:
-		return obj.B
+		return bool(obj)
 	default:
 		return true
 	}
@@ -64,11 +64,11 @@ func ToNative(env *Env, obj Object) (any, error) {
 	case Nil:
 		return nil, nil
 	case Boolean:
-		return sv.B, nil
+		return bool(sv), nil
 	case Int:
-		return sv.Int().I, nil
+		return sv.Int().I(), nil
 	case String:
-		return sv.S, nil
+		return sv.S(), nil
 	default:
 		return obj.ToString(env, false)
 	}

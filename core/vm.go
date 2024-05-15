@@ -392,11 +392,11 @@ func (c *Compiler) Process(env *Env, expr Expr) error {
 				Op: PushNil,
 			})
 		case Int:
-			if sv.I < 1024 {
+			if sv.I() < 1024 {
 				specialized = true
 				c.insn(Instruction{
 					Op: PushInt,
-					A0: int32(sv.I),
+					A0: int32(sv.I()),
 				})
 			}
 		}
@@ -477,9 +477,9 @@ func (c *Compiler) Process(env *Env, expr Expr) error {
 		data.vr = e.vr
 
 		meta := EmptyArrayMap()
-		meta.Add(env, criticalKeywords.line, Int{I: e.startLine})
-		meta.Add(env, criticalKeywords.column, Int{I: e.startColumn})
-		meta.Add(env, criticalKeywords.file, String{S: e.filename})
+		meta.Add(env, criticalKeywords.line, MakeInt(e.startLine))
+		meta.Add(env, criticalKeywords.column, MakeInt(e.startColumn))
+		meta.Add(env, criticalKeywords.file, MakeString(e.filename))
 		meta.Add(env, criticalKeywords.ns, e.vr.ns)
 		meta.Add(env, criticalKeywords.name, e.vr.name)
 

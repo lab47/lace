@@ -441,7 +441,7 @@
          one arg, returns the concatenation of the str values of the args."
          :added "1.0"
          :tag String}
-  str str__)
+  str lace.lang/CombineToString)
 
 (defn symbol?
   "Return true if x is a Symbol"
@@ -1448,6 +1448,7 @@
   "The same as binding"
   {:added "1.0"}
   [bindings & body]
+  ; TODO(emp) Make this modify the static Var values, not a thread-local one.
   `(binding ~bindings ~@body))
 
 (defn deref
@@ -4516,15 +4517,29 @@
        :tag Map}
   types__ types__)
 
+(defmacro future
+  "Takes a body of expressions and yields a future object that will
+  invoke the body in another thread, and will cache the result and
+  return it on all subsequent calls to deref/@. If the computation has
+  not yet finished, calls to deref/@ will block, unless the variant of
+  deref with timeout is used. See also - realized?."
+  {:added "1.1"}
+  [& body] `(lace.lang/NewFuture (^{:once true} fn* [] ~@body)))
+
+(defn realized?
+  "Returns true if a value has been produced for a promise, delay, future or lazy sequence."
+  {:added "1.3"}
+  [^lace.lang.IPending x] (.isRealized x))
+
 (defmacro go
-  "Schedules the body to run inside a goroutine.
+ "Schedules the body to run inside a goroutine.
   Immediately returns a channel which will receive the result of the body when
   completed.
   If exception is thrown inside the body, it will be caught and re-thrown upon
   reading from the returned channel."
-  {:added "1.0"}
-  [& body]
-  `(go__ (fn [] ~@body)))
+ {:added "1.0"}
+ [& body]
+ `(lace.lang/StartGoRoutine (fn [] ~@body)))
 
 (defn chan
   "Returns a new channel with an optional buffer of size n."

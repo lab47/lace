@@ -30,7 +30,7 @@ func csvSeqOpts(env *Env, src Object, opts Map) (Object, error) {
 	var rdr io.Reader
 	switch src := src.(type) {
 	case String:
-		rdr = strings.NewReader(src.S)
+		rdr = strings.NewReader(src.S())
 	case io.Reader:
 		rdr = src
 	default:
@@ -57,21 +57,21 @@ func csvSeqOpts(env *Env, src Object, opts Map) (Object, error) {
 		if err != nil {
 			return nil, err
 		}
-		csvReader.FieldsPerRecord = i.I
+		csvReader.FieldsPerRecord = i.I()
 	}
 	if ok, c := opts.GetEqu(MakeKeyword("lazy-quotes")); ok {
 		b, err := AssertBoolean(env, c, "lazy-quotes must be a boolean")
 		if err != nil {
 			return nil, err
 		}
-		csvReader.LazyQuotes = b.B
+		csvReader.LazyQuotes = bool(b)
 	}
 	if ok, c := opts.GetEqu(MakeKeyword("trim-leading-space")); ok {
 		b, err := AssertBoolean(env, c, "trim-leading-space must be a boolean")
 		if err != nil {
 			return nil, err
 		}
-		csvReader.TrimLeadingSpace = b.B
+		csvReader.TrimLeadingSpace = bool(b)
 	}
 	return csvLazySeq(csvReader)
 }
@@ -122,7 +122,7 @@ func writeWriter(env *Env, wr io.Writer, data Seqable, opts Map) error {
 		if err != nil {
 			return err
 		}
-		csvWriter.UseCRLF = b.B
+		csvWriter.UseCRLF = bool(b)
 	}
 	s := data.Seq()
 	for {

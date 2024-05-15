@@ -68,12 +68,10 @@ func (x Double) WithInfo(info *ObjectInfo) Object {
 }
 
 func (x Int) WithInfo(info *ObjectInfo) Object {
-	x.info = info
 	return x
 }
 
 func (x Boolean) WithInfo(info *ObjectInfo) Object {
-	x.info = info
 	return x
 }
 
@@ -98,7 +96,6 @@ func (x Symbol) WithInfo(info *ObjectInfo) Object {
 }
 
 func (x String) WithInfo(info *ObjectInfo) Object {
-	x.info = info
 	return x
 }
 

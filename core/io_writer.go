@@ -2,7 +2,6 @@ package core
 
 import (
 	"io"
-	"unsafe"
 )
 
 type (
@@ -16,7 +15,7 @@ var _ Object = &IOWriter{}
 
 func MakeIOWriter(w io.Writer) *IOWriter {
 	res := &IOWriter{w, 0}
-	res.hash = HashPtr(uintptr(unsafe.Pointer(res)))
+	res.hash = HashPtr(res)
 	return res
 }
 

@@ -74,7 +74,10 @@ func NewEnv() (*Env, error) {
 		return nil, err
 	}
 
-	vr.Value = MakeReflectValue(res.Context)
+	vr.isDynamic = true
+	vr.SetStatic(MakeReflectValue(res.Context))
+
+	res.ctx = vr
 
 	res.version, err = res.CoreNamespace.InternVar(res, "*lace-version*", versionMap(res),
 		MakeMeta(nil, `The version info for Clojure core, as a map containing :major :minor
@@ -91,14 +94,14 @@ func NewEnv() (*Env, error) {
 	if err != nil {
 		return nil, err
 	}
-	res.classPath.Value = NIL
+	res.classPath.SetStatic(NIL)
 	res.classPath.isPrivate = true
 	res.printReadably, err = res.CoreNamespace.Intern(res, MakeSymbol("*print-readably*"))
 	if err != nil {
 		return nil, err
 	}
-	res.printReadably.Value = Boolean{B: true}
-	_, err = res.CoreNamespace.InternVar(res, "*linter-mode*", Boolean{B: LINTER_MODE},
+	res.printReadably.SetStatic(Boolean(true))
+	_, err = res.CoreNamespace.InternVar(res, "*linter-mode*", Boolean(LINTER_MODE),
 		MakeMeta(nil, "true if Lace is running in linter mode", "1.0"))
 	if err != nil {
 		return nil, err
@@ -109,7 +112,7 @@ func NewEnv() (*Env, error) {
 		return nil, err
 	}
 
-	res.classPath.Value = NewVectorFrom()
+	res.classPath.SetStatic(NewVectorFrom())
 
 	userNs := res.EnsureNamespace(MakeSymbol("user"))
 
@@ -120,7 +123,7 @@ func NewEnv() (*Env, error) {
 		return nil, err
 	}
 
-	err = SetupPkgReflect(res)
+	reflectBuilder, err := SetupPkgReflect(res)
 	if err != nil {
 		return nil, err
 	}
@@ -131,12 +134,18 @@ func NewEnv() (*Env, error) {
 		if fn, ok := builtinNSSetup[name]; ok {
 			err := fn(res)
 			if err != nil {
+
 				panic(fmt.Sprintf("error loading %s: %s", name, err))
 			}
 		}
 	}
 
-	userNs.ReferAll(res.CoreNamespace)
+	// this happens when doing gen_data currently.
+	if res.CoreNamespace.Resolve("defmacro") != nil {
+		reflectBuilder.Run(reflectCode)
+	}
+
+	userNs.ReferAll(res.CoreNamespace, true)
 
 	return res, nil
 }

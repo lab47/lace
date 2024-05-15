@@ -825,10 +825,14 @@ func EnsureDeref(env *Env, args []Object, index int) (Deref, error) {
 	switch c := args[index].(type) {
 	case Deref:
 		return c, nil
-	default:
-		var v Deref
-		return v, env.NewArgTypeError(index, c, "Deref")
+	case *ReflectValue:
+		if d, ok := c.val.Interface().(Deref); ok {
+			return d, nil
+		}
 	}
+
+	var v Deref
+	return v, env.NewArgTypeError(index, args[index], "Deref")
 }
 
 func AssertAtom(env *Env, obj Object, msg string) (*Atom, error) {

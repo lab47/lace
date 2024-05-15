@@ -6,6 +6,8 @@ import (
 	"sort"
 	"strings"
 
+	_ "embed"
+
 	"github.com/lab47/lace/pkg/pkgreflect"
 )
 
@@ -167,6 +169,129 @@ func structGet(env *Env, r *ReflectValue, name string) (Object, error) {
 	return convReg.convRet(rt)(env, field)
 }
 
+func structList(env *Env, r *ReflectValue) (Object, error) {
+	val := r.val
+
+	for val.Kind() == reflect.Pointer {
+		val = val.Elem()
+	}
+
+	if val.Kind() != reflect.Struct {
+		return nil, env.NewError(fmt.Sprintf("value must be a struct, is a %T", val.Interface()))
+	}
+
+	var ret []Object
+
+	t := val.Type()
+
+	for i := 0; i < t.NumField(); i++ {
+		ret = append(ret, MakeKeyword(t.Field(i).Name))
+	}
+
+	return NewListFrom(ret...), nil
+}
+
+func structFromMap(env *Env, rt *ReflectType, m Map) (Object, error) {
+	if rt.typ.Kind() != reflect.Struct {
+		return nil, env.NewError("type is not a struct")
+	}
+
+	ret := reflect.New(rt.typ)
+
+	rv := ret.Elem()
+
+	iter := m.Iter()
+
+	for iter.HasNext() {
+		p := iter.Next()
+
+		var key string
+
+		if err := CoerceString(env, p.Key, &key); err != nil {
+			return nil, err
+		}
+
+		key = convertMethodName(key)
+
+		field := rv.FieldByName(key)
+		if !field.IsValid() {
+			return nil, env.NewError("Unknown field: %s", key)
+		}
+
+		fval := p.Value
+
+		var (
+			frv reflect.Value
+			err error
+		)
+
+		if field.Type().Kind() == reflect.Func {
+			call, ok := fval.(Callable)
+			if !ok {
+				return nil, env.TypeError(TCContext{Context: "struct value"}, fval, "Callable")
+			}
+			frv = convReg.makeFuncConvertIn(env, call, field.Type())
+		} else {
+			cv, _ := convReg.convArg(field.Type())
+
+			frv, err = cv(env, -1, fval)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		if !frv.Type().AssignableTo(field.Type()) {
+			return nil, env.NewError(
+				fmt.Sprintf("needed type %s, had %T", field.Type(), fval))
+		}
+
+		field.Set(frv)
+	}
+
+	return MakeReflectValue(ret.Interface()), nil
+}
+
+func structToMap(env *Env, r *ReflectValue) (Object, error) {
+	val := r.val
+
+	for val.Kind() == reflect.Pointer || val.Kind() == reflect.Interface {
+		val = val.Elem()
+	}
+
+	if val.Kind() != reflect.Struct {
+		return nil, env.NewError(fmt.Sprintf("value must be a struct, is a %s (%T)", val.Kind(), val.Interface()))
+	}
+
+	var ret Associative = NIL
+
+	t := val.Type()
+
+	for i := 0; i < t.NumField(); i++ {
+		tf := t.Field(i)
+		if !tf.IsExported() {
+			continue
+		}
+
+		field := val.Field(i)
+		rt := field.Type()
+
+		cv, err := convReg.convRet(rt)(env, field)
+		if err != nil {
+			return nil, err
+		}
+
+		ret, err = ret.Assoc(env,
+			MakeKeyword(tf.Name),
+			cv,
+		)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return ret, nil
+}
+
 func (r *ReflectValue) ToString(env *Env, escape bool) (string, error) {
 	t := r.val.Type()
 	for t.Kind() == reflect.Pointer {
@@ -180,7 +305,18 @@ func (r *ReflectValue) ToString(env *Env, escape bool) (string, error) {
 		return fmt.Sprintf("#go.%s[%s]", t.Kind(), r.val.String()), nil
 	}
 
-	return fmt.Sprintf("#%s.%s[%p]", pkg, name, r.val.Interface()), nil
+	v := r.val
+
+	for v.Kind() == reflect.Interface {
+		v = v.Elem()
+	}
+
+	switch v.Kind() {
+	case reflect.Pointer:
+		return fmt.Sprintf("#%s.%s[%p]", pkg, name, v.Interface()), nil
+	default:
+		return fmt.Sprintf("#%s.%s[%s]", pkg, name, v.Interface()), nil
+	}
 }
 
 func (r *ReflectValue) Hash(env *Env) (uint32, error) {
@@ -239,7 +375,7 @@ func castObjectToRef(env *Env, typ reflect.Type, obj Object) (Object, error) {
 		}
 
 		v := reflect.New(typ).Elem()
-		v.SetInt(int64(num.Int().I))
+		v.SetInt(int64(num.Int().I()))
 
 		return &ReflectValue{val: v}, nil
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
@@ -249,7 +385,7 @@ func castObjectToRef(env *Env, typ reflect.Type, obj Object) (Object, error) {
 		}
 
 		v := reflect.New(typ).Elem()
-		v.SetInt(int64(num.Int().I))
+		v.SetInt(int64(num.Int().I()))
 
 		return &ReflectValue{val: v}, nil
 	case reflect.Slice:
@@ -259,8 +395,8 @@ func castObjectToRef(env *Env, typ reflect.Type, obj Object) (Object, error) {
 				return nil, err
 			}
 
-			v := reflect.MakeSlice(typ, 0, len(str.S))
-			v = reflect.AppendSlice(v, reflect.ValueOf([]byte(str.S)))
+			v := reflect.MakeSlice(typ, 0, len(str.S()))
+			v = reflect.AppendSlice(v, reflect.ValueOf([]byte(str.S())))
 
 			return &ReflectValue{val: v}, nil
 		}
@@ -344,7 +480,7 @@ func makeStructType(env *Env, m Map) (reflect.Type, error) {
 		case Keyword:
 			f.Name = sv.Name()
 		case String:
-			f.Name = sv.S
+			f.Name = sv.S()
 		default:
 			return nil, env.NewError("name must be symbol/keyword/string only")
 		}
@@ -426,7 +562,10 @@ var nsSubs = strings.NewReplacer(
 	"/", ".",
 )
 
-func SetupPkgReflect(env *Env) error {
+//go:embed src/lace/reflect.clj
+var reflectCode []byte
+
+func SetupPkgReflect(env *Env) (*NSBuilder, error) {
 	typedMethods := map[reflect.Type]reifiedType{}
 
 	var pkgs []Object
@@ -577,6 +716,27 @@ func SetupPkgReflect(env *Env) error {
 		Doc:   "Set a field by name in the given value.",
 		Added: "1.0",
 		Fn:    structPut,
+	})
+
+	b.Defn(&DefnInfo{
+		Name:  "fields",
+		Doc:   "List the fields in a struct value.",
+		Added: "1.0",
+		Fn:    structList,
+	})
+
+	b.Defn(&DefnInfo{
+		Name:  "to-map",
+		Doc:   "Convert a struct value to a map.",
+		Added: "1.0",
+		Fn:    structToMap,
+	})
+
+	b.Defn(&DefnInfo{
+		Name:  "from-map",
+		Doc:   "Create a struct value, populating it from the values in the map.",
+		Added: "1.0",
+		Fn:    structFromMap,
 	})
 
 	b.Defn(&DefnInfo{
@@ -785,5 +945,5 @@ func SetupPkgReflect(env *Env) error {
 		Type:  reflect.TypeFor[[]byte](),
 	})
 
-	return nil
+	return b, nil
 }

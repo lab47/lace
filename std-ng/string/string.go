@@ -329,13 +329,13 @@ func split(s string, r *regexp.Regexp, n int) (core.Object, error) {
 	result := core.EmptyVector()
 	var err error
 	for _, el := range indexes {
-		result, err = result.Conjoin(core.String{S: s[lastStart:el[0]]})
+		result, err = result.Conjoin(core.MakeString(s[lastStart:el[0]]))
 		if err != nil {
 			return nil, err
 		}
 		lastStart = el[1]
 	}
-	result, err = result.Conjoin(core.String{S: s[lastStart:]})
+	result, err = result.Conjoin(core.MakeString(s[lastStart:]))
 	return result, err
 }
 
@@ -346,11 +346,11 @@ func splitOnStringOrRegex2(s string, sep core.Object) (core.Object, error) {
 func splitOnStringOrRegex3(s string, sep core.Object, n int) (core.Object, error) {
 	switch sep := sep.(type) {
 	case core.String:
-		v := strings.Split(s, sep.S)
+		v := strings.Split(s, sep.S())
 		result := core.EmptyVector()
 		var err error
 		for _, el := range v {
-			result, err = result.Conjoin(core.String{S: el})
+			result, err = result.Conjoin(core.MakeString(el))
 			if err != nil {
 				return nil, err
 			}
@@ -406,7 +406,7 @@ func isBlank(env *core.Env, s core.Object) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	for _, r := range str.S {
+	for _, r := range str {
 		if !unicode.IsSpace(r) {
 			return false, nil
 		}
@@ -450,7 +450,7 @@ func indexOf(s string, value core.Object, from int) (core.Object, error) {
 	case core.Char:
 		res = strings.IndexRune(s, value.Ch)
 	case core.String:
-		res = strings.Index(s, value.S)
+		res = strings.Index(s, value.S())
 	default:
 		return nil, core.StubNewArgTypeError(1, value, "String or Char")
 	}
@@ -469,7 +469,7 @@ func lastIndexOf(s string, value core.Object, from int) (core.Object, error) {
 	case core.Char:
 		res = strings.LastIndex(s, string(value.Ch))
 	case core.String:
-		res = strings.LastIndex(s, value.S)
+		res = strings.LastIndex(s, value.S())
 	default:
 		return nil, core.StubNewArgTypeError(1, value, "String or Char")
 	}
@@ -482,7 +482,7 @@ func lastIndexOf(s string, value core.Object, from int) (core.Object, error) {
 func replace(s string, match core.Object, repl string) (string, error) {
 	switch match := match.(type) {
 	case core.String:
-		return strings.Replace(s, match.S, repl, -1), nil
+		return strings.Replace(s, match.S(), repl, -1), nil
 	case *core.Regex:
 		return match.R.ReplaceAllString(s, repl), nil
 	default:
@@ -493,7 +493,7 @@ func replace(s string, match core.Object, repl string) (string, error) {
 func replaceFirst(s string, match core.Object, repl string) (string, error) {
 	switch match := match.(type) {
 	case core.String:
-		return strings.Replace(s, match.S, repl, 1), nil
+		return strings.Replace(s, match.S(), repl, 1), nil
 	case *core.Regex:
 		m := match.R.FindStringIndex(s)
 		if m == nil {

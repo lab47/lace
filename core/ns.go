@@ -161,7 +161,7 @@ func (ns *Namespace) Refer(env *Env, sym Symbol, vr *Var) (*Var, error) {
 	return vr, nil
 }
 
-func (ns *Namespace) ReferAll(other *Namespace) {
+func (ns *Namespace) ReferAll(other *Namespace, safe bool) {
 	ns.mu.Lock()
 	defer ns.mu.Unlock()
 
@@ -170,7 +170,9 @@ func (ns *Namespace) ReferAll(other *Namespace) {
 
 	for name, vr := range other.mappings {
 		if !vr.isPrivate {
-			ns.mappings[name] = vr
+			if !safe || ns.mappings[name] == nil {
+				ns.mappings[name] = vr
+			}
 		}
 	}
 }
@@ -209,9 +211,6 @@ func (ns *Namespace) Intern(env *Env, sym Symbol) (*Var, error) {
 		return nil, env.NewError(fmt.Sprintf("WARNING: %s already refers to: %s in namespace %s",
 			sym.String(), existingVar.String(), ns.Qual()))
 	}
-	if LINTER_MODE && existingVar.expr != nil && !existingVar.ns.Name.Equals(env, criticalSymbols.lace_core) {
-		printParseWarning(sym.GetInfo().Pos(), "Duplicate def of "+existingVar.String())
-	}
 	return existingVar, nil
 }
 
@@ -220,7 +219,7 @@ func (ns *Namespace) InternVar(env *Env, name string, val Object, meta *ArrayMap
 	if err != nil {
 		return nil, err
 	}
-	vr.Value = val
+	vr.SetStatic(val)
 	if meta == nil {
 		meta = &ArrayMap{}
 	}

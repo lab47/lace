@@ -24,7 +24,7 @@ func CallVar(env *Env, varName string, args ...Object) (Object, error) {
 		return nil, err
 	}
 
-	callable, ok := vr.Value.(Callable)
+	callable, ok := vr.GetStatic().(Callable)
 	if !ok {
 		return nil, fmt.Errorf("var %s is not callable", varName)
 	}

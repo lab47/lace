@@ -387,8 +387,8 @@ func (v *Vector) Pop(env *Env) (Stack, error) {
 func (v *Vector) Get(env *Env, key Object) (bool, Object, error) {
 	switch key := key.(type) {
 	case Int:
-		if key.I >= 0 && key.I < v.count {
-			return true, v.at(key.I), nil
+		if key.I() >= 0 && key.I() < v.count {
+			return true, v.at(key.I()), nil
 		}
 	}
 	return false, nil, nil
@@ -440,9 +440,9 @@ func assertInteger(obj Object) (int, error) {
 	var i int
 	switch obj := obj.(type) {
 	case Int:
-		i = obj.I
+		i = obj.I()
 	case *BigInt:
-		i = obj.Int().I
+		i = obj.Int().I()
 	default:
 		return 0, StubNewError("Key must be integer")
 	}
@@ -540,7 +540,7 @@ func (v *Vector) kvreduce(env *Env, c Callable, init Object) (Object, error) {
 		if err != nil {
 			return nil, err
 		}
-		res, err = c.Call(env, []Object{res, Int{I: i}, o})
+		res, err = c.Call(env, []Object{res, MakeInt(i), o})
 		if err != nil {
 			return nil, err
 		}

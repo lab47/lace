@@ -2,7 +2,6 @@ package core
 
 import (
 	"fmt"
-	"unsafe"
 )
 
 type (
@@ -31,7 +30,7 @@ func (f *Opaque[T]) GetType() *Type {
 }
 
 func (f *Opaque[T]) Hash(env *Env) (uint32, error) {
-	return HashPtr(uintptr(unsafe.Pointer(f))), nil
+	return HashPtr(f), nil
 }
 
 func (f *Opaque[T]) WithInfo(info *ObjectInfo) Object {

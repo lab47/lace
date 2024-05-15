@@ -64,7 +64,7 @@ func ExtractString(env *Env, args []Object, index int) (string, error) {
 		return "", err
 	}
 
-	return s.S, nil
+	return s.S(), nil
 }
 
 func ExtractKeyword(env *Env, args []Object, index int) (string, error) {
@@ -81,7 +81,7 @@ func ExtractStringable(env *Env, args []Object, index int) (string, error) {
 		return "", err
 	}
 
-	return s.S, nil
+	return s.S(), nil
 }
 
 func ExtractStrings(env *Env, args []Object, index int) ([]string, error) {
@@ -91,7 +91,7 @@ func ExtractStrings(env *Env, args []Object, index int) ([]string, error) {
 		if err != nil {
 			return nil, err
 		}
-		strs = append(strs, s.S)
+		strs = append(strs, s.S())
 	}
 	return strs, nil
 }
@@ -101,7 +101,7 @@ func ExtractInt(env *Env, args []Object, index int) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	return i.I, nil
+	return i.I(), nil
 }
 
 func ExtractBoolean(env *Env, args []Object, index int) (bool, error) {
@@ -110,7 +110,7 @@ func ExtractBoolean(env *Env, args []Object, index int) (bool, error) {
 		return false, err
 	}
 
-	return b.B, nil
+	return bool(b), nil
 }
 
 func ExtractChar(env *Env, args []Object, index int) (rune, error) {
@@ -217,7 +217,7 @@ var procIsZero = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 	ops := GetOps(n)
-	return Boolean{B: ops.IsZero(n)}, nil
+	return Boolean(ops.IsZero(n)), nil
 }
 
 var procIsPos = func(env *Env, args []Object) (Object, error) {
@@ -230,7 +230,7 @@ var procIsPos = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 	ops := GetOps(n)
-	return Boolean{B: ops.Gt(n, Int{I: 0})}, nil
+	return Boolean(ops.Gt(n, MakeInt(0))), nil
 }
 
 var procIsNeg = func(env *Env, args []Object) (Object, error) {
@@ -243,7 +243,7 @@ var procIsNeg = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 	ops := GetOps(n)
-	return Boolean{B: ops.Lt(n, Int{I: 0})}, nil
+	return Boolean(ops.Lt(n, MakeInt(0))), nil
 }
 
 var procAdd = func(env *Env, args []Object) (Object, error) {
@@ -321,7 +321,7 @@ var procSubtract = func(env *Env, args []Object) (Object, error) {
 
 	var a, b Object
 	if len(args) == 1 {
-		a = Int{I: 0}
+		a = MakeInt(0)
 		b = args[0]
 	} else {
 		a = args[0]
@@ -346,7 +346,7 @@ var procSubtractEx = func(env *Env, args []Object) (Object, error) {
 
 	var a, b Object
 	if len(args) == 1 {
-		a = Int{I: 0}
+		a = MakeInt(0)
 		b = args[0]
 	} else {
 		a = args[0]
@@ -424,21 +424,21 @@ var procBitNot = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	return Int{I: ^x.I}, nil
+	return MakeInt(^x.I()), nil
 }
 
 func AssertInts(env *Env, args []Object) (Int, Int, error) {
 	if err := CheckArity(env, args, 2, 2); err != nil {
-		return Int{}, Int{}, err
+		return 0, 0, err
 	}
 
 	x, err := AssertInt(env, args[0], "Bit operation not supported for "+args[0].GetType().Name())
 	if err != nil {
-		return Int{}, Int{}, err
+		return 0, 0, err
 	}
 	y, err := AssertInt(env, args[1], "Bit operation not supported for "+args[1].GetType().Name())
 	if err != nil {
-		return Int{}, Int{}, err
+		return 0, 0, err
 	}
 	return x, y, nil
 }
@@ -448,7 +448,7 @@ var procBitAnd = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	return Int{I: x.I & y.I}, nil
+	return MakeInt(x.I() & y.I()), nil
 }
 
 var procBitOr = func(env *Env, args []Object) (Object, error) {
@@ -456,7 +456,7 @@ var procBitOr = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	return Int{I: x.I | y.I}, nil
+	return MakeInt(x.I() | y.I()), nil
 }
 
 var procBitXor = func(env *Env, args []Object) (Object, error) {
@@ -464,7 +464,7 @@ var procBitXor = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	return Int{I: x.I ^ y.I}, nil
+	return MakeInt(x.I() ^ y.I()), nil
 }
 
 var procBitAndNot = func(env *Env, args []Object) (Object, error) {
@@ -472,7 +472,7 @@ var procBitAndNot = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	return Int{I: x.I &^ y.I}, nil
+	return MakeInt(x.I() &^ y.I()), nil
 }
 
 var procBitClear = func(env *Env, args []Object) (Object, error) {
@@ -480,7 +480,7 @@ var procBitClear = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	return Int{I: x.I &^ (1 << uint(y.I))}, nil
+	return MakeInt(x.I() &^ (1 << uint(y.I()))), nil
 }
 
 var procBitSet = func(env *Env, args []Object) (Object, error) {
@@ -488,7 +488,7 @@ var procBitSet = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	return Int{I: x.I | (1 << uint(y.I))}, nil
+	return MakeInt(x.I() | (1 << uint(y.I()))), nil
 }
 
 var procBitFlip = func(env *Env, args []Object) (Object, error) {
@@ -496,7 +496,7 @@ var procBitFlip = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	return Int{I: x.I ^ (1 << uint(y.I))}, nil
+	return MakeInt(x.I() ^ (1 << uint(y.I()))), nil
 }
 
 var procBitTest = func(env *Env, args []Object) (Object, error) {
@@ -504,7 +504,7 @@ var procBitTest = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	return Boolean{B: x.I&(1<<uint(y.I)) != 0}, nil
+	return Boolean(x.I()&(1<<uint(y.I())) != 0), nil
 }
 
 var procBitShiftLeft = func(env *Env, args []Object) (Object, error) {
@@ -512,7 +512,7 @@ var procBitShiftLeft = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	return Int{I: x.I << uint(y.I)}, nil
+	return MakeInt(x.I() << uint(y.I())), nil
 }
 
 var procBitShiftRight = func(env *Env, args []Object) (Object, error) {
@@ -520,7 +520,7 @@ var procBitShiftRight = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	return Int{I: x.I >> uint(y.I)}, nil
+	return MakeInt(x.I() >> uint(y.I())), nil
 }
 
 var procUnsignedBitShiftRight = func(env *Env, args []Object) (Object, error) {
@@ -528,7 +528,7 @@ var procUnsignedBitShiftRight = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	return Int{I: int(uint(x.I) >> uint(y.I))}, nil
+	return MakeInt(int(uint(x.I()) >> uint(y.I()))), nil
 }
 
 var procExInfo = func(env *Env, args []Object) (Object, error) {
@@ -541,7 +541,7 @@ var procExInfo = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 
-	res := WrapError(env, errors.New(s.S))
+	res := WrapError(env, errors.New(s.S()))
 
 	var data ArrayMap
 
@@ -618,7 +618,7 @@ var procRegex = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	r, err := regexp.Compile(s.S)
+	r, err := regexp.Compile(s.S())
 	if err != nil {
 		return nil, env.NewError("Invalid regex: " + err.Error())
 	}
@@ -632,7 +632,7 @@ func reGroups(s string, indexes []int) (Object, error) {
 		if indexes[0] == -1 {
 			return NIL, nil
 		} else {
-			return String{S: s[indexes[0]:indexes[1]]}, nil
+			return MakeString(s[indexes[0]:indexes[1]]), nil
 		}
 	} else {
 		v := EmptyVector()
@@ -644,7 +644,7 @@ func reGroups(s string, indexes []int) (Object, error) {
 					return nil, err
 				}
 			} else {
-				v, err = v.Conjoin(String{S: s[indexes[i]:indexes[i+1]]})
+				v, err = v.Conjoin(MakeString(s[indexes[i]:indexes[i+1]]))
 				if err != nil {
 					return nil, err
 				}
@@ -667,13 +667,13 @@ var procReSeq = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	matches := re.R.FindAllStringSubmatchIndex(s.S, -1)
+	matches := re.R.FindAllStringSubmatchIndex(s.S(), -1)
 	if matches == nil {
 		return NIL, nil
 	}
 	res := make([]Object, len(matches))
 	for i, match := range matches {
-		grp, err := reGroups(s.S, match)
+		grp, err := reGroups(s.S(), match)
 		if err != nil {
 			return nil, err
 		}
@@ -695,8 +695,8 @@ var procReFind = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	match := re.R.FindStringSubmatchIndex(s.S)
-	return reGroups(s.S, match)
+	match := re.R.FindStringSubmatchIndex(s.S())
+	return reGroups(s.S(), match)
 }
 
 var procRand = func(env *Env, args []Object) (Object, error) {
@@ -705,7 +705,7 @@ var procRand = func(env *Env, args []Object) (Object, error) {
 }
 
 var procIsSpecialSymbol = func(env *Env, args []Object) (Object, error) {
-	return Boolean{B: IsSpecialSymbol(args[0])}, nil
+	return Boolean(IsSpecialSymbol(args[0])), nil
 }
 
 var procSubs = func(env *Env, args []Object) (Object, error) {
@@ -721,22 +721,22 @@ var procSubs = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	slen := utf8.RuneCountInString(s.S)
+	slen := utf8.RuneCountInString(s.S())
 	end := slen
 	if len(args) > 2 {
 		x, err := EnsureInt(env, args, 2)
 		if err != nil {
 			return nil, err
 		}
-		end = x.I
+		end = x.I()
 	}
-	if start.I < 0 || start.I > slen {
-		return nil, env.NewError(fmt.Sprintf("String index out of range: %d", start.I))
+	if start.I() < 0 || start.I() > slen {
+		return nil, env.NewError(fmt.Sprintf("String index out of range: %d", start.I()))
 	}
 	if end < 0 || end > slen {
 		return nil, env.NewError(fmt.Sprintf("String index out of range: %d", end))
 	}
-	return String{S: string([]rune(s.S)[start.I:end])}, nil
+	return MakeString(string([]rune(s.S())[start.I():end])), nil
 }
 
 var procIntern = func(env *Env, args []Object) (Object, error) {
@@ -757,7 +757,7 @@ var procIntern = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 	if len(args) == 3 {
-		vr.Value = args[2]
+		vr.SetStatic(args[2])
 	}
 	return vr, nil
 }
@@ -942,7 +942,7 @@ var procIsBound = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	return Boolean{B: vr.Value != nil}, nil
+	return Boolean(vr.GetStatic() != nil), nil
 }
 
 func toNative(env *Env, obj Object) (interface{}, error) {
@@ -971,8 +971,8 @@ var procFormat = func(env *Env, args []Object) (Object, error) {
 			return nil, err
 		}
 	}
-	res := fmt.Sprintf(s.S, fargs...)
-	return String{S: res}, nil
+	res := fmt.Sprintf(s.S(), fargs...)
+	return MakeString(res), nil
 }
 
 var procList = func(env *Env, args []Object) (Object, error) {
@@ -1078,7 +1078,7 @@ var procIsInstance = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	return Boolean{B: IsInstance(env, t, args[1])}, nil
+	return Boolean(IsInstance(env, t, args[1])), nil
 }
 
 var procAssoc = func(env *Env, args []Object) (Object, error) {
@@ -1099,7 +1099,7 @@ var procEquals = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 
-	return Boolean{B: args[0].Equals(env, args[1])}, nil
+	return Boolean(args[0].Equals(env, args[1])), nil
 }
 
 var procCount = func(env *Env, args []Object) (Object, error) {
@@ -1109,7 +1109,7 @@ var procCount = func(env *Env, args []Object) (Object, error) {
 
 	switch obj := args[0].(type) {
 	case Counted:
-		return Int{I: obj.Count()}, nil
+		return MakeInt(obj.Count()), nil
 	default:
 		s, err := AssertSeqable(env, obj, "count not supported on this type: "+obj.GetType().Name())
 		if err != nil {
@@ -1119,7 +1119,7 @@ var procCount = func(env *Env, args []Object) (Object, error) {
 		if err != nil {
 			return nil, err
 		}
-		return Int{I: c}, nil
+		return MakeInt(c), nil
 	}
 }
 
@@ -1141,11 +1141,11 @@ var procSubvec = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	if start.I > end.I {
-		return nil, env.NewError(fmt.Sprintf("subvec's start index (%d) is greater than end index (%d)", start.I, end.I))
+	if start.I() > end.I() {
+		return nil, env.NewError(fmt.Sprintf("subvec's start index (%d) is greater than end index (%d)", start.I(), end.I()))
 	}
-	subv := make([]Object, 0, end.I-start.I)
-	for i := start.I; i < end.I; i++ {
+	subv := make([]Object, 0, end.I()-start.I())
+	for i := start.I(); i < end.I(); i++ {
 		subv = append(subv, v.at(i))
 	}
 	return NewVectorFrom(subv...), nil
@@ -1221,7 +1221,7 @@ var procStr = func(env *Env, args []Object) (Object, error) {
 			buffer.WriteString(s)
 		}
 	}
-	return String{S: buffer.String()}, nil
+	return MakeString(buffer.String()), nil
 }
 
 var procSymbol = func(env *Env, args []Object) (Object, error) {
@@ -1234,7 +1234,7 @@ var procSymbol = func(env *Env, args []Object) (Object, error) {
 		if err != nil {
 			return nil, err
 		}
-		return MakeSymbol(s.S), nil
+		return MakeSymbol(s.S()), nil
 	}
 
 	var ns string
@@ -1243,7 +1243,7 @@ var procSymbol = func(env *Env, args []Object) (Object, error) {
 		if err != nil {
 			return nil, err
 		}
-		ns = se.S
+		ns = se.S()
 	}
 	name, err := EnsureString(env, args, 1)
 	if err != nil {
@@ -1251,7 +1251,7 @@ var procSymbol = func(env *Env, args []Object) (Object, error) {
 	}
 	return Symbol{
 		ns:   ns,
-		name: name.S,
+		name: name.S(),
 	}, nil
 }
 
@@ -1263,7 +1263,7 @@ var procKeyword = func(env *Env, args []Object) (Object, error) {
 	if len(args) == 1 {
 		switch obj := args[0].(type) {
 		case String:
-			return MakeKeyword(obj.S), nil
+			return MakeKeyword(obj.S()), nil
 		case Symbol:
 			return Keyword{
 				ns:   obj.ns,
@@ -1281,13 +1281,13 @@ var procKeyword = func(env *Env, args []Object) (Object, error) {
 		if err != nil {
 			return nil, err
 		}
-		ns = s.S
+		ns = s.S()
 	}
 	sn, err := EnsureString(env, args, 1)
 	if err != nil {
 		return nil, err
 	}
-	name := sn.S
+	name := sn.S()
 	return Keyword{
 		ns:   ns,
 		name: name,
@@ -1304,7 +1304,7 @@ var procGensym = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	return genSym(s.S, ""), nil
+	return genSym(s.S(), ""), nil
 }
 
 var procApply = func(env *Env, args []Object) (Object, error) {
@@ -1380,7 +1380,7 @@ var procIdentical = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 
-	return Boolean{B: args[0] == args[1]}, nil
+	return Boolean(args[0] == args[1]), nil
 }
 
 var procCompare = func(env *Env, args []Object) (Object, error) {
@@ -1390,21 +1390,21 @@ var procCompare = func(env *Env, args []Object) (Object, error) {
 
 	k1, k2 := args[0], args[1]
 	if k1.Equals(env, k2) {
-		return Int{I: 0}, nil
+		return MakeInt(0), nil
 	}
 	switch k2.(type) {
 	case Nil:
-		return Int{I: 1}, nil
+		return MakeInt(1), nil
 	}
 	switch k1 := k1.(type) {
 	case Nil:
-		return Int{I: -1}, nil
+		return MakeInt(-1), nil
 	case Comparable:
 		cmp, err := k1.Compare(env, k2)
 		if err != nil {
 			return nil, err
 		}
-		return Int{I: cmp}, nil
+		return MakeInt(cmp), nil
 	}
 	return nil, env.NewError(fmt.Sprintf("%s (type: %s) is not a Comparable", mustStr(env, k1), k1.GetType().Name()))
 }
@@ -1416,7 +1416,7 @@ var procInt = func(env *Env, args []Object) (Object, error) {
 
 	switch obj := args[0].(type) {
 	case Char:
-		return Int{I: int(obj.Ch)}, nil
+		return MakeInt(int(obj.Ch)), nil
 	case Number:
 		return obj.Int(), nil
 	default:
@@ -1453,7 +1453,7 @@ var procChar = func(env *Env, args []Object) (Object, error) {
 	case Char:
 		return c, nil
 	case Number:
-		i := c.Int().I
+		i := c.Int().I()
 		if i < MIN_RUNE || i > MAX_RUNE {
 			return nil, env.NewError(fmt.Sprintf("Value out of range for char: %d", i))
 		}
@@ -1468,7 +1468,7 @@ var procBoolean = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 
-	return Boolean{B: ToBool(args[0])}, nil
+	return Boolean(ToBool(args[0])), nil
 }
 
 var procNumerator = func(env *Env, args []Object) (Object, error) {
@@ -1505,10 +1505,10 @@ var procBigInt = func(env *Env, args []Object) (Object, error) {
 		return &BigInt{b: *n.BigInt()}, nil
 	case String:
 		bi := big.Int{}
-		if _, ok := bi.SetString(n.S, 10); ok {
+		if _, ok := bi.SetString(n.S(), 10); ok {
 			return &BigInt{b: bi}, nil
 		}
-		return nil, env.NewError("Invalid number format " + n.S)
+		return nil, env.NewError("Invalid number format " + n.S())
 	default:
 		return nil, env.NewError(fmt.Sprintf("Cannot cast %s (type: %s) to BigInt", mustStr(env, n), n.GetType().Name()))
 	}
@@ -1524,10 +1524,10 @@ var procBigFloat = func(env *Env, args []Object) (Object, error) {
 		return &BigFloat{b: *n.BigFloat()}, nil
 	case String:
 		b := big.Float{}
-		if _, ok := b.SetString(n.S); ok {
+		if _, ok := b.SetString(n.S()); ok {
 			return &BigFloat{b: b}, nil
 		}
-		return nil, env.NewError("Invalid number format " + n.S)
+		return nil, env.NewError("Invalid number format " + n.S())
 	default:
 		return nil, env.NewError(fmt.Sprintf("Cannot cast %s (type: %s) to BigFloat", mustStr(env, n), n.GetType().Name()))
 	}
@@ -1543,7 +1543,7 @@ var procNth = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 
-	n := ni.Int().I
+	n := ni.Int().I()
 
 	switch coll := args[0].(type) {
 	case Indexed:
@@ -1578,7 +1578,7 @@ var procLt = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	return Boolean{B: GetOps(a).Combine(GetOps(b)).Lt(a, b)}, nil
+	return Boolean(GetOps(a).Combine(GetOps(b)).Lt(a, b)), nil
 }
 
 var procLte = func(env *Env, args []Object) (Object, error) {
@@ -1594,7 +1594,7 @@ var procLte = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	return Boolean{B: GetOps(a).Combine(GetOps(b)).Lte(a, b)}, nil
+	return Boolean(GetOps(a).Combine(GetOps(b)).Lte(a, b)), nil
 }
 
 var procGt = func(env *Env, args []Object) (Object, error) {
@@ -1610,7 +1610,7 @@ var procGt = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	return Boolean{B: GetOps(a).Combine(GetOps(b)).Gt(a, b)}, nil
+	return Boolean(GetOps(a).Combine(GetOps(b)).Gt(a, b)), nil
 }
 
 var procGte = func(env *Env, args []Object) (Object, error) {
@@ -1626,7 +1626,7 @@ var procGte = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	return Boolean{B: GetOps(a).Combine(GetOps(b)).Gte(a, b)}, nil
+	return Boolean(GetOps(a).Combine(GetOps(b)).Gte(a, b)), nil
 }
 
 var procEq = func(env *Env, args []Object) (Object, error) {
@@ -1687,7 +1687,7 @@ var procIncEx = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 	ops := GetOps(x).Combine(BIGINT_OPS)
-	return ops.Add(x, Int{I: 1})
+	return ops.Add(x, MakeInt(1))
 }
 
 var procDecEx = func(env *Env, args []Object) (Object, error) {
@@ -1700,7 +1700,7 @@ var procDecEx = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 	ops := GetOps(x).Combine(BIGINT_OPS)
-	return ops.Subtract(x, Int{I: 1})
+	return ops.Subtract(x, MakeInt(1))
 }
 
 var procInc = func(env *Env, args []Object) (Object, error) {
@@ -1713,7 +1713,7 @@ var procInc = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 	ops := GetOps(x).Combine(INT_OPS)
-	return ops.Add(x, Int{I: 1})
+	return ops.Add(x, MakeInt(1))
 }
 
 var procDec = func(env *Env, args []Object) (Object, error) {
@@ -1726,7 +1726,7 @@ var procDec = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 	ops := GetOps(x).Combine(INT_OPS)
-	return ops.Subtract(x, Int{I: 1})
+	return ops.Subtract(x, MakeInt(1))
 }
 
 var procPeek = func(env *Env, args []Object) (Object, error) {
@@ -1769,9 +1769,9 @@ var procContains = func(env *Env, args []Object) (Object, error) {
 			return nil, err
 		}
 		if ok {
-			return Boolean{B: true}, nil
+			return Boolean(true), nil
 		}
-		return Boolean{B: false}, nil
+		return Boolean(false), nil
 	}
 	return nil, env.NewError("contains? not supported on type " + args[0].GetType().Name())
 }
@@ -1881,7 +1881,7 @@ var procName = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	return String{S: n.Name()}, nil
+	return MakeString(n.Name()), nil
 }
 
 var procNamespace = func(env *Env, args []Object) (Object, error) {
@@ -1897,7 +1897,7 @@ var procNamespace = func(env *Env, args []Object) (Object, error) {
 	if ns == "" {
 		return NIL, nil
 	}
-	return String{S: ns}, nil
+	return MakeString(ns), nil
 }
 
 var procFindVar = func(env *Env, args []Object) (Object, error) {
@@ -1974,7 +1974,7 @@ var procPprint = func(env *Env, args []Object) (Object, error) {
 	}
 
 	obj := args[0]
-	w, err := Assertio_Writer(env, env.stdout.Value, "")
+	w, err := Assertio_Writer(env, env.stdout.GetStatic(), "")
 	if err != nil {
 		return nil, err
 	}
@@ -1987,7 +1987,7 @@ var procPprint = func(env *Env, args []Object) (Object, error) {
 }
 
 func PrintObject(env *Env, obj Object, w io.Writer) {
-	printReadably := ToBool(env.printReadably.Value)
+	printReadably := ToBool(env.printReadably.GetStatic())
 	switch obj := obj.(type) {
 	case Pprinter:
 		obj.Pprint(env, w, 2)
@@ -2005,7 +2005,7 @@ func PrintObject(env *Env, obj Object, w io.Writer) {
 var procPr = func(env *Env, args []Object) (Object, error) {
 	n := len(args)
 	if n > 0 {
-		f, err := Assertio_Writer(env, env.stdout.Value, "")
+		f, err := Assertio_Writer(env, env.stdout.GetStatic(), "")
 		if err != nil {
 			return nil, err
 		}
@@ -2019,7 +2019,7 @@ var procPr = func(env *Env, args []Object) (Object, error) {
 }
 
 var procNewline = func(env *Env, args []Object) (Object, error) {
-	f, err := Assertio_Writer(env, env.stdout.Value, "")
+	f, err := Assertio_Writer(env, env.stdout.GetStatic(), "")
 	if err != nil {
 		return nil, err
 	}
@@ -2068,7 +2068,7 @@ var procReadString = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	return readFromReader(env, strings.NewReader(s.S))
+	return readFromReader(env, strings.NewReader(s.S()))
 }
 
 func readLine(r StringReader) (s string, e error) {
@@ -2092,7 +2092,7 @@ var procReadLine = func(env *Env, args []Object) (Object, error) {
 	if err := CheckArity(env, args, 0, 0); err != nil {
 		return nil, err
 	}
-	f, err := AssertStringReader(env, env.stdin.Value, "")
+	f, err := AssertStringReader(env, env.stdin.GetStatic(), "")
 	if err != nil {
 		return nil, err
 	}
@@ -2100,7 +2100,7 @@ var procReadLine = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return NIL, nil
 	}
-	return String{S: line}, nil
+	return MakeString(line), nil
 }
 
 var procReaderReadLine = func(env *Env, args []Object) (Object, error) {
@@ -2115,7 +2115,7 @@ var procReaderReadLine = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return NIL, nil
 	}
-	return String{S: line}, nil
+	return MakeString(line), nil
 }
 
 var procNanoTime = func(env *Env, args []Object) (Object, error) {
@@ -2171,7 +2171,7 @@ var procLoadString = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	obj, err := loadReader(env, NewReader(strings.NewReader(s.S), "<string>"))
+	obj, err := loadReader(env, NewReader(strings.NewReader(s.S()), "<string>"))
 	if err != nil {
 		return nil, err
 	}
@@ -2406,7 +2406,7 @@ var procVarGet = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	return v.Resolve(), nil
+	return v.Resolve(env), nil
 }
 
 var procVarSet = func(env *Env, args []Object) (Object, error) {
@@ -2418,7 +2418,7 @@ var procVarSet = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	v.Value = args[1]
+	v.SetStatic(args[1])
 	return args[1], nil
 }
 
@@ -2461,7 +2461,7 @@ var procBuffer = func(env *Env, args []Object) (Object, error) {
 		if err != nil {
 			return nil, err
 		}
-		return MakeBuffer(bytes.NewBufferString(s.S)), nil
+		return MakeBuffer(bytes.NewBufferString(s.S())), nil
 	}
 	return MakeBuffer(&bytes.Buffer{}), nil
 }
@@ -2488,11 +2488,11 @@ var procSlurp = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	b, err := os.ReadFile(s.S)
+	b, err := os.ReadFile(s.S())
 	if err != nil {
 		return nil, err
 	}
-	return String{S: string(b)}, nil
+	return MakeString(string(b)), nil
 }
 
 var procSpit = func(env *Env, args []Object) (Object, error) {
@@ -2527,12 +2527,12 @@ var procSpit = func(env *Env, args []Object) (Object, error) {
 	} else {
 		flags |= os.O_TRUNC
 	}
-	f, err := os.OpenFile(filename.S, flags, 0644)
+	f, err := os.OpenFile(filename.S(), flags, 0644)
 	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
-	_, err = f.WriteString(content.S)
+	_, err = f.WriteString(content.S())
 	if err != nil {
 		return nil, err
 	}
@@ -2568,7 +2568,7 @@ var procIsRealized = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	return Boolean{B: p.IsRealized()}, nil
+	return Boolean(p.IsRealized()), nil
 }
 
 var procDeriveInfo = func(env *Env, args []Object) (Object, error) {
@@ -2582,7 +2582,7 @@ var procDeriveInfo = func(env *Env, args []Object) (Object, error) {
 }
 
 var procLaceVersion = func(env *Env, args []Object) (Object, error) {
-	return String{S: VERSION[1:]}, nil
+	return MakeString(VERSION[1:]), nil
 }
 
 var procHash = func(env *Env, args []Object) (Object, error) {
@@ -2594,7 +2594,7 @@ var procHash = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	return Int{I: int(h)}, nil
+	return MakeInt(int(h)), nil
 }
 
 func loadFile(env *Env, filename string) (Object, error) {
@@ -2621,7 +2621,7 @@ var procLoadFile = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 
-	return loadFile(env, filename.S)
+	return loadFile(env, filename.S())
 }
 
 var procLoadLibFromPath = func(env *Env, args []Object) (Object, error) {
@@ -2646,9 +2646,9 @@ var procLoadLibFromPath = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	pathname := pathnamev.S
+	pathname := pathnamev.S()
 
-	cp := env.classPath.Value
+	cp := env.classPath.GetStatic()
 	cpvec, err := AssertVector(env, cp, "*classpath* must be a Vector, not a "+cp.GetType().Name())
 	if err != nil {
 		return nil, err
@@ -2664,7 +2664,7 @@ var procLoadLibFromPath = func(env *Env, args []Object) (Object, error) {
 		if err != nil {
 			return nil, err
 		}
-		s := cpelem.S
+		s := cpelem.S()
 		if s == "" {
 			filename = pathname
 		} else {
@@ -2727,18 +2727,18 @@ var procIndexOf = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	for i, r := range s.S {
+	for i, r := range s {
 		if r == ch.Ch {
-			return Int{I: i}, nil
+			return MakeInt(i), nil
 		}
 	}
-	return Int{I: -1}, nil
+	return MakeInt(-1), nil
 }
 
 func libExternalPath(env *Env, sym Symbol) (path string, ok bool, err error) {
 	nsSourcesVar, _ := env.Resolve(MakeSymbol("lace.core/*ns-sources*"))
 	var vec *Vector
-	if err := Cast(env, nsSourcesVar.Value, &vec); err != nil {
+	if err := Cast(env, nsSourcesVar.GetStatic(), &vec); err != nil {
 		return "", false, err
 	}
 
@@ -2817,18 +2817,18 @@ var procLibPath = func(env *Env, args []Object) (Object, error) {
 
 	if !ok {
 		var file string
-		if env.file.Value == nil {
+		if env.file.GetStatic() == nil {
 			var err error
 			file, err = filepath.Abs("user")
 			if err != nil {
 				return nil, err
 			}
 		} else {
-			filev, err := AssertString(env, env.file.Value, "")
+			filev, err := AssertString(env, env.file.GetStatic(), "")
 			if err != nil {
 				return nil, err
 			}
-			file = filev.S
+			file = filev.S()
 			if linkDest, err := os.Readlink(file); err == nil {
 				file = linkDest
 			}
@@ -2842,7 +2842,7 @@ var procLibPath = func(env *Env, args []Object) (Object, error) {
 		}
 		path = filepath.Join(append([]string{file}, strings.Split(sym.Name(), ".")...)...) + ".clj"
 	}
-	return String{S: path}, nil
+	return MakeString(path), nil
 }
 
 var procInternFakeVar = func(env *Env, args []Object) (Object, error) {
@@ -2873,11 +2873,11 @@ var procParse = func(env *Env, args []Object) (Object, error) {
 	}
 
 	lm, _ := env.Resolve(MakeSymbol("lace.core/*linter-mode*"))
-	lm.Value = Boolean{B: true}
+	lm.SetStatic(Boolean(true))
 	LINTER_MODE = true
 	defer func() {
 		LINTER_MODE = false
-		lm.Value = Boolean{B: false}
+		lm.SetStatic(Boolean(false))
 	}()
 	parseContext := &ParseContext{Env: env}
 	res, err := Parse(args[0], parseContext)
@@ -2893,7 +2893,7 @@ var procTypes = func(env *Env, args []Object) (Object, error) {
 	}
 	res := EmptyArrayMap()
 	for k, v := range TYPES {
-		res.Add(env, String{S: k}, v)
+		res.Add(env, MakeString(k), v)
 	}
 	return res, nil
 }
@@ -2906,7 +2906,7 @@ var procCreateChan = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	ch := make(chan FutureResult, n.I)
+	ch := make(chan FutureResult, n.I())
 	return MakeChannel(ch), nil
 }
 
@@ -3006,7 +3006,7 @@ var procExit = func(env *Env, args []Object) (Object, error) {
 			return nil, err
 		}
 
-		return nil, &ExitError{Code: i.I}
+		return nil, &ExitError{Code: i.I()}
 	}
 
 	return nil, &ExitError{}
@@ -3015,7 +3015,7 @@ var procExit = func(env *Env, args []Object) (Object, error) {
 func ReadIntoBytecode(env *Env, reader *Reader, filename string) ([]byte, error) {
 	parseContext := &ParseContext{Env: env}
 	if filename != "" {
-		currentFilename := parseContext.Env.file.Value
+		currentFilename := parseContext.Env.file.GetStatic()
 		defer func() {
 			parseContext.Env.SetFilename(currentFilename)
 		}()
@@ -3026,9 +3026,8 @@ func ReadIntoBytecode(env *Env, reader *Reader, filename string) ([]byte, error)
 		parseContext.Env.SetFilename(MakeString(s))
 	}
 
-	var e Engine
-	env.Engine = &e
-	e.allocstack = make([]Object, 0, 100)
+	e := NewEngine()
+	env.Engine = e
 
 	var exprs []Expr
 
@@ -3068,7 +3067,7 @@ func PackReader(env *Env, reader *Reader, filename string) ([]byte, error) {
 	packEnv := NewPackEnv(env)
 	parseContext := &ParseContext{Env: env}
 	if filename != "" {
-		currentFilename := parseContext.Env.file.Value
+		currentFilename := parseContext.Env.file.GetStatic()
 		defer func() {
 			parseContext.Env.SetFilename(currentFilename)
 		}()
@@ -3116,7 +3115,7 @@ var procIncProblemCount = func(env *Env, args []Object) (Object, error) {
 func ProcessReader(env *Env, reader *Reader, filename string) (Object, error) {
 	parseContext := &ParseContext{Env: env}
 	if filename != "" {
-		currentFilename := parseContext.Env.file.Value
+		currentFilename := parseContext.Env.file.GetStatic()
 		defer func() {
 			parseContext.Env.SetFilename(currentFilename)
 		}()
@@ -3241,7 +3240,7 @@ func ProcessReader(env *Env, reader *Reader, filename string) (Object, error) {
 func ProcessReaderFromEval(env *Env, reader *Reader, filename string) error {
 	parseContext := &ParseContext{Env: env}
 	if filename != "" {
-		currentFilename := parseContext.Env.file.Value
+		currentFilename := parseContext.Env.file.GetStatic()
 		defer func() {
 			parseContext.Env.SetFilename(currentFilename)
 		}()
@@ -3459,7 +3458,7 @@ func ReadConfig(env *Env, filename string, workingDir string) error {
 	if err != nil {
 		return err
 	}
-	LINTER_CONFIG.Value = EmptyArrayMap()
+	LINTER_CONFIG.SetStatic(EmptyArrayMap())
 	configFileName := findConfigFile(filename, workingDir, false)
 	if configFileName == "" {
 		return nil
@@ -3597,7 +3596,7 @@ func ReadConfig(env *Env, filename string, workingDir string) error {
 			WARNINGS.fnWithEmptyBody = ToBool(v)
 		}
 	}
-	LINTER_CONFIG.Value = configMap
+	LINTER_CONFIG.SetStatic(configMap)
 	return nil
 }
 

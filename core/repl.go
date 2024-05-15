@@ -24,10 +24,10 @@ func NewReplContext(env *Env) *ReplContext {
 	second, _ := env.Resolve(MakeSymbol("lace.core/*2"))
 	third, _ := env.Resolve(MakeSymbol("lace.core/*3"))
 	exc, _ := env.Resolve(MakeSymbol("lace.core/*e"))
-	first.Value = NIL
-	second.Value = NIL
-	third.Value = NIL
-	exc.Value = NIL
+	first.SetStatic(NIL)
+	second.SetStatic(NIL)
+	third.SetStatic(NIL)
+	exc.SetStatic(NIL)
 	return &ReplContext{
 		first:  first,
 		second: second,
@@ -37,17 +37,17 @@ func NewReplContext(env *Env) *ReplContext {
 }
 
 func (ctx *ReplContext) PushValue(obj Object) {
-	ctx.third.Value = ctx.second.Value
-	ctx.second.Value = ctx.first.Value
-	ctx.first.Value = obj
+	ctx.third.SetStatic(ctx.second.GetStatic())
+	ctx.second.SetStatic(ctx.first.GetStatic())
+	ctx.first.SetStatic(obj)
 }
 
 func (ctx *ReplContext) PushException(exc Object) {
-	ctx.exc.Value = exc
+	ctx.exc.SetStatic(exc)
 }
 
 func (env *Env) REPL(in io.Reader, out io.Writer) error {
-	env.FindNamespace(MakeSymbol("user")).ReferAll(env.FindNamespace(MakeSymbol("lace.repl")))
+	env.FindNamespace(MakeSymbol("user")).ReferAll(env.FindNamespace(MakeSymbol("lace.repl")), true)
 	fmt.Printf("Welcome to lace %s. Use '(exit)', %s to exit.\n", VERSION, "Contrl-D")
 	parseContext := &ParseContext{Env: env}
 	replContext := NewReplContext(env)
@@ -124,7 +124,7 @@ func processReplCommand(env *Env, reader *Reader, parseContext *ParseContext, re
 			fmt.Fprintln(Stderr, r)
 		case *EvalError:
 			replContext.PushException(r)
-			fmt.Fprintln(Stderr, r)
+			DisplayError(env, r)
 		case Error:
 			replContext.PushException(r)
 			fmt.Fprintln(Stderr, r)

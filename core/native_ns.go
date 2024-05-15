@@ -57,6 +57,10 @@ func NewNSBuilder(env *Env, name string) *NSBuilder {
 	}
 }
 
+func (b *NSBuilder) ReferCore() {
+	b.ns.ReferAll(b.env.CoreNamespace, true)
+}
+
 func (b *NSBuilder) NSMeta(doc, added string) {
 	m := MakeMeta(NIL, doc, added)
 	b.ns.meta = m
@@ -116,7 +120,7 @@ type DefVarInfo struct {
 func toAny(env *Env, o Object) (any, error) {
 	switch sv := o.(type) {
 	case Int:
-		return sv.I, nil
+		return sv.I(), nil
 	case String:
 		return sv.S, nil
 	case Symbol:
@@ -124,7 +128,7 @@ func toAny(env *Env, o Object) (any, error) {
 	case Keyword:
 		return sv.Name(), nil
 	case Boolean:
-		return sv.B, nil
+		return bool(sv), nil
 	case Map:
 		m := map[any]any{}
 		i := sv.Iter()
@@ -532,7 +536,7 @@ func (b *NSBuilder) Run(code []byte) error {
 		b.env.SetCurrentNamespace(cur)
 	}()
 	b.env.SetCurrentNamespace(b.ns)
-	b.ns.ReferAll(b.env.CoreNamespace)
+	b.ns.ReferAll(b.env.CoreNamespace, true)
 	_, err := ProcessReader(b.env, reader, filename)
 	if err != nil {
 		return err

@@ -2,7 +2,6 @@ package core
 
 import (
 	"os"
-	"unsafe"
 )
 
 type (
@@ -30,7 +29,7 @@ func (f *File) GetType() *Type {
 }
 
 func (f *File) Hash(env *Env) (uint32, error) {
-	return HashPtr(uintptr(unsafe.Pointer(f))), nil
+	return HashPtr(f), nil
 }
 
 func (f *File) WithInfo(info *ObjectInfo) Object {

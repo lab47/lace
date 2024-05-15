@@ -62,9 +62,9 @@ func convertObj(env *core.Env, obj core.Object) (any, error) {
 	case core.Keyword:
 		return sv.Name(), nil
 	case core.Int:
-		return sv.I, nil
+		return sv.I(), nil
 	case core.String:
-		return sv.S, nil
+		return sv.S(), nil
 	case core.Map:
 		ret := map[any]any{}
 
@@ -164,7 +164,7 @@ func emit(env *core.Env, logobj core.Object, level core.Keyword, message string,
 				args = append(args, sv.Name())
 				expectKey = false
 			case core.String:
-				args = append(args, sv.S)
+				args = append(args, sv.S())
 				expectKey = false
 			case core.Seqable:
 				objs, err := core.ToSlice(env, sv.Seq())

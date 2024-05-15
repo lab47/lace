@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
 //go:generate go run .././pkg/pkgreflect/cmd/pkgreflect -lace-name lace.lang -honor-directive -in-core -specialized github.com/lab47/lace/core binding.go
@@ -205,9 +203,9 @@ func LoadLibFromPath(env *Env, libnamev Symbol, pathnamev String) (Object, error
 	}
 
 	libname := libnamev.Name()
-	pathname := pathnamev.S
+	pathname := pathnamev.S()
 
-	cp := env.classPath.Value
+	cp := env.classPath.GetStatic()
 	cpvec, err := AssertVector(env, cp, "*classpath* must be a Vector, not a "+cp.GetType().Name())
 	if err != nil {
 		return nil, err
@@ -223,7 +221,7 @@ func LoadLibFromPath(env *Env, libnamev Symbol, pathnamev String) (Object, error
 		if err != nil {
 			return nil, err
 		}
-		s := cpelem.S
+		s := cpelem.S()
 		if s == "" {
 			filename = pathname
 		} else {
@@ -242,9 +240,6 @@ func LoadLibFromPath(env *Env, libnamev Symbol, pathnamev String) (Object, error
 	if canonicalErr != nil {
 		return nil, canonicalErr
 	}
-	if err != nil {
-		return nil, errors.Wrapf(err, "error attempting to open: %s", filename)
-	}
 	if f == nil || filename == "" {
 		return nil, SError(env, "LoadError", "unable to find path for library", "library", libname)
 	}
@@ -254,5 +249,28 @@ func LoadLibFromPath(env *Env, libnamev Symbol, pathnamev String) (Object, error
 		return nil, SError(env, "LoadError", "error loading file", "path", filename, "error", err.Error())
 	}
 	return NIL, nil
+}
 
+// StartGoRoutine runs the given callable in a new goroutine, returning a channel
+// that can be used to retrieve the return value.
+//
+//lace:export
+func StartGoRoutine(parent *Env, callable Callable) (Object, error) {
+	ch := MakeChannel(make(chan FutureResult, 1))
+	env := parent.Child()
+	go func() {
+		var cerr Error
+		res, err := callable.Call(env, []Object{})
+		if err != nil {
+			cerr = env.NewError(err.Error())
+		}
+
+		if cerr != nil {
+			DisplayError(env, cerr)
+		}
+
+		ch.ch <- MakeFutureResult(res, cerr)
+		ch.Close()
+	}()
+	return ch, nil
 }

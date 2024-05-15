@@ -1,9 +1,11 @@
 package core
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
+	"sync"
 
 	"github.com/lab47/lace/core/insn"
 	"golang.org/x/exp/slices"
@@ -128,9 +130,63 @@ type EngineFrame struct {
 	Handlers []handler
 }
 
+type FrameRope struct {
+	curChunk []EngineFrame
+	chunks   [][]EngineFrame
+	chunkPtr int
+	curPtr   int
+}
+
+func (f *FrameRope) init() {
+	f.curChunk = make([]EngineFrame, 50)
+	f.chunks = append(f.chunks, f.curChunk)
+	f.chunkPtr = 0
+	f.curPtr = -1
+}
+
+func (f *FrameRope) pushFrame(fr EngineFrame) *EngineFrame {
+	chunk := f.curChunk
+	f.curPtr++
+	pos := f.curPtr
+
+	if len(chunk) <= pos {
+		chunk = make([]EngineFrame, 50)
+		f.chunks = append(f.chunks, chunk)
+		f.curChunk = chunk
+		f.chunkPtr++
+		f.curPtr = 0
+		pos = 0
+	}
+
+	dest := &chunk[pos]
+	*dest = fr
+
+	return dest
+}
+
+func (f *FrameRope) popFrame() {
+	if f.curPtr == 0 {
+		if f.chunkPtr > 0 {
+			f.chunkPtr--
+			f.curChunk = f.chunks[f.chunkPtr]
+			f.curPtr = len(f.chunks[f.chunkPtr]) - 1
+		} else {
+			f.curPtr = -1
+		}
+	} else {
+		f.curPtr--
+	}
+}
+
+func (f *FrameRope) frameTop() *EngineFrame {
+	return &f.chunks[f.chunkPtr][f.curPtr]
+}
+
 type Engine struct {
 	frames     []*EngineFrame
+	frope      FrameRope
 	allocstack []Object
+	stackTop   int
 }
 
 func (e *Engine) printStack(env *Env) {
@@ -225,7 +281,15 @@ func (e *Engine) printStack(env *Env) {
 }
 */
 
-func (e *Engine) pushFrame(fn *Fn) *EngineFrame {
+func newEngineFrame() any {
+	return &EngineFrame{}
+}
+
+var framePool = sync.Pool{
+	New: newEngineFrame,
+}
+
+func (e *Engine) xpushFrame(fn *Fn) *EngineFrame {
 	var stack []Object
 
 	stack = make([]Object, fn.code.stackSize)
@@ -234,19 +298,66 @@ func (e *Engine) pushFrame(fn *Fn) *EngineFrame {
 	upvals := make([]*NamedPair, fn.code.totalUpvals)
 	copy(upvals, fn.importedUpvals)
 
-	e.frames = append(e.frames, &EngineFrame{
+	frame := framePool.Get().(*EngineFrame)
+
+	*frame = EngineFrame{
 		Code:     fn,
 		Stack:    stack,
 		SP:       -1,
 		Upvals:   upvals,
 		Bindings: make([]Object, fn.code.numBindings),
-	})
+	}
+
+	e.frames = append(e.frames, frame)
 
 	return e.frames[idx]
 }
 
-func (e *Engine) popFrame() {
+const defStackSize = 8000
+
+var ErrStackOverflow = errors.New("stack overflow, not enough stack room")
+
+func (e *Engine) pushFrame(fn *Fn) (*EngineFrame, error) {
+	var stack []Object
+
+	remaining := len(e.allocstack) - e.stackTop
+
+	stackNeeded := fn.code.stackSize + uint32(fn.code.numBindings)
+	if remaining < int(stackNeeded) {
+		return nil, ErrStackOverflow
+	}
+
+	stack = e.allocstack[e.stackTop : e.stackTop+int(fn.code.stackSize)]
+	e.stackTop += int(fn.code.stackSize)
+
+	bindings := e.allocstack[e.stackTop : e.stackTop+fn.code.numBindings]
+	e.stackTop += fn.code.numBindings
+
+	clear(bindings)
+
+	upvals := make([]*NamedPair, fn.code.totalUpvals)
+	copy(upvals, fn.importedUpvals)
+
+	frame := e.frope.pushFrame(EngineFrame{
+		Code:     fn,
+		Stack:    stack,
+		SP:       -1,
+		Upvals:   upvals,
+		Bindings: bindings, // make([]Object, fn.code.numBindings),
+	})
+
+	return frame, nil
+}
+
+func (e *Engine) xpopFrame() {
+	fr := e.frames[len(e.frames)-1]
+	framePool.Put(fr)
 	e.frames = e.frames[:len(e.frames)-1]
+}
+
+func (e *Engine) popFrame(fr *EngineFrame) {
+	e.stackTop -= (int(fr.Code.code.stackSize) + fr.Code.code.numBindings)
+	e.frope.popFrame()
 }
 
 func (e *Engine) frameBack(cnt int) (*EngineFrame, error) {
@@ -259,21 +370,37 @@ func (e *Engine) frameBack(cnt int) (*EngineFrame, error) {
 	return e.frames[idx], nil
 }
 
-func EngineCode(env *Env, c *Code) (Object, error) {
-	return EngineRun(env, &Fn{code: c})
+func (e *Engine) frameTop() (*EngineFrame, error) {
+	return e.frope.frameTop(), nil
+}
+
+func NewEngine() *Engine {
+	eng := &Engine{
+		allocstack: make([]Object, defStackSize),
+		frames:     make([]*EngineFrame, 100),
+	}
+	eng.frope.init()
+
+	return eng
 }
 
 func EngineRun(env *Env, fn *Fn) (Object, error) {
-	var e Engine
-	env.Engine = &e
-	e.allocstack = make([]Object, 0, 100)
+	e := env.Engine
+	if e == nil {
+		e = NewEngine()
+		env.Engine = e
+	}
+
 	e.pushFrame(fn)
 	return e.RunBC(env, fn)
 }
 
 func (e *Engine) RunWithArgs(env *Env, fn *Fn, args []Object) (Object, error) {
-	fr := e.pushFrame(fn)
-	fr.Args = slices.Clone(args)
+	fr, err := e.pushFrame(fn)
+	if err != nil {
+		return nil, err
+	}
+	fr.Args = args // slices.Clone(args)
 	fr.Arity = int32(len(args))
 	return e.RunBC(env, fn)
 }
@@ -284,7 +411,7 @@ func (e *Engine) unwind(oerr error) (int, error) {
 		return 0, oerr
 	}
 
-	fr, err := e.frameBack(0)
+	fr, err := e.frameTop()
 	if err != nil {
 		return 0, err
 	}
@@ -375,8 +502,11 @@ func (e *Engine) call(env *Env, callable Callable, objArgs []Object) (Object, er
 
 		//e.printBacktrace(2)
 		//printInsns(fn.code.insns)
-		fr := e.pushFrame(fn)
-		fr.Args = slices.Clone(objArgs)
+		fr, err := e.pushFrame(fn)
+		if err != nil {
+			return nil, err
+		}
+		fr.Args = objArgs //  slices.Clone(objArgs)
 		fr.Arity = int32(len(objArgs))
 
 		return e.RunBC(env, fn)
@@ -415,7 +545,7 @@ const debugBC = false
 func (e *Engine) RunBC(env *Env, fn *Fn) (Object, error) {
 	c := fn.code.data
 
-	frame, err := e.frameBack(0)
+	frame, err := e.frameTop()
 	if err != nil {
 		return nil, err
 	}
@@ -425,16 +555,16 @@ func (e *Engine) RunBC(env *Env, fn *Fn) (Object, error) {
 		defer fmt.Printf("==== exit frame %d =====\n", len(e.frames))
 	}
 
-	defer e.popFrame()
+	//defer e.popFrame(frame)
 
 	var (
 		ip  int
 		tmp Object
 	)
 
-	defer func() {
-		frame.Ip = ip
-	}()
+	//defer func() {
+	//frame.Ip = ip
+	//}()
 
 loop:
 	for {
@@ -453,6 +583,8 @@ loop:
 		case Dup:
 			frame.stackPush(frame.stackTop())
 		case Return:
+			frame.Ip = ip
+			e.popFrame(frame)
 			return frame.stackPop(), nil
 		case Jump:
 			ip = int(a)
@@ -480,7 +612,7 @@ loop:
 
 			uv.Value = frame.stackPop()
 		case ResolveVar:
-			tmp = c.vars[a].Resolve()
+			tmp = c.vars[a].Resolve(env)
 			if debugBC {
 				fmt.Printf("             | %s\n", c.vars[a].Name())
 			}
@@ -489,7 +621,7 @@ loop:
 			vr := c.vars[a]
 			vr.isMacro = true
 			vr.isUsed = false
-			if fn, ok := vr.Value.(*Fn); ok {
+			if fn, ok := vr.GetStatic().(*Fn); ok {
 				fn.isMacro = true
 			}
 			err := setMacroMeta(env, vr)
@@ -597,7 +729,7 @@ loop:
 
 			// isMacro can be set by set-macro__ during parse stage
 			if vr.isMacro {
-				v, err := vr.meta.Assoc(env, criticalKeywords.macro, Boolean{B: true})
+				v, err := vr.meta.Assoc(env, criticalKeywords.macro, Boolean(true))
 				if err != nil {
 					return nil, err
 				}
@@ -629,7 +761,7 @@ loop:
 
 			// isMacro can be set by set-macro__ during parse stage
 			if vr.isMacro {
-				v, err := vr.meta.Assoc(env, criticalKeywords.macro, Boolean{B: true})
+				v, err := vr.meta.Assoc(env, criticalKeywords.macro, Boolean(true))
 				if err != nil {
 					return nil, err
 				}
@@ -651,11 +783,11 @@ loop:
 				return nil, AddContext(env, err, "casting value for Var meta: %s", vr.Name())
 			}
 
-			vr.Value = val
+			vr.SetStatic(val)
 
 			// isMacro can be set by set-macro__ during parse stage
 			if vr.isMacro {
-				v, err := vr.meta.Assoc(env, criticalKeywords.macro, Boolean{B: true})
+				v, err := vr.meta.Assoc(env, criticalKeywords.macro, Boolean(true))
 				if err != nil {
 					return nil, err
 				}
@@ -680,7 +812,7 @@ loop:
 			}
 
 			val := frame.stackPop()
-			vr.Value = val
+			vr.SetStatic(val)
 
 			var m Map
 			if err := Cast(env, v, &m); err != nil {
@@ -694,7 +826,7 @@ loop:
 
 			// isMacro can be set by set-macro__ during parse stage
 			if vr.isMacro {
-				v, err := vr.meta.Assoc(env, criticalKeywords.macro, Boolean{B: true})
+				v, err := vr.meta.Assoc(env, criticalKeywords.macro, Boolean(true))
 				if err != nil {
 					return nil, err
 				}
@@ -738,8 +870,11 @@ loop:
 
 			switch sv := obj.(type) {
 			case *Fn:
-				fr := e.pushFrame(sv)
-				fr.Args = slices.Clone(args)
+				fr, err := e.pushFrame(sv)
+				if err != nil {
+					return nil, err
+				}
+				fr.Args = args // slices.Clone(args)
 				fr.Arity = int32(len(args))
 
 				obj, err = e.RunBC(env, sv)
@@ -798,8 +933,11 @@ loop:
 			switch callable := obj.(type) {
 			case Callable:
 				if fn, ok := callable.(*Fn); ok {
-					fr := e.pushFrame(fn)
-					fr.Args = slices.Clone(callArgs)
+					fr, err := e.pushFrame(fn)
+					if err != nil {
+						return nil, err
+					}
+					fr.Args = callArgs // slices.Clone(callArgs)
 					fr.Arity = int32(len(callArgs))
 
 					obj, err = e.RunBC(env, fn)

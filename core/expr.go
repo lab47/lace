@@ -11,11 +11,11 @@ func (expr *LiteralExpr) InferType() *Type {
 
 func dumpPosition(p Position) Map {
 	res := EmptyArrayMap()
-	res.AddEqu(criticalKeywords.startLine, Int{I: p.startLine})
-	res.AddEqu(criticalKeywords.endLine, Int{I: p.endLine})
-	res.AddEqu(criticalKeywords.startColumn, Int{I: p.startColumn})
-	res.AddEqu(criticalKeywords.endColumn, Int{I: p.endColumn})
-	res.AddEqu(criticalKeywords.filename, String{S: p.Filename()})
+	res.AddEqu(criticalKeywords.startLine, MakeInt(p.startLine))
+	res.AddEqu(criticalKeywords.endLine, MakeInt(p.endLine))
+	res.AddEqu(criticalKeywords.startColumn, MakeInt(p.startColumn))
+	res.AddEqu(criticalKeywords.endColumn, MakeInt(p.endColumn))
+	res.AddEqu(criticalKeywords.filename, MakeString(p.Filename()))
 	return res
 }
 
@@ -105,7 +105,7 @@ func (expr *DefExpr) Dump(pos bool) Map {
 func (expr *CallExpr) InferType() *Type {
 	switch callableExpr := expr.callable.(type) {
 	case *VarRefExpr:
-		switch f := callableExpr.vr.Value.(type) {
+		switch f := callableExpr.vr.GetStatic().(type) {
 		case *Fn:
 			if arity := selectArity(f.fnExpr, len(expr.args)); arity != nil && arity.taggedType != nil {
 				return arity.taggedType
@@ -118,7 +118,7 @@ func (expr *CallExpr) InferType() *Type {
 
 func (expr *CallExpr) Dump(pos bool) Map {
 	res := exprArrayMap(expr, "call", pos)
-	res.AddEqu(MakeKeyword("name"), String{S: expr.Name()})
+	res.AddEqu(MakeKeyword("name"), MakeString(expr.Name()))
 	res.AddEqu(MakeKeyword("callable"), expr.callable.Dump(pos))
 	addVector(res, expr.args, "args", pos)
 	return res
@@ -141,7 +141,7 @@ var _ Expr = &MethodExpr{}
 
 func (expr *MethodExpr) Dump(pos bool) Map {
 	res := exprArrayMap(expr, "call", pos)
-	res.AddEqu(MakeKeyword("method"), String{S: expr.method})
+	res.AddEqu(MakeKeyword("method"), MakeString(expr.method))
 	res.AddEqu(MakeKeyword("object"), expr.obj.Dump(pos))
 	addVector(res, expr.args, "args", pos)
 	return res
@@ -157,7 +157,7 @@ func (expr *MacroCallExpr) InferType() *Type {
 
 func (expr *MacroCallExpr) Dump(pos bool) Map {
 	res := exprArrayMap(expr, "macro-call", pos)
-	res.AddEqu(MakeKeyword("name"), String{S: expr.name})
+	res.AddEqu(MakeKeyword("name"), MakeString(expr.name))
 	args := EmptyVector()
 	for _, arg := range expr.args {
 		args, _ = args.Conjoin(arg)
@@ -177,16 +177,7 @@ func (expr *RecurExpr) Dump(pos bool) Map {
 }
 
 func (expr *VarRefExpr) InferType() *Type {
-	// if expr.vr.taggedType != nil {
-	// 	return expr.vr.taggedType
-	// }
-	if expr.vr.expr == nil {
-		return nil
-	}
-	if expr.vr.isDynamic {
-		return nil
-	}
-	return expr.vr.expr.InferType()
+	return nil
 }
 
 func (expr *VarRefExpr) Dump(pos bool) Map {

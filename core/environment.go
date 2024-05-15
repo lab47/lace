@@ -34,11 +34,14 @@ type (
 		NS_VAR        *Var
 		IN_NS_VAR     *Var
 		version       *Var
+		ctx           *Var
 		Features      Set
 	}
 
 	Env struct {
 		*State
+
+		Parent *Env
 
 		CurrentVar     Associative
 		Context        context.Context
@@ -51,6 +54,19 @@ type (
 		treeEvalStack []Expr
 	}
 )
+
+func (env *Env) Child() *Env {
+	ret := &Env{
+		State:      env.State,
+		Parent:     env,
+		Engine:     NewEngine(),
+		CurrentVar: NIL,
+	}
+
+	ret.SetContext(context.Background())
+
+	return ret
+}
 
 func (env *Env) enableCycleDetection() func() {
 	if env.cycleDetection != nil {
@@ -80,15 +96,28 @@ func (env *Env) cycling(a, b Object) bool {
 	return false
 }
 
+func (env *Env) FindInCurrentVars(vr *Var) (Object, bool, error) {
+	if env.CurrentVar == nil {
+		return nil, false, nil
+	}
+
+	found, val, err := env.CurrentVar.Get(env, vr)
+	if err != nil {
+		return nil, false, err
+	}
+
+	return val, found, nil
+}
+
 func versionMap(env *Env) Map {
 	res := EmptyArrayMap()
 	parts := strings.Split(VERSION[1:], ".")
 	i, _ := strconv.ParseInt(parts[0], 10, 64)
-	res.Add(env, MakeKeyword("major"), Int{I: int(i)})
+	res.Add(env, MakeKeyword("major"), MakeInt(int(i)))
 	i, _ = strconv.ParseInt(parts[1], 10, 64)
-	res.Add(env, MakeKeyword("minor"), Int{I: int(i)})
+	res.Add(env, MakeKeyword("minor"), MakeInt(int(i)))
 	i, _ = strconv.ParseInt(parts[2], 10, 64)
-	res.Add(env, MakeKeyword("incremental"), Int{I: int(i)})
+	res.Add(env, MakeKeyword("incremental"), MakeInt(int(i)))
 	return res
 }
 
@@ -98,9 +127,9 @@ func (env *Env) SetEnvArgs(newArgs []string) {
 		args, _ = args.Conjoin(MakeString(arg))
 	}
 	if args.Count() > 0 {
-		env.args.Value = args.Seq()
+		env.args.SetStatic(args.Seq())
 	} else {
-		env.args.Value = NIL
+		env.args.SetStatic(NIL)
 	}
 }
 
@@ -118,7 +147,7 @@ func (env *Env) SetClassPath(cp string) {
 	if cpVec.Count() == 0 {
 		cpVec, _ = cpVec.Conjoin(MakeString(""))
 	}
-	env.classPath.Value = cpVec
+	env.classPath.SetStatic(cpVec)
 }
 
 /*
@@ -127,20 +156,20 @@ This runs after invariant initialization, which includes calling
 	NewEnv().
 */
 func (env *Env) InitEnv(stdin io.Reader, stdout, stderr io.Writer, args []string) {
-	env.stdin.Value = MakeBufferedReader(stdin)
-	env.stdout.Value = MakeIOWriter(stdout)
-	env.stderr.Value = MakeIOWriter(stderr)
+	env.stdin.SetStatic(MakeBufferedReader(stdin))
+	env.stdout.SetStatic(MakeIOWriter(stdout))
+	env.stderr.SetStatic(MakeIOWriter(stderr))
 	env.SetEnvArgs(args)
 }
 
 func (env *Env) SetStdIO(stdin, stdout, stderr Object) {
-	env.stdin.Value = stdin
-	env.stdout.Value = stdout
-	env.stderr.Value = stderr
+	env.stdin.SetStatic(stdin)
+	env.stdout.SetStatic(stdout)
+	env.stderr.SetStatic(stderr)
 }
 
 func (env *Env) StdIO() (stdin, stdout, stderr Object) {
-	return env.stdin.Value, env.stdout.Value, env.stderr.Value
+	return env.stdin.GetStatic(), env.stdout.GetStatic(), env.stderr.GetStatic()
 }
 
 /*
@@ -149,7 +178,7 @@ This runs after invariant initialization, which includes calling
 	NewEnv().
 */
 func (env *Env) SetMainFilename(filename string) {
-	env.MainFile.Value = MakeString(filename)
+	env.MainFile.SetStatic(MakeString(filename))
 }
 
 /*
@@ -158,15 +187,15 @@ This runs after invariant initialization, which includes calling
 	NewEnv().
 */
 func (env *Env) SetFilename(obj Object) {
-	env.file.Value = obj
+	env.file.SetStatic(obj)
 }
 
 func (env *Env) IsStdIn(obj Object) bool {
-	return env.stdin.Value == obj
+	return env.stdin.GetStatic() == obj
 }
 
 func (env *Env) CurrentNamespace() *Namespace {
-	ns, err := AssertNamespace(env, env.ns.Value, "")
+	ns, err := AssertNamespace(env, env.ns.GetStatic(), "")
 	if err != nil {
 		panic(err) // this is extremely rare, we should probably make it not possible
 	}
@@ -175,7 +204,7 @@ func (env *Env) CurrentNamespace() *Namespace {
 }
 
 func (env *Env) SetCurrentNamespace(ns *Namespace) {
-	env.ns.Value = ns
+	env.ns.SetStatic(ns)
 }
 
 func (env *Env) EnsureNamespace(sym Symbol) *Namespace {
@@ -365,4 +394,9 @@ func (env *Env) ResolveSymbol(s Symbol) (Symbol, error) {
 func (env *Env) Eval(str string) (Object, error) {
 	reader := NewReader(strings.NewReader(str), "<expr>")
 	return ProcessReader(env, reader, "")
+}
+
+func (e *Env) SetContext(ctx context.Context) {
+	e.Context = ctx
+	e.ctx.SetValue(e, MakeReflectValue(ctx))
 }

@@ -1,7 +1,7 @@
 package core
 
 func createCoreFns(env *Env) error {
-	v, err := NewArrayMap(criticalKeywords.private, Boolean{B: true})
+	v, err := NewArrayMap(criticalKeywords.private, Boolean(true))
 	if err != nil {
 		panic(err)
 	}
@@ -19,12 +19,12 @@ func createCoreFns(env *Env) error {
 			return
 		}
 
-		vr.Value = Proc{Fn: proc, Name: procName}
+		vr.SetStatic(Proc{Fn: proc, Name: procName})
 		vr.isPrivate = true
 		vr.meta = privateMeta
 	}
 
-	_, err = env.CoreNamespace.InternVar(env, "*assert*", Boolean{B: true},
+	_, err = env.CoreNamespace.InternVar(env, "*assert*", Boolean(true),
 		MakeMeta(nil, "When set to logical false, assert is a noop. Defaults to true.", "1.0"))
 	if err != nil {
 		return err

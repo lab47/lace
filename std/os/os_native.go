@@ -12,7 +12,7 @@ func env(env *Env) (Object, error) {
 	res := EmptyArrayMap()
 	for _, v := range os.Environ() {
 		parts := strings.Split(v, "=")
-		res.Add(env, String{S: parts[0]}, String{S: parts[1]})
+		res.Add(env, MakeString(parts[0]), MakeString(parts[1]))
 	}
 	return res, nil
 }
@@ -36,7 +36,7 @@ func commandArgs() (Object, error) {
 	res := EmptyVector()
 	var err error
 	for _, arg := range os.Args {
-		res, err = res.Conjoin(String{S: arg})
+		res, err = res.Conjoin(MakeString(arg))
 		if err != nil {
 			return nil, err
 		}
@@ -57,7 +57,7 @@ func execute(env *Env, name string, opts Map) (Object, error) {
 			return nil, err
 		}
 
-		dir = dirv.S
+		dir = dirv.S()
 	}
 	if ok, argsObj := opts.GetEqu(MakeKeyword("args")); ok {
 		sv, err := AssertSeqable(env, argsObj, "args must be Seqable")
@@ -83,7 +83,7 @@ func execute(env *Env, name string, opts Map) (Object, error) {
 			if err != nil {
 				return nil, err
 			}
-			args = append(args, so.S)
+			args = append(args, so.S())
 			s, err = s.Rest(env)
 			if err != nil {
 				return nil, err
@@ -104,7 +104,7 @@ func execute(env *Env, name string, opts Map) (Object, error) {
 			case io.Reader:
 				stdin = s
 			case String:
-				stdin = strings.NewReader(s.S)
+				stdin = strings.NewReader(s.S())
 			default:
 				return nil, env.NewError("stdin option must be either an IOReader or a string, got " + stdinObj.GetType().Name())
 			}

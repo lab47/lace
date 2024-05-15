@@ -360,7 +360,7 @@ func scanInt(str string, base int, err error, reader *Reader) (Object, error) {
 		return scanBigInt(str, base, err, reader)
 	}
 	// TODO: 32-bit issue
-	return MakeReadObject(reader, Int{I: int(i)}), nil
+	return MakeReadObject(reader, MakeInt(int(i))), nil
 }
 
 func readNumber(reader *Reader) (Object, error) {
@@ -511,9 +511,9 @@ func readSymbol(env *Env, reader *Reader, first rune) (Object, error) {
 	case str == "nil":
 		return MakeReadObject(reader, NIL), nil
 	case str == "true":
-		return MakeReadObject(reader, Boolean{B: true}), nil
+		return MakeReadObject(reader, Boolean(true)), nil
 	case str == "false":
-		return MakeReadObject(reader, Boolean{B: false}), nil
+		return MakeReadObject(reader, Boolean(false)), nil
 	default:
 		return MakeReadObject(reader, MakeSymbol(str)), nil
 	}
@@ -634,7 +634,7 @@ func readString(reader *Reader) (Object, error) {
 			return nil, err
 		}
 	}
-	return MakeReadObject(reader, String{S: b.String()}), nil
+	return MakeReadObject(reader, MakeString(b.String())), nil
 }
 
 func readList(env *Env, reader *Reader) (Object, error) {
@@ -879,7 +879,7 @@ func readMeta(env *Env, reader *Reader) (*ArrayMap, error) {
 	case String, Symbol:
 		return &ArrayMap{arr: []Object{DeriveReadObject(obj, criticalKeywords.tag), obj}}, nil
 	case Keyword:
-		return &ArrayMap{arr: []Object{obj, DeriveReadObject(obj, Boolean{B: true})}}, nil
+		return &ArrayMap{arr: []Object{obj, DeriveReadObject(obj, Boolean(true))}}, nil
 	default:
 		return nil, MakeReadError(reader, "Metadata must be Symbol, Keyword, String or Map")
 	}
@@ -965,7 +965,7 @@ func readArgSymbol(env *Env, reader *Reader) (Object, error) {
 	}
 	switch n := obj.(type) {
 	case Int:
-		return MakeReadObject(reader, registerArg(reader, n.I)), nil
+		return MakeReadObject(reader, registerArg(reader, n.I())), nil
 	default:
 		return nil, MakeReadError(reader, "Arg literal must be %, %& or %integer")
 	}
@@ -1132,7 +1132,7 @@ func readTagged(env *Env, reader *Reader) (Object, error) {
 		if !ok {
 			return handleNoReaderError(env, reader, s)
 		}
-		readersMap, ok := readersVar.Value.(Map)
+		readersMap, ok := readersVar.GetStatic().(Map)
 		if !ok {
 			return handleNoReaderError(env, reader, s)
 		}

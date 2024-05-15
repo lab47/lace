@@ -51,12 +51,12 @@ func (set *MapSet) Disjoin(env *Env, key Object) (Set, error) {
 func (set *MapSet) Add(env *Env, obj Object) (bool, error) {
 	switch m := set.m.(type) {
 	case *ArrayMap:
-		return m.Add(env, obj, Boolean{B: true}), nil
+		return m.Add(env, obj, Boolean(true)), nil
 	case *HashMap:
 		if m.containsKey(env, obj) {
 			return false, nil
 		}
-		v, err := set.m.Assoc(env, obj, Boolean{B: true})
+		v, err := set.m.Assoc(env, obj, Boolean(true))
 		if err != nil {
 			return false, err
 		}
@@ -68,7 +68,7 @@ func (set *MapSet) Add(env *Env, obj Object) (bool, error) {
 }
 
 func (set *MapSet) Conj(env *Env, obj Object) (Conjable, error) {
-	v, err := set.m.Assoc(env, obj, Boolean{B: true})
+	v, err := set.m.Assoc(env, obj, Boolean(true))
 	if err != nil {
 		return nil, err
 	}

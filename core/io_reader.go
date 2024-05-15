@@ -2,7 +2,6 @@ package core
 
 import (
 	"io"
-	"unsafe"
 )
 
 type (
@@ -16,7 +15,7 @@ var _ Object = &IOReader{}
 
 func MakeIOReader(r io.Reader) *IOReader {
 	res := &IOReader{r, 0}
-	res.hash = HashPtr(uintptr(unsafe.Pointer(res)))
+	res.hash = HashPtr(res)
 	return res
 }
 

@@ -22,13 +22,13 @@ func Eval(genv *Env, expr Expr, env *LocalEnv) (Object, error) {
 }
 
 func (expr *VarRefExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
-	return expr.vr.Resolve(), nil
+	return expr.vr.Resolve(genv), nil
 }
 
 func (expr *SetMacroExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 	expr.vr.isMacro = true
 	expr.vr.isUsed = false
-	if fn, ok := expr.vr.Value.(*Fn); ok {
+	if fn, ok := expr.vr.GetStatic().(*Fn); ok {
 		fn.isMacro = true
 	}
 	err := setMacroMeta(genv, expr.vr)
@@ -147,15 +147,16 @@ func iEval(dst *Object, genv *Env, obj Expr, env *LocalEnv) error {
 
 func (expr *DefExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 	if expr.value != nil {
-		err := iEval(&expr.vr.Value, genv, expr.value, env)
+		x, err := Eval(genv, expr.value, env)
 		if err != nil {
 			return nil, err
 		}
+		expr.vr.SetStatic(x)
 	}
 	meta := EmptyArrayMap()
-	meta.Add(genv, criticalKeywords.line, Int{I: expr.startLine})
-	meta.Add(genv, criticalKeywords.column, Int{I: expr.startColumn})
-	meta.Add(genv, criticalKeywords.file, String{S: expr.filename})
+	meta.Add(genv, criticalKeywords.line, MakeInt(expr.startLine))
+	meta.Add(genv, criticalKeywords.column, MakeInt(expr.startColumn))
+	meta.Add(genv, criticalKeywords.file, MakeString(expr.filename))
 	meta.Add(genv, criticalKeywords.ns, expr.vr.ns)
 	fullName := AssembleSymbol(expr.vr.ns.Name.name, expr.vr.name.name)
 	meta.Add(genv, criticalKeywords.name, fullName)
@@ -176,7 +177,7 @@ func (expr *DefExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 	}
 	// isMacro can be set by set-macro__ during parse stage
 	if expr.vr.isMacro {
-		v, err := expr.vr.meta.Assoc(genv, criticalKeywords.macro, Boolean{B: true})
+		v, err := expr.vr.meta.Assoc(genv, criticalKeywords.macro, Boolean(true))
 		if err != nil {
 			return nil, err
 		}
@@ -187,7 +188,7 @@ func (expr *DefExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 		expr.vr.meta = m
 	}
 
-	if m, ok := expr.vr.Value.(*Fn); ok {
+	if m, ok := expr.vr.GetStatic().(*Fn); ok {
 		if m.meta == nil {
 			m.meta = expr.vr.meta
 		} else {

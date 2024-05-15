@@ -39,10 +39,10 @@ func NewReplContext(env *core.Env) *ReplContext {
 	second, _ := env.Resolve(core.MakeSymbol("lace.core/*2"))
 	third, _ := env.Resolve(core.MakeSymbol("lace.core/*3"))
 	exc, _ := env.Resolve(core.MakeSymbol("lace.core/*e"))
-	first.Value = core.NIL
-	second.Value = core.NIL
-	third.Value = core.NIL
-	exc.Value = core.NIL
+	first.SetStatic(core.NIL)
+	second.SetStatic(core.NIL)
+	third.SetStatic(core.NIL)
+	exc.SetStatic(core.NIL)
 	return &ReplContext{
 		first:  first,
 		second: second,
@@ -52,13 +52,13 @@ func NewReplContext(env *core.Env) *ReplContext {
 }
 
 func (ctx *ReplContext) PushValue(obj core.Object) {
-	ctx.third.Value = ctx.second.Value
-	ctx.second.Value = ctx.first.Value
-	ctx.first.Value = obj
+	ctx.third.SetStatic(ctx.second.GetStatic())
+	ctx.second.SetStatic(ctx.first.GetStatic())
+	ctx.first.SetStatic(obj)
 }
 
 func (ctx *ReplContext) PushException(exc core.Object) {
-	ctx.exc.Value = exc
+	ctx.exc.SetStatic(exc)
 }
 
 func processFile(env *core.Env, filename string) error {
@@ -188,7 +188,7 @@ func configureLinterMode(env *core.Env, dialect core.Dialect, filename string, w
 	core.LINTER_MODE = true
 	core.DIALECT = dialect
 	lm, _ := env.Resolve(core.MakeSymbol("lace.core/*linter-mode*"))
-	lm.Value = core.Boolean{B: true}
+	lm.SetStatic(core.Boolean(true))
 	mf, err := env.Features.Disjoin(env, core.MakeKeyword("lace"))
 	if err != nil {
 		return err
@@ -321,15 +321,16 @@ func MainIn(nsName string) {
 			cpuProfileName = ""
 			core.Exit(96)
 		}
-		runtime.SetCPUProfileRate(*cpuProfileRate)
+		defer f.Close()
 		err = pprof.StartCPUProfile(f)
+		runtime.SetCPUProfileRate(*cpuProfileRate)
 		if err != nil {
 			panic(err)
 		}
+		defer pprof.StopCPUProfile()
 		teardown = append(teardown, pprof.StopCPUProfile)
 		fmt.Fprintf(core.Stderr, "Profiling started at rate=%d. See file `%s'.\n",
-			cpuProfileRate, cpuProfileName)
-		defer finish(memProfileName)
+			*cpuProfileRate, cpuProfileName)
 	} else if memProfileName != "" {
 		defer finish(memProfileName)
 	}
@@ -352,12 +353,12 @@ func MainIn(nsName string) {
 		os.Exit(1)
 	}
 
-	if vr.Value == nil || vr.Value == core.NIL {
-		fmt.Fprintf(core.Stderr, "%s/main is nil", nsName)
+	if !vr.Set() {
+		fmt.Fprintf(core.Stderr, "%s/main is nil\n", nsName)
 		os.Exit(1)
 	}
 
-	cl, ok := vr.Value.(core.Callable)
+	cl, ok := vr.GetStatic().(core.Callable)
 	if !ok {
 		fmt.Fprintf(core.Stderr, "%s/main is not callable", nsName)
 		os.Exit(1)
@@ -369,7 +370,7 @@ func MainIn(nsName string) {
 		os.Exit(1)
 	}
 
-	os.Exit(0)
+	fmt.Println("here")
 }
 
 func Main() {
@@ -433,14 +434,17 @@ func Main() {
 			cpuProfileName = ""
 			core.Exit(96)
 		}
-		runtime.SetCPUProfileRate(*cpuProfileRate)
+		defer f.Close()
 		err = pprof.StartCPUProfile(f)
+		runtime.SetCPUProfileRate(*cpuProfileRate)
+
 		if err != nil {
 			panic(err)
 		}
+		defer pprof.StopCPUProfile()
 		teardown = append(teardown, pprof.StopCPUProfile)
 		fmt.Fprintf(core.Stderr, "Profiling started at rate=%d. See file `%s'.\n",
-			cpuProfileRate, cpuProfileName)
+			*cpuProfileRate, cpuProfileName)
 		defer finish(memProfileName)
 	} else if memProfileName != "" {
 		defer finish(memProfileName)
@@ -449,7 +453,7 @@ func Main() {
 	if filename != "" {
 		if err := processFile(env, filename); err != nil {
 			if ee, ok := err.(*core.ExitError); ok {
-				os.Exit(ee.Code)
+				core.Exit(ee.Code)
 			}
 
 			core.Exit(1)

@@ -658,7 +658,7 @@ func unpackMethodExpr(env *Env, p []byte, header *PackHeader) (*MethodExpr, []by
 	res := &MethodExpr{
 		Position: pos,
 		name:     name,
-		method:   convertMethodName(name),
+		method:   convertMethodName(name.Name()[1:]),
 		obj:      obj,
 		args:     args,
 	}

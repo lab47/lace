@@ -3,7 +3,6 @@ package core
 import (
 	"bufio"
 	"io"
-	"unsafe"
 )
 
 type (
@@ -17,7 +16,7 @@ var _ Object = &BufferedReader{}
 
 func MakeBufferedReader(rd io.Reader) *BufferedReader {
 	res := &BufferedReader{bufio.NewReader(rd), 0}
-	res.hash = HashPtr(uintptr(unsafe.Pointer(res)))
+	res.hash = HashPtr(res)
 	return res
 }
 

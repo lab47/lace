@@ -2,7 +2,6 @@ package core
 
 import (
 	"bytes"
-	"unsafe"
 )
 
 type (
@@ -16,7 +15,7 @@ var _ Object = &Buffer{}
 
 func MakeBuffer(b *bytes.Buffer) *Buffer {
 	res := &Buffer{b, 0}
-	res.hash = HashPtr(uintptr(unsafe.Pointer(res)))
+	res.hash = HashPtr(res)
 	return res
 }
 

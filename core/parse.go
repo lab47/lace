@@ -7,7 +7,6 @@ import (
 	"sort"
 	"strings"
 	"unicode"
-	"unsafe"
 )
 
 type (
@@ -536,7 +535,7 @@ func (err *ParseError) GetType() *Type {
 }
 
 func (err *ParseError) Hash(env *Env) (uint32, error) {
-	return HashPtr(uintptr(unsafe.Pointer(err))), nil
+	return HashPtr(err), nil
 }
 
 func (err *ParseError) WithInfo(info *ObjectInfo) Object {
@@ -685,7 +684,6 @@ func GetPosition(obj Object) Position {
 
 func updateVar(vr *Var, info *ObjectInfo, valueExpr Expr, sym Symbol) {
 	vr.WithInfo(info)
-	vr.expr = valueExpr
 	meta := sym.GetMeta()
 	if meta != nil {
 		if ok, p := meta.GetEqu(criticalKeywords.private); ok {
@@ -871,7 +869,7 @@ func parseParams(env *Env, params Object) ([]Symbol, bool, error) {
 				if err != nil {
 					return nil, false, err
 				}
-				return nil, false, &ParseError{obj: ro, msg: "Unsupported binding form: " + s}
+				return nil, false, &ParseError{obj: ro, msg: "Unsupported binding form 1: " + s}
 			}
 		}
 		if criticalSymbols.amp.Equals(env, sym) {
@@ -893,7 +891,7 @@ func parseParams(env *Env, params Object) ([]Symbol, bool, error) {
 						if err != nil {
 							return nil, false, err
 						}
-						return nil, false, &ParseError{obj: variadic, msg: "Unsupported binding form: " + s}
+						return nil, false, &ParseError{obj: variadic, msg: "Unsupported binding form 2: " + s}
 					}
 				}
 				res = append(res, variadic.(Symbol))
@@ -1441,7 +1439,7 @@ func parseLetLoop(obj Object, formName string, ctx *ParseContext) (*LetExpr, err
 						return nil, err
 					}
 
-					return nil, &ParseError{obj: s, msg: "Unsupported binding form: " + ss}
+					return nil, &ParseError{obj: s, msg: "Unsupported binding form 3: " + ss}
 				}
 			}
 			if formName != "letfn" {
@@ -1564,7 +1562,7 @@ func resolveMacro(obj Object, ctx *ParseContext) *Var {
 			return nil
 		}
 		vr, ok := ctx.Env.Resolve(sym)
-		if !ok || !vr.isMacro || vr.Value == nil {
+		if !ok || !vr.isMacro || vr.GetStatic() == nil {
 			return nil
 		}
 		vr.isUsed = true
@@ -1680,7 +1678,7 @@ func macroexpand1(env *Env, seq Seq, ctx *ParseContext) (Object, error) {
 		}
 
 		var callable Callable
-		if err := Cast(env, vr.Value, &callable); err != nil {
+		if err := Cast(env, vr.GetStatic(), &callable); err != nil {
 			return nil, err
 		}
 
@@ -1727,7 +1725,7 @@ func getTaggedTypes(obj Meta) []*Type {
 					res = append(res, t)
 				}
 			case String:
-				parts := strings.Split(typeDecl.S, "|")
+				parts := strings.Split(typeDecl.S(), "|")
 				for _, p := range parts {
 					if t := TYPES[MakeSymbol(p).name]; t != nil {
 						res = append(res, t)
@@ -1850,9 +1848,9 @@ func setMacroMeta(env *Env, vr *Var) error {
 	var err error
 	var ass Associative
 	if vr.meta == nil {
-		ass, err = EmptyArrayMap().Assoc(env, criticalKeywords.macro, Boolean{B: true})
+		ass, err = EmptyArrayMap().Assoc(env, criticalKeywords.macro, Boolean(true))
 	} else {
-		ass, err = vr.meta.Assoc(env, criticalKeywords.macro, Boolean{B: true})
+		ass, err = vr.meta.Assoc(env, criticalKeywords.macro, Boolean(true))
 	}
 
 	if err := Cast(env, ass, &vr.meta); err != nil {
@@ -1902,7 +1900,7 @@ func isKnownMacros(env *Env, sym Symbol) (bool, Seq) {
 	}
 
 	var m Map
-	if err := Cast(env, KNOWN_MACROS.Value, &m); err != nil {
+	if err := Cast(env, KNOWN_MACROS.GetStatic(), &m); err != nil {
 		return false, nil
 	}
 
@@ -1937,9 +1935,6 @@ func isUnknownCallable(env *Env, expr Expr) (bool, Seq) {
 		b, s := isKnownMacros(env, sym)
 		if b {
 			return b, s
-		}
-		if c.vr.expr != nil {
-			return false, nil
 		}
 		if sym.ns == "" && c.vr.ns != env.CoreNamespace {
 			return true, nil
@@ -2232,7 +2227,7 @@ func parseList(env *Env, obj Object, ctx *ParseContext) (Expr, error) {
 		return &MethodExpr{
 			Position: GetPosition(obj),
 			name:     sym,
-			method:   convertMethodName(sym),
+			method:   convertMethodName(sym.Name()[1:]),
 			obj:      args[0],
 			args:     args[1:],
 		}, nil
@@ -2292,63 +2287,11 @@ func parseList(env *Env, obj Object, ctx *ParseContext) (Expr, error) {
 		args:     args,
 		Position: pos,
 	}
-	if LINTER_MODE {
-		switch c := res.callable.(type) {
-		case *VarRefExpr:
-			if c.vr.Value != nil {
-				switch f := c.vr.Value.(type) {
-				case *Fn:
-					ok, err := reportWrongArity(env, f.fnExpr, c.vr.isMacro, res, pos)
-					if err != nil {
-						return nil, err
-					}
-					if !ok {
-						require := getRequireVar(ctx)
-						refer := getReferVar(ctx)
-						alias := getAliasVar(ctx)
-						createNs := getCreateNsVar(ctx)
-						inNs := getInNsVar(ctx)
-						if (c.vr.Value.Equals(env, require.Value) ||
-							c.vr.Value.Equals(env, alias.Value) ||
-							c.vr.Value.Equals(env, refer.Value) ||
-							c.vr.Value.Equals(env, inNs.Value) ||
-							c.vr.Value.Equals(env, createNs.Value)) &&
-							areAllLiteralExprs(res.args) {
-							_, err = Eval(env, res, nil)
-							if err != nil {
-								return nil, err
-							}
-						}
-					}
-				case Callable:
-					if m := c.vr.GetMeta(); m != nil {
-						if ok, arglist := m.GetEqu(criticalKeywords.arglist); ok {
-							if arglist, ok := arglist.(Seq); ok {
-								ok, err := checkArglist(env, arglist, len(res.args))
-								if err != nil {
-									return nil, err
-								}
-								if !ok {
-									printParseWarning(pos, fmt.Sprintf("Wrong number of args (%d) passed to %s", len(res.args), res.Name()))
-								}
-							}
-						}
-					}
-					return res, nil
-				default:
-					reportNotAFunction(pos, res.Name())
-				}
-			} else {
-				checkCall(env, c.vr.expr, c.vr.isMacro, res, pos)
-			}
-		default:
-			checkCall(env, res.callable, false, res, pos)
-		}
-	}
+
 	return res, nil
 }
 
-func convertMethodName(sym Symbol) string {
+func convertMethodName(sym string) string {
 	capNext := true
 	return strings.Map(func(r rune) rune {
 		if capNext {
@@ -2362,7 +2305,7 @@ func convertMethodName(sym Symbol) string {
 		}
 
 		return r
-	}, sym.Name()[1:])
+	}, sym)
 }
 
 func InternFakeSymbol(env *Env, ns *Namespace, sym Symbol) (*Var, error) {

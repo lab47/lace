@@ -53,6 +53,8 @@ func (c *ConvRegistry) convArg(at reflect.Type) (inConv, bool) {
 		return convertCallableIn, true
 	case reflect.TypeFor[string]():
 		return convertStringIn, true
+	case reflect.TypeFor[bool]():
+		return convertBoolIn, true
 	case reflect.TypeFor[Symbol]():
 		return convertSymbolIn, true
 	case reflect.TypeFor[Keyword]():
@@ -355,6 +357,10 @@ func convertBoolOut(env *Env, s reflect.Value) (Object, error) {
 	return MakeBoolean(gb), nil
 }
 
+func convertBoolIn(env *Env, index int, o Object) (reflect.Value, error) {
+	return reflect.ValueOf(ToBool(o)), nil
+}
+
 // from reflect.Type to ReflectType
 func convertGoReflectTypeOut(env *Env, s reflect.Value) (Object, error) {
 	gb, ok := s.Interface().(reflect.Type)
@@ -369,7 +375,7 @@ func convertGoReflectTypeOut(env *Env, s reflect.Value) (Object, error) {
 func convertStringIn(env *Env, index int, o Object) (reflect.Value, error) {
 	switch sv := o.(type) {
 	case String:
-		return reflect.ValueOf(sv.S), nil
+		return reflect.ValueOf(sv.S()), nil
 	case Symbol:
 		return reflect.ValueOf(sv.Name()), nil
 	case Keyword:
@@ -411,7 +417,7 @@ func convertBytesIn(env *Env, index int, o Object) (reflect.Value, error) {
 		return reflect.Value{}, env.NewArgTypeError(index, o, "String")
 	}
 
-	return reflect.ValueOf([]byte(ls.S)), nil
+	return reflect.ValueOf([]byte(ls.S())), nil
 }
 
 // from Int to int
@@ -421,7 +427,7 @@ func convertIntIn(env *Env, index int, o Object) (reflect.Value, error) {
 		return reflect.Value{}, env.NewArgTypeError(index, o, "Int")
 	}
 
-	return reflect.ValueOf(ls.Int().I), nil
+	return reflect.ValueOf(ls.Int().I()), nil
 }
 
 // from Int to int
@@ -431,7 +437,7 @@ func convertIntIn8(env *Env, index int, o Object) (reflect.Value, error) {
 		return reflect.Value{}, env.NewArgTypeError(index, o, "Int")
 	}
 
-	return reflect.ValueOf(int8(ls.Int().I)), nil
+	return reflect.ValueOf(int8(ls.Int().I())), nil
 }
 
 // from Int to int
@@ -441,7 +447,7 @@ func convertIntIn16(env *Env, index int, o Object) (reflect.Value, error) {
 		return reflect.Value{}, env.NewArgTypeError(index, o, "Int")
 	}
 
-	return reflect.ValueOf(int16(ls.Int().I)), nil
+	return reflect.ValueOf(int16(ls.Int().I())), nil
 }
 
 // from Int to int
@@ -451,7 +457,7 @@ func convertIntIn32(env *Env, index int, o Object) (reflect.Value, error) {
 		return reflect.Value{}, env.NewArgTypeError(index, o, "Int")
 	}
 
-	return reflect.ValueOf(int32(ls.Int().I)), nil
+	return reflect.ValueOf(int32(ls.Int().I())), nil
 }
 
 // from Int to int
@@ -461,7 +467,7 @@ func convertIntIn64(env *Env, index int, o Object) (reflect.Value, error) {
 		return reflect.Value{}, env.NewArgTypeError(index, o, "Int")
 	}
 
-	return reflect.ValueOf(int64(ls.Int().I)), nil
+	return reflect.ValueOf(int64(ls.Int().I())), nil
 }
 
 // from Int to int
@@ -471,7 +477,7 @@ func convertUintIn(env *Env, index int, o Object) (reflect.Value, error) {
 		return reflect.Value{}, env.NewArgTypeError(index, o, "Int")
 	}
 
-	return reflect.ValueOf(uint(ls.Int().I)), nil
+	return reflect.ValueOf(uint(ls.Int().I())), nil
 }
 
 // from Int to int
@@ -481,7 +487,7 @@ func convertUintIn8(env *Env, index int, o Object) (reflect.Value, error) {
 		return reflect.Value{}, env.NewArgTypeError(index, o, "Int")
 	}
 
-	return reflect.ValueOf(uint8(ls.Int().I)), nil
+	return reflect.ValueOf(uint8(ls.Int().I())), nil
 }
 
 // from Int to int
@@ -491,7 +497,7 @@ func convertUintIn16(env *Env, index int, o Object) (reflect.Value, error) {
 		return reflect.Value{}, env.NewArgTypeError(index, o, "Int")
 	}
 
-	return reflect.ValueOf(uint16(ls.Int().I)), nil
+	return reflect.ValueOf(uint16(ls.Int().I())), nil
 }
 
 // from Int to int
@@ -501,7 +507,7 @@ func convertUintIn32(env *Env, index int, o Object) (reflect.Value, error) {
 		return reflect.Value{}, env.NewArgTypeError(index, o, "Int")
 	}
 
-	return reflect.ValueOf(uint32(ls.Int().I)), nil
+	return reflect.ValueOf(uint32(ls.Int().I())), nil
 }
 
 // from Int to int
@@ -511,7 +517,7 @@ func convertUintIn64(env *Env, index int, o Object) (reflect.Value, error) {
 		return reflect.Value{}, env.NewArgTypeError(index, o, "Int")
 	}
 
-	return reflect.ValueOf(uint64(ls.Int().I)), nil
+	return reflect.ValueOf(uint64(ls.Int().I())), nil
 }
 
 // from Object to Object

@@ -11,7 +11,6 @@ import (
 	"runtime"
 	"sort"
 	"strings"
-	"unsafe"
 
 	"github.com/fatih/color"
 	"golang.org/x/exp/slices"
@@ -42,7 +41,7 @@ func (exInfo *ExInfo) GetType() *Type {
 }
 
 func (exInfo *ExInfo) Hash(env *Env) (uint32, error) {
-	return HashPtr(uintptr(unsafe.Pointer(exInfo))), nil
+	return HashPtr(exInfo), nil
 }
 
 func (exInfo *ExInfo) Message() Object {
@@ -80,7 +79,7 @@ func (exInfo *ExInfo) Error() string {
 	var strMsg string
 
 	if sv, ok := msg.(String); ok {
-		strMsg = sv.S
+		strMsg = sv.S()
 	} else {
 		strMsg = "no proper message"
 	}
@@ -389,7 +388,7 @@ func (vs *VMStacktrace) renderFrame(env *Env, ele Object) outputFrame {
 
 	switch sv := ele.(type) {
 	case String:
-		return outputFrame{name: sv.S}
+		return outputFrame{name: sv.S()}
 	case IndexCounted:
 		if sv.Count() >= 2 {
 			a, _ := sv.Nth(env, 0)
@@ -419,20 +418,20 @@ func (vs *VMStacktrace) renderFrame(env *Env, ele Object) outputFrame {
 					}
 				}
 
-				codeFile := fn.code.fileForIp(ip.I)
+				codeFile := fn.code.fileForIp(ip.I())
 				if codeFile != fn.code.filename {
-					macroLine := fn.code.macroLineForIp(ip.I)
+					macroLine := fn.code.macroLineForIp(ip.I())
 
 					return outputFrame{
 						lace: true,
 						name: name,
-						loc:  fmt.Sprintf("%s:%d (from %s:%d)", codeFile, macroLine, fn.code.filename, fn.code.lineForIp(ip.I)),
+						loc:  fmt.Sprintf("%s:%d (from %s:%d)", codeFile, macroLine, fn.code.filename, fn.code.lineForIp(ip.I())),
 					}
 				} else {
 					return outputFrame{
 						lace: true,
 						name: name,
-						loc:  fmt.Sprintf("%s:%d", fn.code.filename, fn.code.lineForIp(ip.I)),
+						loc:  fmt.Sprintf("%s:%d", fn.code.filename, fn.code.lineForIp(ip.I())),
 					}
 				}
 			}
@@ -623,8 +622,8 @@ func StubNewArgTypeError(index int, obj Object, expectedType string) *EvalError 
 	return StubNewError(fmt.Sprintf("Arg[%d] of <<func_name>> must have type %s, got %s", index, expectedType, obj.GetType().Name()))
 }
 
-func (e *Env) NewError(msg string) *EvalError {
-	return WrapError(e, errors.New(msg))
+func (e *Env) NewError(msg string, args ...any) *EvalError {
+	return WrapError(e, fmt.Errorf(msg, args...))
 }
 
 func TypeError[T any](env *Env, obj Object) *EvalError {

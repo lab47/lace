@@ -1,9 +1,5 @@
 package core
 
-import (
-	"unsafe"
-)
-
 type (
 	FutureResult struct {
 		value Object
@@ -48,7 +44,7 @@ func (ch *Channel) WithInfo(info *ObjectInfo) Object {
 
 func MakeChannel(ch chan FutureResult) *Channel {
 	res := &Channel{ch: ch, hash: 0}
-	res.hash = HashPtr(uintptr(unsafe.Pointer(res)))
+	res.hash = HashPtr(res)
 	return res
 }
 
