@@ -489,17 +489,6 @@ func (e *Engine) assembleBacktrace() []string {
 
 func (e *Engine) call(env *Env, callable Callable, objArgs []Object) (Object, error) {
 	if fn, ok := callable.(*Fn); ok {
-		if fn.code == nil {
-			if fn.env != nil && len(fn.env.bindings) > 0 {
-				panic("can't do this one")
-			}
-
-			_, err := compileFn(env, fn, nil)
-			if err != nil {
-				return nil, err
-			}
-		}
-
 		_, err := e.pushFrame(fn, objArgs)
 		if err != nil {
 			return nil, err
@@ -556,23 +545,14 @@ func (e *Engine) RunBC(env *Env, fn *Fn) (Object, error) {
 
 	defer e.popFrame(frame)
 
-	var (
-		ip  int
-		tmp Object
-	)
-
-	defer func() {
-		frame.Ip = ip
-	}()
-
 loop:
 	for {
-		//nsn := c.insns[ip]
+		//nsn := c.insns[frame.Ip]
 
-		op, a := insn.Decode(c.insns[ip])
+		op, a := insn.Decode(c.insns[frame.Ip])
 
 		if debugBC {
-			fmt.Printf("% 2d|% 4d|% 4d| %s %d\n", idx, ip, fn.code.lineForIp(ip), OpCode(op), a)
+			fmt.Printf("% 2d|% 4d|% 4d| %s %d\n", idx, frame.Ip, fn.code.lineForIp(frame.Ip), OpCode(op), a)
 			//e.printStack(env)
 		}
 
@@ -584,16 +564,16 @@ loop:
 		case Return:
 			return frame.stackPop(), nil
 		case Jump:
-			ip = int(a)
+			frame.Ip = int(a)
 			continue loop
 		case JumpIfTrue:
 			if ToBool(frame.stackPop()) {
-				ip = int(a)
+				frame.Ip = int(a)
 				continue loop
 			}
 		case JumpIfFalse:
 			if !ToBool(frame.stackPop()) {
-				ip = int(a)
+				frame.Ip = int(a)
 				continue loop
 			}
 		case GetUpval:
@@ -609,7 +589,7 @@ loop:
 
 			uv.(*NamedPair).Value = frame.stackPop()
 		case ResolveVar:
-			tmp = c.vars[a].Resolve(env)
+			tmp := c.vars[a].Resolve(env)
 			if debugBC {
 				fmt.Printf("             | %s\n", c.vars[a].Name())
 			}
@@ -863,8 +843,6 @@ loop:
 			args := frame.stackPopN(int(a))
 			obj := frame.stackPop()
 
-			frame.Ip = ip
-
 			switch sv := obj.(type) {
 			case *Fn:
 				_, ferr := e.pushFrame(sv, args)
@@ -888,14 +866,12 @@ loop:
 					return nil, err
 				}
 
-				ip = newIp
+				frame.Ip = newIp
 				continue loop
 			}
 
 			frame.stackPush(obj)
 		case Apply:
-			frame.Ip = ip
-
 			args := frame.stackPop()
 			obj := frame.stackPop()
 
@@ -906,7 +882,7 @@ loop:
 					return nil, err
 				}
 
-				ip = newIp
+				frame.Ip = newIp
 				continue loop
 			}
 
@@ -919,11 +895,9 @@ loop:
 					return nil, err
 				}
 
-				ip = newIp
+				frame.Ip = newIp
 				continue loop
 			}
-
-			frame.Ip = ip
 
 			switch callable := obj.(type) {
 			case Callable:
@@ -945,7 +919,7 @@ loop:
 						return nil, err
 					}
 
-					ip = newIp
+					frame.Ip = newIp
 					continue loop
 				}
 
@@ -965,8 +939,6 @@ loop:
 			args := frame.stackPopN(int(ms.Arity))
 			obj := frame.stackPop()
 
-			frame.Ip = ip
-
 			res, err := e.methodCall(env, ms.Method, obj, args)
 			if err != nil {
 				newIp, err := e.unwind(err)
@@ -974,14 +946,12 @@ loop:
 					return nil, err
 				}
 
-				ip = newIp
+				frame.Ip = newIp
 				continue loop
 			}
 
 			frame.stackPush(res)
 		case Throw:
-			frame.Ip = ip
-
 			obj := frame.stackPop()
 
 			var err error
@@ -998,7 +968,7 @@ loop:
 				return nil, err
 			}
 
-			ip = newIp
+			frame.Ip = newIp
 			continue loop
 
 		case PushHandler:
@@ -1024,7 +994,7 @@ loop:
 						return nil, err
 					}
 
-					ip = newIp
+					frame.Ip = newIp
 					continue loop
 				}
 
@@ -1059,7 +1029,6 @@ loop:
 				frame.stackPush(MakeBoolean(false))
 			}
 		case ThrowArity:
-			frame.Ip = ip
 			return nil, ErrorArity(env, int(frame.Arity))
 		case CheckType:
 			obj := frame.stackPop()
@@ -1074,6 +1043,6 @@ loop:
 			return nil, fmt.Errorf("unimplemented instruction: %s", OpCode(op))
 		}
 
-		ip++
+		frame.Ip++
 	}
 }
