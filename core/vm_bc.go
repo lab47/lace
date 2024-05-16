@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-	"sync"
 
 	"github.com/lab47/lace/core/insn"
 	"golang.org/x/exp/slices"
@@ -118,14 +117,15 @@ func (e *BytecodeEncoder) Encode(i *Instruction) error {
 }
 
 type EngineFrame struct {
-	Ip       int
-	Stack    []Object
-	SP       int32
-	Code     *Fn
-	Bindings []Object
-	Upvals   []*NamedPair
-	Arity    int32
-	Args     []Object
+	Ip        int
+	Stack     []Object
+	SP        int32
+	Code      *Fn
+	Bindings  []Object
+	Upvals    []Object
+	Arity     int32
+	Args      []Object
+	FrameSize int
 
 	Handlers []handler
 }
@@ -135,6 +135,7 @@ type FrameRope struct {
 	chunks   [][]EngineFrame
 	chunkPtr int
 	curPtr   int
+	total    int
 }
 
 func (f *FrameRope) init() {
@@ -144,10 +145,12 @@ func (f *FrameRope) init() {
 	f.curPtr = -1
 }
 
-func (f *FrameRope) pushFrame(fr EngineFrame) *EngineFrame {
+func (f *FrameRope) pushFrame() *EngineFrame {
 	chunk := f.curChunk
 	f.curPtr++
 	pos := f.curPtr
+
+	f.total++
 
 	if len(chunk) <= pos {
 		chunk = make([]EngineFrame, 50)
@@ -158,13 +161,11 @@ func (f *FrameRope) pushFrame(fr EngineFrame) *EngineFrame {
 		pos = 0
 	}
 
-	dest := &chunk[pos]
-	*dest = fr
-
-	return dest
+	return &chunk[pos]
 }
 
 func (f *FrameRope) popFrame() {
+	f.total--
 	if f.curPtr == 0 {
 		if f.chunkPtr > 0 {
 			f.chunkPtr--
@@ -183,7 +184,6 @@ func (f *FrameRope) frameTop() *EngineFrame {
 }
 
 type Engine struct {
-	frames     []*EngineFrame
 	frope      FrameRope
 	allocstack []Object
 	stackTop   int
@@ -285,89 +285,66 @@ func newEngineFrame() any {
 	return &EngineFrame{}
 }
 
-var framePool = sync.Pool{
-	New: newEngineFrame,
-}
-
-func (e *Engine) xpushFrame(fn *Fn) *EngineFrame {
-	var stack []Object
-
-	stack = make([]Object, fn.code.stackSize)
-	idx := len(e.frames)
-
-	upvals := make([]*NamedPair, fn.code.totalUpvals)
-	copy(upvals, fn.importedUpvals)
-
-	frame := framePool.Get().(*EngineFrame)
-
-	*frame = EngineFrame{
-		Code:     fn,
-		Stack:    stack,
-		SP:       -1,
-		Upvals:   upvals,
-		Bindings: make([]Object, fn.code.numBindings),
-	}
-
-	e.frames = append(e.frames, frame)
-
-	return e.frames[idx]
-}
-
 const defStackSize = 8000
 
 var ErrStackOverflow = errors.New("stack overflow, not enough stack room")
 
-func (e *Engine) pushFrame(fn *Fn) (*EngineFrame, error) {
+func (e *Engine) pushFrame(fn *Fn, args []Object) (*EngineFrame, error) {
 	var stack []Object
 
 	remaining := len(e.allocstack) - e.stackTop
 
-	stackNeeded := fn.code.stackSize + uint32(fn.code.numBindings)
+	stackNeeded := fn.code.stackSize + uint32(fn.code.numBindings) + uint32(fn.code.totalUpvals)
 	if remaining < int(stackNeeded) {
 		return nil, ErrStackOverflow
 	}
 
-	stack = e.allocstack[e.stackTop : e.stackTop+int(fn.code.stackSize)]
-	e.stackTop += int(fn.code.stackSize)
+	frameSpace := e.allocstack[e.stackTop : e.stackTop+int(stackNeeded)]
 
-	bindings := e.allocstack[e.stackTop : e.stackTop+fn.code.numBindings]
-	e.stackTop += fn.code.numBindings
+	// Divide up our slice of the stack into the actual stack, the slice of
+	// bindings the function will use, and the slice of upvals that are available
+	off := 0
+	stack = frameSpace[:fn.code.stackSize]
+	off += int(fn.code.stackSize)
+	bindings := frameSpace[off : off+fn.code.numBindings]
+	off += fn.code.numBindings
+	upvals := frameSpace[off : off+fn.code.totalUpvals]
 
+	e.stackTop += int(stackNeeded)
+
+	// NOTE: we don't currently clear the stack because the code can't use
+	// stack entries that are beyond the SP. But if you're directly inspecting
+	// the stack, you CAN see values from previous invocations.
+	// NOTE: we could probably get away with not clearing bindings as
+	// the generated code always sets a binding before it's read (obvi),
+	// but it's possible that a future compiler could have a bug where it did
+	// do this and it would be better that it observe a nil than a random object
+	// in that case.
 	clear(bindings)
+	clear(upvals)
+	for i, uv := range fn.importedUpvals {
+		upvals[i] = uv
+	}
 
-	upvals := make([]*NamedPair, fn.code.totalUpvals)
-	copy(upvals, fn.importedUpvals)
+	frame := e.frope.pushFrame()
 
-	frame := e.frope.pushFrame(EngineFrame{
-		Code:     fn,
-		Stack:    stack,
-		SP:       -1,
-		Upvals:   upvals,
-		Bindings: bindings, // make([]Object, fn.code.numBindings),
-	})
+	frame.Code = fn
+	frame.Stack = stack
+	frame.SP = -1
+	frame.Ip = 0
+	frame.Upvals = upvals
+	frame.Bindings = bindings
+	frame.Handlers = nil
+	frame.Args = args
+	frame.Arity = int32(len(args))
+	frame.FrameSize = int(stackNeeded)
 
 	return frame, nil
 }
 
-func (e *Engine) xpopFrame() {
-	fr := e.frames[len(e.frames)-1]
-	framePool.Put(fr)
-	e.frames = e.frames[:len(e.frames)-1]
-}
-
 func (e *Engine) popFrame(fr *EngineFrame) {
-	e.stackTop -= (int(fr.Code.code.stackSize) + fr.Code.code.numBindings)
+	e.stackTop -= fr.FrameSize
 	e.frope.popFrame()
-}
-
-func (e *Engine) frameBack(cnt int) (*EngineFrame, error) {
-	idx := len(e.frames) - cnt - 1
-
-	if idx < 0 {
-		return nil, fmt.Errorf("invalid upward frame request %d (have %d)", cnt, len(e.frames))
-	}
-
-	return e.frames[idx], nil
 }
 
 func (e *Engine) frameTop() (*EngineFrame, error) {
@@ -377,7 +354,6 @@ func (e *Engine) frameTop() (*EngineFrame, error) {
 func NewEngine() *Engine {
 	eng := &Engine{
 		allocstack: make([]Object, defStackSize),
-		frames:     make([]*EngineFrame, 100),
 	}
 	eng.frope.init()
 
@@ -391,17 +367,19 @@ func EngineRun(env *Env, fn *Fn) (Object, error) {
 		env.Engine = e
 	}
 
-	e.pushFrame(fn)
+	_, err := e.pushFrame(fn, nil)
+	if err != nil {
+		return nil, err
+	}
+
 	return e.RunBC(env, fn)
 }
 
 func (e *Engine) RunWithArgs(env *Env, fn *Fn, args []Object) (Object, error) {
-	fr, err := e.pushFrame(fn)
+	_, err := e.pushFrame(fn, args)
 	if err != nil {
 		return nil, err
 	}
-	fr.Args = args // slices.Clone(args)
-	fr.Arity = int32(len(args))
 	return e.RunBC(env, fn)
 }
 
@@ -431,12 +409,32 @@ func (e *Engine) unwind(oerr error) (int, error) {
 	return eh.ip, nil
 }
 
-func (e *Engine) printBacktrace(last int) {
-	if last >= len(e.frames) {
-		last = len(e.frames)
+func (e *Engine) frames() []*EngineFrame {
+	var ret []*EngineFrame
+
+	for i := 0; i < e.frope.chunkPtr; i++ {
+		chunk := e.frope.chunks[i]
+
+		for i := range chunk {
+			ret = append(ret, &chunk[i])
+		}
 	}
 
-	for _, fr := range e.frames[len(e.frames)-last:] {
+	for i := 0; i <= e.frope.curPtr; i++ {
+		ret = append(ret, &e.frope.curChunk[i])
+	}
+
+	return ret
+}
+
+func (e *Engine) printBacktrace(last int) {
+	frames := e.frames()
+
+	if last >= len(frames) {
+		last = len(frames)
+	}
+
+	for _, fr := range frames[len(frames)-last:] {
 		fmt.Printf("| %s:%d (ip: %d)\n", fr.Code.code.filename, fr.Code.code.lineForIp(fr.Ip), fr.Ip)
 	}
 }
@@ -444,8 +442,9 @@ func (e *Engine) printBacktrace(last int) {
 func (e *Engine) makeStackTrace() Object {
 	var vals []Object
 
-	for i := len(e.frames) - 1; i >= 0; i-- {
-		fr := e.frames[i]
+	frames := e.frames()
+	for i := len(frames) - 1; i >= 0; i-- {
+		fr := frames[i]
 
 		vals = append(vals, NewVectorFrom(
 			fr.Code,
@@ -478,7 +477,8 @@ func (e *Engine) makeStackTrace() Object {
 func (e *Engine) assembleBacktrace() []string {
 	var ret []string
 
-	for _, fr := range e.frames {
+	frames := e.frames()
+	for _, fr := range frames {
 		ret = append(ret,
 			fmt.Sprintf("%s:%d (ip: %d)", fr.Code.code.filename, fr.Code.code.lineForIp(fr.Ip), fr.Ip),
 		)
@@ -500,14 +500,10 @@ func (e *Engine) call(env *Env, callable Callable, objArgs []Object) (Object, er
 			}
 		}
 
-		//e.printBacktrace(2)
-		//printInsns(fn.code.insns)
-		fr, err := e.pushFrame(fn)
+		_, err := e.pushFrame(fn, objArgs)
 		if err != nil {
 			return nil, err
 		}
-		fr.Args = objArgs //  slices.Clone(objArgs)
-		fr.Arity = int32(len(objArgs))
 
 		return e.RunBC(env, fn)
 	}
@@ -550,21 +546,24 @@ func (e *Engine) RunBC(env *Env, fn *Fn) (Object, error) {
 		return nil, err
 	}
 
+	var idx int
+
 	if debugBC {
-		fmt.Printf("==== enter frame %d %s:%d (upvals: %d) =====\n", len(e.frames), fn.code.filename, fn.code.lineForIp(0), len(frame.Upvals))
-		defer fmt.Printf("==== exit frame %d =====\n", len(e.frames))
+		idx = e.frope.total
+		fmt.Printf("==== enter frame %d %s:%d (upvals: %d) =====\n", idx, fn.code.filename, fn.code.lineForIp(0), len(frame.Upvals))
+		defer fmt.Printf("==== exit frame %d =====\n", idx)
 	}
 
-	//defer e.popFrame(frame)
+	defer e.popFrame(frame)
 
 	var (
 		ip  int
 		tmp Object
 	)
 
-	//defer func() {
-	//frame.Ip = ip
-	//}()
+	defer func() {
+		frame.Ip = ip
+	}()
 
 loop:
 	for {
@@ -573,7 +572,7 @@ loop:
 		op, a := insn.Decode(c.insns[ip])
 
 		if debugBC {
-			fmt.Printf("% 2d|% 4d|% 4d| %s %d\n", len(e.frames), ip, fn.code.lineForIp(ip), OpCode(op), a)
+			fmt.Printf("% 2d|% 4d|% 4d| %s %d\n", idx, ip, fn.code.lineForIp(ip), OpCode(op), a)
 			//e.printStack(env)
 		}
 
@@ -583,8 +582,6 @@ loop:
 		case Dup:
 			frame.stackPush(frame.stackTop())
 		case Return:
-			frame.Ip = ip
-			e.popFrame(frame)
 			return frame.stackPop(), nil
 		case Jump:
 			ip = int(a)
@@ -600,7 +597,7 @@ loop:
 				continue loop
 			}
 		case GetUpval:
-			frame.stackPush(frame.Upvals[a].Value)
+			frame.stackPush(frame.Upvals[a].(*NamedPair).Value)
 		case RefUpval:
 			frame.stackPush(frame.Upvals[a])
 		case SetUpval:
@@ -610,7 +607,7 @@ loop:
 				frame.Upvals[a] = uv
 			}
 
-			uv.Value = frame.stackPop()
+			uv.(*NamedPair).Value = frame.stackPop()
 		case ResolveVar:
 			tmp = c.vars[a].Resolve(env)
 			if debugBC {
@@ -870,12 +867,10 @@ loop:
 
 			switch sv := obj.(type) {
 			case *Fn:
-				fr, err := e.pushFrame(sv)
-				if err != nil {
+				_, ferr := e.pushFrame(sv, args)
+				if ferr != nil {
 					return nil, err
 				}
-				fr.Args = args // slices.Clone(args)
-				fr.Arity = int32(len(args))
 
 				obj, err = e.RunBC(env, sv)
 			case Proc:
@@ -933,12 +928,10 @@ loop:
 			switch callable := obj.(type) {
 			case Callable:
 				if fn, ok := callable.(*Fn); ok {
-					fr, err := e.pushFrame(fn)
-					if err != nil {
-						return nil, err
+					_, ferr := e.pushFrame(fn, callArgs)
+					if ferr != nil {
+						return nil, ferr
 					}
-					fr.Args = callArgs // slices.Clone(callArgs)
-					fr.Arity = int32(len(callArgs))
 
 					obj, err = e.RunBC(env, fn)
 				} else {
