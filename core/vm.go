@@ -38,8 +38,18 @@ type LiteralData struct {
 func (v *LiteralData) insData() {}
 
 func (v *LiteralData) String() string {
-	str, _ := v.obj.ToString(nil, false)
-	return fmt.Sprintf("literal: %q", str)
+	switch sv := v.obj.(type) {
+	case String:
+		return fmt.Sprintf("literal: %q", sv.S())
+	case Int:
+		return fmt.Sprintf("literal: %q", sv.I())
+	case Symbol:
+		return fmt.Sprintf("literal: %s", sv.String())
+	case Keyword:
+		return fmt.Sprintf("literal: %s", sv.String())
+	default:
+		return fmt.Sprintf("literal: %T{}", v.obj)
+	}
 }
 
 type DefData struct {
@@ -152,16 +162,6 @@ type Compiler struct {
 
 	curLine int
 	curFile string
-
-	curStackDepth int
-	maxStackDepth int
-}
-
-func (e *Compiler) stackEffect(effect int) {
-	e.curStackDepth += effect
-	if e.curStackDepth > e.maxStackDepth {
-		e.maxStackDepth = e.curStackDepth
-	}
 }
 
 func (e *Compiler) newLabel() int32 {
@@ -230,16 +230,74 @@ func (e *Compiler) setFile(file string, ip int) {
 	}
 }
 
+func printInsn(ip int, insn *Instruction) {
+	if insn.S != "" {
+		fmt.Printf("% 4d | %s %s %d\n", ip, insn.Op, insn.S, insn.A0)
+	} else if insn.Data != nil {
+		fmt.Printf("% 4d | %s %d %s\n", ip, insn.Op, insn.A0, insn.Data)
+	} else {
+		fmt.Printf("% 4d | %s %d\n", ip, insn.Op, insn.A0)
+	}
+
+}
+
 func printInsns(stream []*Instruction) {
 	for ip, insn := range stream {
-		if insn.S != "" {
-			fmt.Printf("% 4d | %s %s %d\n", ip, insn.Op, insn.S, insn.A0)
-		} else if insn.Data != nil {
-			fmt.Printf("% 4d | %s %d %s\n", ip, insn.Op, insn.A0, insn.Data)
-		} else {
-			fmt.Printf("% 4d | %s %d\n", ip, insn.Op, insn.A0)
-		}
+		printInsn(ip, insn)
 	}
+}
+
+type stackEffect struct {
+	pop, push int
+}
+
+const (
+	va  = -2
+	vaa = -3
+)
+
+var stackEffects = [...]*stackEffect{
+	Pop:          {1, 0},
+	Dup:          {0, 1},
+	Jump:         {0, 0},
+	JumpIfTrue:   {1, 0},
+	JumpIfFalse:  {1, 0},
+	ResolveVar:   {0, 1},
+	SetMacro:     {0, 1},
+	GetBinding:   {0, 1},
+	GetLocal:     {0, 1},
+	SetLocal:     {1, 0},
+	GetUpval:     {0, 1},
+	SetUpval:     {0, 1},
+	PushLiteral:  {0, 1},
+	MakeVector:   {va, 1},
+	MakeSmallMap: {va, 1},
+	MakeLargeMap: {va, 1},
+	MakeSet:      {va, 1},
+	DefValue:     {2, 1},
+	DefValue3:    {3, 1},
+	Def:          {1, 1},
+	Def3:         {2, 1},
+	SetMeta:      {2, 1},
+	Call:         {vaa, 1},
+	Apply:        {2, 1},
+	MethodCall:   {vaa, 1},
+	Throw:        {1, 0},
+
+	// it doesn't actually push, but the stack is reset here and there needs to be
+	// room on the stack for tha value, so we reserve that spot using this effect
+	PushHandler:     {0, 1},
+	PopHandler:      {0, 0},
+	CheckType:       {1, 1},
+	Return:          {1, 0},
+	CheckArityFixed: {0, 1},
+	CheckArityMin:   {0, 1},
+	ThrowArity:      {0, 0},
+	MakeFn:          {va, 1},
+	RefUpval:        {0, 1},
+	PushSelfFn:      {0, 1},
+	PushNil:         {0, 1},
+	PushInt:         {0, 1},
 }
 
 func (c *Compiler) Export(show bool) *Code {
@@ -249,19 +307,32 @@ func (c *Compiler) Export(show bool) *Code {
 
 	if show {
 		fmt.Printf("====== export %s\n", c.fnExpr.Pos())
-		printInsns(c.insns)
+		//printInsns(c.insns)
 	}
 
 	var insns []*Instruction
 
 	// TODO here is where peephole optimizations on c.insns should be done.
 
-	// Now go through and fixup all the labels!
+	// Now go through and fixup all the labels and calculate the max stack needed!
 
 	label2ip := map[int]int{}
 
+	var curStack, maxStack int
+
+	se := func(effect int) {
+		curStack += effect
+		if curStack > maxStack {
+			maxStack = curStack
+		}
+	}
+
 	var ip int
-	for _, i := range c.insns {
+	for idx, i := range c.insns {
+		if show {
+			printInsn(idx, i)
+		}
+
 		switch i.Op {
 		case SetLabel:
 			label2ip[int(i.A0)] = ip
@@ -274,6 +345,25 @@ func (c *Compiler) Export(show bool) *Code {
 		case SetFile:
 			c.setFile(i.S, ip)
 		default:
+			effect := stackEffects[i.Op]
+			if effect == nil {
+				panic("missing stack effect for " + i.Op.String())
+			}
+
+			pop := effect.pop
+
+			switch effect.pop {
+			case va:
+				pop = int(i.A0)
+			case vaa:
+				pop = int(i.A0 + 1)
+			}
+
+			se(-pop)
+			se(effect.push)
+
+			//fmt.Printf("  SE | -%d + %d => %d (%d)\n", pop, effect.push, curStack, maxStack)
+
 			insns = append(insns, i)
 			ip++
 		}
@@ -331,7 +421,7 @@ func (c *Compiler) Export(show bool) *Code {
 		filename:       c.filename,
 		data:           be.CodeData,
 		importBindings: importNames,
-		stackSize:      uint32(c.maxStackDepth),
+		stackSize:      uint32(maxStack),
 	}
 }
 
@@ -352,19 +442,16 @@ func (c *Compiler) Process(env *Env, expr Expr) error {
 
 	switch e := expr.(type) {
 	case *VarRefExpr:
-		c.stackEffect(1)
 		c.insns = append(c.insns, &Instruction{
 			Op:   ResolveVar,
 			Data: &VarData{vr: e.vr},
 		})
 	case *SetMacroExpr:
-		c.stackEffect(1)
 		c.insns = append(c.insns, &Instruction{
 			Op:   SetMacro,
 			Data: &VarData{vr: e.vr},
 		})
 	case *BindingExpr:
-		c.stackEffect(1)
 		vb := c.fn.lookup(e.name)
 		if vb == nil {
 			// The parsing of the BindingExpr validated that the name
@@ -381,8 +468,6 @@ func (c *Compiler) Process(env *Env, expr Expr) error {
 
 		c.append(vb.read())
 	case *LiteralExpr:
-		c.stackEffect(1)
-
 		specialized := false
 
 		switch sv := e.obj.(type) {
@@ -415,14 +500,10 @@ func (c *Compiler) Process(env *Env, expr Expr) error {
 			}
 		}
 
-		c.stackEffect(-len(e.v))
-
 		c.insn(Instruction{
 			Op: MakeVector,
 			A0: int32(len(e.v)),
 		})
-
-		c.stackEffect(1)
 	case *MapExpr:
 
 		for i, k := range e.keys {
@@ -437,8 +518,6 @@ func (c *Compiler) Process(env *Env, expr Expr) error {
 			}
 		}
 
-		c.stackEffect(-(len(e.keys) * 2))
-
 		if int64(len(e.keys)) > HASHMAP_THRESHOLD/2 {
 			c.insn(Instruction{
 				Op: MakeLargeMap,
@@ -450,8 +529,6 @@ func (c *Compiler) Process(env *Env, expr Expr) error {
 				A0: int32(len(e.keys) * 2),
 			})
 		}
-
-		c.stackEffect(1)
 	case *SetExpr:
 		for _, e := range e.elements {
 			err := c.Process(env, e)
@@ -460,14 +537,10 @@ func (c *Compiler) Process(env *Env, expr Expr) error {
 			}
 		}
 
-		c.stackEffect(-len(e.elements))
-
 		c.insn(Instruction{
 			Op: MakeSet,
 			A0: int32(len(e.elements)),
 		})
-
-		c.stackEffect(1)
 	case *DefExpr:
 		var (
 			op   OpCode
@@ -491,8 +564,6 @@ func (c *Compiler) Process(env *Env, expr Expr) error {
 				return err
 			}
 		}
-
-		c.stackEffect(1)
 		c.insn(Instruction{
 			Op:   PushLiteral,
 			Data: &LiteralData{obj: meta},
@@ -521,7 +592,6 @@ func (c *Compiler) Process(env *Env, expr Expr) error {
 			Op:   op,
 			Data: &data,
 		})
-		c.stackEffect(1)
 	case *MetaExpr:
 		err := c.Process(env, e.meta)
 		if err != nil {
@@ -532,11 +602,9 @@ func (c *Compiler) Process(env *Env, expr Expr) error {
 			return err
 		}
 
-		c.stackEffect(-2)
 		c.insns = append(c.insns, &Instruction{
 			Op: SetMeta,
 		})
-		c.stackEffect(1)
 	case *CallExpr:
 		tgt := e.callable
 
@@ -556,7 +624,6 @@ func (c *Compiler) Process(env *Env, expr Expr) error {
 					return err
 				}
 			}
-			c.stackEffect(-len(e.args))
 			c.insn(Instruction{Op: Apply})
 		} else {
 			err := c.Process(env, tgt)
@@ -571,16 +638,11 @@ func (c *Compiler) Process(env *Env, expr Expr) error {
 				}
 			}
 
-			c.stackEffect(-(len(e.args) + 1))
-
 			c.insns = append(c.insns, &Instruction{
 				Op: Call,
 				A0: int32(len(e.args)),
 			})
-
 		}
-
-		c.stackEffect(1)
 	case *MethodExpr:
 		err := c.Process(env, e.obj)
 		if err != nil {
@@ -594,8 +656,6 @@ func (c *Compiler) Process(env *Env, expr Expr) error {
 			}
 		}
 
-		c.stackEffect(-(len(e.args) + 1))
-
 		c.insn(Instruction{
 			Op: MethodCall,
 			A0: int32(len(e.args)),
@@ -603,15 +663,11 @@ func (c *Compiler) Process(env *Env, expr Expr) error {
 				Method: e.method,
 			},
 		})
-
-		c.stackEffect(1)
 	case *ThrowExpr:
 		err := c.Process(env, e.e)
 		if err != nil {
 			return err
 		}
-
-		c.stackEffect(-1)
 
 		c.insns = append(c.insns, &Instruction{
 			Op: Throw,
@@ -646,7 +702,6 @@ func (c *Compiler) Process(env *Env, expr Expr) error {
 				c.insns = append(c.insns, &Instruction{
 					Op: Pop,
 				})
-				c.stackEffect(-1)
 			}
 
 			err := c.Process(env, b)
@@ -678,14 +733,9 @@ func (c *Compiler) Process(env *Env, expr Expr) error {
 				})
 			}
 
-			// The VM pushes the exception on the stack, so we account for it here.
-			c.stackEffect(1)
-
 			c.insn(Instruction{
 				Op: Dup,
 			})
-
-			c.stackEffect(1)
 
 			nextCase = c.newLabel()
 
@@ -701,19 +751,14 @@ func (c *Compiler) Process(env *Env, expr Expr) error {
 				A0: nextCase,
 			})
 
-			c.stackEffect(-1)
-
 			c.fn.bindingFrame(1)
 
 			vb := c.fn.set(ce.excSymbol)
 
 			c.append(vb.set())
 
-			c.stackEffect(-1)
-
 			for i, b := range ce.body {
 				if i > 0 {
-					c.stackEffect(-1)
 					c.insns = append(c.insns, &Instruction{
 						Op: Pop,
 					})
@@ -745,8 +790,6 @@ func (c *Compiler) Process(env *Env, expr Expr) error {
 			c.insn(Instruction{
 				Op: Throw,
 			})
-
-			c.stackEffect(-1)
 		}
 
 		c.patchToHere(bodyDonePos)
@@ -770,7 +813,6 @@ func (c *Compiler) Process(env *Env, expr Expr) error {
 				c.insns = append(c.insns, &Instruction{
 					Op: Pop,
 				})
-				c.stackEffect(-1)
 			}
 
 			bottom := c.newLabel()
@@ -782,9 +824,6 @@ func (c *Compiler) Process(env *Env, expr Expr) error {
 
 			c.patchToHere(finallyWhileUnwinding)
 
-			// The VM pushes the exception on the stack, so we account for it here.
-			c.stackEffect(1)
-
 			for _, b := range e.finallyExpr {
 				err := c.Process(env, b)
 				if err != nil {
@@ -793,14 +832,11 @@ func (c *Compiler) Process(env *Env, expr Expr) error {
 				c.insns = append(c.insns, &Instruction{
 					Op: Pop,
 				})
-				c.stackEffect(-1)
 			}
 
 			c.insn(Instruction{
 				Op: Throw,
 			})
-
-			c.stackEffect(-1)
 
 			c.insn(Instruction{
 				Op: SetLabel,
@@ -813,7 +849,6 @@ func (c *Compiler) Process(env *Env, expr Expr) error {
 				c.insns = append(c.insns, &Instruction{
 					Op: Pop,
 				})
-				c.stackEffect(-1)
 			}
 
 			err := c.Process(env, b)
@@ -832,8 +867,6 @@ func (c *Compiler) Process(env *Env, expr Expr) error {
 			Op: JumpIfFalse,
 			A0: ifPos,
 		})
-
-		c.stackEffect(-1)
 
 		err = c.Process(env, e.positive)
 		if err != nil {
@@ -859,23 +892,13 @@ func (c *Compiler) Process(env *Env, expr Expr) error {
 		var (
 			closure *fnClosure
 			code    *Code
-			err     error
 		)
 
 		if e.closure != nil {
 			closure = e.closure
 			code = e.compiled
 		} else {
-			panic("huh?")
-			fn := &Fn{fnExpr: e}
-
-			closure, err = compileFn(env, fn, c)
-			if err != nil {
-				return err
-			}
-
-			code = fn.code
-
+			panic("detected fn not compiled during parsing")
 		}
 
 		for _, name := range closure.importedVars {
@@ -884,17 +907,14 @@ func (c *Compiler) Process(env *Env, expr Expr) error {
 				vb = c.fn.createUnknownUpval(name)
 			}
 			c.append(vb.refUpval())
-			c.stackEffect(1)
 		}
-
-		c.stackEffect(-len(closure.importedVars))
 
 		c.insn(Instruction{
 			Op:   MakeFn,
+			A0:   int32(len(closure.importedVars)),
 			Data: &FnData{Code: code},
 		})
 
-		c.stackEffect(1)
 	case *LetExpr:
 		c.fn.bindingFrame(len(e.names))
 		defer c.fn.popBindingFrame()
@@ -908,13 +928,10 @@ func (c *Compiler) Process(env *Env, expr Expr) error {
 			vb := c.fn.set(e.names[i])
 
 			c.append(vb.set())
-
-			c.stackEffect(-1)
 		}
 
 		for i, b := range e.body {
 			if i > 0 {
-				c.stackEffect(-1)
 				c.insns = append(c.insns, &Instruction{
 					Op: Pop,
 				})
@@ -940,8 +957,6 @@ func (c *Compiler) Process(env *Env, expr Expr) error {
 			vb := c.fn.set(e.names[i])
 
 			c.append(vb.set())
-
-			c.stackEffect(-1)
 		}
 
 		vf.args = e.names
@@ -954,7 +969,6 @@ func (c *Compiler) Process(env *Env, expr Expr) error {
 
 		for i, b := range e.body {
 			if i > 0 {
-				c.stackEffect(-1)
 				c.insns = append(c.insns, &Instruction{
 					Op: Pop,
 				})
@@ -995,8 +1009,6 @@ func (c *Compiler) Process(env *Env, expr Expr) error {
 				A0: int32(vb.index),
 			}))
 		}
-
-		c.stackEffect(-len(e.args))
 
 		c.insn(Instruction{
 			Op: Jump,
@@ -1121,11 +1133,7 @@ func compileFn(env *Env, fn *Fn, parent *Compiler) (*fnClosure, error) {
 				Op: PushSelfFn,
 			})
 
-			c.stackEffect(1)
-
 			c.append(selfVar.set())
-
-			c.stackEffect(-1)
 		}
 
 		if checkOp == CheckArityMin {
@@ -1140,16 +1148,12 @@ func compileFn(env *Env, fn *Fn, parent *Compiler) (*fnClosure, error) {
 			})
 		}
 
-		c.stackEffect(1)
-
 		nextArity = c.newLabel()
 
 		c.insn(Instruction{
 			Op: JumpIfFalse,
 			A0: nextArity,
 		})
-
-		c.stackEffect(-1)
 
 		bodyStart := c.nextIP()
 
