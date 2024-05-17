@@ -728,7 +728,7 @@ func resolveKey(key Object, nsname string) Object {
 	}
 	switch key := key.(type) {
 	case Keyword:
-		if key.ns == "" {
+		if key.Namespace() == "" {
 			return DeriveReadObject(key, MakeKeyword(nsname+"/"+key.Name()))
 		}
 		if key.Namespace() == "_" {

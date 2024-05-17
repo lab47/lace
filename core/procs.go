@@ -1262,11 +1262,7 @@ var procKeyword = func(env *Env, args []Object) (Object, error) {
 		case String:
 			return MakeKeyword(obj.S()), nil
 		case Symbol:
-			return Keyword{
-				ns:   obj.Namespace(),
-				name: obj.Name(),
-				hash: hashSymbol(obj.Namespace(), obj.Name()) ^ KeywordHashMask,
-			}, nil
+			return NewKeyword(obj.Namespace(), obj.Name()), nil
 		default:
 			return NIL, nil
 		}
@@ -1285,11 +1281,7 @@ var procKeyword = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 	name := sn.S()
-	return Keyword{
-		ns:   ns,
-		name: name,
-		hash: hashSymbol(ns, name) ^ KeywordHashMask,
-	}, nil
+	return NewKeyword(ns, name), nil
 }
 
 var procGensym = func(env *Env, args []Object) (Object, error) {

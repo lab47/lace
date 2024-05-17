@@ -15,7 +15,6 @@ import (
 	"reflect"
 	"regexp"
 	"strconv"
-	"strings"
 	"time"
 	"unsafe"
 )
@@ -167,12 +166,6 @@ type (
 	Boolean bool
 	Nil     struct {
 		InfoHolder
-	}
-	Keyword struct {
-		InfoHolder
-		ns   string
-		name string
-		hash uint32
 	}
 	Regex struct {
 		InfoHolder
@@ -331,7 +324,7 @@ var (
 	_ Comparable = Int(0)
 	_ Comparable = Boolean(true)
 	_ Comparable = Time{}
-	_ Comparable = Keyword{}
+	_ Comparable = Keyword(nil)
 	_ Comparable = &HeavySymbol{}
 	_ Comparable = &Vector{}
 
@@ -357,7 +350,7 @@ var (
 
 	_ Reversible = &Vector{}
 
-	_ Named = Keyword{}
+	_ Named = Keyword(nil)
 	_ Named = &HeavySymbol{}
 
 	_ Printer = &Namespace{}
@@ -462,26 +455,6 @@ func (s BySymbolName) Swap(i, j int) {
 }
 func (s BySymbolName) Less(i, j int) bool {
 	return s[i].String() < s[j].String()
-}
-
-const KeywordHashMask uint32 = 0x7334c790
-
-func MakeKeyword(nsname string) Keyword {
-	index := strings.IndexRune(nsname, '/')
-	if index == -1 || nsname == "/" {
-		name := nsname
-		return Keyword{
-			name: name,
-			hash: hashSymbol("", name) ^ KeywordHashMask,
-		}
-	}
-	ns := nsname[0:index]
-	name := nsname[index+1:]
-	return Keyword{
-		ns:   ns,
-		name: name,
-		hash: hashSymbol(ns, name) ^ KeywordHashMask,
-	}
 }
 
 func ErrorArity(env *Env, n int) error {
@@ -1208,96 +1181,6 @@ func (t Time) Compare(env *Env, other Object) (int, error) {
 	}
 	return -1, nil
 }
-
-func (k Keyword) ToString(env *Env, escape bool) (string, error) {
-	if k.ns != "" {
-		return ":" + k.ns + "/" + k.name, nil
-	}
-	return ":" + k.name, nil
-}
-
-func (k Keyword) String() string {
-	if k.ns != "" {
-		return ":" + k.ns + "/" + k.name
-	}
-	return ":" + k.name
-}
-
-func (k Keyword) RawString() string {
-	if k.ns != "" {
-		return k.ns + "/" + k.name
-	}
-	return k.name
-}
-
-func (k Keyword) Name() string {
-	return k.name
-}
-
-func (k Keyword) Namespace() string {
-	if k.ns != "" {
-		return k.ns
-	}
-	return ""
-}
-
-func (k Keyword) Equals(env *Env, other interface{}) bool {
-	switch other := other.(type) {
-	case Keyword:
-		return k.ns == other.ns && k.name == other.name
-	default:
-		return false
-	}
-}
-
-func (s Keyword) Is(other Object) bool {
-	switch other := other.(type) {
-	case Keyword:
-		return s.ns == other.ns && s.name == other.name
-	default:
-		return false
-	}
-}
-
-func (k Keyword) GetType() *Type {
-	return TYPE.Keyword
-}
-
-func (k Keyword) Hash(env *Env) (uint32, error) {
-	return k.hash, nil
-}
-
-func (k Keyword) IsHash() uint32 {
-	return k.hash
-}
-
-func (k Keyword) Compare(env *Env, other Object) (int, error) {
-	os, err := other.GetType().ToString(env, false)
-	if err != nil {
-		return 0, err
-	}
-
-	k2, err := AssertKeyword(env, other, "Cannot compare Keyword and "+os)
-	if err != nil {
-		return 0, err
-	}
-
-	ks, err := k.ToString(env, false)
-	if err != nil {
-		return 0, err
-	}
-	k2s, err := k2.ToString(env, false)
-	if err != nil {
-		return 0, err
-	}
-	return strings.Compare(ks, k2s), nil
-}
-
-func (k Keyword) Call(env *Env, args []Object) (Object, error) {
-	return getMap(env, k, args)
-}
-
-var _ Callable = Keyword{}
 
 func MakeRegex(r *regexp.Regexp) *Regex {
 	return &Regex{R: r}
