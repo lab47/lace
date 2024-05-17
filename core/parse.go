@@ -7,6 +7,8 @@ import (
 	"sort"
 	"strings"
 	"unicode"
+
+	"github.com/davecgh/go-spew/spew"
 )
 
 type (
@@ -1060,6 +1062,7 @@ func parseFn(obj Object, ctx *ParseContext) (Expr, error) {
 		}
 
 		if ok {
+			spew.Dump(bodies)
 			return nil, &ParseError{obj: p, msg: "Parameter declaration missing"}
 		}
 

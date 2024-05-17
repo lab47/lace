@@ -65,8 +65,8 @@ func ToNative(env *Env, obj Object) (any, error) {
 		return nil, nil
 	case Boolean:
 		return bool(sv), nil
-	case Int:
-		return sv.Int().I(), nil
+	case Number:
+		return sv.NativeNumber(), nil
 	case String:
 		return sv.S(), nil
 	default:

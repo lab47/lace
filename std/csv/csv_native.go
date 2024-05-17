@@ -43,14 +43,14 @@ func csvSeqOpts(env *Env, src Object, opts Map) (Object, error) {
 		if err != nil {
 			return nil, err
 		}
-		csvReader.Comma = c.Ch
+		csvReader.Comma = c.Ch()
 	}
 	if ok, c := opts.GetEqu(MakeKeyword("comment")); ok {
 		c, err := AssertChar(env, c, "comment must be a char")
 		if err != nil {
 			return nil, err
 		}
-		csvReader.Comment = c.Ch
+		csvReader.Comment = c.Ch()
 	}
 	if ok, c := opts.GetEqu(MakeKeyword("fields-per-record")); ok {
 		i, err := AssertInt(env, c, "fields-per-record must be an integer")
@@ -115,7 +115,7 @@ func writeWriter(env *Env, wr io.Writer, data Seqable, opts Map) error {
 		if err != nil {
 			return err
 		}
-		csvWriter.Comma = c.Ch
+		csvWriter.Comma = c.Ch()
 	}
 	if ok, c := opts.GetEqu(MakeKeyword("use-crlf")); ok {
 		b, err := AssertBoolean(env, c, "use-crlf must be a boolean")

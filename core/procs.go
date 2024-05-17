@@ -118,7 +118,7 @@ func ExtractChar(env *Env, args []Object, index int) (rune, error) {
 		return 0, err
 	}
 
-	return c.Ch, nil
+	return c.Ch(), nil
 }
 
 func ExtractTime(env *Env, args []Object, index int) (time.Time, error) {
@@ -1405,7 +1405,7 @@ var procInt = func(env *Env, args []Object) (Object, error) {
 
 	switch obj := args[0].(type) {
 	case Char:
-		return MakeInt(int(obj.Ch)), nil
+		return MakeInt(int(obj.Ch())), nil
 	case Number:
 		return obj.Int(), nil
 	default:
@@ -1446,7 +1446,7 @@ var procChar = func(env *Env, args []Object) (Object, error) {
 		if i < MIN_RUNE || i > MAX_RUNE {
 			return nil, env.NewError(fmt.Sprintf("Value out of range for char: %d", i))
 		}
-		return Char{Ch: rune(i)}, nil
+		return NewChar(rune(i)), nil
 	default:
 		return nil, env.NewError(fmt.Sprintf("Cannot cast %s (type: %s) to Char", mustStr(env, c), c.GetType().Name()))
 	}
@@ -2717,7 +2717,7 @@ var procIndexOf = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 	for i, r := range s.S() {
-		if r == ch.Ch {
+		if r == ch.Ch() {
 			return MakeInt(i), nil
 		}
 	}

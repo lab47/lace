@@ -72,7 +72,7 @@ func (s GoString) Count() int {
 func (s GoString) Seq() Seq {
 	runes := make([]Object, 0, len(s))
 	for _, r := range s {
-		runes = append(runes, Char{Ch: r})
+		runes = append(runes, NewChar(r))
 	}
 	return &ArraySeq{arr: runes}
 }
@@ -86,7 +86,7 @@ func (s GoString) Nth(env *Env, i int) (Object, error) {
 
 	for j, r = range s {
 		if i == j {
-			return Char{Ch: r}, nil
+			return NewChar(r), nil
 		}
 	}
 
@@ -99,7 +99,7 @@ func (s GoString) TryNth(env *Env, i int, d Object) (Object, error) {
 	}
 	for j, r := range s {
 		if i == j {
-			return Char{Ch: r}, nil
+			return NewChar(r), nil
 		}
 	}
 	return d, nil
@@ -187,7 +187,7 @@ func (s *Rope) Seq() Seq {
 	x := s.S()
 	runes := make([]Object, 0, len(x))
 	for _, r := range x {
-		runes = append(runes, Char{Ch: r})
+		runes = append(runes, NewChar(r))
 	}
 	return &ArraySeq{arr: runes}
 }
@@ -201,7 +201,7 @@ func (s *Rope) Nth(env *Env, i int) (Object, error) {
 
 	for j, r = range s.S() {
 		if i == j {
-			return Char{Ch: r}, nil
+			return NewChar(r), nil
 		}
 	}
 
@@ -214,7 +214,7 @@ func (s *Rope) TryNth(env *Env, i int, d Object) (Object, error) {
 	}
 	for j, r := range s.S() {
 		if i == j {
-			return Char{Ch: r}, nil
+			return NewChar(r), nil
 		}
 	}
 	return d, nil
@@ -253,7 +253,7 @@ func CombineToString(env *Env, args []Object) (Object, error) {
 			case *Rope:
 				segments = append(segments, sv.segments...)
 			case Char:
-				segments = append(segments, string(sv.Ch))
+				segments = append(segments, string(sv.Ch()))
 			case *Regex:
 				segments = append(segments, sv.R.String())
 			default:

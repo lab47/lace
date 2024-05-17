@@ -12,6 +12,8 @@ type (
 		BigInt() *big.Int
 		BigFloat() *big.Float
 		Ratio() *big.Rat
+
+		NativeNumber() any
 	}
 	Ops interface {
 		Combine(ops Ops) Ops
@@ -40,9 +42,6 @@ const (
 	FLOATING_CATEGORY = iota
 	RATIO_CATEGORY    = iota
 )
-
-const MAX_RUNE = int(^uint32(0) >> 1)
-const MIN_RUNE = -MAX_RUNE - 1
 
 var (
 	INT_OPS      = IntOps{}
@@ -135,6 +134,10 @@ func (i Int) Ratio() *big.Rat {
 	return big.NewRat(int64(i.I()), 1)
 }
 
+func (i Int) NativeNumber() any {
+	return int(i)
+}
+
 // Double conversions
 
 func (d Double) Int() Int {
@@ -156,6 +159,10 @@ func (d Double) BigFloat() *big.Float {
 func (d Double) Ratio() *big.Rat {
 	res := big.Rat{}
 	return res.SetFloat64(float64(d.D))
+}
+
+func (d Double) NativeNumber() any {
+	return d.D
 }
 
 // BigInt conversions
@@ -181,6 +188,14 @@ func (b *BigInt) BigFloat() *big.Float {
 func (b *BigInt) Ratio() *big.Rat {
 	res := big.Rat{}
 	return res.SetInt(b.BigInt())
+}
+
+func (b *BigInt) NativeNumber() any {
+	if b.b.IsInt64() {
+		return b.b.Int64()
+	}
+
+	return b.b
 }
 
 // BigFloat conversions
@@ -209,6 +224,11 @@ func (b *BigFloat) Ratio() *big.Rat {
 	return res.SetFloat64(float64(b.Double().D))
 }
 
+func (b *BigFloat) NativeNumber() any {
+	x, _ := b.b.Float64()
+	return x
+}
+
 // Ratio conversions
 
 func (r *Ratio) Int() Int {
@@ -233,6 +253,24 @@ func (r *Ratio) BigFloat() *big.Float {
 
 func (r *Ratio) Ratio() *big.Rat {
 	return &r.r
+}
+
+func (r *Ratio) NativeNumber() any {
+	if r.r.IsInt() {
+		n := r.r.Num()
+		if n.IsInt64() {
+			return n.Int64()
+		} else {
+			return n
+		}
+	}
+
+	f, exact := r.r.Float64()
+	if exact {
+		return f
+	}
+
+	return r.r
 }
 
 // Ops

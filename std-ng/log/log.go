@@ -61,8 +61,8 @@ func convertObj(env *core.Env, obj core.Object) (any, error) {
 	switch sv := obj.(type) {
 	case core.Keyword:
 		return sv.Name(), nil
-	case core.Int:
-		return sv.I(), nil
+	case core.Number:
+		return sv.NativeNumber(), nil
 	case core.String:
 		return sv.S(), nil
 	case core.Map:

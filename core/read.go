@@ -35,8 +35,6 @@ var (
 	LINTER_CONFIG *Var
 )
 
-var NIL = Nil{}
-
 func pushPos(reader *Reader) {
 	reader.posStack = append(reader.posStack, pos{line: reader.line, column: reader.column})
 }
@@ -187,7 +185,7 @@ func readSpecialCharacter(reader *Reader, ending string, r rune) (Object, error)
 		return nil, err
 	}
 
-	return MakeReadObject(reader, Char{Ch: r}), nil
+	return MakeReadObject(reader, NewChar(r)), nil
 }
 
 func isWhitespace(r rune) bool {
@@ -272,7 +270,7 @@ func readUnicodeCharacter(reader *Reader, length, base int) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	return MakeReadObject(reader, Char{Ch: rune(i)}), nil
+	return MakeReadObject(reader, NewChar(rune(i))), nil
 }
 
 func readCharacter(reader *Reader) (Object, error) {
@@ -321,7 +319,7 @@ func readCharacter(reader *Reader) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	return MakeReadObject(reader, Char{Ch: r}), nil
+	return MakeReadObject(reader, NewChar(r)), nil
 }
 
 func scanBigInt(str string, base int, err error, reader *Reader) (Object, error) {
@@ -964,8 +962,8 @@ func readArgSymbol(env *Env, reader *Reader) (Object, error) {
 		return MakeReadObject(reader, registerArg(reader, -1)), nil
 	}
 	switch n := obj.(type) {
-	case Int:
-		return MakeReadObject(reader, registerArg(reader, n.I())), nil
+	case Number:
+		return MakeReadObject(reader, registerArg(reader, n.Int().I())), nil
 	default:
 		return nil, MakeReadError(reader, "Arg literal must be %, %& or %integer")
 	}

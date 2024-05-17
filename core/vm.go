@@ -476,12 +476,12 @@ func (c *Compiler) Process(env *Env, expr Expr) error {
 			c.insn(Instruction{
 				Op: PushNil,
 			})
-		case Int:
-			if sv.I() < 1024 {
+		case Integer:
+			if sv.I64() < 1024 {
 				specialized = true
 				c.insn(Instruction{
 					Op: PushInt,
-					A0: int32(sv.I()),
+					A0: int32(sv.I64()),
 				})
 			}
 		}

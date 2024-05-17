@@ -461,7 +461,7 @@ func convertBytesIn(env *Env, index int, o Object) (reflect.Value, error) {
 
 // from Int to int
 func convertIntIn(env *Env, index int, o Object) (reflect.Value, error) {
-	ls, ok := o.(Int)
+	ls, ok := o.(Number)
 	if !ok {
 		return reflect.Value{}, env.NewArgTypeError(index, o, "Int")
 	}
@@ -471,7 +471,7 @@ func convertIntIn(env *Env, index int, o Object) (reflect.Value, error) {
 
 // from Int to int
 func convertIntIn8(env *Env, index int, o Object) (reflect.Value, error) {
-	ls, ok := o.(Int)
+	ls, ok := o.(Number)
 	if !ok {
 		return reflect.Value{}, env.NewArgTypeError(index, o, "Int")
 	}
@@ -481,7 +481,7 @@ func convertIntIn8(env *Env, index int, o Object) (reflect.Value, error) {
 
 // from Int to int
 func convertIntIn16(env *Env, index int, o Object) (reflect.Value, error) {
-	ls, ok := o.(Int)
+	ls, ok := o.(Number)
 	if !ok {
 		return reflect.Value{}, env.NewArgTypeError(index, o, "Int")
 	}
@@ -491,7 +491,7 @@ func convertIntIn16(env *Env, index int, o Object) (reflect.Value, error) {
 
 // from Int to int
 func convertIntIn32(env *Env, index int, o Object) (reflect.Value, error) {
-	ls, ok := o.(Int)
+	ls, ok := o.(Number)
 	if !ok {
 		return reflect.Value{}, env.NewArgTypeError(index, o, "Int")
 	}
@@ -501,7 +501,7 @@ func convertIntIn32(env *Env, index int, o Object) (reflect.Value, error) {
 
 // from Int to int
 func convertIntIn64(env *Env, index int, o Object) (reflect.Value, error) {
-	ls, ok := o.(Int)
+	ls, ok := o.(Number)
 	if !ok {
 		return reflect.Value{}, env.NewArgTypeError(index, o, "Int")
 	}
@@ -511,7 +511,7 @@ func convertIntIn64(env *Env, index int, o Object) (reflect.Value, error) {
 
 // from Int to int
 func convertUintIn(env *Env, index int, o Object) (reflect.Value, error) {
-	ls, ok := o.(Int)
+	ls, ok := o.(Number)
 	if !ok {
 		return reflect.Value{}, env.NewArgTypeError(index, o, "Int")
 	}
@@ -521,7 +521,7 @@ func convertUintIn(env *Env, index int, o Object) (reflect.Value, error) {
 
 // from Int to int
 func convertUintIn8(env *Env, index int, o Object) (reflect.Value, error) {
-	ls, ok := o.(Int)
+	ls, ok := o.(Number)
 	if !ok {
 		return reflect.Value{}, env.NewArgTypeError(index, o, "Int")
 	}
@@ -531,7 +531,7 @@ func convertUintIn8(env *Env, index int, o Object) (reflect.Value, error) {
 
 // from Int to int
 func convertUintIn16(env *Env, index int, o Object) (reflect.Value, error) {
-	ls, ok := o.(Int)
+	ls, ok := o.(Number)
 	if !ok {
 		return reflect.Value{}, env.NewArgTypeError(index, o, "Int")
 	}
@@ -541,7 +541,7 @@ func convertUintIn16(env *Env, index int, o Object) (reflect.Value, error) {
 
 // from Int to int
 func convertUintIn32(env *Env, index int, o Object) (reflect.Value, error) {
-	ls, ok := o.(Int)
+	ls, ok := o.(Number)
 	if !ok {
 		return reflect.Value{}, env.NewArgTypeError(index, o, "Int")
 	}
@@ -551,7 +551,7 @@ func convertUintIn32(env *Env, index int, o Object) (reflect.Value, error) {
 
 // from Int to int
 func convertUintIn64(env *Env, index int, o Object) (reflect.Value, error) {
-	ls, ok := o.(Int)
+	ls, ok := o.(Number)
 	if !ok {
 		return reflect.Value{}, env.NewArgTypeError(index, o, "Int")
 	}

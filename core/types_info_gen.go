@@ -37,11 +37,6 @@ func (x *Var) WithInfo(info *ObjectInfo) Object {
 	return x
 }
 
-func (x Nil) WithInfo(info *ObjectInfo) Object {
-	x.info = info
-	return x
-}
-
 func (x *Ratio) WithInfo(info *ObjectInfo) Object {
 	x.info = info
 	return x
@@ -57,17 +52,8 @@ func (x *BigFloat) WithInfo(info *ObjectInfo) Object {
 	return x
 }
 
-func (x Char) WithInfo(info *ObjectInfo) Object {
-	x.info = info
-	return x
-}
-
 func (x Double) WithInfo(info *ObjectInfo) Object {
 	x.info = info
-	return x
-}
-
-func (x Int) WithInfo(info *ObjectInfo) Object {
 	return x
 }
 

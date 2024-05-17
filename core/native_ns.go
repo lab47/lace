@@ -119,8 +119,8 @@ type DefVarInfo struct {
 
 func toAny(env *Env, o Object) (any, error) {
 	switch sv := o.(type) {
-	case Int:
-		return sv.I(), nil
+	case Number:
+		return sv.NativeNumber(), nil
 	case String:
 		return sv.S, nil
 	case Symbol:

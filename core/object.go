@@ -142,18 +142,9 @@ type (
 	InfoHolder struct {
 		info *ObjectInfo
 	}
-	Char struct {
-		InfoHolder
-		Ch rune
-	}
 	Double struct {
 		InfoHolder
 		D float64
-	}
-	Int    int
-	BigInt struct {
-		InfoHolder
-		b big.Int
 	}
 	BigFloat struct {
 		InfoHolder
@@ -164,10 +155,7 @@ type (
 		r big.Rat
 	}
 	Boolean bool
-	Nil     struct {
-		InfoHolder
-	}
-	Regex struct {
+	Regex   struct {
 		InfoHolder
 		R *regexp.Regexp
 	}
@@ -268,14 +256,14 @@ var (
 
 	_ Conjable = &HashMap{}
 	_ Conjable = &Vector{}
-	_ Conjable = Nil{}
+	_ Conjable = NIL
 	_ Conjable = &ArrayMap{}
 	_ Conjable = &MapSet{}
 	_ Conjable = &List{}
 
 	_ Counted = &Vector{}
 	_ Counted = &List{}
-	_ Counted = Nil{}
+	_ Counted = NIL
 	_ Counted = GoString("")
 	_ Counted = &HashMap{}
 	_ Counted = &ArrayMap{}
@@ -288,7 +276,7 @@ var (
 	_ Meta = &List{}
 	_ Meta = &Atom{}
 	_ Meta = &Fn{}
-	_ Meta = &HeavySymbol{}
+	_ Meta = Symbol(nil)
 	_ Meta = &ArrayNodeSeq{}
 	_ Meta = &NodeSeq{}
 	_ Meta = &HashMap{}
@@ -319,13 +307,13 @@ var (
 	_ Comparable = &Ratio{}
 	_ Comparable = &BigInt{}
 	_ Comparable = &BigFloat{}
-	_ Comparable = Char{}
+	_ Comparable = Char(nil)
 	_ Comparable = Double{}
 	_ Comparable = Int(0)
 	_ Comparable = Boolean(true)
 	_ Comparable = Time{}
 	_ Comparable = Keyword(nil)
-	_ Comparable = &HeavySymbol{}
+	_ Comparable = Symbol(nil)
 	_ Comparable = &Vector{}
 
 	_ Comparator = &Fn{}
@@ -338,12 +326,12 @@ var (
 	_ Stack = &List{}
 
 	_ Gettable = &HashMap{}
-	_ Gettable = Nil{}
+	_ Gettable = NIL
 	_ Gettable = &Vector{}
 	_ Gettable = &ArrayMap{}
 	_ Gettable = &MapSet{}
 
-	_ Associative = Nil{}
+	_ Associative = NIL
 	_ Associative = &Vector{}
 	_ Associative = &HashMap{}
 	_ Associative = &ArrayMap{}
@@ -351,7 +339,7 @@ var (
 	_ Reversible = &Vector{}
 
 	_ Named = Keyword(nil)
-	_ Named = &HeavySymbol{}
+	_ Named = Symbol(nil)
 
 	_ Printer = &Namespace{}
 	_ Printer = &Regex{}
@@ -788,103 +776,6 @@ func AlterMeta(env *Env, m *MetaHolder, fn *Fn, args []Object) (Map, error) {
 	return m.meta, nil
 }
 
-func (n Nil) ToString(env *Env, escape bool) (string, error) {
-	return "nil", nil
-}
-
-func (n Nil) Equals(env *Env, other interface{}) bool {
-	switch other.(type) {
-	case Nil:
-		return true
-	default:
-		return false
-	}
-}
-
-func (n Nil) GetEqu(key Equ) (bool, Object) {
-	return false, NIL
-}
-
-func (n Nil) GetType() *Type {
-	return TYPE.Nil
-}
-
-func (n Nil) Hash(env *Env) (uint32, error) {
-	return 0, nil
-}
-
-func (n Nil) Seq() Seq {
-	return n
-}
-
-func (n Nil) First(env *Env) (Object, error) {
-	return NIL, nil
-}
-
-func (n Nil) Rest(env *Env) (Seq, error) {
-	return NIL, nil
-}
-
-func (n Nil) IsEmpty(env *Env) (bool, error) {
-	return true, nil
-}
-
-func (n Nil) Cons(obj Object) Seq {
-	return NewListFrom(obj)
-}
-
-func (n Nil) Conj(env *Env, obj Object) (Conjable, error) {
-	return NewListFrom(obj), nil
-}
-
-func (n Nil) Without(env *Env, key Object) (Map, error) {
-	return n, nil
-}
-
-func (n Nil) Count() int {
-	return 0
-}
-
-func (n Nil) Iter() MapIterator {
-	return emptyMapIterator
-}
-
-func (n Nil) Merge(env *Env, other Map) (Map, error) {
-	return other, nil
-}
-
-func (n Nil) Assoc(env *Env, key, value Object) (Associative, error) {
-	return EmptyArrayMap().Assoc(env, key, value)
-}
-
-func (n Nil) EntryAt(env *Env, key Object) (*Vector, error) {
-	return nil, nil
-}
-
-func (n Nil) Get(env *Env, key Object) (bool, Object, error) {
-	return false, NIL, nil
-}
-
-func (n Nil) Disjoin(env *Env, key Object) (Set, error) {
-	return n, nil
-}
-
-func (n Nil) SetIter() SetIter {
-	return emptySetIterator
-}
-
-func (n Nil) Has(key Equ) bool {
-	return false
-}
-
-func (n Nil) Keys() Seq {
-	return NIL
-}
-
-func (n Nil) Vals() Seq {
-	return NIL
-}
-
 func MakeRatio(x, y *big.Int) *Ratio {
 	r := big.NewRat(x.Int64(), y.Int64())
 	return &Ratio{r: *r}
@@ -919,42 +810,6 @@ func (rat *Ratio) Compare(env *Env, other Object) (int, error) {
 	return CompareNumbers(rat, n), nil
 }
 
-func MakeBigInt(bi int64) *BigInt {
-	return &BigInt{b: *big.NewInt(bi)}
-}
-
-func MakeBigIntFrom(bi *big.Int) *BigInt {
-	return &BigInt{b: *bi}
-}
-
-func (bi *BigInt) ToString(env *Env, escape bool) (string, error) {
-	return bi.b.String() + "N", nil
-}
-
-func (bi *BigInt) Equals(env *Env, other interface{}) bool {
-	return equalsNumbers(bi, other)
-}
-
-func (bi *BigInt) GetType() *Type {
-	return TYPE.BigInt
-}
-
-func (bi *BigInt) Hash(env *Env) (uint32, error) {
-	return hashGobEncoder(&bi.b)
-}
-
-func (bi *BigInt) Compare(env *Env, other Object) (int, error) {
-	os, err := other.GetType().ToString(env, false)
-	if err != nil {
-		return 0, err
-	}
-	n, err := AssertNumber(env, other, "Cannot compare BigInt and "+os)
-	if err != nil {
-		return 0, err
-	}
-	return CompareNumbers(bi, n), nil
-}
-
 func MakeBigFloatFrom(bi *big.Float) *BigFloat {
 	return &BigFloat{b: *bi}
 }
@@ -986,55 +841,6 @@ func (bf *BigFloat) Compare(env *Env, other Object) (int, error) {
 	}
 
 	return CompareNumbers(bf, n), nil
-}
-
-func (c Char) ToString(env *Env, escape bool) (string, error) {
-	if escape {
-		return escapeRune(c.Ch), nil
-	}
-	return string(c.Ch), nil
-}
-
-func (c Char) Equals(env *Env, other interface{}) bool {
-	switch other := other.(type) {
-	case Char:
-		return c.Ch == other.Ch
-	default:
-		return false
-	}
-}
-
-func (c Char) GetType() *Type {
-	return TYPE.Char
-}
-
-func (c Char) Native() interface{} {
-	return c.Ch
-}
-
-func (c Char) Hash(env *Env) (uint32, error) {
-	h := getHash()
-	h.Write([]byte(string(c.Ch)))
-	return h.Sum32(), nil
-}
-
-func (c Char) Compare(env *Env, other Object) (int, error) {
-	os, err := other.GetType().ToString(env, false)
-	if err != nil {
-		return 0, err
-	}
-
-	c2, err := AssertChar(env, other, "Cannot compare Char and "+os)
-	if err != nil {
-		return 0, err
-	}
-	if c.Ch < c2.Ch {
-		return -1, nil
-	}
-	if c2.Ch < c.Ch {
-		return 1, nil
-	}
-	return 0, nil
 }
 
 func MakeBoolean(b bool) Boolean {

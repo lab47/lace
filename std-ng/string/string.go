@@ -424,7 +424,7 @@ func capitalize(s string) (string, error) {
 func escape(env *core.Env, s string, cmap core.Callable) (string, error) {
 	var b bytes.Buffer
 	for _, r := range s {
-		obj, err := cmap.Call(env, []core.Object{core.Char{Ch: r}})
+		obj, err := cmap.Call(env, []core.Object{core.NewChar(r)})
 		if err != nil {
 			return "", err
 		}
@@ -448,7 +448,7 @@ func indexOf(s string, value core.Object, from int) (core.Object, error) {
 	}
 	switch value := value.(type) {
 	case core.Char:
-		res = strings.IndexRune(s, value.Ch)
+		res = strings.IndexRune(s, value.Ch())
 	case core.String:
 		res = strings.Index(s, value.S())
 	default:
@@ -467,7 +467,7 @@ func lastIndexOf(s string, value core.Object, from int) (core.Object, error) {
 	}
 	switch value := value.(type) {
 	case core.Char:
-		res = strings.LastIndex(s, string(value.Ch))
+		res = strings.LastIndex(s, string(value.Ch()))
 	case core.String:
 		res = strings.LastIndex(s, value.S())
 	default:

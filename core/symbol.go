@@ -15,6 +15,9 @@ type HeavySymbol struct {
 type Symbol interface {
 	Object
 	Equ
+	Meta
+	Comparable
+
 	Name() string
 	Namespace() string
 	String() string

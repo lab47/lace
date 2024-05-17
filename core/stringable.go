@@ -9,7 +9,7 @@ func AssertStringable(obj Object, msg string) (String, error) {
 	case String:
 		return c, nil
 	case Char:
-		return MakeString(string(c.Ch)), nil
+		return MakeString(string(c.Ch())), nil
 	default:
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Stringable", obj.GetType().Name())
@@ -23,7 +23,7 @@ func EnsureStringable(args []Object, index int) (String, error) {
 	case String:
 		return c, nil
 	case Char:
-		return MakeString(string(c.Ch)), nil
+		return MakeString(string(c.Ch())), nil
 	default:
 		return nil, StubNewArgTypeError(index, c, "Stringable")
 	}

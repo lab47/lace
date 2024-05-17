@@ -120,7 +120,7 @@ func (list *List) Pop(env *Env) (Stack, error) {
 
 func (list *List) sequential() {}
 
-var EmptyList = NewList(Nil{}, nil)
+var EmptyList = NewList(NIL, nil)
 
 func init() {
 	EmptyList.rest = EmptyList
