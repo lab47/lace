@@ -90,12 +90,8 @@ func (x *Regex) WithInfo(info *ObjectInfo) Object {
 	return x
 }
 
-func (x Symbol) WithInfo(info *ObjectInfo) Object {
+func (x *HeavySymbol) WithInfo(info *ObjectInfo) Object {
 	x.info = info
-	return x
-}
-
-func (x String) WithInfo(info *ObjectInfo) Object {
 	return x
 }
 

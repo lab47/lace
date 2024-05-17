@@ -106,18 +106,19 @@ type CodeSymbol struct {
 func (c *CodeSymbol) Symbol() Symbol {
 	sym := AssembleSymbol(c.Namespace, c.Name)
 	if c.Position != nil {
-		sym.info = &ObjectInfo{
+		sym = SymbolSetInfo(sym, &ObjectInfo{
 			Position: c.Position.Position(),
-		}
+		})
 	}
 
 	return sym
 }
 
 func (c *CodeSymbol) Set(sym Symbol) {
-	if sym.info != nil {
+	info := GetInfo(sym)
+	if info != nil {
 		c.Position = &CodePosition{}
-		c.Position.Set(sym.info.Position)
+		c.Position.Set(info.Position)
 	}
 	c.Name = sym.Name()
 	c.Namespace = sym.Namespace()

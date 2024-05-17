@@ -25,8 +25,6 @@ type (
 	Object interface {
 		Equality
 		ToString(env *Env, escape bool) (string, error)
-		GetInfo() *ObjectInfo
-		WithInfo(*ObjectInfo) Object
 		GetType() *Type
 		Hash(env *Env) (uint32, error)
 	}
@@ -176,13 +174,6 @@ type (
 		name string
 		hash uint32
 	}
-	Symbol struct {
-		InfoHolder
-		MetaHolder
-		ns   string
-		name string
-		hash uint32
-	}
 	Regex struct {
 		InfoHolder
 		R *regexp.Regexp
@@ -292,7 +283,7 @@ var (
 	_ Counted = &Vector{}
 	_ Counted = &List{}
 	_ Counted = Nil{}
-	_ Counted = String("")
+	_ Counted = GoString("")
 	_ Counted = &HashMap{}
 	_ Counted = &ArrayMap{}
 	_ Counted = &MapSet{}
@@ -304,7 +295,7 @@ var (
 	_ Meta = &List{}
 	_ Meta = &Atom{}
 	_ Meta = &Fn{}
-	_ Meta = Symbol{}
+	_ Meta = &HeavySymbol{}
 	_ Meta = &ArrayNodeSeq{}
 	_ Meta = &NodeSeq{}
 	_ Meta = &HashMap{}
@@ -341,13 +332,13 @@ var (
 	_ Comparable = Boolean(true)
 	_ Comparable = Time{}
 	_ Comparable = Keyword{}
-	_ Comparable = Symbol{}
+	_ Comparable = &HeavySymbol{}
 	_ Comparable = &Vector{}
 
 	_ Comparator = &Fn{}
 	_ Comparator = Proc{}
 
-	_ Indexed = String("")
+	_ Indexed = GoString("")
 	_ Indexed = &Vector{}
 
 	_ Stack = &Vector{}
@@ -367,7 +358,7 @@ var (
 	_ Reversible = &Vector{}
 
 	_ Named = Keyword{}
-	_ Named = Symbol{}
+	_ Named = &HeavySymbol{}
 
 	_ Printer = &Namespace{}
 	_ Printer = &Regex{}
@@ -403,6 +394,40 @@ var (
 	_ Pending = &LazySeq{}
 )
 
+type HasInfo interface {
+	GetInfo() *ObjectInfo
+	WithInfo(info *ObjectInfo) Object
+}
+
+type ReadObject interface {
+	Object
+	HasInfo
+}
+
+func SetInfo(obj Object, info *ObjectInfo) Object {
+	if hi, ok := obj.(HasInfo); ok {
+		return hi.WithInfo(info)
+	}
+
+	return &InfoWrapper[Object]{val: obj}
+}
+
+func GetInfo(obj Object) *ObjectInfo {
+	if hi, ok := obj.(HasInfo); ok {
+		return hi.GetInfo()
+	}
+
+	return nil
+}
+
+func GetMeta(obj Object) Map {
+	if m, ok := obj.(interface{ GetMeta() Map }); ok {
+		return m.GetMeta()
+	}
+
+	return nil
+}
+
 func (pos Position) Filename() string {
 	if pos.filename == "" {
 		return "<file>"
@@ -425,86 +450,6 @@ func uint32ToBytes(i uint32) []byte {
 func getHash() hash.Hash32 {
 	hasher.Reset()
 	return hasher
-}
-
-func hashSymbol(ns, name string) uint32 {
-	h := getHash()
-	if ns != "" {
-		h.Write([]byte(ns))
-	}
-	h.Write([]byte("/" + name))
-	return h.Sum32()
-}
-
-func AssembleSymbol(ns, name string) Symbol {
-	if ns == "" {
-		if strings.ContainsRune(name, '/') {
-			panic("bad symbol name")
-		}
-
-		return Symbol{
-			name: name,
-		}
-	}
-	return Symbol{
-		ns:   ns,
-		name: name,
-	}
-}
-
-func MakeSymbol(nsname string) Symbol {
-	index := strings.IndexRune(nsname, '/')
-	if index == -1 || nsname == "/" {
-		return Symbol{
-			name: nsname,
-		}
-	}
-	return Symbol{
-		ns:   nsname[0:index],
-		name: nsname[index+1:],
-	}
-}
-
-func MakeSymbolWithMeta(nsname string, m Map) Symbol {
-	index := strings.IndexRune(nsname, '/')
-	var sym Symbol
-	if index == -1 || nsname == "/" {
-		sym = Symbol{
-			name: nsname,
-		}
-	} else {
-		sym = Symbol{
-			ns:   nsname[0:index],
-			name: nsname[index+1:],
-		}
-	}
-
-	sym.meta = m
-
-	return sym
-}
-
-func MakeTaggedSymbol(nsname string, tag Symbol) Symbol {
-	var sym Symbol
-
-	index := strings.IndexRune(nsname, '/')
-	if index == -1 || nsname == "/" {
-		sym = Symbol{
-			name: nsname,
-		}
-	} else {
-		sym = Symbol{
-			ns:   nsname[0:index],
-			name: nsname[index+1:],
-		}
-	}
-
-	m := EmptyArrayMap()
-	m.AddEqu(criticalKeywords.tag, tag)
-
-	sym.meta = m
-
-	return sym
 }
 
 type BySymbolName []Symbol
@@ -840,6 +785,16 @@ func (m MetaHolder) GetMeta() Map {
 	return m.meta
 }
 
+func (m MetaHolder) ClearMeta() {
+	m.meta = nil
+}
+
+func ClearMeta(obj Object) {
+	if cm, ok := obj.(interface{ ClearMeta() }); ok {
+		cm.ClearMeta()
+	}
+}
+
 func AlterMeta(env *Env, m *MetaHolder, fn *Fn, args []Object) (Map, error) {
 	meta := m.meta
 	if meta == nil {
@@ -858,16 +813,6 @@ func AlterMeta(env *Env, m *MetaHolder, fn *Fn, args []Object) (Map, error) {
 	}
 	m.meta = mm
 	return m.meta, nil
-}
-
-func (sym Symbol) WithMeta(env *Env, meta Map) (Object, error) {
-	res := sym
-	m, err := SafeMerge(env, res.meta, meta)
-	if err != nil {
-		return nil, err
-	}
-	res.meta = m
-	return res, nil
 }
 
 func (n Nil) ToString(env *Env, escape bool) (string, error) {
@@ -1386,105 +1331,12 @@ func (rx *Regex) Hash(env *Env) (uint32, error) {
 	return HashPtr(rx), nil
 }
 
-func (s Symbol) ToString(env *Env, escape bool) (string, error) {
-	if s.ns != "" {
-		return s.ns + "/" + s.name, nil
-	}
-	return s.name, nil
-}
-
-func (s Symbol) String() string {
-	if s.ns != "" {
-		return s.ns + "/" + s.name
-	}
-	return s.name
-}
-
-func (s Symbol) Name() string {
-	return s.name
-}
-
-func (s Symbol) Namespace() string {
-	if s.ns != "" {
-		return s.ns
-	}
-	return ""
-}
-
-func (s Symbol) Equals(env *Env, other interface{}) bool {
-	switch other := other.(type) {
-	case Symbol:
-		return s.ns == other.ns && s.name == other.name
-	default:
-		return false
-	}
-}
-
-func (s Symbol) Is(other Object) bool {
-	switch other := other.(type) {
-	case Symbol:
-		return s.ns == other.ns && s.name == other.name
-	default:
-		return false
-	}
-}
-
-func (s Symbol) GetType() *Type {
-	return TYPE.Symbol
-}
-
-func (s Symbol) Hash(env *Env) (uint32, error) {
-	return s.IsHash(), nil
-}
-
-func (s Symbol) IsHash() uint32 {
-	return hashSymbol(s.ns, s.name) + 0x9e3779b9
-}
-
-func (s Symbol) Compare(env *Env, other Object) (int, error) {
-	os, err := other.GetType().ToString(env, false)
-	if err != nil {
-		return 0, err
-	}
-
-	s2, err := AssertSymbol(env, other, "Cannot compare Symbol and "+os)
-	if err != nil {
-		return 0, err
-	}
-
-	ks, err := s.ToString(env, false)
-	if err != nil {
-		return 0, err
-	}
-
-	k2s, err := s2.ToString(env, false)
-	if err != nil {
-		return 0, err
-	}
-	return strings.Compare(ks, k2s), nil
-}
-
-func (s Symbol) Call(env *Env, args []Object) (Object, error) {
-	return getMap(env, s, args)
-}
-
-var _ Callable = Symbol{}
-
 func MakeStringVector(ss []string) *Vector {
 	res := EmptyVector()
 	for _, s := range ss {
 		res, _ = res.Conjoin(MakeString(s))
 	}
 	return res
-}
-
-func IsSymbol(obj Object) bool {
-	switch obj.(type) {
-	case Symbol:
-		return true
-	default:
-		return false
-	}
 }
 
 func IsVector(obj Object) bool {
@@ -1531,32 +1383,32 @@ func IsInstance(env *Env, t *Type, obj Object) bool {
 var specialSymbols = make(map[string]struct{})
 
 func init() {
-	specialSymbols[criticalSymbols._if.name] = struct{}{}
-	specialSymbols[criticalSymbols.quote.name] = struct{}{}
-	specialSymbols[criticalSymbols.fn_.name] = struct{}{}
-	specialSymbols[criticalSymbols.let_.name] = struct{}{}
-	specialSymbols[criticalSymbols.letfn_.name] = struct{}{}
-	specialSymbols[criticalSymbols.loop_.name] = struct{}{}
-	specialSymbols[criticalSymbols.recur.name] = struct{}{}
-	specialSymbols[criticalSymbols.setMacro_.name] = struct{}{}
-	specialSymbols[criticalSymbols.def.name] = struct{}{}
-	specialSymbols[criticalSymbols.defLinter.name] = struct{}{}
-	specialSymbols[criticalSymbols._var.name] = struct{}{}
-	specialSymbols[criticalSymbols.do.name] = struct{}{}
-	specialSymbols[criticalSymbols.throw.name] = struct{}{}
-	specialSymbols[criticalSymbols.try.name] = struct{}{}
-	specialSymbols[criticalSymbols.catch.name] = struct{}{}
-	specialSymbols[criticalSymbols.finally.name] = struct{}{}
+	specialSymbols[criticalSymbols._if.Name()] = struct{}{}
+	specialSymbols[criticalSymbols.quote.Name()] = struct{}{}
+	specialSymbols[criticalSymbols.fn_.Name()] = struct{}{}
+	specialSymbols[criticalSymbols.let_.Name()] = struct{}{}
+	specialSymbols[criticalSymbols.letfn_.Name()] = struct{}{}
+	specialSymbols[criticalSymbols.loop_.Name()] = struct{}{}
+	specialSymbols[criticalSymbols.recur.Name()] = struct{}{}
+	specialSymbols[criticalSymbols.setMacro_.Name()] = struct{}{}
+	specialSymbols[criticalSymbols.def.Name()] = struct{}{}
+	specialSymbols[criticalSymbols.defLinter.Name()] = struct{}{}
+	specialSymbols[criticalSymbols._var.Name()] = struct{}{}
+	specialSymbols[criticalSymbols.do.Name()] = struct{}{}
+	specialSymbols[criticalSymbols.throw.Name()] = struct{}{}
+	specialSymbols[criticalSymbols.try.Name()] = struct{}{}
+	specialSymbols[criticalSymbols.catch.Name()] = struct{}{}
+	specialSymbols[criticalSymbols.finally.Name()] = struct{}{}
 }
 
 func IsSpecialSymbol(obj Object) bool {
 	switch obj := obj.(type) {
 	case Symbol:
-		if obj.ns != "" {
+		if obj.Namespace() != "" {
 			return false
 		}
 
-		_, found := specialSymbols[obj.name]
+		_, found := specialSymbols[obj.Name()]
 		return found
 	default:
 		return false

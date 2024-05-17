@@ -2,11 +2,11 @@ package core
 
 import (
 	"encoding/binary"
-	"fmt"
+	"strconv"
 )
 
 func (i Int) ToString(env *Env, escape bool) (string, error) {
-	return fmt.Sprintf("%d", i.Int()), nil
+	return strconv.Itoa(i.I()), nil
 }
 
 func MakeInt(i int) Int {

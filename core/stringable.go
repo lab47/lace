@@ -14,7 +14,7 @@ func AssertStringable(obj Object, msg string) (String, error) {
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Stringable", obj.GetType().Name())
 		}
-		return "", StubNewError(msg)
+		return nil, StubNewError(msg)
 	}
 }
 
@@ -25,6 +25,6 @@ func EnsureStringable(args []Object, index int) (String, error) {
 	case Char:
 		return MakeString(string(c.Ch)), nil
 	default:
-		return "", StubNewArgTypeError(index, c, "Stringable")
+		return nil, StubNewArgTypeError(index, c, "Stringable")
 	}
 }

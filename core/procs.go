@@ -17,7 +17,6 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/pkg/errors"
 )
 
@@ -260,6 +259,7 @@ var procAdd = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 	ops := GetOps(x).Combine(GetOps(y))
+
 	return ops.Add(x, y)
 }
 
@@ -1249,10 +1249,7 @@ var procSymbol = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	return Symbol{
-		ns:   ns,
-		name: name.S(),
-	}, nil
+	return AssembleSymbol(ns, name.S()), nil
 }
 
 var procKeyword = func(env *Env, args []Object) (Object, error) {
@@ -1266,9 +1263,9 @@ var procKeyword = func(env *Env, args []Object) (Object, error) {
 			return MakeKeyword(obj.S()), nil
 		case Symbol:
 			return Keyword{
-				ns:   obj.ns,
-				name: obj.name,
-				hash: hashSymbol(obj.ns, obj.name) ^ KeywordHashMask,
+				ns:   obj.Namespace(),
+				name: obj.Name(),
+				hash: hashSymbol(obj.Namespace(), obj.Name()) ^ KeywordHashMask,
 			}, nil
 		default:
 			return NIL, nil
@@ -1909,7 +1906,7 @@ var procFindVar = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	if sym.ns == "" {
+	if sym.Namespace() == "" {
 		return nil, env.NewError("find-var argument must be namespace-qualified symbol")
 	}
 	if v, ok := env.Resolve(sym); ok {
@@ -2209,7 +2206,7 @@ var procCreateNamespace = func(env *Env, args []Object) (Object, error) {
 	// This is for the cases when (ns ...) is called in .laced/linter.clj file and alike.
 	// Also, isUsed needs to be reset in this case.
 	if LINTER_MODE {
-		if err := Cast(env, res.Name.WithInfo(sym.GetInfo()), &res.Name); err != nil {
+		if err := Cast(env, SetInfo(res.Name, GetInfo(sym)), &res.Name); err != nil {
 			return nil, err
 		}
 		res.isUsed = false
@@ -2295,10 +2292,10 @@ var procNamespaceUnmap = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	if sym.ns != "" {
+	if sym.Namespace() != "" {
 		return nil, env.NewError("Can't unintern namespace-qualified symbol")
 	}
-	ns.DeleteVar(sym.name)
+	ns.DeleteVar(sym.Name())
 	return NIL, nil
 }
 
@@ -2390,10 +2387,10 @@ var procNamespaceUnalias = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	if sym.ns != "" {
+	if sym.Namespace() != "" {
 		return nil, env.NewError("Alias can't be namespace-qualified")
 	}
-	delete(ns.aliases, sym.name)
+	delete(ns.aliases, sym.Name())
 	return NIL, nil
 }
 
@@ -2435,8 +2432,8 @@ var procNsResolve = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	if sym.ns == "" && TYPES[sym.name] != nil {
-		return TYPES[sym.name], nil
+	if sym.Namespace() == "" && TYPES[sym.Name()] != nil {
+		return TYPES[sym.Name()], nil
 	}
 	if vr, ok := env.ResolveIn(ns, sym); ok {
 		return vr, nil
@@ -2578,7 +2575,7 @@ var procDeriveInfo = func(env *Env, args []Object) (Object, error) {
 
 	dest := args[0]
 	src := args[1]
-	return dest.WithInfo(src.GetInfo()), nil
+	return SetInfo(dest, GetInfo(src)), nil
 }
 
 var procLaceVersion = func(env *Env, args []Object) (Object, error) {
@@ -2727,7 +2724,7 @@ var procIndexOf = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	for i, r := range s {
+	for i, r := range s.S() {
 		if r == ch.Ch {
 			return MakeInt(i), nil
 		}
@@ -3062,47 +3059,6 @@ func ReadIntoBytecode(env *Env, reader *Reader, filename string) ([]byte, error)
 	return MarshalCode(env, fn.code)
 }
 
-func PackReader(env *Env, reader *Reader, filename string) ([]byte, error) {
-	var p []byte
-	packEnv := NewPackEnv(env)
-	parseContext := &ParseContext{Env: env}
-	if filename != "" {
-		currentFilename := parseContext.Env.file.GetStatic()
-		defer func() {
-			parseContext.Env.SetFilename(currentFilename)
-		}()
-		s, err := filepath.Abs(filename)
-		if err != nil {
-			return nil, err
-		}
-		parseContext.Env.SetFilename(MakeString(s))
-	}
-
-	for {
-		obj, err := TryRead(env, reader)
-		if err == io.EOF {
-			var hp []byte
-			hp = packEnv.Pack(hp)
-			return append(hp, p...), nil
-		}
-		if err != nil {
-			fmt.Fprintln(Stderr, err)
-			return nil, err
-		}
-		expr, err := TryParse(obj, parseContext)
-		if err != nil {
-			fmt.Fprintln(Stderr, err)
-			return nil, err
-		}
-		p = expr.Pack(p, packEnv)
-		_, err = TryEval(env, expr)
-		if err != nil {
-			fmt.Fprintln(Stderr, err)
-			return nil, err
-		}
-	}
-}
-
 var procIncProblemCount = func(env *Env, args []Object) (Object, error) {
 	if err := CheckArity(env, args, 0, 0); err != nil {
 		return nil, err
@@ -3134,7 +3090,6 @@ func ProcessReader(env *Env, reader *Reader, filename string) (Object, error) {
 			break
 		}
 		if err != nil {
-			spew.Dump(err)
 			fmt.Fprintln(Stderr, err)
 			return nil, err
 		}
@@ -3349,7 +3304,7 @@ var procIsNamespaceInitialized = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 
-	if sym.ns != "" {
+	if sym.Namespace() != "" {
 		return nil, env.NewError("Can't ask for namespace info on namespace-qualified symbol")
 	}
 	// First look for registered (e.g. std) libs

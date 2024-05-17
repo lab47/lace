@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/lab47/lace/core"
 	"github.com/lab47/lace/core/gen_common"
 	_ "github.com/lab47/lace/gen-reflect"
@@ -42,6 +43,8 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
+
+		spew.Dump(f.Filename)
 
 		content, err := core.ReadIntoBytecode(env, core.NewReader(bytes.NewReader(data), f.Name), "")
 		if err != nil {

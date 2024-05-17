@@ -64,9 +64,7 @@ func (exInfo *ExInfo) Error() string {
 	if ok {
 		ok, form := dm.GetEqu(criticalKeywords.form)
 		if ok {
-			if form.GetInfo() != nil {
-				pos = form.GetInfo().Pos()
-			}
+			pos = GetPosition(form)
 		}
 		if ok, pr := dm.GetEqu(criticalKeywords._prefix); ok {
 			s, err := pr.ToString(nil, false)

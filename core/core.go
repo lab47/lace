@@ -5,7 +5,7 @@ import "fmt"
 func CallVar(env *Env, varName string, args ...Object) (Object, error) {
 	sym := MakeSymbol(varName)
 
-	nsName := sym.ns
+	nsName := sym.Namespace()
 
 	var ns *Namespace
 
@@ -19,7 +19,7 @@ func CallVar(env *Env, varName string, args ...Object) (Object, error) {
 		return nil, fmt.Errorf("unknown namespace: %s", nsName)
 	}
 
-	vr, err := ns.Intern(env, MakeSymbol(sym.name))
+	vr, err := ns.Intern(env, MakeSymbol(sym.Name()))
 	if err != nil {
 		return nil, err
 	}

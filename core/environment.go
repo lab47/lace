@@ -217,12 +217,12 @@ func (env *Env) EnsureNamespace(sym Symbol) *Namespace {
 }
 
 func (env *Env) InitNamespace(sym Symbol) (*Namespace, error) {
-	if sym.ns != "" {
+	if sym.Namespace() != "" {
 		return nil, env.NewError("Namespace's name cannot be qualified: " + sym.String())
 	}
 
 	env.mu.Lock()
-	ns := env.Namespaces[sym.name]
+	ns := env.Namespaces[sym.Name()]
 	env.mu.Unlock()
 
 	var err error
@@ -234,16 +234,16 @@ func (env *Env) InitNamespace(sym Symbol) (*Namespace, error) {
 		}
 
 		env.mu.Lock()
-		env.Namespaces[sym.name] = ns
+		env.Namespaces[sym.Name()] = ns
 		env.mu.Unlock()
 
-		if setup, ok := builtinNSSetup[sym.name]; ok {
+		if setup, ok := builtinNSSetup[sym.Name()]; ok {
 			err := setup(env)
 			if err != nil {
 				return nil, err
 			}
 		} else {
-			_, err = PopulateNativeNamespaceToEnv(env, sym.name)
+			_, err = PopulateNativeNamespaceToEnv(env, sym.Name())
 			if err != nil {
 				return nil, err
 			}
@@ -255,16 +255,16 @@ func (env *Env) InitNamespace(sym Symbol) (*Namespace, error) {
 
 func (env *Env) NamespaceFor(ns *Namespace, s Symbol) *Namespace {
 	var res *Namespace
-	if s.ns == "" {
+	if s.Namespace() == "" {
 		res = ns
 	} else {
 		ns.mu.Lock()
-		res = ns.aliases[s.ns]
+		res = ns.aliases[s.Namespace()]
 		ns.mu.Unlock()
 
 		if res == nil {
 			env.mu.Lock()
-			res = env.Namespaces[s.ns]
+			res = env.Namespaces[s.Namespace()]
 			env.mu.Unlock()
 		}
 	}
@@ -279,7 +279,7 @@ func (env *Env) ResolveIn(n *Namespace, s Symbol) (*Var, bool) {
 	if ns == nil {
 		return nil, false
 	}
-	if v, ok := ns.LookupVar(s.name); ok {
+	if v, ok := ns.LookupVar(s.Name()); ok {
 		return v, true
 	}
 	if s.Is(env.IN_NS_VAR.name) {
@@ -302,23 +302,23 @@ func (env *Env) MakeVar(s Symbol) (*Var, error) {
 }
 
 func (env *Env) LookupNamespace(s Symbol) (*Namespace, bool) {
-	if s.ns != "" {
+	if s.Namespace() != "" {
 		return nil, false
 	}
 
 	env.mu.Lock()
-	ns := env.Namespaces[s.name]
+	ns := env.Namespaces[s.Name()]
 	env.mu.Unlock()
 
 	if ns != nil {
 		ns.MaybeLazy(env, "FindNameSpace")
 	} else {
-		if _, ok := builtinNSSetup[s.name]; ok {
+		if _, ok := builtinNSSetup[s.Name()]; ok {
 			// don't call setup! just create the namespace because EnsureNamespace will call
 			// the setup.
 			ns = env.EnsureNamespace(s)
 		} else {
-			_, err := PopulateNativeNamespaceToEnv(env, s.name)
+			_, err := PopulateNativeNamespaceToEnv(env, s.Name())
 			if err != nil {
 				panic(WrapError(env, err))
 			}
@@ -334,7 +334,7 @@ func (env *Env) FindNamespace(s Symbol) *Namespace {
 }
 
 func (env *Env) RemoveNamespace(s Symbol) *Namespace {
-	if s.ns != "" {
+	if s.Namespace() != "" {
 		return nil
 	}
 
@@ -344,23 +344,23 @@ func (env *Env) RemoveNamespace(s Symbol) *Namespace {
 	if s.Is(criticalSymbols.lace_core) {
 		panic(env.NewError("Cannot remove core namespace"))
 	}
-	ns := env.Namespaces[s.name]
-	delete(env.Namespaces, s.name)
+	ns := env.Namespaces[s.Name()]
+	delete(env.Namespaces, s.Name())
 	return ns
 }
 
 func (env *Env) ResolveSymbol(s Symbol) (Symbol, error) {
-	if strings.ContainsRune(s.name, '.') {
+	if strings.ContainsRune(s.Name(), '.') {
 		return s, nil
 	}
-	if s.ns == "" && TYPES[s.name] != nil {
+	if s.Namespace() == "" && TYPES[s.Name()] != nil {
 		return s, nil
 	}
 	currentNs := env.CurrentNamespace()
 
-	if s.ns != "" {
+	if s.Namespace() != "" {
 		ns := env.NamespaceFor(currentNs, s)
-		if ns == nil || ns.Name.name == s.ns {
+		if ns == nil || ns.Name.Name() == s.Namespace() {
 			if ns != nil {
 				ns.isUsed = true
 				ns.isGloballyUsed = true
@@ -369,26 +369,17 @@ func (env *Env) ResolveSymbol(s Symbol) (Symbol, error) {
 		}
 		ns.isUsed = true
 		ns.isGloballyUsed = true
-		return Symbol{
-			name: s.name,
-			ns:   ns.Name.name,
-		}, nil
+		return AssembleSymbol(ns.Name.Name(), s.Name()), nil
 	}
-	vr, ok := currentNs.LookupVar(s.name)
+	vr, ok := currentNs.LookupVar(s.Name())
 	if !ok {
-		return Symbol{
-			name: s.name,
-			ns:   currentNs.Name.name,
-		}, nil
+		return AssembleSymbol(currentNs.Name.Name(), s.Name()), nil
 	}
 	vr.isUsed = true
 	vr.isGloballyUsed = true
 	vr.ns.isUsed = true
 	vr.ns.isGloballyUsed = true
-	return Symbol{
-		name: vr.name.name,
-		ns:   vr.ns.Name.name,
-	}, nil
+	return AssembleSymbol(vr.ns.Name.Name(), vr.name.Name()), nil
 }
 
 func (env *Env) Eval(str string) (Object, error) {

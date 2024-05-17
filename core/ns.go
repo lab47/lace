@@ -125,7 +125,7 @@ func (ns *Namespace) MaybeLazy(env *Env, doc string) {
 		ns.Lazy = nil
 		lazyFn(env, ns)
 		if VerbosityLevel > 0 {
-			fmt.Fprintf(Stderr, "NamespaceFor: Lazily initialized %s for %s\n", ns.Name.name, doc)
+			fmt.Fprintf(Stderr, "NamespaceFor: Lazily initialized %s for %s\n", ns.Name.Name(), doc)
 		}
 	}
 }
@@ -151,13 +151,13 @@ func NewNamespace(env *Env, sym Symbol) (*Namespace, error) {
 }
 
 func (ns *Namespace) Refer(env *Env, sym Symbol, vr *Var) (*Var, error) {
-	if sym.ns != "" {
+	if sym.Namespace() != "" {
 		return nil, env.NewError("Can't intern namespace-qualified symbol " + sym.String())
 	}
 	ns.mu.Lock()
 	defer ns.mu.Unlock()
 
-	ns.mappings[sym.name] = vr
+	ns.mappings[sym.Name()] = vr
 	return vr, nil
 }
 
@@ -178,21 +178,21 @@ func (ns *Namespace) ReferAll(other *Namespace, safe bool) {
 }
 
 func (ns *Namespace) Intern(env *Env, sym Symbol) (*Var, error) {
-	if sym.ns != "" {
+	if sym.Namespace() != "" {
 		return nil, StubNewError("Can't intern namespace-qualified symbol " + sym.String())
 	}
 
 	ns.mu.Lock()
 	defer ns.mu.Unlock()
 
-	sym.meta = nil
-	existingVar, ok := ns.mappings[sym.name]
+	ClearMeta(sym)
+	existingVar, ok := ns.mappings[sym.Name()]
 	if !ok {
 		newVar := &Var{
 			ns:   ns,
 			name: sym,
 		}
-		ns.mappings[sym.name] = newVar
+		ns.mappings[sym.Name()] = newVar
 		return newVar, nil
 	}
 	if existingVar.ns != ns {
@@ -201,9 +201,9 @@ func (ns *Namespace) Intern(env *Env, sym Symbol) (*Var, error) {
 				ns:   ns,
 				name: sym,
 			}
-			ns.mappings[sym.name] = newVar
+			ns.mappings[sym.Name()] = newVar
 			if !strings.HasPrefix(ns.Name.Name(), "lace.") {
-				printParseWarning(sym.GetInfo().Pos(), fmt.Sprintf("WARNING: %s already refers to: %s in namespace %s, being replaced by: %s\n",
+				printParseWarning(GetInfo(sym).Pos(), fmt.Sprintf("WARNING: %s already refers to: %s in namespace %s, being replaced by: %s\n",
 					sym.String(), existingVar.String(), ns.Name.String(), newVar.String()))
 			}
 			return newVar, nil
@@ -230,10 +230,10 @@ func (ns *Namespace) InternVar(env *Env, name string, val Object, meta *ArrayMap
 }
 
 func (ns *Namespace) AddAlias(env *Env, alias Symbol, namespace *Namespace) error {
-	if alias.ns != "" {
+	if alias.Namespace() != "" {
 		return env.NewError("Alias can't be namespace-qualified")
 	}
-	existing := ns.aliases[alias.name]
+	existing := ns.aliases[alias.Name()]
 	if existing != nil && existing != namespace {
 		msg := "Alias " + alias.String() + " already exists in namespace " + ns.Name.String() + ", aliasing " + existing.Name.String()
 		if LINTER_MODE {
@@ -242,7 +242,7 @@ func (ns *Namespace) AddAlias(env *Env, alias Symbol, namespace *Namespace) erro
 		}
 		return env.NewError(msg)
 	}
-	ns.aliases[alias.name] = namespace
+	ns.aliases[alias.Name()] = namespace
 	return nil
 }
 
@@ -325,8 +325,8 @@ func WarnOnUnusedVars(env *Env) {
 			if vr.ns == ns && !vr.isUsed && vr.isPrivate {
 				pos := vr.GetInfo()
 				if pos != nil {
-					names = append(names, vr.name.name)
-					positions[vr.name.name] = pos.Position
+					names = append(names, vr.name.Name())
+					positions[vr.name.Name()] = pos.Position
 				}
 			}
 		}

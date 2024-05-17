@@ -15,7 +15,6 @@ type (
 		InferType() *Type
 		Pos() Position
 		Dump(includePosition bool) Map
-		Pack(p []byte, env *PackEnv) []byte
 	}
 	LiteralExpr struct {
 		Position
@@ -357,12 +356,12 @@ func (b *Bindings) PopFrame() *Bindings {
 
 func (b *Bindings) AddBinding(sym Symbol, index int, skipUnused bool) {
 	if LINTER_MODE && !skipUnused {
-		old := b.bindings[sym.name]
+		old := b.bindings[sym.Name()]
 		if old != nil && needsUnusedWarning(old) {
 			printParseWarning(GetPosition(old.name), "Unused binding: "+old.name.String())
 		}
 	}
-	b.bindings[sym.name] = &Binding{
+	b.bindings[sym.Name()] = &Binding{
 		name:  sym,
 		frame: b.frame,
 		index: index,
@@ -387,7 +386,7 @@ func (ctx *ParseContext) PopLocalFrame() {
 func (b *Bindings) GetBinding(sym Symbol) *Binding {
 	env := b
 	for env != nil {
-		if b, ok := env.bindings[sym.name]; ok {
+		if b, ok := env.bindings[sym.Name()]; ok {
 			return b
 		}
 		env = env.parent
@@ -396,7 +395,7 @@ func (b *Bindings) GetBinding(sym Symbol) *Binding {
 }
 
 func (ctx *ParseContext) GetLocalBinding(sym Symbol) *Binding {
-	if sym.ns != "" {
+	if sym.Namespace() != "" {
 		return nil
 	}
 	return ctx.localBindings.GetBinding(sym)
@@ -454,7 +453,7 @@ func WarnOnGloballyUnusedNamespaces(env *Env) {
 
 	for _, ns := range env.Namespaces {
 		if !ns.isGloballyUsed && !isIgnoredUnusedNamespace(ns) && !isEntryPointNs(ns) {
-			pos := ns.Name.GetInfo()
+			pos := GetInfo(ns.Name)
 			if pos != nil && pos.Filename() != "<lace.core>" && pos.Filename() != "<user>" {
 				name := ns.Name.String()
 				names = append(names, name)
@@ -475,7 +474,7 @@ func WarnOnUnusedNamespaces(env *Env) {
 
 	for _, ns := range env.Namespaces {
 		if ns != env.CurrentNamespace() && !ns.isUsed && !isIgnoredUnusedNamespace(ns) {
-			pos := ns.Name.GetInfo()
+			pos := GetInfo(ns.Name)
 			if pos != nil && pos.Filename() != "<lace.core>" && pos.Filename() != "<user>" {
 				name := ns.Name.String()
 				names = append(names, name)
@@ -494,16 +493,13 @@ func isEntryPointVar(vr *Var) bool {
 	if isEntryPointNs(vr.ns) {
 		return true
 	}
-	sym := Symbol{
-		ns:   vr.ns.Name.name,
-		name: vr.name.name,
-	}
+	sym := AssembleSymbol(vr.ns.Name.Name(), vr.name.Name())
 	return WARNINGS.entryPoints.Has(sym)
 }
 
 func NewLiteralExpr(obj Object) *LiteralExpr {
 	res := LiteralExpr{obj: obj}
-	info := obj.GetInfo()
+	info := GetInfo(obj)
 	if info != nil {
 		res.Position = info.Position
 	}
@@ -548,7 +544,7 @@ func (err *ParseError) Message() Object {
 
 func (err ParseError) Error() string {
 	line, column, filename := 0, 0, "<file>"
-	info := err.obj.GetInfo()
+	info := GetInfo(err.obj)
 	if info != nil {
 		line, column, filename = info.startLine, info.startColumn, info.Filename()
 	}
@@ -675,7 +671,7 @@ func checkForm(env *Env, obj Object, min int, max int) (int, error) {
 }
 
 func GetPosition(obj Object) Position {
-	info := obj.GetInfo()
+	info := GetInfo(obj)
 	if info != nil {
 		return info.Position
 	}
@@ -684,7 +680,7 @@ func GetPosition(obj Object) Position {
 
 func updateVar(vr *Var, info *ObjectInfo, valueExpr Expr, sym Symbol) {
 	vr.WithInfo(info)
-	meta := sym.GetMeta()
+	meta := GetMeta(sym)
 	if meta != nil {
 		if ok, p := meta.GetEqu(criticalKeywords.private); ok {
 			vr.isPrivate = ToBool(p)
@@ -701,8 +697,8 @@ func isCreatedByMacro(env *Env, formSeq Seq) bool {
 	if err != nil {
 		return false
 	}
-	info := f.GetInfo()
-	return info.Pos().filename == STR.coreFilename
+	info := GetInfo(f)
+	return info != nil && info.Pos().filename == STR.coreFilename
 }
 
 func parseDef(obj Object, ctx *ParseContext, isForLinter bool) (*DefExpr, error) {
@@ -719,16 +715,15 @@ func parseDef(obj Object, ctx *ParseContext, isForLinter bool) (*DefExpr, error)
 		return nil, err
 	}
 	var meta Map
-	switch sym := s.(type) {
+	switch sym := Unwrap(s).(type) {
 	case Symbol:
-		if sym.ns != "" && (Symbol{name: sym.ns} != ctx.Env.CurrentNamespace().Name) {
+		if sym.Namespace() != "" && (AssembleSymbol("", sym.Namespace()) != ctx.Env.CurrentNamespace().Name) {
 			return nil, &ParseError{
 				msg: "Can't create defs outside of current ns",
 				obj: obj,
 			}
 		}
-		symWithoutNs := sym
-		symWithoutNs.ns = ""
+		symWithoutNs := AssembleSymbol("", sym.Name())
 		vr, err := ctx.Env.CurrentNamespace().Intern(ctx.Env, symWithoutNs)
 		if err != nil {
 			return nil, err
@@ -743,7 +738,7 @@ func parseDef(obj Object, ctx *ParseContext, isForLinter bool) (*DefExpr, error)
 			Position:         GetPosition(obj),
 			isCreatedByMacro: isCreatedByMacro(ctx.Env, seq),
 		}
-		meta = sym.GetMeta()
+		meta = GetMeta(sym)
 		if count == 3 {
 			v, err := Third(ctx.Env, seq)
 			if err != nil {
@@ -767,7 +762,7 @@ func parseDef(obj Object, ctx *ParseContext, isForLinter bool) (*DefExpr, error)
 				return nil, err
 			}
 
-			switch docstring.(type) {
+			switch Unwrap(docstring).(type) {
 			case String:
 				if meta != nil {
 					v, err := meta.Assoc(ctx.Env, criticalKeywords.doc, docstring)
@@ -791,7 +786,7 @@ func parseDef(obj Object, ctx *ParseContext, isForLinter bool) (*DefExpr, error)
 				return nil, &ParseError{obj: docstring, msg: "Docstring must be a string"}
 			}
 		}
-		updateVar(vr, obj.GetInfo(), res.value, sym)
+		updateVar(vr, GetInfo(obj), res.value, sym)
 		if meta != nil {
 			res.meta, err = Parse(DeriveReadObject(obj, meta), ctx)
 			if err != nil {
@@ -907,9 +902,9 @@ func parseParams(env *Env, params Object) ([]Symbol, bool, error) {
 
 func needsUnusedWarning(b *Binding) bool {
 	return !b.isUsed &&
-		!strings.HasPrefix(b.name.name, "_") &&
-		!strings.HasPrefix(b.name.name, "&form") &&
-		!strings.HasPrefix(b.name.name, "&env") &&
+		!strings.HasPrefix(b.name.Name(), "_") &&
+		!strings.HasPrefix(b.name.Name(), "&form") &&
+		!strings.HasPrefix(b.name.Name(), "&env") &&
 		!isSkipUnused(b.name)
 }
 
@@ -940,7 +935,7 @@ func addArity(fn *FnExpr, sig Seq, ctx *ParseContext) error {
 		return err
 	}
 
-	var meta Meta
+	var meta Object
 	if err := Cast(ctx.Env, params, &meta); err != nil {
 		return err
 	}
@@ -1083,7 +1078,7 @@ func parseFn(obj Object, ctx *ParseContext) (Expr, error) {
 				return nil, err
 			}
 
-			switch s := body.(type) {
+			switch s := Unwrap(body).(type) {
 			case Seq:
 				params, err := s.First(ctx.Env)
 				if err != nil {
@@ -1376,8 +1371,8 @@ func parseLetfn(obj Object, ctx *ParseContext) (*LoopExpr, error) {
 	return (*LoopExpr)(e), nil
 }
 
-func isSkipUnused(obj Meta) bool {
-	if m := obj.GetMeta(); m != nil {
+func isSkipUnused(obj Object) bool {
+	if m := GetMeta(obj); m != nil {
 		if ok, v := m.GetEqu(criticalKeywords.skipUnused); ok {
 			return ToBool(v)
 		}
@@ -1400,7 +1395,7 @@ func parseLetLoop(obj Object, formName string, ctx *ParseContext) (*LetExpr, err
 		return nil, err
 	}
 
-	switch b := bindings.(type) {
+	switch b := Unwrap(bindings).(type) {
 	case *Vector:
 		if b.count%2 != 0 {
 			return nil, &ParseError{obj: bindings, msg: formName + " requires an even number of forms in binding vector"}
@@ -1419,9 +1414,9 @@ func parseLetLoop(obj Object, formName string, ctx *ParseContext) (*LetExpr, err
 
 		for i := 0; i < b.count/2; i++ {
 			s := b.at(i * 2)
-			switch sym := s.(type) {
+			switch sym := Unwrap(s).(type) {
 			case Symbol:
-				if sym.ns != "" {
+				if sym.Namespace() != "" {
 					msg := "Can't let qualified name: " + sym.String()
 					if LINTER_MODE {
 						printParseError(GetPosition(s), msg)
@@ -1556,7 +1551,7 @@ func parseRecur(obj Object, ctx *ParseContext) (*RecurExpr, error) {
 }
 
 func resolveMacro(obj Object, ctx *ParseContext) *Var {
-	switch sym := obj.(type) {
+	switch sym := Unwrap(obj).(type) {
 	case Symbol:
 		if ctx.GetLocalBinding(sym) != nil {
 			return nil
@@ -1576,7 +1571,7 @@ func resolveMacro(obj Object, ctx *ParseContext) *Var {
 }
 
 func fixInfo(env *Env, obj Object, info *ObjectInfo) (Object, error) {
-	switch s := obj.(type) {
+	switch s := Unwrap(obj).(type) {
 	case Nil:
 		return obj, nil
 	case Seq:
@@ -1606,7 +1601,7 @@ func fixInfo(env *Env, obj Object, info *ObjectInfo) (Object, error) {
 			}
 		}
 		res := NewListFrom(objs...)
-		if objInfo := obj.GetInfo(); objInfo != nil {
+		if objInfo := GetInfo(obj); objInfo != nil {
 			return res.WithInfo(objInfo), nil
 		}
 		return res.WithInfo(info), nil
@@ -1620,7 +1615,7 @@ func fixInfo(env *Env, obj Object, info *ObjectInfo) (Object, error) {
 			res, _ = res.Conjoin(t)
 		}
 		res.meta = s.meta
-		if objInfo := obj.GetInfo(); objInfo != nil {
+		if objInfo := GetInfo(obj); objInfo != nil {
 			return res.WithInfo(objInfo), nil
 		}
 		return res.WithInfo(info), nil
@@ -1646,7 +1641,7 @@ func fixInfo(env *Env, obj Object, info *ObjectInfo) (Object, error) {
 		}
 
 		res.meta = metao.GetMeta()
-		if objInfo := obj.GetInfo(); objInfo != nil {
+		if objInfo := GetInfo(obj); objInfo != nil {
 			return res.WithInfo(objInfo), nil
 		}
 		return res.WithInfo(info), nil
@@ -1692,7 +1687,7 @@ func macroexpand1(env *Env, seq Seq, ctx *ParseContext) (Object, error) {
 		if err != nil {
 			return nil, err
 		}
-		return fixInfo(env, v, seq.GetInfo())
+		return fixInfo(env, v, GetInfo(seq))
 	} else {
 		return seq, nil
 	}
@@ -1702,11 +1697,11 @@ func reportNotAFunction(pos Position, name string) {
 	printParseWarning(pos, name+" is not a function")
 }
 
-func getTaggedType(obj Meta) *Type {
-	if m := obj.GetMeta(); m != nil {
+func getTaggedType(obj Object) *Type {
+	if m := GetMeta(obj); m != nil {
 		if ok, typeName := m.GetEqu(criticalKeywords.tag); ok {
 			if typeSym, ok := typeName.(Symbol); ok {
-				if t := TYPES[typeSym.name]; t != nil {
+				if t := TYPES[typeSym.Name()]; t != nil {
 					return t
 				}
 			}
@@ -1715,19 +1710,19 @@ func getTaggedType(obj Meta) *Type {
 	return nil
 }
 
-func getTaggedTypes(obj Meta) []*Type {
+func getTaggedTypes(obj Object) []*Type {
 	var res []*Type
-	if m := obj.GetMeta(); m != nil {
+	if m := GetMeta(obj); m != nil {
 		if ok, typeName := m.GetEqu(criticalKeywords.tag); ok {
-			switch typeDecl := typeName.(type) {
+			switch typeDecl := Unwrap(typeName).(type) {
 			case Symbol:
-				if t := TYPES[typeDecl.name]; t != nil {
+				if t := TYPES[typeDecl.Name()]; t != nil {
 					res = append(res, t)
 				}
 			case String:
 				parts := strings.Split(typeDecl.S(), "|")
 				for _, p := range parts {
-					if t := TYPES[MakeSymbol(p).name]; t != nil {
+					if t := TYPES[MakeSymbol(p).Name()]; t != nil {
 						res = append(res, t)
 					}
 				}
@@ -1878,7 +1873,7 @@ func parseSetMacro(env *Env, obj Object, ctx *ParseContext) (Expr, error) {
 
 	switch expr := expr.(type) {
 	case *LiteralExpr:
-		switch vr := expr.obj.(type) {
+		switch vr := Unwrap(expr.obj).(type) {
 		case *Var:
 			res := &SetMacroExpr{
 				vr: vr,
@@ -1905,7 +1900,7 @@ func isKnownMacros(env *Env, sym Symbol) (bool, Seq) {
 	}
 
 	if ok, v := m.GetEqu(sym); ok {
-		switch v := v.(type) {
+		switch v := Unwrap(v).(type) {
 		case Seqable:
 			return true, v.Seq()
 		default:
@@ -1925,18 +1920,15 @@ func isUnknownCallable(env *Env, expr Expr) (bool, Seq) {
 		}
 		var sym Symbol
 		if c.vr.ns != env.CurrentNamespace() && c.vr.ns != env.CoreNamespace {
-			sym = Symbol{
-				ns:   c.vr.ns.Name.name,
-				name: c.vr.name.name,
-			}
+			sym = AssembleSymbol(c.vr.ns.Name.Name(), c.vr.name.Name())
 		} else {
-			sym = MakeSymbol(c.vr.name.name)
+			sym = MakeSymbol(c.vr.name.Name())
 		}
 		b, s := isKnownMacros(env, sym)
 		if b {
 			return b, s
 		}
-		if sym.ns == "" && c.vr.ns != env.CoreNamespace {
+		if sym.Namespace() == "" && c.vr.ns != env.CoreNamespace {
 			return true, nil
 		}
 	}
@@ -2008,7 +2000,7 @@ func checkCall(env *Env, expr Expr, isMacro bool, call *CallExpr, pos Position) 
 			reportNotAFunction(pos, call.Name())
 			return
 		}
-		switch expr.obj.(type) {
+		switch Unwrap(expr.obj).(type) {
 		case Keyword:
 			if argsCount == 0 || argsCount > 2 {
 				printParseWarning(pos, fmt.Sprintf("Wrong number of args (%d) passed to %s", argsCount, call.Name()))
@@ -2059,8 +2051,8 @@ func parseList(env *Env, obj Object, ctx *ParseContext) (Expr, error) {
 		return nil, err
 	}
 
-	if v, ok := first.(Symbol); ok && v.ns == "" {
-		switch v.name {
+	if v, ok := first.(Symbol); ok && v.Namespace() == "" {
+		switch v.Name() {
 		case STR.quote:
 			sec, err := Second(env, seq)
 			if err != nil {
@@ -2141,7 +2133,7 @@ func parseList(env *Env, obj Object, ctx *ParseContext) (Expr, error) {
 				return nil, err
 			}
 
-			switch sym := obj.(type) {
+			switch sym := Unwrap(obj).(type) {
 			case Symbol:
 				vr, ok := ctx.Env.Resolve(sym)
 				if !ok {
@@ -2151,7 +2143,7 @@ func parseList(env *Env, obj Object, ctx *ParseContext) (Expr, error) {
 					symNs := ctx.Env.NamespaceFor(ctx.Env.CurrentNamespace(), sym)
 					if !ctx.isUnknownCallableScope {
 						if symNs == nil || symNs == ctx.Env.CurrentNamespace() {
-							printParseError(obj.GetInfo().Pos(), "Unable to resolve symbol: "+sym.String())
+							printParseError(GetInfo(obj).Pos(), "Unable to resolve symbol 1: "+sym.String())
 						}
 					}
 					vr, err = InternFakeSymbol(ctx.Env, symNs, sym)
@@ -2210,7 +2202,7 @@ func parseList(env *Env, obj Object, ctx *ParseContext) (Expr, error) {
 		}
 	}
 
-	if sym, ok := first.(Symbol); ok && sym.ns == "" && strings.HasPrefix(sym.Name(), ".") {
+	if sym, ok := first.(Symbol); ok && sym.Namespace() == "" && strings.HasPrefix(sym.Name(), ".") {
 		r, err := seq.Rest(env)
 		if err != nil {
 			return nil, err
@@ -2310,31 +2302,27 @@ func convertMethodName(sym string) string {
 
 func InternFakeSymbol(env *Env, ns *Namespace, sym Symbol) (*Var, error) {
 	if ns != nil {
-		fakeSym := Symbol{
-			name: sym.name,
-		}
+		fakeSym := AssembleSymbol("", sym.Name())
 		return ns.Intern(env, fakeSym)
 	}
-	fakeSym := Symbol{
-		name: sym.String(),
-	}
+	fakeSym := AssembleSymbol("", sym.String())
 	return env.CurrentNamespace().Intern(env, fakeSym)
 }
 
 func isInteropSymbol(sym Symbol) bool {
-	return sym.ns == "" && (strings.HasPrefix(sym.name, ".") || strings.HasSuffix(sym.name, ".") || strings.Contains(sym.name, "$"))
+	return sym.Namespace() == "" && (strings.HasPrefix(sym.Name(), ".") || strings.HasSuffix(sym.Name(), ".") || strings.Contains(sym.Name(), "$"))
 }
 
 func isRecordConstructor(sym Symbol) bool {
-	return sym.ns == "" && (strings.HasPrefix(sym.name, "->") || strings.HasPrefix(sym.name, "map->"))
+	return sym.Namespace() == "" && (strings.HasPrefix(sym.Name(), "->") || strings.HasPrefix(sym.Name(), "map->"))
 }
 
 var fullClassNameRe = regexp.MustCompile(`.+\..+\.[A-Z].+`)
 
 func isJavaSymbol(sym Symbol) bool {
-	s := sym.name
-	if sym.ns != "" {
-		s = sym.ns
+	s := sym.Name()
+	if sym.Namespace() != "" {
+		s = sym.Namespace()
 	}
 	return fullClassNameRe.MatchString(s)
 }
@@ -2368,21 +2356,22 @@ func parseSymbol(obj Object, ctx *ParseContext) (Expr, error) {
 	if vr, ok := ctx.Env.Resolve(sym); ok {
 		return MakeVarRefExpr(vr, obj), nil
 	}
-	if sym.ns == "" && TYPES[sym.name] != nil {
+	if sym.Namespace() == "" && TYPES[sym.Name()] != nil {
 		return &LiteralExpr{
 			Position: GetPosition(obj),
-			obj:      TYPES[sym.name],
+			obj:      TYPES[sym.Name()],
 		}, nil
 	}
 
 	if !LINTER_MODE {
-		return nil, &ParseError{obj: obj, msg: "Unable to resolve symbol: " + sym.String()}
+		panic(sym.String())
+		return nil, &ParseError{obj: obj, msg: "Unable to resolve symbol 2: " + sym.String()}
 	}
-	if DIALECT == CLJS && sym.ns == "" {
+	if DIALECT == CLJS && sym.Namespace() == "" {
 		// Check if this is a "callable namespace"
 		ns := ctx.Env.FindNamespace(sym)
 		if ns == nil {
-			ns = ctx.Env.CurrentNamespace().aliases[sym.name]
+			ns = ctx.Env.CurrentNamespace().aliases[sym.Name()]
 		}
 		if ns != nil {
 			ns.isUsed = true
@@ -2408,7 +2397,7 @@ func parseSymbol(obj Object, ctx *ParseContext) (Expr, error) {
 		}
 		if !ctx.isUnknownCallableScope {
 			if ctx.linterBindings.GetBinding(sym) == nil {
-				printParseError(obj.GetInfo().Pos(), "Unable to resolve symbol: "+sym.String())
+				printParseError(GetInfo(obj).Pos(), "Unable to resolve symbol 3: "+sym.String())
 			}
 		}
 	}
@@ -2424,7 +2413,7 @@ func Parse(obj Object, ctx *ParseContext) (Expr, error) {
 	var res Expr
 	var err error
 	canHaveMeta := false
-	switch v := obj.(type) {
+	switch v := Unwrap(obj).(type) {
 	case Int, String, Char, Double, *BigInt, *BigFloat, Boolean, Nil, *Ratio, Keyword, *Regex, *Type:
 		res = NewLiteralExpr(obj)
 	case *Vector:

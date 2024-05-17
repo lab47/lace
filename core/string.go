@@ -6,13 +6,28 @@ import (
 	"unicode/utf8"
 )
 
-type String string
+type String interface {
+	Object
+	IndexCounted
+	Seqable
 
-func (s String) S() string {
+	S() string
+	AppendTo(str String) String
+}
+
+type GoString string
+
+var _ String = GoString("")
+
+func (s GoString) WithInfo(info *ObjectInfo) Object {
+	return s
+}
+
+func (s GoString) S() string {
 	return string(s)
 }
 
-func (s String) ToString(env *Env, escape bool) (string, error) {
+func (s GoString) ToString(env *Env, escape bool) (string, error) {
 	if escape {
 		return escapeString(s.S()), nil
 	}
@@ -20,10 +35,10 @@ func (s String) ToString(env *Env, escape bool) (string, error) {
 }
 
 func MakeString(s string) String {
-	return String(s)
+	return GoString(s)
 }
 
-func (s String) Equals(env *Env, other interface{}) bool {
+func (s GoString) Equals(env *Env, other interface{}) bool {
 	switch other := other.(type) {
 	case String:
 		return s == other
@@ -32,25 +47,29 @@ func (s String) Equals(env *Env, other interface{}) bool {
 	}
 }
 
-func (s String) GetType() *Type {
+func (s GoString) GetType() *Type {
 	return TYPE.String
 }
 
-func (s String) Native() interface{} {
+func (s GoString) Native() interface{} {
 	return s.S()
 }
 
-func (s String) Hash(env *Env) (uint32, error) {
+func (s GoString) Hash(env *Env) (uint32, error) {
 	h := getHash()
 	h.Write([]byte(s))
 	return h.Sum32(), nil
 }
 
-func (s String) Count() int {
+func (s GoString) AppendTo(str String) String {
+	return GoString(string(s) + str.S())
+}
+
+func (s GoString) Count() int {
 	return utf8.RuneCountInString(s.S())
 }
 
-func (s String) Seq() Seq {
+func (s GoString) Seq() Seq {
 	runes := make([]Object, 0, len(s))
 	for _, r := range s {
 		runes = append(runes, Char{Ch: r})
@@ -58,7 +77,7 @@ func (s String) Seq() Seq {
 	return &ArraySeq{arr: runes}
 }
 
-func (s String) Nth(env *Env, i int) (Object, error) {
+func (s GoString) Nth(env *Env, i int) (Object, error) {
 	if i < 0 {
 		return nil, env.NewError(fmt.Sprintf("Negative index: %d", i))
 	}
@@ -74,7 +93,7 @@ func (s String) Nth(env *Env, i int) (Object, error) {
 	return nil, env.NewError(fmt.Sprintf("Index %d exceeds string's length %d", i, j+1))
 }
 
-func (s String) TryNth(env *Env, i int, d Object) (Object, error) {
+func (s GoString) TryNth(env *Env, i int, d Object) (Object, error) {
 	if i < 0 {
 		return d, nil
 	}
@@ -86,7 +105,7 @@ func (s String) TryNth(env *Env, i int, d Object) (Object, error) {
 	return d, nil
 }
 
-func (s String) Compare(env *Env, other Object) (int, error) {
+func (s GoString) Compare(env *Env, other Object) (int, error) {
 	os, err := other.GetType().ToString(env, false)
 	if err != nil {
 		return 0, err
@@ -99,11 +118,122 @@ func (s String) Compare(env *Env, other Object) (int, error) {
 	return strings.Compare(s.S(), s2.S()), nil
 }
 
-func (s String) GetInfo() *ObjectInfo {
+func (s GoString) GetInfo() *ObjectInfo {
 	return nil
 }
 
-var emptyString = String("")
+type Rope struct {
+	segments []string
+}
+
+var _ String = (*Rope)(nil)
+
+func (s *Rope) S() string {
+	return strings.Join(s.segments, "")
+}
+
+func (s *Rope) AppendTo(str String) String {
+	r := *s
+
+	switch o := str.(type) {
+	case GoString:
+		r.segments = append(s.segments, string(o))
+	case *Rope:
+		r.segments = append(s.segments, o.segments...)
+	default:
+		r.segments = append(s.segments, o.S())
+	}
+
+	return &r
+}
+
+func (s *Rope) ToString(env *Env, escape bool) (string, error) {
+	if escape {
+		return escapeString(s.S()), nil
+	}
+	return s.S(), nil
+}
+
+func (s *Rope) Equals(env *Env, other interface{}) bool {
+	switch other := other.(type) {
+	case String:
+		return s == other
+	default:
+		return false
+	}
+}
+
+func (s *Rope) GetType() *Type {
+	return TYPE.String
+}
+
+func (s *Rope) Native() interface{} {
+	return s.S()
+}
+
+func (s *Rope) Hash(env *Env) (uint32, error) {
+	h := getHash()
+	for _, p := range s.segments {
+		h.Write([]byte(p))
+	}
+	return h.Sum32(), nil
+}
+
+func (s *Rope) Count() int {
+	return utf8.RuneCountInString(s.S())
+}
+
+func (s *Rope) Seq() Seq {
+	x := s.S()
+	runes := make([]Object, 0, len(x))
+	for _, r := range x {
+		runes = append(runes, Char{Ch: r})
+	}
+	return &ArraySeq{arr: runes}
+}
+
+func (s *Rope) Nth(env *Env, i int) (Object, error) {
+	if i < 0 {
+		return nil, env.NewError(fmt.Sprintf("Negative index: %d", i))
+	}
+	j := 0
+	var r rune
+
+	for j, r = range s.S() {
+		if i == j {
+			return Char{Ch: r}, nil
+		}
+	}
+
+	return nil, env.NewError(fmt.Sprintf("Index %d exceeds string's length %d", i, j+1))
+}
+
+func (s *Rope) TryNth(env *Env, i int, d Object) (Object, error) {
+	if i < 0 {
+		return d, nil
+	}
+	for j, r := range s.S() {
+		if i == j {
+			return Char{Ch: r}, nil
+		}
+	}
+	return d, nil
+}
+
+func (s *Rope) Compare(env *Env, other Object) (int, error) {
+	os, err := other.GetType().ToString(env, false)
+	if err != nil {
+		return 0, err
+	}
+	s2, err := AssertString(env, other, "Cannot compare String and "+os)
+	if err != nil {
+		return 0, err
+	}
+
+	return strings.Compare(s.S(), s2.S()), nil
+}
+
+var emptyString = GoString("")
 
 // Combine many values into a single string.
 //
@@ -113,18 +243,28 @@ func CombineToString(env *Env, args []Object) (Object, error) {
 		return emptyString, nil
 	}
 
-	var buffer strings.Builder
+	segments := make([]string, 0, len(args))
+
 	for _, obj := range args {
-		if !obj.Equals(env, NIL) {
-			t := obj.GetType()
-			// TODO: this is a hack. Rethink escape parameter in ToString
-			escaped := (t == TYPE.String) || (t == TYPE.Char) || (t == TYPE.Regex)
-			s, err := obj.ToString(env, !escaped)
-			if err != nil {
-				return nil, err
+		if obj != NIL {
+			switch sv := obj.(type) {
+			case GoString:
+				segments = append(segments, sv.S())
+			case *Rope:
+				segments = append(segments, sv.segments...)
+			case Char:
+				segments = append(segments, string(sv.Ch))
+			case *Regex:
+				segments = append(segments, sv.R.String())
+			default:
+				s, err := obj.ToString(env, true)
+				if err != nil {
+					return nil, err
+				}
+				segments = append(segments, s)
 			}
-			buffer.WriteString(s)
 		}
 	}
-	return MakeString(buffer.String()), nil
+
+	return &Rope{segments: segments}, nil
 }

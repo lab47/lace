@@ -122,7 +122,7 @@ func MakeReadError(reader *Reader, msg string) ReadError {
 
 func MakeReadObject(reader *Reader, obj Object) Object {
 	p := popPos(reader)
-	return obj.WithInfo(&ObjectInfo{Position: Position{
+	return SetInfo(obj, &ObjectInfo{Position: Position{
 		startColumn: p.column,
 		startLine:   p.line,
 		endLine:     reader.line,
@@ -132,10 +132,10 @@ func MakeReadObject(reader *Reader, obj Object) Object {
 }
 
 func DeriveReadObject(base Object, obj Object) Object {
-	baseInfo := base.GetInfo()
+	baseInfo := GetInfo(base)
 	if baseInfo != nil {
 		bi := *baseInfo
-		return obj.WithInfo(&bi)
+		return SetInfo(obj, &bi)
 	}
 	return obj
 }
@@ -496,16 +496,16 @@ func readSymbol(env *Env, reader *Reader, first rune) (Object, error) {
 			sym := MakeSymbol(str[1:])
 			ns := env.NamespaceFor(env.CurrentNamespace(), sym)
 			if ns == nil {
-				msg := fmt.Sprintf("Unable to resolve namespace %s in keyword %s", sym.ns, ":"+str)
+				msg := fmt.Sprintf("Unable to resolve namespace %s in keyword %s", sym.Namespace(), ":"+str)
 				if LINTER_MODE {
 					printReadWarning(reader, msg)
-					return MakeReadObject(reader, MakeKeyword(sym.name)), nil
+					return MakeReadObject(reader, MakeKeyword(sym.Name())), nil
 				}
 				return nil, MakeReadError(reader, msg)
 			}
 			ns.isUsed = true
 			ns.isGloballyUsed = true
-			return MakeReadObject(reader, MakeKeyword(ns.Name.name+"/"+sym.name)), nil
+			return MakeReadObject(reader, MakeKeyword(ns.Name.Name()+"/"+sym.Name())), nil
 		}
 		return MakeReadObject(reader, MakeKeyword(str)), nil
 	case str == "nil":
@@ -735,7 +735,7 @@ func resolveKey(key Object, nsname string) Object {
 			return DeriveReadObject(key, MakeKeyword(key.Name()))
 		}
 	case Symbol:
-		if key.ns == "" {
+		if key.Namespace() == "" {
 			return DeriveReadObject(key, MakeSymbol(nsname+"/"+key.Name()))
 		}
 		if key.Namespace() == "_" {
@@ -1045,7 +1045,7 @@ func syntaxQuoteColl(tenv *Env, seq Seq, env map[string]Symbol, reader *Reader, 
 	if ctor != criticalSymbols.emptySymbol {
 		res = NewListFrom(ctor, seqList).Cons(criticalSymbols.apply)
 	}
-	return res.WithInfo(info), nil
+	return SetInfo(res, info), nil
 }
 
 func makeSyntaxQuote(tenv *Env, obj Object, env map[string]Symbol, reader *Reader) (Object, error) {
@@ -1055,15 +1055,15 @@ func makeSyntaxQuote(tenv *Env, obj Object, env map[string]Symbol, reader *Reade
 	if IsSpecialSymbol(obj) {
 		return makeQuote(obj, criticalSymbols.quote), nil
 	}
-	info := obj.GetInfo()
+	info := GetInfo(obj)
 	switch s := obj.(type) {
 	case Symbol:
-		str := s.name
-		if r, _ := utf8.DecodeLastRuneInString(str); r == '#' && s.ns == "" {
-			sym, ok := env[s.name]
+		str := s.Name()
+		if r, _ := utf8.DecodeLastRuneInString(str); r == '#' && s.Namespace() == "" {
+			sym, ok := env[s.Name()]
 			if !ok {
 				sym = generateSymbol(str[:len(str)-1] + "__")
-				env[s.name] = sym
+				env[s.Name()] = sym
 			}
 			obj = DeriveReadObject(obj, sym)
 		} else {
@@ -1128,7 +1128,7 @@ func readTagged(env *Env, reader *Reader) (Object, error) {
 
 	switch s := obj.(type) {
 	case Symbol:
-		readersVar, ok := env.CoreNamespace.LookupVar(criticalSymbols.defaultDataReaders.name)
+		readersVar, ok := env.CoreNamespace.LookupVar(criticalSymbols.defaultDataReaders.Name())
 		if !ok {
 			return handleNoReaderError(env, reader, s)
 		}
@@ -1278,10 +1278,10 @@ func readNamespacedMap(env *Env, reader *Reader) (Object, error) {
 			nsname = env.CurrentNamespace().Name.Name()
 		} else {
 			sym, ok := sym.(Symbol)
-			if !ok || sym.ns != "" {
+			if !ok || sym.Namespace() != "" {
 				return nil, MakeReadError3(env, reader, "Namespaced map must specify a valid namespace", sym)
 			}
-			ns := env.CurrentNamespace().aliases[sym.name]
+			ns := env.CurrentNamespace().aliases[sym.Name()]
 			if ns == nil {
 				ns = env.FindNamespace(sym)
 			}
@@ -1297,7 +1297,7 @@ func readNamespacedMap(env *Env, reader *Reader) (Object, error) {
 			return nil, MakeReadError(reader, "Namespaced map must specify a valid namespace")
 		}
 		sym, ok := sym.(Symbol)
-		if !ok || sym.ns != "" {
+		if !ok || sym.Namespace() != "" {
 			return nil, MakeReadError3(env, reader, "Namespaced map must specify a valid namespace", sym)
 		}
 		nsname = sym.Name()

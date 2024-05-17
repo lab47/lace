@@ -158,7 +158,7 @@ func (expr *DefExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 	meta.Add(genv, criticalKeywords.column, MakeInt(expr.startColumn))
 	meta.Add(genv, criticalKeywords.file, MakeString(expr.filename))
 	meta.Add(genv, criticalKeywords.ns, expr.vr.ns)
-	fullName := AssembleSymbol(expr.vr.ns.Name.name, expr.vr.name.name)
+	fullName := AssembleSymbol(expr.vr.ns.Name.Name(), expr.vr.name.Name())
 	meta.Add(genv, criticalKeywords.name, fullName)
 	expr.vr.meta = meta
 	if expr.meta != nil {
@@ -420,7 +420,7 @@ func (expr *IfExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 
 func (expr *FnExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 	res := &Fn{fnExpr: expr, code: expr.compiled}
-	if expr.self.name != "" {
+	if expr.self != nil {
 		env = env.addFrame([]Object{res})
 	}
 	res.env = env

@@ -406,7 +406,7 @@ func isBlank(env *core.Env, s core.Object) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	for _, r := range str {
+	for _, r := range str.S() {
 		if !unicode.IsSpace(r) {
 			return false, nil
 		}

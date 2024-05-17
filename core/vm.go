@@ -1113,7 +1113,7 @@ func compileFn(env *Env, fn *Fn, parent *Compiler) (*fnClosure, error) {
 		}
 
 		locals := len(arity.args)
-		if fn.fnExpr.self.name != "" {
+		if fn.fnExpr.self != nil {
 			locals++
 		}
 
@@ -1126,7 +1126,7 @@ func compileFn(env *Env, fn *Fn, parent *Compiler) (*fnClosure, error) {
 			fnf.set(a)
 		}
 
-		if fn.fnExpr.self.name != "" {
+		if fn.fnExpr.self != nil {
 			selfVar := fnf.set(fn.fnExpr.self)
 
 			c.insn(Instruction{

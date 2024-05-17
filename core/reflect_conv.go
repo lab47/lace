@@ -147,16 +147,16 @@ type conversionSet struct {
 }
 
 func (c *ConvRegistry) wrapFunc(fnVal reflect.Value, cs *conversionSet) reflect.Value {
-	return reflect.ValueOf(ProcFn(func(env *Env, objArgs []Object) (Object, error) {
-		if len(objArgs) != cs.arity {
-			return nil, ErrorArityMinMax(env, len(objArgs), cs.arity, cs.arity)
-		}
+	// Optimization for a normal (ie, fewer than 10) number of args to avoid heap escape of the
+	// input to .Call
+	if cs.ft.NumIn() <= 10 {
+		return reflect.ValueOf(ProcFn(func(env *Env, objArgs []Object) (Object, error) {
+			if len(objArgs) != cs.arity {
+				return nil, ErrorArityMinMax(env, len(objArgs), cs.arity, cs.arity)
+			}
 
-		var ret []reflect.Value
+			var ret []reflect.Value
 
-		// Optimization for a normal (ie, fewer than 10) number of args to avoid heap escape of the
-		// input to .Call
-		if cs.ft.NumIn() <= 10 {
 			var dest [10]reflect.Value
 
 			for destIdx, inIdx := range cs.arityMap {
@@ -176,7 +176,45 @@ func (c *ConvRegistry) wrapFunc(fnVal reflect.Value, cs *conversionSet) reflect.
 			}
 
 			ret = fnVal.Call(dest[:cs.ft.NumIn()])
-		} else {
+
+			if cs.errorPos >= 0 && !ret[cs.errorPos].IsNil() {
+				return nil, WrapError(env, ret[cs.errorPos].Interface().(error))
+			}
+
+			switch cs.values {
+			case 0:
+				return NIL, nil
+			case 1:
+				obj, err := cs.rets[0](env, ret[0])
+				if err != nil {
+					return nil, WrapError(env, err)
+				}
+				return obj, nil
+			default:
+				var objects []Object
+
+				for i, rv := range ret {
+					if i == cs.errorPos {
+						continue
+					}
+
+					v, err := cs.rets[i](env, rv)
+					if err != nil {
+						objects = append(objects, v)
+					}
+				}
+
+				return NewListFrom(objects...), nil
+			}
+		}))
+	} else {
+		return reflect.ValueOf(ProcFn(func(env *Env, objArgs []Object) (Object, error) {
+			if len(objArgs) != cs.arity {
+				return nil, ErrorArityMinMax(env, len(objArgs), cs.arity, cs.arity)
+			}
+
+			var ret []reflect.Value
+
 			dest := make([]reflect.Value, cs.ft.NumIn())
 
 			for destIdx, inIdx := range cs.arityMap {
@@ -196,38 +234,39 @@ func (c *ConvRegistry) wrapFunc(fnVal reflect.Value, cs *conversionSet) reflect.
 			}
 
 			ret = fnVal.Call(dest[:cs.ft.NumIn()])
-		}
 
-		if cs.errorPos >= 0 && !ret[cs.errorPos].IsNil() {
-			return nil, WrapError(env, ret[cs.errorPos].Interface().(error))
-		}
-
-		switch cs.values {
-		case 0:
-			return NIL, nil
-		case 1:
-			obj, err := cs.rets[0](env, ret[0])
-			if err != nil {
-				return nil, WrapError(env, err)
+			if cs.errorPos >= 0 && !ret[cs.errorPos].IsNil() {
+				return nil, WrapError(env, ret[cs.errorPos].Interface().(error))
 			}
-			return obj, nil
-		default:
-			var objects []Object
 
-			for i, rv := range ret {
-				if i == cs.errorPos {
-					continue
-				}
-
-				v, err := cs.rets[i](env, rv)
+			switch cs.values {
+			case 0:
+				return NIL, nil
+			case 1:
+				obj, err := cs.rets[0](env, ret[0])
 				if err != nil {
-					objects = append(objects, v)
+					return nil, WrapError(env, err)
 				}
-			}
+				return obj, nil
+			default:
+				var objects []Object
 
-			return NewListFrom(objects...), nil
-		}
-	}))
+				for i, rv := range ret {
+					if i == cs.errorPos {
+						continue
+					}
+
+					v, err := cs.rets[i](env, rv)
+					if err != nil {
+						objects = append(objects, v)
+					}
+				}
+
+				return NewListFrom(objects...), nil
+			}
+		}))
+
+	}
 }
 
 func (c *ConvRegistry) buildCS(t reflect.Type) *conversionSet {

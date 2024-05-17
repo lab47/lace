@@ -31,7 +31,7 @@ func NewEnv() (*Env, error) {
 		return nil, err
 	}
 
-	res.Namespaces[criticalSymbols.lace_core.name] = coreNs
+	res.Namespaces[criticalSymbols.lace_core.Name()] = coreNs
 
 	res.CoreNamespace = coreNs
 	res.CoreNamespace.core = true

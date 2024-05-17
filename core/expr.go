@@ -256,7 +256,7 @@ func (expr *FnArityExpr) Dump(pos bool) Map {
 
 func (expr *FnExpr) Dump(pos bool) Map {
 	res := exprArrayMap(expr, "fn", pos)
-	if expr.self.name != "" {
+	if expr.self.Name() != "" {
 		res.AddEqu(MakeKeyword("self"), expr.self)
 	}
 	if expr.variadic != nil {
