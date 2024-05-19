@@ -2,8 +2,11 @@
 
 //go:build !gen_data
 // +build !gen_data
+
+//
 package core
 
+import "encoding/base64"
 import _ "embed"
 
 //go:embed a_better_cond_data.data
@@ -11,12 +14,13 @@ var better_condData []byte
 
 func better_condSetup(env *Env) error {
 	ns := env.EnsureNamespace(MakeSymbol("lace.better-cond"))
-	return processInEnvInNS(env, ns, better_condData)
+	raw, err := base64.StdEncoding.AppendDecode(nil, better_condData)
+	if err != nil {
+		return err
+	}
+	return processInEnvInNS(env, ns, raw)
 }
 
 func init() {
 	builtinNSSetup["lace.better-cond"] = better_condSetup
 }
-
-
-

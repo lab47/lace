@@ -2,8 +2,11 @@
 
 //go:build !gen_data
 // +build !gen_data
+
+//
 package core
 
+import "encoding/base64"
 import _ "embed"
 
 //go:embed a_reflect_data.data
@@ -11,12 +14,13 @@ var reflectData []byte
 
 func reflectSetup(env *Env) error {
 	ns := env.EnsureNamespace(MakeSymbol("lace.reflect"))
-	return processInEnvInNS(env, ns, reflectData)
+	raw, err := base64.StdEncoding.AppendDecode(nil, reflectData)
+	if err != nil {
+		return err
+	}
+	return processInEnvInNS(env, ns, raw)
 }
 
 func init() {
 	builtinNSSetup["lace.reflect"] = reflectSetup
 }
-
-
-

@@ -2,8 +2,11 @@
 
 //go:build !gen_data
 // +build !gen_data
+
+//
 package core
 
+import "encoding/base64"
 import _ "embed"
 
 //go:embed a_time_data.data
@@ -11,12 +14,13 @@ var timeData []byte
 
 func timeSetup(env *Env) error {
 	ns := env.EnsureNamespace(MakeSymbol("lace.time"))
-	return processInEnvInNS(env, ns, timeData)
+	raw, err := base64.StdEncoding.AppendDecode(nil, timeData)
+	if err != nil {
+		return err
+	}
+	return processInEnvInNS(env, ns, raw)
 }
 
 func init() {
 	builtinNSSetup["lace.time"] = timeSetup
 }
-
-
-

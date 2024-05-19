@@ -2,8 +2,11 @@
 
 //go:build !gen_data
 // +build !gen_data
+
+//
 package core
 
+import "encoding/base64"
 import _ "embed"
 
 //go:embed a_set_data.data
@@ -11,12 +14,13 @@ var setData []byte
 
 func setSetup(env *Env) error {
 	ns := env.EnsureNamespace(MakeSymbol("lace.set"))
-	return processInEnvInNS(env, ns, setData)
+	raw, err := base64.StdEncoding.AppendDecode(nil, setData)
+	if err != nil {
+		return err
+	}
+	return processInEnvInNS(env, ns, raw)
 }
 
 func init() {
 	builtinNSSetup["lace.set"] = setSetup
 }
-
-
-

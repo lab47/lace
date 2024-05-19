@@ -2,8 +2,11 @@
 
 //go:build !gen_data
 // +build !gen_data
+
+//
 package core
 
+import "encoding/base64"
 import _ "embed"
 
 //go:embed a_test_data.data
@@ -11,12 +14,13 @@ var testData []byte
 
 func testSetup(env *Env) error {
 	ns := env.EnsureNamespace(MakeSymbol("lace.test"))
-	return processInEnvInNS(env, ns, testData)
+	raw, err := base64.StdEncoding.AppendDecode(nil, testData)
+	if err != nil {
+		return err
+	}
+	return processInEnvInNS(env, ns, raw)
 }
 
 func init() {
 	builtinNSSetup["lace.test"] = testSetup
 }
-
-
-

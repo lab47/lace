@@ -2,8 +2,11 @@
 
 //go:build !gen_data
 // +build !gen_data
+
+//
 package core
 
+import "encoding/base64"
 import _ "embed"
 
 //go:embed a_tools_cli_data.data
@@ -11,12 +14,13 @@ var tools_cliData []byte
 
 func tools_cliSetup(env *Env) error {
 	ns := env.EnsureNamespace(MakeSymbol("lace.tools.cli"))
-	return processInEnvInNS(env, ns, tools_cliData)
+	raw, err := base64.StdEncoding.AppendDecode(nil, tools_cliData)
+	if err != nil {
+		return err
+	}
+	return processInEnvInNS(env, ns, raw)
 }
 
 func init() {
 	builtinNSSetup["lace.tools.cli"] = tools_cliSetup
 }
-
-
-

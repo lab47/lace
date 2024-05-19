@@ -2,8 +2,11 @@
 
 //go:build !gen_data
 // +build !gen_data
+
+//
 package core
 
+import "encoding/base64"
 import _ "embed"
 
 //go:embed a_repl_data.data
@@ -11,12 +14,13 @@ var replData []byte
 
 func replSetup(env *Env) error {
 	ns := env.EnsureNamespace(MakeSymbol("lace.repl"))
-	return processInEnvInNS(env, ns, replData)
+	raw, err := base64.StdEncoding.AppendDecode(nil, replData)
+	if err != nil {
+		return err
+	}
+	return processInEnvInNS(env, ns, raw)
 }
 
 func init() {
 	builtinNSSetup["lace.repl"] = replSetup
 }
-
-
-
