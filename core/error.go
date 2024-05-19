@@ -466,8 +466,8 @@ func extractMod(path string) string {
 		rest := modOn[at:]
 
 		slash := strings.IndexByte(rest, '/')
-		if slash == -1 {
-			return pkg + rest[slash:]
+		if slash != -1 {
+			return "<" + pkg + ">" + rest[slash:]
 		}
 	}
 
