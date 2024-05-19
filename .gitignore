@@ -1,8 +1,6 @@
 lace
 .vscode
 .idea
-core/a_*.go
-core/a_*.data
 *.exe
 *~
 *.zip
