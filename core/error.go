@@ -7,6 +7,7 @@ import (
 	"hash/fnv"
 	"io"
 	"os"
+	"path/filepath"
 	"reflect"
 	"runtime"
 	"sort"
@@ -450,6 +451,37 @@ func (vs *VMStacktrace) renderFrame(env *Env, ele Object) outputFrame {
 
 const bcName = "github.com/lab47/lace/core.(*Engine).RunBC"
 
+func isModPath(path string) bool {
+	return strings.Contains(path, "pkg/mod")
+}
+
+func extractMod(path string) string {
+	idx := strings.Index(path, "pkg/mod/")
+	modOn := path[idx+len("pkg/mod/"):]
+
+	at := strings.IndexByte(modOn, '@')
+
+	if at != -1 {
+		pkg := modOn[:at]
+		rest := modOn[at:]
+
+		slash := strings.IndexByte(rest, '/')
+		if slash == -1 {
+			return pkg + rest[slash:]
+		}
+	}
+
+	return path
+}
+
+var laceDir string
+
+func init() {
+	_, fileName, _, _ := runtime.Caller(0)
+
+	laceDir = filepath.Dir(filepath.Dir(fileName))
+}
+
 func splitName(name string) (string, string) {
 	i := len(name) - 1
 	for ; i > 0; i-- {
@@ -491,6 +523,16 @@ var ignoreFuncs = map[string]struct{}{
 	"runtime.main":   {},
 }
 
+func cleanupPath(path string) string {
+	clean := extractMod(path)
+
+	if strings.HasPrefix(clean, laceDir) {
+		clean = "<lace>" + clean[len(laceDir):]
+	}
+
+	return clean
+}
+
 func (vs *VMStacktrace) PrintTo(env *Env, w io.Writer) {
 	frames := runtime.CallersFrames(vs.pcs)
 
@@ -517,7 +559,7 @@ func (vs *VMStacktrace) PrintTo(env *Env, w io.Writer) {
 				if _, skip := ignoreFuncs[fr.Func.Name()]; !skip {
 					ofr = outputFrame{
 						name: trimName(fr.Func),
-						loc:  fmt.Sprintf("%s:%d", fr.File, fr.Line),
+						loc:  fmt.Sprintf("%s:%d", cleanupPath(fr.File), fr.Line),
 					}
 					oframes = append(oframes, ofr)
 
