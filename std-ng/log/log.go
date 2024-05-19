@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/lab47/lablog/logger"
 	"github.com/lab47/lace/core"
-	"github.com/lab47/lsvd/logger"
 )
 
 var levelMap map[string]slog.Level

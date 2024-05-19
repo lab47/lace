@@ -1,6 +1,3 @@
-//go:build !fast_init
-// +build !fast_init
-
 package core
 
 var (

@@ -2367,7 +2367,6 @@ func parseSymbol(obj Object, ctx *ParseContext) (Expr, error) {
 	}
 
 	if !LINTER_MODE {
-		panic(sym.String())
 		return nil, &ParseError{obj: obj, msg: "Unable to resolve symbol 2: " + sym.String()}
 	}
 	if DIALECT == CLJS && sym.Namespace() == "" {

@@ -4,8 +4,8 @@ import (
 	"context"
 	"os"
 
+	"github.com/lab47/lablog/logger"
 	"github.com/lab47/lace/pkg/build"
-	"github.com/lab47/lsvd/logger"
 )
 
 func main() {
@@ -25,7 +25,7 @@ func main() {
 
 	ctx := context.Background()
 
-	err = b.Run(ctx)
+	_, err = b.Run(ctx)
 	if err != nil {
 		log.Error("error running build", "error", err)
 		os.Exit(1)

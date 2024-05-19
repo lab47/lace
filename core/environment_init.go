@@ -123,7 +123,7 @@ func NewEnv() (*Env, error) {
 		return nil, err
 	}
 
-	reflectBuilder, err := SetupPkgReflect(res)
+	reflectedNS, err := SetupPkgReflect(res)
 	if err != nil {
 		return nil, err
 	}
@@ -140,9 +140,8 @@ func NewEnv() (*Env, error) {
 		}
 	}
 
-	// this happens when doing gen_data currently.
-	if res.CoreNamespace.Resolve("defmacro") != nil {
-		reflectBuilder.Run(reflectCode)
+	for _, ns := range reflectedNS {
+		res.SetupNamespace(ns)
 	}
 
 	userNs.ReferAll(res.CoreNamespace, true)

@@ -100,7 +100,7 @@ func MakeBigIntFrom(bi *big.Int) *BigInt {
 }
 
 func (bi *BigInt) ToString(env *Env, escape bool) (string, error) {
-	return bi.b.String() + "N", nil
+	return bi.b.String(), nil
 }
 
 func (bi *BigInt) Equals(env *Env, other interface{}) bool {

@@ -24,3 +24,18 @@ func CoerceString(env *Env, obj Object, a *string) error {
 
 	return nil
 }
+
+func TryCoerceString(obj Object, a *string) bool {
+	switch sv := obj.(type) {
+	case String:
+		*a = sv.S()
+	case Keyword:
+		*a = sv.RawString()
+	case Symbol:
+		*a = sv.String()
+	default:
+		return false
+	}
+
+	return true
+}

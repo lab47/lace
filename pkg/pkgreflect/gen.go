@@ -464,11 +464,13 @@ func fnprint(w io.Writer, pkgName string, files []*ast.File, kind ast.ObjKind, m
 				}
 
 				var rets int
-				for _, f := range fn.Type.Results.List {
-					if f.Names != nil {
-						rets += len(f.Names)
-					} else {
-						rets++
+				if fn.Type.Results != nil {
+					for _, f := range fn.Type.Results.List {
+						if f.Names != nil {
+							rets += len(f.Names)
+						} else {
+							rets++
+						}
 					}
 				}
 

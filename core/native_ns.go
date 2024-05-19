@@ -48,7 +48,10 @@ type NSBuilder struct {
 }
 
 func NewNSBuilder(env *Env, name string) *NSBuilder {
-	ns := env.EnsureNamespace(MakeSymbol(name))
+	ns, err := env.ProtoNamespace(MakeSymbol(name))
+	if err != nil {
+		panic(err)
+	}
 
 	return &NSBuilder{
 		env: env,

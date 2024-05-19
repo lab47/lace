@@ -50,7 +50,7 @@ func (r *ReflectType) WithInfo(i *ObjectInfo) Object {
 
 func (r *ReflectType) Call(env *Env, args []Object) (Object, error) {
 	rv := reflect.New(r.typ)
-	return &ReflectValue{val: rv}, nil
+	return WrapReflectValue(rv), nil
 }
 
 type ReflectValue struct {
@@ -60,10 +60,15 @@ type ReflectValue struct {
 	val reflect.Value
 }
 
-func MakeReflectValue(v any) *ReflectValue {
+func WrapReflectValue(val reflect.Value) Object {
 	return &ReflectValue{
-		val: reflect.ValueOf(v),
+		val: val,
 	}
+}
+
+func MakeReflectValue(v any) Object {
+	val := reflect.ValueOf(v)
+	return WrapReflectValue(val)
 }
 
 func CastReflect[T any](env *Env, obj Object, v *T) error {
@@ -166,7 +171,14 @@ func structGet(env *Env, r *ReflectValue, name string) (Object, error) {
 
 	rt := field.Type()
 
-	return convReg.convRet(rt)(env, field)
+	obj, err := convReg.convRet(rt)(field)
+	if err != nil {
+		if ce, ok := err.(OutConvError); ok {
+			return nil, env.NewError(string(ce))
+		}
+	}
+
+	return obj, nil
 }
 
 func structList(env *Env, r *ReflectValue) (Object, error) {
@@ -275,8 +287,11 @@ func structToMap(env *Env, r *ReflectValue) (Object, error) {
 		field := val.Field(i)
 		rt := field.Type()
 
-		cv, err := convReg.convRet(rt)(env, field)
+		cv, err := convReg.convRet(rt)(field)
 		if err != nil {
+			if ce, ok := err.(OutConvError); ok {
+				return nil, env.NewError(string(ce))
+			}
 			return nil, err
 		}
 
@@ -377,7 +392,7 @@ func castObjectToRef(env *Env, typ reflect.Type, obj Object) (Object, error) {
 		v := reflect.New(typ).Elem()
 		v.SetInt(int64(num.Int().I()))
 
-		return &ReflectValue{val: v}, nil
+		return WrapReflectValue(v), nil
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		num, err := AssertNumber(env, obj, "")
 		if err != nil {
@@ -387,7 +402,7 @@ func castObjectToRef(env *Env, typ reflect.Type, obj Object) (Object, error) {
 		v := reflect.New(typ).Elem()
 		v.SetInt(int64(num.Int().I()))
 
-		return &ReflectValue{val: v}, nil
+		return WrapReflectValue(v), nil
 	case reflect.Slice:
 		if typ.Elem() == reflect.TypeFor[byte]() {
 			str, err := AssertString(env, obj, "")
@@ -398,7 +413,7 @@ func castObjectToRef(env *Env, typ reflect.Type, obj Object) (Object, error) {
 			v := reflect.MakeSlice(typ, 0, len(str.S()))
 			v = reflect.AppendSlice(v, reflect.ValueOf([]byte(str.S())))
 
-			return &ReflectValue{val: v}, nil
+			return WrapReflectValue(v), nil
 		}
 	case reflect.String:
 		if rv, ok := obj.(*ReflectValue); ok {
@@ -562,10 +577,9 @@ var nsSubs = strings.NewReplacer(
 	"/", ".",
 )
 
-//go:embed src/lace/reflect.clj
-var reflectCode []byte
+func SetupPkgReflect(env *Env) ([]*Namespace, error) {
+	var ret []*Namespace
 
-func SetupPkgReflect(env *Env) (*NSBuilder, error) {
 	typedMethods := map[reflect.Type]reifiedType{}
 
 	var pkgs []Object
@@ -661,6 +675,8 @@ func SetupPkgReflect(env *Env) (*NSBuilder, error) {
 				Value: val.Value,
 			})
 		}
+
+		ret = append(ret, b.ns)
 	}
 
 	b := NewNSBuilder(env, "lace.reflect")
@@ -945,5 +961,7 @@ func SetupPkgReflect(env *Env) (*NSBuilder, error) {
 		Type:  reflect.TypeFor[[]byte](),
 	})
 
-	return b, nil
+	ret = append(ret, b.ns)
+
+	return ret, nil
 }

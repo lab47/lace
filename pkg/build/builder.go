@@ -1,6 +1,7 @@
 package build
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"go/format"
@@ -9,8 +10,11 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/fxamacker/cbor/v2"
+	"github.com/lab47/lablog/logger"
 	"github.com/lab47/lace/pkg/pkgreflect"
-	"github.com/lab47/lsvd/logger"
+	"github.com/mr-tron/base58"
+	"golang.org/x/crypto/blake2b"
 	"gopkg.in/yaml.v3"
 )
 
@@ -54,16 +58,42 @@ var fileCleanup = strings.NewReplacer(
 	"\\", "____",
 )
 
-func (b *Builder) Run(ctx context.Context) error {
-	b.log.Info("beginning build", "name", b.cfg.Name)
-
-	dir := filepath.Join(b.dir, "_build_"+b.cfg.Name)
-	err := os.Mkdir(dir, 0755)
+func (b *Builder) buildId() string {
+	h, _ := blake2b.New256(nil)
+	err := cbor.NewEncoder(h).Encode(b.cfg)
 	if err != nil {
-		return err
+		panic(err)
 	}
 
-	// defer os.RemoveAll(dir)
+	return base58.Encode(h.Sum(nil))
+}
+
+func (b *Builder) Run(ctx context.Context) (string, error) {
+	id := b.buildId()
+
+	exePath := filepath.Join(b.dir, "artifacts", b.cfg.Name)
+
+	err := os.MkdirAll(filepath.Dir(exePath), 0755)
+	if err != nil {
+		return "", err
+	}
+
+	lastIdPath := exePath + ".build-id.txt"
+	if data, err := os.ReadFile(lastIdPath); err == nil {
+		if strings.TrimSpace(string(data)) == id {
+			return exePath, nil
+		}
+	}
+
+	b.log.Info("beginning build", "name", b.cfg.Name, "id", id)
+
+	dir := filepath.Join(b.dir, "_build_"+b.cfg.Name)
+	err = os.MkdirAll(dir, 0755)
+	if err != nil {
+		return "", err
+	}
+
+	defer os.RemoveAll(dir)
 
 	for _, imp := range b.cfg.GoImports {
 		name := imp.As
@@ -76,27 +106,33 @@ func (b *Builder) Run(ctx context.Context) error {
 		b.log.Info("generating binding", "path", imp.Path, "name", name)
 		err = pkgreflect.Generate(imp.Path, name, b.dir, dest, "main", &pkgreflect.Match{}, pkgreflect.GenOptions{})
 		if err != nil {
-			return err
+			return "", err
 		}
 	}
 
 	b.log.Info("writing main.go")
-	err = b.writeMain(dir)
+	err = b.writeMain(dir, id)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	b.log.Info("compiling")
-	cmd := exec.CommandContext(ctx, "go", "build", "-o", filepath.Join(b.dir, b.cfg.Name), ".")
+	cmd := exec.CommandContext(ctx, "go", "build", "-o", exePath, ".")
 	cmd.Dir = dir
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	return cmd.Run()
+	err = cmd.Run()
+	if err != nil {
+		return "", err
+	}
 
+	os.WriteFile(exePath+".build-id.txt", []byte(id), 0644)
+
+	return exePath, nil
 }
 
-func (b *Builder) writeMain(dir string) error {
+func (b *Builder) writeMain(dir, id string) error {
 	var data []byte
 
 	if b.cfg.Main == "" {
@@ -118,11 +154,12 @@ package main
 import "github.com/lab47/lace/cli"
 
 var Program = "%s"
+var BuildId = "%s"
 
 func main() {
     cli.MainIn(%q)
 }
-    `, b.cfg.Name, b.cfg.Main))
+    `, b.cfg.Name, id, b.cfg.Main))
 
 	}
 
@@ -131,5 +168,12 @@ func main() {
 		return err
 	}
 
-	return os.WriteFile(filepath.Join(dir, "main.go"), data, 0644)
+	path := filepath.Join(dir, "main.go")
+
+	cur, err := os.ReadFile(path)
+	if err != nil || !bytes.Equal(data, cur) {
+		return os.WriteFile(filepath.Join(dir, "main.go"), data, 0644)
+	}
+
+	return nil
 }

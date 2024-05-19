@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/pkg/errors"
 )
 
 var (
@@ -207,6 +209,55 @@ func (env *Env) SetCurrentNamespace(ns *Namespace) {
 	env.ns.SetStatic(ns)
 }
 
+func (env *Env) ProtoNamespace(sym Symbol) (*Namespace, error) {
+	if sym.Namespace() != "" {
+		return nil, env.NewError("Namespace's name cannot be qualified: " + sym.String())
+	}
+
+	env.mu.Lock()
+	ns := env.Namespaces[sym.Name()]
+	env.mu.Unlock()
+
+	var err error
+
+	if ns != nil {
+		return ns, nil
+	}
+
+	ns, err = NewNamespace(env, sym)
+	if err != nil {
+		return nil, err
+	}
+
+	env.mu.Lock()
+	env.Namespaces[sym.Name()] = ns
+	env.mu.Unlock()
+
+	return ns, nil
+}
+
+func (env *Env) SetupNamespace(ns *Namespace) error {
+	sym := ns.Name
+
+	if _, ok := ns.LookupVar("defn"); !ok {
+		ns.ReferAll(env.CoreNamespace, true)
+	}
+
+	if setup, ok := builtinNSSetup[sym.Name()]; ok {
+		err := setup(env)
+		if err != nil {
+			return errors.Wrapf(err, "loading builtin ns: %s", sym.Name())
+		}
+	} else {
+		_, err := PopulateNativeNamespaceToEnv(env, sym.Name())
+		if err != nil {
+			return errors.Wrapf(err, "loading builtin ns: %s", sym.Name())
+		}
+	}
+
+	return nil
+}
+
 func (env *Env) EnsureNamespace(sym Symbol) *Namespace {
 	ns, err := env.InitNamespace(sym)
 	if err != nil {
@@ -237,16 +288,9 @@ func (env *Env) InitNamespace(sym Symbol) (*Namespace, error) {
 		env.Namespaces[sym.Name()] = ns
 		env.mu.Unlock()
 
-		if setup, ok := builtinNSSetup[sym.Name()]; ok {
-			err := setup(env)
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			_, err = PopulateNativeNamespaceToEnv(env, sym.Name())
-			if err != nil {
-				return nil, err
-			}
+		err := env.SetupNamespace(ns)
+		if err != nil {
+			return nil, err
 		}
 	}
 

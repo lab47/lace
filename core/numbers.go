@@ -1,6 +1,7 @@
 package core
 
 import (
+	"math"
 	"math/big"
 )
 
@@ -285,11 +286,18 @@ func (ops DoubleOps) Add(x, y Number) (Number, error) {
 	return Double{D: x.Double().D + y.Double().D}, nil
 }
 
+func (ops BigIntOps) downcast(b big.Int) Number {
+	if b.IsInt64() && b.Int64() <= math.MaxInt {
+		return Int(b.Int64())
+	}
+	res := BigInt{b: b}
+	return &res
+}
+
 func (ops BigIntOps) Add(x, y Number) (Number, error) {
 	b := big.Int{}
 	b.Add(x.BigInt(), y.BigInt())
-	res := BigInt{b: b}
-	return &res, nil
+	return ops.downcast(b), nil
 }
 
 func (ops BigFloatOps) Add(x, y Number) (Number, error) {
@@ -318,8 +326,7 @@ func (ops DoubleOps) Subtract(x, y Number) (Number, error) {
 func (ops BigIntOps) Subtract(x, y Number) (Number, error) {
 	b := big.Int{}
 	b.Sub(x.BigInt(), y.BigInt())
-	res := BigInt{b: b}
-	return &res, nil
+	return ops.downcast(b), nil
 }
 
 func (ops BigFloatOps) Subtract(x, y Number) (Number, error) {
@@ -348,8 +355,7 @@ func (ops DoubleOps) Multiply(x, y Number) (Number, error) {
 func (ops BigIntOps) Multiply(x, y Number) (Number, error) {
 	b := big.Int{}
 	b.Mul(x.BigInt(), y.BigInt())
-	res := BigInt{b: b}
-	return &res, nil
+	return ops.downcast(b), nil
 }
 
 func (ops BigFloatOps) Multiply(x, y Number) (Number, error) {
@@ -388,8 +394,7 @@ func (ops BigIntOps) Divide(x, y Number) (Number, error) {
 	b := big.Rat{}
 	b.Quo(x.Ratio(), y.Ratio())
 	if b.IsInt() {
-		res := BigInt{b: *b.Num()}
-		return &res, nil
+		return ops.downcast(*b.Num()), nil
 	}
 	res := Ratio{r: b}
 	return &res, nil
@@ -428,7 +433,7 @@ func (ops BigIntOps) Quotient(x, y Number) (Number, error) {
 	panicOnZero(ops, y)
 	z := big.Int{}
 	z.Quo(x.BigInt(), y.BigInt())
-	return &BigInt{b: z}, nil
+	return ops.downcast(z), nil
 }
 
 func (ops BigFloatOps) Quotient(x, y Number) (Number, error) {
@@ -464,7 +469,7 @@ func (ops BigIntOps) Rem(x, y Number) (Number, error) {
 	panicOnZero(ops, y)
 	z := big.Int{}
 	z.Rem(x.BigInt(), y.BigInt())
-	return &BigInt{b: z}, nil
+	return ops.downcast(z), nil
 }
 
 func (ops BigFloatOps) Rem(x, y Number) (Number, error) {

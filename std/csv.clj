@@ -34,8 +34,8 @@
   This is done even if the field delimiter, comma, is white space.
   Default value is false."
   {:added "1.0"
-  :go {1 "csvSeqOpts(_env, rdr, EmptyArrayMap())"
-       2 "csvSeqOpts(_env, rdr, opts)"}}
+   :go {1 "csvSeqOpts(_env, rdr, EmptyArrayMap())"
+        2 "csvSeqOpts(_env, rdr, opts)"}}
   ([^Object rdr])
   ([^Object rdr ^Map opts]))
 
@@ -48,8 +48,8 @@
 
   :use-crlf - if true, uses \\r\\n as the line terminator. Default value is false."
   {:added "1.0"
-  :go {1 "writeString(_env, data, EmptyArrayMap())"
-       2 "writeString(_env, data, opts)"}}
+   :go {1 "writeString(_env, data, EmptyArrayMap())"
+        2 "writeString(_env, data, opts)"}}
   ([^Seqable data])
   ([^Seqable data ^Map opts]))
 
@@ -59,8 +59,8 @@
   data must be Seqable, each element of which must be Seqable as well.
   opts is as in lace.csv/write-string."
   {:added "1.0"
-  :go {2 "write(_env, f, data, EmptyArrayMap())"
-       3 "write(_env, f, data, opts)"}}
+   :go {2 "write(_env, f, data, EmptyArrayMap())"
+        3 "write(_env, f, data, opts)"}}
   ([^IOWriter f ^Seqable data])
   ([^IOWriter f ^Seqable data ^Map opts]))
 

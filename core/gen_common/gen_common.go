@@ -25,6 +25,10 @@ var CoreSourceFiles []FileInfo = []FileInfo{
 		Filename: "core.clj",
 	},
 	{
+		Name:     "<lace.reflect>",
+		Filename: "reflect.clj",
+	},
+	{
 		Name:     "<lace.repl>",
 		Filename: "repl.clj",
 	},

@@ -2,16 +2,20 @@ package cli
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"runtime/pprof"
 	"strconv"
 	"strings"
 
+	"github.com/lab47/lablog/logger"
 	"github.com/lab47/lace/core"
+	"github.com/lab47/lace/pkg/build"
 	_ "github.com/lab47/lace/std-ng/all"
 	_ "github.com/lab47/lace/std/csv"
 	_ "github.com/lab47/lace/std/filepath"
@@ -23,6 +27,7 @@ import (
 	_ "github.com/lab47/lace/std/url"
 	_ "github.com/lab47/lace/std/uuid"
 	"github.com/spf13/pflag"
+	"golang.org/x/sys/unix"
 )
 
 type (
@@ -380,8 +385,136 @@ func Main() {
 		os.Exit(1)
 	}
 
-	env.InitEnv(core.Stdin, core.Stdout, core.Stderr, os.Args[1:])
+	//_ = os.Args[0]
+	args := os.Args[1:]
+	switch {
+	case len(args) >= 1:
+		if _, err := os.Stat(args[0]); err == nil {
+			args = append([]string{"run"}, args...)
+		}
+	case len(args) == 0:
+		args = []string{"repl"}
+	}
 
+	cmd := args[0]
+	args = args[1:]
+
+	switch cmd {
+	case "run":
+		if len(args) >= 1 {
+			if dir := isProject(args[0]); dir != "" {
+				os.Chdir(dir)
+				runInProject(dir, env, args[1:])
+				return
+			}
+		}
+		if dir := findProject(); dir == "" {
+			run(env, args)
+			return
+		} else {
+			runInProject(dir, env, args)
+			return
+		}
+	case "repl":
+		env.REPL(os.Stdin, os.Stdout)
+	default:
+		fmt.Printf("Unknown command: %s\n", cmd)
+		os.Exit(1)
+	}
+}
+
+func finish(memProfileName string) {
+	if runningProfile != nil {
+		runningProfile.Stop()
+		runningProfile = nil
+	}
+
+	if memProfileName != "" {
+		f, err := os.Create(memProfileName)
+		if err != nil {
+			fmt.Fprintf(core.Stderr, "Error: Could not create memory profile `%s': %v\n",
+				memProfileName, err)
+		}
+		runtime.GC() // get up-to-date statistics
+		if err := pprof.WriteHeapProfile(f); err != nil {
+			fmt.Fprintf(core.Stderr, "Error: Could not write memory profile `%s': %v\n",
+				memProfileName, err)
+		}
+		f.Close()
+		fmt.Fprintf(core.Stderr, "Memory profile rate=%d written to `%s'.\n",
+			runtime.MemProfileRate, memProfileName)
+		memProfileName = ""
+	}
+}
+
+func isProject(path string) string {
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		return ""
+	}
+
+	_, err = os.Stat(filepath.Join(abs, "lace.yml"))
+	if err == nil {
+		return abs
+	}
+
+	return ""
+}
+
+func findProject() string {
+	dir, err := os.Getwd()
+	if err != nil {
+		return ""
+	}
+
+	for dir != "" {
+		if _, err := os.Stat(filepath.Join(dir, "lace.yml")); err == nil {
+			return dir
+		}
+
+		dir, _ = filepath.Split(dir)
+	}
+
+	return ""
+}
+
+func runInProject(dir string, env *core.Env, args []string) {
+	log := logger.New(logger.Info)
+
+	b, err := build.LoadBuilder(log, dir)
+	if err != nil {
+		log.Error("error loading project builder", "error", err)
+		os.Exit(1)
+	}
+
+	ctx := context.Background()
+	exe, err := b.Run(ctx)
+	if err != nil {
+		log.Error("error running build", "error", err)
+		os.Exit(1)
+	}
+
+	argv := append([]string{exe}, args...)
+
+	unix.Exec(exe, argv, os.Environ())
+
+	log.Error("error executing exe")
+
+	cmd := exec.Command(exe, args...)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	err = cmd.Run()
+	if err != nil {
+		log.Error("error running compiled app", "error", err)
+		os.Exit(0)
+	}
+
+	os.Exit(1)
+}
+
+func run(env *core.Env, args []string) {
 	fs := pflag.NewFlagSet("lace", pflag.ExitOnError)
 	version := fs.BoolP("version", "v", false, "report the version number")
 	cpuProfile := fs.String("cpuprofile", "", "Write CPU profile info to the specified path")
@@ -389,17 +522,19 @@ func Main() {
 	memProfile := fs.String("memprofile", "", "Write Memory profile info to the specified path")
 	debugBytecode := fs.Bool("debug-bytecode", false, "Display bytecode for functions are it is generated")
 
-	if err := fs.Parse(os.Args); err != nil {
+	if err := fs.Parse(args); err != nil {
 		fmt.Printf("error parsing arguments: %s\n", err)
 		os.Exit(1)
 	}
 
 	var filename string
 
-	if fs.NArg() >= 2 {
-		filename = fs.Arg(1)
-		env.SetEnvArgs(fs.Args()[2:])
+	if fs.NArg() >= 1 {
+		filename = fs.Arg(0)
+		args = fs.Args()[1:]
 	}
+
+	env.InitEnv(core.Stdin, core.Stdout, core.Stderr, args)
 
 	//env.SetClassPath(classPath)
 
@@ -462,29 +597,4 @@ func Main() {
 		}
 	}
 
-	env.REPL(os.Stdin, os.Stdout)
-}
-
-func finish(memProfileName string) {
-	if runningProfile != nil {
-		runningProfile.Stop()
-		runningProfile = nil
-	}
-
-	if memProfileName != "" {
-		f, err := os.Create(memProfileName)
-		if err != nil {
-			fmt.Fprintf(core.Stderr, "Error: Could not create memory profile `%s': %v\n",
-				memProfileName, err)
-		}
-		runtime.GC() // get up-to-date statistics
-		if err := pprof.WriteHeapProfile(f); err != nil {
-			fmt.Fprintf(core.Stderr, "Error: Could not write memory profile `%s': %v\n",
-				memProfileName, err)
-		}
-		f.Close()
-		fmt.Fprintf(core.Stderr, "Memory profile rate=%d written to `%s'.\n",
-			runtime.MemProfileRate, memProfileName)
-		memProfileName = ""
-	}
 }
