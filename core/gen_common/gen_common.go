@@ -68,24 +68,4 @@ var CoreSourceFiles []FileInfo = []FileInfo{
 		Name:     "<lace.time>",
 		Filename: "time.clj",
 	},
-	{
-		Name:     "<lace.core>",
-		Filename: "linter_all.clj",
-	},
-	{
-		Name:     "<lace.core>",
-		Filename: "linter_lace.clj",
-	},
-	{
-		Name:     "<lace.core>",
-		Filename: "linter_cljx.clj",
-	},
-	{
-		Name:     "<lace.core>",
-		Filename: "linter_clj.clj",
-	},
-	{
-		Name:     "<lace.core>",
-		Filename: "linter_cljs.clj",
-	},
 }

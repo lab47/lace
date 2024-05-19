@@ -172,65 +172,6 @@ func processReplCommand(env *core.Env, reader *core.Reader, parseContext *core.P
 	return false, nil
 }
 
-func makeDialectKeyword(dialect core.Dialect) core.Keyword {
-	switch dialect {
-	case core.EDN:
-		return core.MakeKeyword("clj")
-	case core.CLJ:
-		return core.MakeKeyword("clj")
-	case core.CLJS:
-		return core.MakeKeyword("cljs")
-	default:
-		return core.MakeKeyword("lace")
-	}
-}
-
-func configureLinterMode(env *core.Env, dialect core.Dialect, filename string, workingDir string) error {
-	if err := core.ProcessLinterFiles(env, dialect, filename, workingDir); err != nil {
-		return err
-	}
-
-	core.LINTER_MODE = true
-	core.DIALECT = dialect
-	lm, _ := env.Resolve(core.MakeSymbol("lace.core/*linter-mode*"))
-	lm.SetStatic(core.Boolean(true))
-	mf, err := env.Features.Disjoin(env, core.MakeKeyword("lace"))
-	if err != nil {
-		return err
-	}
-	f, err := mf.Conj(env, makeDialectKeyword(dialect))
-	if err != nil {
-		return err
-	}
-	env.Features = f.(core.Set)
-	return core.ProcessLinterData(env, dialect)
-}
-
-func detectDialect(filename string) core.Dialect {
-	switch {
-	case strings.HasSuffix(filename, ".edn"):
-		return core.EDN
-	case strings.HasSuffix(filename, ".cljs"):
-		return core.CLJS
-	case strings.HasSuffix(filename, ".clj"):
-		return core.LACE
-	}
-	return core.CLJ
-}
-
-func matchesDialect(path string, dialect core.Dialect) bool {
-	ext := ".clj"
-	switch dialect {
-	case core.CLJS:
-		ext = ".cljs"
-	case core.LACE:
-		ext = ".clj"
-	case core.EDN:
-		ext = ".edn"
-	}
-	return strings.HasSuffix(path, ext)
-}
-
 func isIgnored(path string) bool {
 	for _, r := range core.WARNINGS.IgnoredFileRegexes {
 		m := r.FindStringSubmatchIndex(path)
@@ -241,20 +182,6 @@ func isIgnored(path string) bool {
 		}
 	}
 	return false
-}
-
-func dialectFromArg(arg string) core.Dialect {
-	switch strings.ToLower(arg) {
-	case "clj":
-		return core.CLJ
-	case "cljs":
-		return core.CLJS
-	case "lace":
-		return core.LACE
-	case "edn":
-		return core.EDN
-	}
-	return core.UNKNOWN
 }
 
 func isNumber(s string) bool {

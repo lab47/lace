@@ -8,7 +8,7 @@ import (
 
 func init() {
 	pkgreflect.AddPackage("lace.lang", &pkgreflect.Package{
-		Doc:   "+build !gen_data",
+		Doc:   "",
 		Types: map[string]pkgreflect.Type{},
 
 		Functions: map[string]pkgreflect.FuncValue{
