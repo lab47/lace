@@ -18,7 +18,7 @@ type ReflectType struct {
 	typ reflect.Type
 }
 
-var _ Object = &ReflectType{}
+var _ any = &ReflectType{}
 
 func (r *ReflectType) Equals(env *Env, other any) bool {
 	if ov, ok := other.(HasReflectType); ok {
@@ -37,7 +37,12 @@ func (r *ReflectType) GetType() *Type {
 }
 
 func (r *ReflectType) ToString(env *Env, escape bool) (string, error) {
-	t := r.typ.Elem()
+	t := r.typ
+
+	for t.Kind() == reflect.Interface {
+		t = t.Elem()
+	}
+
 	for t.Kind() == reflect.Pointer {
 		t = t.Elem()
 	}
@@ -56,13 +61,13 @@ func (r *ReflectType) Hash(env *Env) (uint32, error) {
 	return h.Sum32(), nil
 }
 
-func (r *ReflectType) WithInfo(i *ObjectInfo) Object {
+func (r *ReflectType) WithInfo(i *ObjectInfo) any {
 	d := *r
 	d.info = i
 	return &d
 }
 
-func (r *ReflectType) Call(env *Env, args []Object) (Object, error) {
+func (r *ReflectType) Call(env *Env, args []any) (any, error) {
 	rv := reflect.New(r.typ)
 	return WrapReflectValue(rv), nil
 }
@@ -74,18 +79,18 @@ type ReflectValue struct {
 	val reflect.Value
 }
 
-func WrapReflectValue(val reflect.Value) Object {
+func WrapReflectValue(val reflect.Value) any {
 	return &ReflectValue{
 		val: val,
 	}
 }
 
-func MakeReflectValue(v any) Object {
+func MakeReflectValue(v any) any {
 	val := reflect.ValueOf(v)
 	return WrapReflectValue(val)
 }
 
-func CastReflect[T any](env *Env, obj Object, v *T) error {
+func CastReflect[T any](env *Env, obj any, v *T) error {
 	var rv *ReflectValue
 
 	err := Cast(env, obj, &rv)
@@ -107,7 +112,7 @@ func (r *ReflectValue) Value() any {
 	return r.val.Interface()
 }
 
-var _ Object = &ReflectValue{}
+var _ any = &ReflectValue{}
 
 func (r *ReflectValue) Equals(env *Env, other any) bool {
 	if ov, ok := other.(*ReflectValue); ok {
@@ -121,7 +126,7 @@ func (r *ReflectValue) GetType() *Type {
 	return TYPE.ReflectValue
 }
 
-func structPut(env *Env, r *ReflectValue, name string, fval Object) error {
+func structPut(env *Env, r *ReflectValue, name string, fval any) error {
 	val := r.val
 
 	for val.Kind() == reflect.Pointer {
@@ -167,7 +172,7 @@ func structPut(env *Env, r *ReflectValue, name string, fval Object) error {
 	return nil
 }
 
-func structGet(env *Env, r *ReflectValue, name string) (Object, error) {
+func structGet(env *Env, r *ReflectValue, name string) (any, error) {
 	val := r.val
 
 	for val.Kind() == reflect.Pointer {
@@ -195,7 +200,7 @@ func structGet(env *Env, r *ReflectValue, name string) (Object, error) {
 	return obj, nil
 }
 
-func structList(env *Env, r *ReflectValue) (Object, error) {
+func structList(env *Env, r *ReflectValue) (any, error) {
 	val := r.val
 
 	for val.Kind() == reflect.Pointer {
@@ -206,7 +211,7 @@ func structList(env *Env, r *ReflectValue) (Object, error) {
 		return nil, env.NewError(fmt.Sprintf("value must be a struct, is a %T", val.Interface()))
 	}
 
-	var ret []Object
+	var ret []any
 
 	t := val.Type()
 
@@ -217,7 +222,7 @@ func structList(env *Env, r *ReflectValue) (Object, error) {
 	return NewListFrom(ret...), nil
 }
 
-func structFromMap(env *Env, rt *ReflectType, m Map) (Object, error) {
+func structFromMap(env *Env, rt *ReflectType, m Map) (any, error) {
 	if rt.typ.Kind() != reflect.Struct {
 		return nil, env.NewError("type is not a struct")
 	}
@@ -277,7 +282,7 @@ func structFromMap(env *Env, rt *ReflectType, m Map) (Object, error) {
 	return MakeReflectValue(ret.Interface()), nil
 }
 
-func structToMap(env *Env, r *ReflectValue) (Object, error) {
+func structToMap(env *Env, r *ReflectValue) (any, error) {
 	val := r.val
 
 	for val.Kind() == reflect.Pointer || val.Kind() == reflect.Interface {
@@ -354,7 +359,7 @@ func (r *ReflectValue) Hash(env *Env) (uint32, error) {
 	return h.Sum32(), nil
 }
 
-func (r *ReflectValue) WithInfo(i *ObjectInfo) Object {
+func (r *ReflectValue) WithInfo(i *ObjectInfo) any {
 	d := *r
 	d.info = i
 	return &d
@@ -371,7 +376,7 @@ type reifiedType struct {
 	MethodVec *Vector
 }
 
-func listMethods(env *Env, obj Object, reg map[reflect.Type]reifiedType) Seq {
+func listMethods(env *Env, obj any, reg map[reflect.Type]reifiedType) Seq {
 	rv, ok := obj.(*ReflectValue)
 	if !ok {
 		return NIL
@@ -383,7 +388,7 @@ func listMethods(env *Env, obj Object, reg map[reflect.Type]reifiedType) Seq {
 		t = t.Elem()
 	}
 
-	var objs []Object
+	var objs []any
 	if meths, ok := reg[t]; ok {
 		return meths.MethodVec.Seq()
 	} else {
@@ -395,7 +400,7 @@ func listMethods(env *Env, obj Object, reg map[reflect.Type]reifiedType) Seq {
 	return NewListFrom(objs...)
 }
 
-func castObjectToRef(env *Env, typ reflect.Type, obj Object) (Object, error) {
+func castObjectToRef(env *Env, typ reflect.Type, obj any) (any, error) {
 	switch typ.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		num, err := AssertNumber(env, obj, "")
@@ -527,7 +532,7 @@ func makeStructType(env *Env, m Map) (reflect.Type, error) {
 	return reflect.StructOf(fields), nil
 }
 
-func derefPtr(env *Env, rv reflect.Value) (Object, error) {
+func derefPtr(env *Env, rv reflect.Value) (any, error) {
 	if rv.Kind() != reflect.Pointer {
 		return nil, fmt.Errorf("derefPtr only takes pointers")
 	}
@@ -596,7 +601,7 @@ func SetupPkgReflect(env *Env) ([]*Namespace, error) {
 
 	typedMethods := map[reflect.Type]reifiedType{}
 
-	var pkgs []Object
+	var pkgs []any
 
 	for name, pkg := range pkgreflect.Registry() {
 		nsName := nsSubs.Replace(name)
@@ -623,7 +628,7 @@ func SetupPkgReflect(env *Env) ([]*Namespace, error) {
 
 			sort.Strings(keys)
 
-			var objs []Object
+			var objs []any
 			methods := map[string]reifiedFunc{}
 			for _, n := range keys {
 				m := typ.Methods[n]
@@ -699,7 +704,7 @@ func SetupPkgReflect(env *Env) ([]*Namespace, error) {
 		Doc:   "Returns the list of methods on the given value.",
 		Added: "1.0",
 		Tag:   "Seq",
-		Fn: func(env *Env, obj Object) Seq {
+		Fn: func(env *Env, obj any) Seq {
 			return listMethods(env, obj, typedMethods)
 		},
 	})

@@ -1,6 +1,6 @@
 package core
 
-func Cast[A any](env *Env, obj Object, a *A) error {
+func Cast[A any](env *Env, obj any, a *A) error {
 	x, ok := obj.(A)
 	if !ok {
 		return TypeError[A](env, obj)
@@ -10,7 +10,7 @@ func Cast[A any](env *Env, obj Object, a *A) error {
 	return nil
 }
 
-func CoerceString(env *Env, obj Object, a *string) error {
+func CoerceString(env *Env, obj any, a *string) error {
 	switch sv := obj.(type) {
 	case String:
 		*a = sv.S()
@@ -25,7 +25,7 @@ func CoerceString(env *Env, obj Object, a *string) error {
 	return nil
 }
 
-func TryCoerceString(obj Object, a *string) bool {
+func TryCoerceString(obj any, a *string) bool {
 	switch sv := obj.(type) {
 	case String:
 		*a = sv.S()

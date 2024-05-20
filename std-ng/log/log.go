@@ -57,7 +57,7 @@ func init() {
 	core.AddNativeNamespace("lace.log", Setup)
 }
 
-func convertObj(env *core.Env, obj core.Object) (any, error) {
+func convertObj(env *core.Env, obj any) (any, error) {
 	switch sv := obj.(type) {
 	case core.Keyword:
 		return sv.Name(), nil
@@ -116,7 +116,7 @@ func convertObj(env *core.Env, obj core.Object) (any, error) {
 	}
 }
 
-func setLevel(env *core.Env, logobj core.Object, level core.Keyword) error {
+func setLevel(env *core.Env, logobj any, level core.Keyword) error {
 	var log logger.Logger
 
 	err := core.ExtractOpaque(env, logobj, &log)
@@ -133,7 +133,7 @@ func setLevel(env *core.Env, logobj core.Object, level core.Keyword) error {
 	return nil
 }
 
-func emit(env *core.Env, logobj core.Object, level core.Keyword, message string, seq core.Seqable) error {
+func emit(env *core.Env, logobj any, level core.Keyword, message string, seq core.Seqable) error {
 	var log logger.Logger
 
 	err := core.ExtractOpaque(env, logobj, &log)

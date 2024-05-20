@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-func AssertStringable(obj Object, msg string) (String, error) {
+func AssertStringable(obj any, msg string) (String, error) {
 	switch c := obj.(type) {
 	case String:
 		return c, nil
@@ -18,7 +18,7 @@ func AssertStringable(obj Object, msg string) (String, error) {
 	}
 }
 
-func EnsureStringable(args []Object, index int) (String, error) {
+func EnsureStringable(args []any, index int) (String, error) {
 	switch c := args[index].(type) {
 	case String:
 		return c, nil

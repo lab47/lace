@@ -1,5 +1,7 @@
 package core
 
+import "slices"
+
 type varBind struct {
 	index int
 
@@ -246,13 +248,7 @@ func (f *fnFrame) importedNames() []Symbol {
 }
 
 func (f *fnFrame) closeFrame() []Symbol {
-	var vbs []Symbol
-
-	for _, name := range f.importedNames() {
-		vbs = append(vbs, name)
-	}
-
-	return vbs
+	return slices.Clone(f.importedNames())
 }
 
 func (v *varBind) u(i *Instruction) *Instruction {

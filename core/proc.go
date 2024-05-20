@@ -6,7 +6,7 @@ import (
 	"reflect"
 )
 
-type ProcFn func(env *Env, args []Object) (Object, error)
+type ProcFn func(env *Env, args []any) (any, error)
 type Proc struct {
 	Fn      ProcFn
 	Name    string
@@ -17,7 +17,7 @@ type Proc struct {
 
 var _ Callable = Proc{}
 
-func (p Proc) Compare(env *Env, a, b Object) (int, error) {
+func (p Proc) Compare(env *Env, a, b any) (int, error) {
 	return compare(env, p, a, b)
 }
 
@@ -47,7 +47,7 @@ func (p Proc) GetInfo() *ObjectInfo {
 	return nil
 }
 
-func (p Proc) WithInfo(*ObjectInfo) Object {
+func (p Proc) WithInfo(*ObjectInfo) any {
 	return p
 }
 
@@ -59,7 +59,7 @@ func (p Proc) Hash(env *Env) (uint32, error) {
 	return HashPtr(&p.Fn), nil
 }
 
-func (p Proc) Call(env *Env, args []Object) (Object, error) {
+func (p Proc) Call(env *Env, args []any) (any, error) {
 	defer func() {
 		if err := recover(); err != nil {
 			fmt.Fprintf(os.Stderr,

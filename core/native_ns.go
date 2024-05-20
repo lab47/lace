@@ -120,7 +120,7 @@ type DefVarInfo struct {
 	Value reflect.Value
 }
 
-func toAny(env *Env, o Object) (any, error) {
+func toAny(env *Env, o any) (any, error) {
 	switch sv := o.(type) {
 	case Number:
 		return sv.NativeNumber(), nil
@@ -132,6 +132,8 @@ func toAny(env *Env, o Object) (any, error) {
 		return sv.Name(), nil
 	case Boolean:
 		return bool(sv), nil
+	case *ReflectValue:
+		return sv.val, nil
 	case Map:
 		m := map[any]any{}
 		i := sv.Iter()
@@ -189,15 +191,13 @@ func toAny(env *Env, o Object) (any, error) {
 		return ret, nil
 	case Seqable:
 		return toAny(env, sv.Seq())
-	case *ReflectValue:
-		return sv.val, nil
 	default:
 		return o, nil
 	}
 }
 
 // from any to any
-func convertAnyIn(env *Env, index int, o Object) (reflect.Value, error) {
+func convertAnyIn(env *Env, index int, o any) (reflect.Value, error) {
 	if rv, ok := o.(*ReflectValue); ok {
 		return rv.val, nil
 	}
@@ -210,7 +210,7 @@ func convertAnyIn(env *Env, index int, o Object) (reflect.Value, error) {
 	return reflect.ValueOf(a), nil
 }
 
-func fromAny(env *Env, v any) (Object, error) {
+func fromAny(env *Env, v any) (any, error) {
 	switch sv := v.(type) {
 	case int:
 		return MakeInt(sv), nil
@@ -265,7 +265,7 @@ func fromAny(env *Env, v any) (Object, error) {
 
 			return m, nil
 		case reflect.Slice, reflect.Array:
-			var objs []Object
+			var objs []any
 			for i := 0; i < rv.Len(); i++ {
 				o, err := fromAny(env, rv.Index(i).Interface())
 				if err != nil {
@@ -294,7 +294,7 @@ func (nb *NSBuilder) makeMeta(b *DefnInfo) *ArrayMap {
 	var m *ArrayMap
 
 	if len(b.Fns) == 0 {
-		var args []Object
+		var args []any
 
 		for _, n := range b.Args {
 			if t, ok := b.ArgTags[n]; ok {
@@ -309,10 +309,10 @@ func (nb *NSBuilder) makeMeta(b *DefnInfo) *ArrayMap {
 			b.Doc, b.Added,
 		)
 	} else {
-		var vecs []Object
+		var vecs []any
 
 		for _, fn := range b.Fns {
-			var args []Object
+			var args []any
 
 			for _, n := range fn.Args {
 				args = append(args, MakeSymbol(n))
@@ -334,7 +334,7 @@ func (nb *NSBuilder) makeMeta(b *DefnInfo) *ArrayMap {
 	return m
 }
 
-func (b *NSBuilder) Def(name string, obj Object) {
+func (b *NSBuilder) Def(name string, obj any) {
 	m := MakeMeta(
 		NewListFrom(),
 		"", "x",
@@ -373,7 +373,7 @@ func (b *NSBuilder) DefVar(i *DefVarInfo) *NSBuilder {
 		i.Doc, i.Added,
 	)
 
-	var obj Object
+	var obj any
 	switch i.Value.Kind() {
 	case reflect.String:
 		obj = MakeString(i.Value.String())
@@ -382,11 +382,7 @@ func (b *NSBuilder) DefVar(i *DefVarInfo) *NSBuilder {
 	case reflect.Bool:
 		obj = MakeBoolean(i.Value.Bool())
 	default:
-		var ok bool
-		obj, ok = i.Value.Interface().(Object)
-		if !ok {
-			obj = &ReflectValue{val: i.Value}
-		}
+		obj = WrapReflectValue(i.Value)
 	}
 
 	_, err := b.ns.InternVar(b.env, i.Name, obj, m)
@@ -468,9 +464,9 @@ func (n *NSBuilder) Defn(b *DefnInfo) *NSBuilder {
 
 		if cs == nil {
 			fns = append(fns, fn{-1, pf})
+		} else {
+			fns = append(fns, fn{cs.arity, pf})
 		}
-
-		fns = append(fns, fn{cs.arity, pf})
 	}
 
 	sort.Slice(fns, func(i, j int) bool {
@@ -482,7 +478,7 @@ func (n *NSBuilder) Defn(b *DefnInfo) *NSBuilder {
 	if len(fns) == 1 || fns[0].arity == -1 {
 		procFn = fns[0].proc
 	} else {
-		procFn = ProcFn(func(env *Env, args []Object) (Object, error) {
+		procFn = ProcFn(func(env *Env, args []any) (any, error) {
 			for _, fn := range fns {
 				if fn.arity == len(args) {
 					return fn.proc(env, args)

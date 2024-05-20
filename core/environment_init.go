@@ -137,13 +137,17 @@ func NewEnv() (*Env, error) {
 			err := fn(res)
 			if err != nil {
 
+				DisplayError(res, err)
 				panic(fmt.Sprintf("error loading %s: %s", name, err))
 			}
 		}
 	}
 
 	for _, ns := range reflectedNS {
-		res.SetupNamespace(ns)
+		err = res.SetupNamespace(ns)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	userNs.ReferAll(res.CoreNamespace, true)

@@ -11,7 +11,7 @@ type HasGetType interface {
 	GetType() *Type
 }
 
-func TypeName(obj Object) string {
+func TypeName(obj any) string {
 	if hgt, ok := obj.(HasGetType); ok {
 		return hgt.GetType().Name()
 	}
@@ -19,7 +19,7 @@ func TypeName(obj Object) string {
 	return reflect.ValueOf(obj).Type().Name()
 }
 
-func GetType(obj Object) Object {
+func GetType(obj any) any {
 	if hgt, ok := obj.(HasGetType); ok {
 		return hgt.GetType()
 	}
@@ -41,7 +41,7 @@ type HasHash interface {
 	Hash(env *Env) (uint32, error)
 }
 
-func HashValue(env *Env, obj Object) (uint32, error) {
+func HashValue(env *Env, obj any) (uint32, error) {
 	if hh, ok := obj.(HasHash); ok {
 		return hh.Hash(env)
 	}
@@ -73,7 +73,7 @@ type HasToString interface {
 	ToString(env *Env, escape bool) (string, error)
 }
 
-func ToString(env *Env, obj Object) (string, error) {
+func ToString(env *Env, obj any) (string, error) {
 	if hs, ok := obj.(HasToString); ok {
 		return hs.ToString(env, false)
 	}
@@ -81,7 +81,7 @@ func ToString(env *Env, obj Object) (string, error) {
 	return fmt.Sprint(obj), nil
 }
 
-func SimpleToString(obj Object) string {
+func SimpleToString(obj any) string {
 	switch s := obj.(type) {
 	case String:
 		return s.S()

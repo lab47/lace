@@ -6,7 +6,7 @@ type (
 	ArrayMap struct {
 		InfoHolder
 		MetaHolder
-		arr []Object
+		arr []any
 	}
 	ArrayMapIterator struct {
 		m       *ArrayMap
@@ -56,7 +56,7 @@ func (seq *ArrayMapSeq) Pprint(env *Env, w io.Writer, indent int) (int, error) {
 	return pprintSeq(env, seq, w, indent)
 }
 
-func (seq *ArrayMapSeq) WithMeta(env *Env, meta Map) (Object, error) {
+func (seq *ArrayMapSeq) WithMeta(env *Env, meta Map) (any, error) {
 	res := *seq
 	m, err := SafeMerge(env, res.meta, meta)
 	if err != nil {
@@ -78,7 +78,7 @@ func (seq *ArrayMapSeq) Seq() Seq {
 	return seq
 }
 
-func (seq *ArrayMapSeq) First(env *Env) (Object, error) {
+func (seq *ArrayMapSeq) First(env *Env) (any, error) {
 	if seq.index < len(seq.m.arr) {
 		return NewVectorFrom(seq.m.arr[seq.index], seq.m.arr[seq.index+1]), nil
 	}
@@ -96,7 +96,7 @@ func (seq *ArrayMapSeq) IsEmpty(env *Env) (bool, error) {
 	return seq.index >= len(seq.m.arr), nil
 }
 
-func (seq *ArrayMapSeq) Cons(obj Object) Seq {
+func (seq *ArrayMapSeq) Cons(obj any) Seq {
 	return &ConsSeq{first: obj, rest: seq}
 }
 
@@ -113,7 +113,7 @@ func (iter *ArrayMapIterator) HasNext() bool {
 	return iter.current < len(iter.m.arr)
 }
 
-func (v *ArrayMap) WithMeta(env *Env, meta Map) (Object, error) {
+func (v *ArrayMap) WithMeta(env *Env, meta Map) (any, error) {
 	res := *v
 	m, err := SafeMerge(env, res.meta, meta)
 	if err != nil {
@@ -123,7 +123,7 @@ func (v *ArrayMap) WithMeta(env *Env, meta Map) (Object, error) {
 	return &res, nil
 }
 
-func (m *ArrayMap) indexOf(env *Env, key Object) int {
+func (m *ArrayMap) indexOf(env *Env, key any) int {
 	for i := 0; i < len(m.arr); i += 2 {
 		if Equals(env, m.arr[i], key) {
 			return i
@@ -132,7 +132,7 @@ func (m *ArrayMap) indexOf(env *Env, key Object) int {
 	return -1
 }
 
-func (m *ArrayMap) Get(env *Env, key Object) (bool, Object, error) {
+func (m *ArrayMap) Get(env *Env, key any) (bool, any, error) {
 	i := m.indexOf(env, key)
 	if i != -1 {
 		return true, m.arr[i+1], nil
@@ -141,9 +141,9 @@ func (m *ArrayMap) Get(env *Env, key Object) (bool, Object, error) {
 }
 
 type Equ interface {
-	Object
+	any
 
-	Is(o Object) bool
+	Is(o any) bool
 	IsHash() uint32
 }
 
@@ -156,7 +156,7 @@ func (m *ArrayMap) indexOfEqu(key Equ) int {
 	return -1
 }
 
-func (m *ArrayMap) GetEqu(key Equ) (bool, Object) {
+func (m *ArrayMap) GetEqu(key Equ) (bool, any) {
 	i := m.indexOfEqu(key)
 	if i != -1 {
 		return true, m.arr[i+1]
@@ -164,7 +164,7 @@ func (m *ArrayMap) GetEqu(key Equ) (bool, Object) {
 	return false, nil
 }
 
-func (m *ArrayMap) Set(env *Env, key Object, value Object) {
+func (m *ArrayMap) Set(env *Env, key any, value any) {
 	i := m.indexOf(env, key)
 	if i != -1 {
 		m.arr[i+1] = value
@@ -174,7 +174,7 @@ func (m *ArrayMap) Set(env *Env, key Object, value Object) {
 	}
 }
 
-func (m *ArrayMap) Add(env *Env, key Object, value Object) bool {
+func (m *ArrayMap) Add(env *Env, key any, value any) bool {
 	i := m.indexOf(env, key)
 	if i != -1 {
 		return false
@@ -184,7 +184,7 @@ func (m *ArrayMap) Add(env *Env, key Object, value Object) bool {
 	return true
 }
 
-func (m *ArrayMap) AddEqu(key Equ, value Object) bool {
+func (m *ArrayMap) AddEqu(key Equ, value any) bool {
 	i := m.indexOfEqu(key)
 	if i != -1 {
 		return false
@@ -194,7 +194,7 @@ func (m *ArrayMap) AddEqu(key Equ, value Object) bool {
 	return true
 }
 
-func (m *ArrayMap) Plus(env *Env, key Object, value Object) *ArrayMap {
+func (m *ArrayMap) Plus(env *Env, key any, value any) *ArrayMap {
 	i := m.indexOf(env, key)
 	if i != -1 {
 		return m
@@ -209,12 +209,12 @@ func (m *ArrayMap) Count() int {
 }
 
 func (m *ArrayMap) Clone() *ArrayMap {
-	result := ArrayMap{arr: make([]Object, len(m.arr), cap(m.arr))}
+	result := ArrayMap{arr: make([]any, len(m.arr), cap(m.arr))}
 	copy(result.arr, m.arr)
 	return &result
 }
 
-func NewArrayMap(key Equ, value Object) (Associative, error) {
+func NewArrayMap(key Equ, value any) (Associative, error) {
 	m := EmptyArrayMap()
 
 	i := m.indexOfEqu(key)
@@ -226,7 +226,7 @@ func NewArrayMap(key Equ, value Object) (Associative, error) {
 	return m, nil
 }
 
-func (m *ArrayMap) Assoc(env *Env, key Object, value Object) (Associative, error) {
+func (m *ArrayMap) Assoc(env *Env, key any, value any) (Associative, error) {
 	i := m.indexOf(env, key)
 	if i != -1 {
 		res := m.Clone()
@@ -247,7 +247,7 @@ func (m *ArrayMap) Assoc(env *Env, key Object, value Object) (Associative, error
 	return res, nil
 }
 
-func (m *ArrayMap) EntryAt(env *Env, key Object) (*Vector, error) {
+func (m *ArrayMap) EntryAt(env *Env, key any) (*Vector, error) {
 	i := m.indexOf(env, key)
 	if i != -1 {
 		return NewVectorFrom(key, m.arr[i+1]), nil
@@ -255,8 +255,8 @@ func (m *ArrayMap) EntryAt(env *Env, key Object) (*Vector, error) {
 	return nil, nil
 }
 
-func (m *ArrayMap) Without(env *Env, key Object) (Map, error) {
-	result := ArrayMap{arr: make([]Object, len(m.arr), cap(m.arr))}
+func (m *ArrayMap) Without(env *Env, key any) (Map, error) {
+	result := ArrayMap{arr: make([]any, len(m.arr), cap(m.arr))}
 	var i, j int
 	for i, j = 0, 0; i < len(m.arr); i += 2 {
 		if Equals(env, m.arr[i], key) {
@@ -298,7 +298,7 @@ func (m *ArrayMap) Merge(env *Env, other Map) (Map, error) {
 
 func (m *ArrayMap) Keys() Seq {
 	mlen := len(m.arr) / 2
-	res := make([]Object, mlen)
+	res := make([]any, mlen)
 	for i := 0; i < mlen; i++ {
 		res[i] = m.arr[i*2]
 	}
@@ -307,7 +307,7 @@ func (m *ArrayMap) Keys() Seq {
 
 func (m *ArrayMap) Vals() Seq {
 	mlen := len(m.arr) / 2
-	res := make([]Object, mlen)
+	res := make([]any, mlen)
 	for i := 0; i < mlen; i++ {
 		res[i] = m.arr[i*2+1]
 	}
@@ -318,7 +318,7 @@ func (m *ArrayMap) Iter() MapIterator {
 	return &ArrayMapIterator{m: m}
 }
 
-func (m *ArrayMap) Conj(env *Env, obj Object) (Conjable, error) {
+func (m *ArrayMap) Conj(env *Env, obj any) (Conjable, error) {
 	return mapConj(env, m, obj)
 }
 
@@ -342,7 +342,7 @@ func (m *ArrayMap) Seq() Seq {
 	return &ArrayMapSeq{m: m, index: 0}
 }
 
-func (m *ArrayMap) Call(env *Env, args []Object) (Object, error) {
+func (m *ArrayMap) Call(env *Env, args []any) (any, error) {
 	return callMap(env, m, args)
 }
 

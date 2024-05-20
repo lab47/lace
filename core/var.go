@@ -9,7 +9,7 @@ type Var struct {
 	MetaHolder
 	ns             *Namespace
 	name           Symbol
-	staticVal      Object
+	staticVal      any
 	mu             sync.Mutex
 	isMacro        bool
 	isPrivate      bool
@@ -36,7 +36,7 @@ func (v *Var) Equals(env *Env, other interface{}) bool {
 	return v == other
 }
 
-func (v *Var) WithMeta(env *Env, meta Map) (Object, error) {
+func (v *Var) WithMeta(env *Env, meta Map) (any, error) {
 	res := &Var{
 		ns:         v.ns,
 		name:       v.name,
@@ -61,7 +61,7 @@ func (v *Var) ResetMeta(newMeta Map) Map {
 	return v.meta
 }
 
-func (v *Var) AlterMeta(env *Env, fn *Fn, args []Object) (Map, error) {
+func (v *Var) AlterMeta(env *Env, fn *Fn, args []any) (Map, error) {
 	return AlterMeta(env, &v.MetaHolder, fn, args)
 }
 
@@ -81,7 +81,7 @@ func (v *Var) unlock() {
 	v.mu.Unlock()
 }
 
-func (v *Var) Resolve(env *Env) Object {
+func (v *Var) Resolve(env *Env) any {
 	v.lock()
 	isDyn := v.isDynamic
 	sval := v.staticVal
@@ -103,7 +103,7 @@ func (v *Var) Resolve(env *Env) Object {
 	return sval
 }
 
-func (v *Var) Call(env *Env, args []Object) (Object, error) {
+func (v *Var) Call(env *Env, args []any) (any, error) {
 	vl := v.Resolve(env)
 	vs, err := ToString(env, v)
 	if err != nil {
@@ -127,11 +127,11 @@ func (v *Var) Call(env *Env, args []Object) (Object, error) {
 
 var _ Callable = (*Var)(nil)
 
-func (v *Var) Deref(env *Env) (Object, error) {
+func (v *Var) Deref(env *Env) (any, error) {
 	return v.Resolve(env), nil
 }
 
-func (v *Var) SetValue(env *Env, val Object) error {
+func (v *Var) SetValue(env *Env, val any) error {
 	if v.isDynamic {
 		as, err := env.CurrentVar.Assoc(env, v, val)
 		if err != nil {
@@ -146,14 +146,14 @@ func (v *Var) SetValue(env *Env, val Object) error {
 	return nil
 }
 
-func (v *Var) SetStatic(val Object) {
+func (v *Var) SetStatic(val any) {
 	v.lock()
 	defer v.unlock()
 
 	v.staticVal = val
 }
 
-func (v *Var) GetStatic() Object {
+func (v *Var) GetStatic() any {
 	v.lock()
 	defer v.unlock()
 

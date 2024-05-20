@@ -73,7 +73,7 @@ func (r *Request) Unmarshal(env *core.Env, data []byte) error {
 }
 
 type Response struct {
-	Value core.Object
+	Value any
 }
 
 type marshalResponse struct {
@@ -81,7 +81,7 @@ type marshalResponse struct {
 	RequestId string          `json:"request-id" cbor:"2,keyasint"`
 }
 
-func (r *Request) MarshalResponse(val core.Object) ([]byte, error) {
+func (r *Request) MarshalResponse(val any) ([]byte, error) {
 	d, err := marshal.Marshal(val)
 	if err != nil {
 		return nil, err
@@ -119,7 +119,7 @@ type Sender interface {
 
 type RPC interface {
 	Request() *Request
-	Respond(val core.Object) error
+	Respond(val any) error
 }
 
 type Listener interface {

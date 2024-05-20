@@ -4,14 +4,14 @@ import "fmt"
 
 type (
 	NamedPair struct {
-		Key   Object
-		Value Object
+		Key   any
+		Value any
 	}
 )
 
-var _ Object = &NamedPair{}
+var _ any = &NamedPair{}
 
-func MakeNamedPair(key Object, obj Object) *NamedPair {
+func MakeNamedPair(key any, obj any) *NamedPair {
 	return &NamedPair{
 		Key:   key,
 		Value: obj,
@@ -77,6 +77,6 @@ func (p *NamedPair) Hash(env *Env) (uint32, error) {
 	return kh ^ vh, nil
 }
 
-func (p *NamedPair) WithInfo(info *ObjectInfo) Object {
+func (p *NamedPair) WithInfo(info *ObjectInfo) any {
 	return p
 }

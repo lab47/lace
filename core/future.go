@@ -15,7 +15,7 @@ type Future struct {
 	mu       sync.Mutex
 	realized bool
 	err      error
-	value    Object
+	value    any
 }
 
 var _ IPending = (*Future)(nil)
@@ -63,7 +63,7 @@ func (f *Future) IsRealized() bool {
 	return f.realized
 }
 
-func (f *Future) Deref(env *Env) (Object, error) {
+func (f *Future) Deref(env *Env) (any, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 

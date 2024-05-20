@@ -36,13 +36,13 @@ func NewReplContext(env *Env) *ReplContext {
 	}
 }
 
-func (ctx *ReplContext) PushValue(obj Object) {
+func (ctx *ReplContext) PushValue(obj any) {
 	ctx.third.SetStatic(ctx.second.GetStatic())
 	ctx.second.SetStatic(ctx.first.GetStatic())
 	ctx.first.SetStatic(obj)
 }
 
-func (ctx *ReplContext) PushException(exc Object) {
+func (ctx *ReplContext) PushException(exc any) {
 	ctx.exc.SetStatic(exc)
 }
 

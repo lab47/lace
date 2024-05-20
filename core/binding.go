@@ -30,19 +30,19 @@ func init() {
 		},
 
 		Functions: map[string]pkgreflect.FuncValue{
-			"CombineToString": {Doc: "Combine many values into a single string.", Args: []pkgreflect.Arg{{Name: "args", Tag: "[]Object"}}, Tag: "any", Value: reflect.ValueOf(WrapToProc2_2(CombineToString))},
+			"CombineToString": {Doc: "Combine many values into a single string.", Args: []pkgreflect.Arg{{Name: "args", Tag: "[]any"}}, Tag: "any", Value: reflect.ValueOf(WrapToProc2_2(CombineToString))},
 
-			"ConcatSimple": {Doc: "Concatinate N sequences together", Args: []pkgreflect.Arg{{Name: "args", Tag: "[]Object"}}, Tag: "any", Value: reflect.ValueOf(WrapToProc2_2(ConcatSimple))},
+			"ConcatSimple": {Doc: "Concatinate N sequences together", Args: []pkgreflect.Arg{{Name: "args", Tag: "[]any"}}, Tag: "any", Value: reflect.ValueOf(WrapToProc2_2(ConcatSimple))},
 
-			"Conj": {Doc: "Create a new Sequence by combine the value with the collection.", Args: []pkgreflect.Arg{{Name: "col", Tag: "Object"}, {Name: "val", Tag: "Object"}}, Tag: "any", Value: reflect.ValueOf(WrapToProc3_2(Conj))},
+			"Conj": {Doc: "Create a new Sequence by combine the value with the collection.", Args: []pkgreflect.Arg{{Name: "col", Tag: "any"}, {Name: "val", Tag: "any"}}, Tag: "any", Value: reflect.ValueOf(WrapToProc3_2(Conj))},
 
-			"Cons": {Doc: "Add an element to a Seq value, returning a new Seq", Args: []pkgreflect.Arg{{Name: "val", Tag: "Object"}, {Name: "seq", Tag: "Seqable"}}, Tag: "any", Value: reflect.ValueOf(WrapToProc3_2(Cons))},
+			"Cons": {Doc: "Add an element to a Seq value, returning a new Seq", Args: []pkgreflect.Arg{{Name: "val", Tag: "any"}, {Name: "seq", Tag: "Seqable"}}, Tag: "any", Value: reflect.ValueOf(WrapToProc3_2(Cons))},
 
-			"Equals": {Doc: "Compare two values returning a boolean if they are equal or not", Args: []pkgreflect.Arg{{Name: "a", Tag: "Object"}, {Name: "b", Tag: "Object"}}, Tag: "any", Value: reflect.ValueOf(WrapToProc3_2(EqualsValues))},
+			"Equals": {Doc: "Compare two values returning a boolean if they are equal or not", Args: []pkgreflect.Arg{{Name: "a", Tag: "any"}, {Name: "b", Tag: "any"}}, Tag: "any", Value: reflect.ValueOf(WrapToProc3_2(EqualsValues))},
 
 			"First": {Doc: "Return the first element in a Seq", Args: []pkgreflect.Arg{{Name: "s", Tag: "Seqable"}}, Tag: "any", Value: reflect.ValueOf(WrapToProc2_2(First))},
 
-			"List": {Doc: "Create a new lace List from the given arguments", Args: []pkgreflect.Arg{{Name: "args", Tag: "[]Object"}}, Tag: "any", Value: reflect.ValueOf(WrapToProc2_2(MakeList))},
+			"List": {Doc: "Create a new lace List from the given arguments", Args: []pkgreflect.Arg{{Name: "args", Tag: "[]any"}}, Tag: "any", Value: reflect.ValueOf(WrapToProc2_2(MakeList))},
 
 			"LoadLibFromPath": {Doc: "Attempt to load a given lib from a given path.", Args: []pkgreflect.Arg{{Name: "libnamev", Tag: "Symbol"}, {Name: "pathnamev", Tag: "String"}}, Tag: "any", Value: reflect.ValueOf(WrapToProc3_2(LoadLibFromPath))},
 

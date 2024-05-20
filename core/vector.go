@@ -31,7 +31,7 @@ type (
 
 var empty_node []interface{} = make([]interface{}, 32)
 
-func (v *Vector) WithMeta(env *Env, meta Map) (Object, error) {
+func (v *Vector) WithMeta(env *Env, meta Map) (any, error) {
 	res := *v
 	m, err := SafeMerge(env, res.meta, meta)
 	if err != nil {
@@ -68,8 +68,8 @@ func (v *Vector) arrayFor(i int) []interface{} {
 	return node
 }
 
-func (v *Vector) at(i int) Object {
-	return v.arrayFor(i)[i&0x01F].(Object)
+func (v *Vector) at(i int) any {
+	return v.arrayFor(i)[i&0x01F]
 }
 
 func newPath(level uint, node []interface{}) []interface{} {
@@ -98,7 +98,7 @@ func (v *Vector) pushTail(level uint, parent []interface{}, tailNode []interface
 	return result
 }
 
-func (v *Vector) Conjoin(obj Object) (*Vector, error) {
+func (v *Vector) Conjoin(obj any) (*Vector, error) {
 	var newTail []interface{}
 	if v.count-v.tailoff() < 32 {
 		newTail = append(clone(v.tail), obj)
@@ -172,7 +172,7 @@ func (seq *VectorSeq) Pprint(env *Env, w io.Writer, indent int) (int, error) {
 	return pprintSeq(env, seq, w, indent)
 }
 
-func (vseq *VectorSeq) WithMeta(env *Env, meta Map) (Object, error) {
+func (vseq *VectorSeq) WithMeta(env *Env, meta Map) (any, error) {
 	res := *vseq
 	m, err := SafeMerge(env, res.meta, meta)
 	if err != nil {
@@ -190,7 +190,7 @@ func (vseq *VectorSeq) Hash(env *Env) (uint32, error) {
 	return hashOrdered(env, vseq)
 }
 
-func (vseq *VectorSeq) First(env *Env) (Object, error) {
+func (vseq *VectorSeq) First(env *Env) (any, error) {
 	if vseq.index < vseq.vector.count {
 		return vseq.vector.at(vseq.index), nil
 	}
@@ -208,7 +208,7 @@ func (vseq *VectorSeq) IsEmpty(env *Env) (bool, error) {
 	return vseq.index >= vseq.vector.count, nil
 }
 
-func (vseq *VectorSeq) Cons(obj Object) Seq {
+func (vseq *VectorSeq) Cons(obj any) Seq {
 	return &ConsSeq{first: obj, rest: vseq}
 }
 
@@ -230,7 +230,7 @@ func (seq *VectorRSeq) Pprint(env *Env, w io.Writer, indent int) (int, error) {
 	return pprintSeq(env, seq, w, indent)
 }
 
-func (vseq *VectorRSeq) WithMeta(env *Env, meta Map) (Object, error) {
+func (vseq *VectorRSeq) WithMeta(env *Env, meta Map) (any, error) {
 	res := *vseq
 	m, err := SafeMerge(env, res.meta, meta)
 	if err != nil {
@@ -248,7 +248,7 @@ func (vseq *VectorRSeq) Hash(env *Env) (uint32, error) {
 	return hashOrdered(env, vseq)
 }
 
-func (vseq *VectorRSeq) First(env *Env) (Object, error) {
+func (vseq *VectorRSeq) First(env *Env) (any, error) {
 	if vseq.index >= 0 {
 		return vseq.vector.at(vseq.index), nil
 	}
@@ -266,7 +266,7 @@ func (vseq *VectorRSeq) IsEmpty(env *Env) (bool, error) {
 	return vseq.index < 0, nil
 }
 
-func (vseq *VectorRSeq) Cons(obj Object) Seq {
+func (vseq *VectorRSeq) Cons(obj any) Seq {
 	return &ConsSeq{first: obj, rest: vseq}
 }
 
@@ -276,7 +276,7 @@ func (v *Vector) Seq() Seq {
 	return &VectorSeq{vector: v, index: 0}
 }
 
-func (v *Vector) Conj(env *Env, obj Object) (Conjable, error) {
+func (v *Vector) Conj(env *Env, obj any) (Conjable, error) {
 	return v.Conjoin(obj)
 }
 
@@ -284,11 +284,11 @@ func (v *Vector) Count() int {
 	return v.count
 }
 
-func (v *Vector) Nth(env *Env, i int) (Object, error) {
+func (v *Vector) Nth(env *Env, i int) (any, error) {
 	return v.at(i), nil
 }
 
-func (v *Vector) TryNth(env *Env, i int, d Object) (Object, error) {
+func (v *Vector) TryNth(env *Env, i int, d any) (any, error) {
 	if i < 0 || i >= v.count {
 		return d, nil
 	}
@@ -297,7 +297,7 @@ func (v *Vector) TryNth(env *Env, i int, d Object) (Object, error) {
 
 func (v *Vector) sequential() {}
 
-func (v *Vector) Compare(env *Env, other Object) (int, error) {
+func (v *Vector) Compare(env *Env, other any) (int, error) {
 	v2, err := AssertVector(env, other, "Cannot compare Vector and "+TypeName(other))
 	if err != nil {
 		return 0, err
@@ -324,7 +324,7 @@ func (v *Vector) Compare(env *Env, other Object) (int, error) {
 	return 0, nil
 }
 
-func (v *Vector) Peek(env *Env) (Object, error) {
+func (v *Vector) Peek(env *Env) (any, error) {
 	if v.count > 0 {
 		return v.Nth(env, v.count-1)
 	}
@@ -379,7 +379,7 @@ func (v *Vector) Pop(env *Env) (Stack, error) {
 	return res, nil
 }
 
-func (v *Vector) Get(env *Env, key Object) (bool, Object, error) {
+func (v *Vector) Get(env *Env, key any) (bool, any, error) {
 	switch key := key.(type) {
 	case Int:
 		if key.I() >= 0 && key.I() < v.count {
@@ -389,7 +389,7 @@ func (v *Vector) Get(env *Env, key Object) (bool, Object, error) {
 	return false, nil, nil
 }
 
-func (v *Vector) EntryAt(env *Env, key Object) (*Vector, error) {
+func (v *Vector) EntryAt(env *Env, key any) (*Vector, error) {
 	ok, val, err := v.Get(env, key)
 	if err != nil {
 		return nil, err
@@ -401,7 +401,7 @@ func (v *Vector) EntryAt(env *Env, key Object) (*Vector, error) {
 	return nil, nil
 }
 
-func doAssoc(level uint, node []interface{}, i int, val Object) []interface{} {
+func doAssoc(level uint, node []interface{}, i int, val any) []interface{} {
 	ret := clone(node)
 	if level == 0 {
 		ret[i&0x01f] = val
@@ -412,7 +412,7 @@ func doAssoc(level uint, node []interface{}, i int, val Object) []interface{} {
 	return ret
 }
 
-func (v *Vector) assocN(i int, val Object) (*Vector, error) {
+func (v *Vector) assocN(i int, val any) (*Vector, error) {
 	if i < 0 || i > v.count {
 		return nil, StubNewError((fmt.Sprintf("Index %d is out of bounds [0..%d]", i, v.count)))
 	}
@@ -431,7 +431,7 @@ func (v *Vector) assocN(i int, val Object) (*Vector, error) {
 	return res, nil
 }
 
-func assertInteger(obj Object) (int, error) {
+func assertInteger(obj any) (int, error) {
 	var i int
 	switch obj := obj.(type) {
 	case Int:
@@ -444,7 +444,7 @@ func assertInteger(obj Object) (int, error) {
 	return i, nil
 }
 
-func (v *Vector) Assoc(env *Env, key, val Object) (Associative, error) {
+func (v *Vector) Assoc(env *Env, key, val any) (Associative, error) {
 	i, err := assertInteger(key)
 	if err != nil {
 		return nil, err
@@ -456,7 +456,7 @@ func (v *Vector) Rseq() Seq {
 	return &VectorRSeq{vector: v, index: v.count - 1}
 }
 
-func (v *Vector) Call(env *Env, args []Object) (Object, error) {
+func (v *Vector) Call(env *Env, args []any) (any, error) {
 	if err := CheckArity(env, args, 1, 1); err != nil {
 		return nil, err
 	}
@@ -491,7 +491,7 @@ func EmptyVectorWithMeta(m Map) *Vector {
 	return v
 }
 
-func NewVectorFrom(objs ...Object) *Vector {
+func NewVectorFrom(objs ...any) *Vector {
 	res := EmptyVector()
 	for i := 0; i < len(objs); i++ {
 		res, _ = res.Conjoin(objs[i])
@@ -528,14 +528,14 @@ func (v *Vector) Empty() Collection {
 	return EmptyVector()
 }
 
-func (v *Vector) kvreduce(env *Env, c Callable, init Object) (Object, error) {
+func (v *Vector) kvreduce(env *Env, c Callable, init any) (any, error) {
 	res := init
 	for i := 0; i < v.Count(); i++ {
 		o, err := v.Nth(env, i)
 		if err != nil {
 			return nil, err
 		}
-		res, err = c.Call(env, []Object{res, MakeInt(i), o})
+		res, err = c.Call(env, []any{res, MakeInt(i), o})
 		if err != nil {
 			return nil, err
 		}

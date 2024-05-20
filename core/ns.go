@@ -38,11 +38,11 @@ func (env *Env) AllNamespaces() []string {
 	return names
 }
 
-func (env *Env) AllNamespaceValues() []Object {
+func (env *Env) AllNamespaceValues() []any {
 	env.mu.Lock()
 	defer env.mu.Unlock()
 
-	var vals []Object
+	var vals []any
 
 	for _, v := range env.Namespaces {
 		vals = append(vals, v)
@@ -71,7 +71,7 @@ func (ns *Namespace) GetInfo() *ObjectInfo {
 	return nil
 }
 
-func (ns *Namespace) WithInfo(info *ObjectInfo) Object {
+func (ns *Namespace) WithInfo(info *ObjectInfo) any {
 	return ns
 }
 
@@ -79,7 +79,7 @@ func (ns *Namespace) GetType() *Type {
 	return TYPE.Namespace
 }
 
-func (ns *Namespace) WithMeta(env *Env, meta Map) (Object, error) {
+func (ns *Namespace) WithMeta(env *Env, meta Map) (any, error) {
 	res := &Namespace{
 		Name:     ns.Name,
 		mappings: make(map[string]*Var),
@@ -111,7 +111,7 @@ func (ns *Namespace) ResetMeta(newMeta Map) Map {
 	return ns.meta
 }
 
-func (ns *Namespace) AlterMeta(env *Env, fn *Fn, args []Object) (Map, error) {
+func (ns *Namespace) AlterMeta(env *Env, fn *Fn, args []any) (Map, error) {
 	return AlterMeta(env, &ns.MetaHolder, fn, args)
 }
 
@@ -214,7 +214,7 @@ func (ns *Namespace) Intern(env *Env, sym Symbol) (*Var, error) {
 	return existingVar, nil
 }
 
-func (ns *Namespace) InternVar(env *Env, name string, val Object, meta *ArrayMap) (*Var, error) {
+func (ns *Namespace) InternVar(env *Env, name string, val any, meta *ArrayMap) (*Var, error) {
 	vr, err := ns.Intern(env, MakeSymbol(name))
 	if err != nil {
 		return nil, err

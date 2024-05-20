@@ -4,28 +4,16 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"runtime/pprof"
-	"strconv"
-	"strings"
 
 	"github.com/lab47/lablog/logger"
 	"github.com/lab47/lace/core"
 	"github.com/lab47/lace/pkg/build"
 	_ "github.com/lab47/lace/std-ng/all"
-	_ "github.com/lab47/lace/std/csv"
-	_ "github.com/lab47/lace/std/filepath"
-	_ "github.com/lab47/lace/std/io"
-	_ "github.com/lab47/lace/std/math"
-	_ "github.com/lab47/lace/std/os"
-	_ "github.com/lab47/lace/std/strconv"
-	_ "github.com/lab47/lace/std/time"
-	_ "github.com/lab47/lace/std/url"
-	_ "github.com/lab47/lace/std/uuid"
 	"github.com/spf13/pflag"
 	"golang.org/x/sys/unix"
 )
@@ -56,13 +44,13 @@ func NewReplContext(env *core.Env) *ReplContext {
 	}
 }
 
-func (ctx *ReplContext) PushValue(obj core.Object) {
+func (ctx *ReplContext) PushValue(obj any) {
 	ctx.third.SetStatic(ctx.second.GetStatic())
 	ctx.second.SetStatic(ctx.first.GetStatic())
 	ctx.first.SetStatic(obj)
 }
 
-func (ctx *ReplContext) PushException(exc core.Object) {
+func (ctx *ReplContext) PushException(exc any) {
 	ctx.exc.SetStatic(exc)
 }
 
@@ -87,110 +75,6 @@ func processFile(env *core.Env, filename string) error {
 	}
 	_, err := core.ProcessReader(env, reader, filename)
 	return err
-}
-
-func skipRestOfLine(reader *core.Reader) error {
-	for {
-		c, err := reader.Get()
-		if err != nil {
-			return err
-		}
-		switch c {
-		case core.EOF, '\n':
-			return nil
-		}
-	}
-}
-
-func processReplCommand(env *core.Env, reader *core.Reader, parseContext *core.ParseContext, replContext *ReplContext) (bool, error) {
-
-	defer func() {
-		if r := recover(); r != nil {
-			switch r := r.(type) {
-			case *core.ParseError:
-				replContext.PushException(r)
-				fmt.Fprintln(core.Stderr, r)
-			case *core.EvalError:
-				replContext.PushException(r)
-				fmt.Fprintln(core.Stderr, r)
-			case core.Error:
-				replContext.PushException(r)
-				fmt.Fprintln(core.Stderr, r)
-				// case *runtime.TypeAssertionError:
-				// 	fmt.Fprintln(Stderr, r)
-			default:
-				panic(r)
-			}
-		}
-	}()
-
-	obj, err := core.TryRead(env, reader)
-	if err == io.EOF {
-		return true, nil
-	}
-	if err != nil {
-		fmt.Fprintln(core.Stderr, err)
-		err = skipRestOfLine(reader)
-		if err != nil {
-			fmt.Printf("error: %s\n", err)
-			return false, nil
-		}
-		return false, nil
-	}
-
-	expr, err := core.Parse(obj, parseContext)
-	if err != nil {
-		fmt.Printf("error: %s\n", err)
-		return false, nil
-	}
-
-	/*
-		fn, err := core.Compile(env, []core.Expr{expr})
-		if err != nil {
-			fmt.Printf("error compiling: %s\n", err)
-		} else {
-			obj, err := core.EngineRun(env, fn)
-			if err != nil {
-				fmt.Printf("error running bytecode: %s\n", err)
-			} else {
-				spew.Dump(obj)
-			}
-		}
-	*/
-
-	res, err := core.Eval(env, expr, nil)
-	if err != nil {
-		if _, ok := err.(*core.ExitError); ok {
-			return true, err
-		}
-		fmt.Printf("error: %s\n", err)
-		return false, nil
-	}
-	replContext.PushValue(res)
-	core.PrintObject(env, res, core.Stdout)
-	fmt.Fprintln(core.Stdout, "")
-	return false, nil
-}
-
-func isIgnored(path string) bool {
-	for _, r := range core.WARNINGS.IgnoredFileRegexes {
-		m := r.FindStringSubmatchIndex(path)
-		if len(m) > 0 {
-			if m[1]-m[0] == len(path) {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-func isNumber(s string) bool {
-	_, err := strconv.ParseInt(s, 10, 64)
-	return err == nil
-}
-
-func notOption(arg string) bool {
-	return arg == "-" || !strings.HasPrefix(arg, "-") || isNumber(arg[1:])
 }
 
 var runningProfile interface {
@@ -296,7 +180,7 @@ func MainIn(nsName string) {
 		os.Exit(1)
 	}
 
-	_, err = cl.Call(env, []core.Object{})
+	_, err = cl.Call(env, []any{})
 	if err != nil {
 		core.DisplayError(env, err)
 		os.Exit(1)
@@ -311,6 +195,8 @@ func Main() {
 		fmt.Printf("unable to initialize environment: %s", err)
 		os.Exit(1)
 	}
+
+	log := logger.New(logger.Info)
 
 	//_ = os.Args[0]
 	args := os.Args[1:]
@@ -330,8 +216,12 @@ func Main() {
 	case "run":
 		if len(args) >= 1 {
 			if dir := isProject(args[0]); dir != "" {
-				os.Chdir(dir)
-				runInProject(dir, env, args[1:])
+				err = os.Chdir(dir)
+				if err != nil {
+					log.Error("unable to change to project directory", "error", err, "dir", dir)
+					os.Exit(1)
+				}
+				runInProject(log, dir, env, args[1:])
 				return
 			}
 		}
@@ -339,11 +229,11 @@ func Main() {
 			run(env, args)
 			return
 		} else {
-			runInProject(dir, env, args)
+			runInProject(log, dir, env, args)
 			return
 		}
 	case "repl":
-		env.REPL(os.Stdin, os.Stdout)
+		_ = env.REPL(os.Stdin, os.Stdout)
 	default:
 		fmt.Printf("Unknown command: %s\n", cmd)
 		os.Exit(1)
@@ -370,7 +260,6 @@ func finish(memProfileName string) {
 		f.Close()
 		fmt.Fprintf(core.Stderr, "Memory profile rate=%d written to `%s'.\n",
 			runtime.MemProfileRate, memProfileName)
-		memProfileName = ""
 	}
 }
 
@@ -405,9 +294,7 @@ func findProject() string {
 	return ""
 }
 
-func runInProject(dir string, env *core.Env, args []string) {
-	log := logger.New(logger.Info)
-
+func runInProject(log logger.Logger, dir string, env *core.Env, args []string) {
 	b, err := build.LoadBuilder(log, dir)
 	if err != nil {
 		log.Error("error loading project builder", "error", err)
@@ -423,9 +310,9 @@ func runInProject(dir string, env *core.Env, args []string) {
 
 	argv := append([]string{exe}, args...)
 
-	unix.Exec(exe, argv, os.Environ())
+	err = unix.Exec(exe, argv, os.Environ())
 
-	log.Error("error executing exe")
+	log.Error("error executing exe", "error", err)
 
 	cmd := exec.Command(exe, args...)
 	cmd.Stdin = os.Stdin

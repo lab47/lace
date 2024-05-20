@@ -7,9 +7,9 @@ type (
 		val interface{}
 	}
 	Node interface {
-		assoc(env *Env, shift uint, hash uint32, key Object, val Object, addedLeaf *Box) (Node, error)
-		without(env *Env, shift uint, hash uint32, key Object) Node
-		find(env *Env, shift uint, hash uint32, key Object) *Pair
+		assoc(env *Env, shift uint, hash uint32, key any, val any, addedLeaf *Box) (Node, error)
+		without(env *Env, shift uint, hash uint32, key any) Node
+		find(env *Env, shift uint, hash uint32, key any) *Pair
 		findEqu(shift uint, hash uint32, key Equ) *Pair
 		nodeSeq() Seq
 		iter() MapIterator
@@ -99,7 +99,7 @@ func (iter *NodeIterator) advance() bool {
 		nodeOrVal := iter.array[iter.i+1]
 		iter.i += 2
 		if key != nil {
-			iter.nextEntry = &Pair{Key: key.(Object), Value: nodeOrVal.(Object)}
+			iter.nextEntry = &Pair{Key: key, Value: nodeOrVal}
 			return true
 		} else if nodeOrVal != nil {
 			iter1 := nodeOrVal.(Node).iter()
@@ -159,7 +159,7 @@ func newArrayNodeSeq(nodes []Node, i int, s Seq) Seq {
 	return nil
 }
 
-func (s *ArrayNodeSeq) WithMeta(env *Env, meta Map) (Object, error) {
+func (s *ArrayNodeSeq) WithMeta(env *Env, meta Map) (any, error) {
 	res := *s
 	m, err := SafeMerge(env, res.meta, meta)
 	if err != nil {
@@ -193,7 +193,7 @@ func (s *ArrayNodeSeq) Hash(env *Env) (uint32, error) {
 	return hashOrdered(env, s)
 }
 
-func (s *ArrayNodeSeq) First(env *Env) (Object, error) {
+func (s *ArrayNodeSeq) First(env *Env) (any, error) {
 	return s.s.First(env)
 }
 
@@ -223,7 +223,7 @@ func (s *ArrayNodeSeq) IsEmpty(env *Env) (bool, error) {
 	return false, nil
 }
 
-func (s *ArrayNodeSeq) Cons(obj Object) Seq {
+func (s *ArrayNodeSeq) Cons(obj any) Seq {
 	return &ConsSeq{first: obj, rest: s}
 }
 
@@ -259,7 +259,7 @@ func newNodeSeq(array []any, i int, s Seq) Seq {
 	return nil
 }
 
-func (s *NodeSeq) WithMeta(env *Env, meta Map) (Object, error) {
+func (s *NodeSeq) WithMeta(env *Env, meta Map) (any, error) {
 	res := *s
 	m, err := SafeMerge(env, res.meta, meta)
 	if err != nil {
@@ -294,11 +294,11 @@ func (s *NodeSeq) Hash(env *Env) (uint32, error) {
 	return hashOrdered(env, s)
 }
 
-func (s *NodeSeq) First(env *Env) (Object, error) {
+func (s *NodeSeq) First(env *Env) (any, error) {
 	if s.s != nil {
 		return s.s.First(env)
 	}
-	return NewVectorFrom(s.array[s.i].(Object), s.array[s.i+1].(Object)), nil
+	return NewVectorFrom(s.array[s.i], s.array[s.i+1]), nil
 }
 
 func (s *NodeSeq) Rest(env *Env) (Seq, error) {
@@ -333,7 +333,7 @@ func (s *NodeSeq) IsEmpty(env *Env) (bool, error) {
 	return false, nil
 }
 
-func (s *NodeSeq) Cons(obj Object) Seq {
+func (s *NodeSeq) Cons(obj any) Seq {
 	return &ConsSeq{first: obj, rest: s}
 }
 
@@ -345,7 +345,7 @@ func (n *ArrayNode) iter() MapIterator {
 	}
 }
 
-func (n *ArrayNode) assoc(env *Env, shift uint, hash uint32, key Object, val Object, addedLeaf *Box) (Node, error) {
+func (n *ArrayNode) assoc(env *Env, shift uint, hash uint32, key any, val any, addedLeaf *Box) (Node, error) {
 	idx := mask(hash, shift)
 	node := n.array[idx]
 	if node == nil {
@@ -371,7 +371,7 @@ func (n *ArrayNode) assoc(env *Env, shift uint, hash uint32, key Object, val Obj
 	}, nil
 }
 
-func (n *ArrayNode) without(env *Env, shift uint, hash uint32, key Object) Node {
+func (n *ArrayNode) without(env *Env, shift uint, hash uint32, key any) Node {
 	idx := mask(hash, shift)
 	node := n.array[idx]
 	if node == nil {
@@ -397,7 +397,7 @@ func (n *ArrayNode) without(env *Env, shift uint, hash uint32, key Object) Node 
 	}
 }
 
-func (n *ArrayNode) find(env *Env, shift uint, hash uint32, key Object) *Pair {
+func (n *ArrayNode) find(env *Env, shift uint, hash uint32, key any) *Pair {
 	idx := mask(hash, shift)
 	node := n.array[idx]
 	if node == nil {
@@ -444,7 +444,7 @@ func (n *ArrayNode) pack(idx uint) Node {
 	}
 }
 
-func (n *HashCollisionNode) findIndex(env *Env, key Object) int {
+func (n *HashCollisionNode) findIndex(env *Env, key any) int {
 	for i := 0; i < 2*n.count; i += 2 {
 		if Equals(env, key, n.array[i]) {
 			return i
@@ -455,10 +455,7 @@ func (n *HashCollisionNode) findIndex(env *Env, key Object) int {
 
 func (n *HashCollisionNode) findIndexEqu(key Equ) int {
 	for i := 0; i < 2*n.count; i += 2 {
-		k, ok := n.array[i].(Object)
-		if !ok {
-			continue
-		}
+		k := n.array[i]
 
 		if key.Is(k) {
 			return i
@@ -473,7 +470,7 @@ func (n *HashCollisionNode) iter() MapIterator {
 	}
 }
 
-func (n *HashCollisionNode) assoc(env *Env, shift uint, hash uint32, key Object, val Object, addedLeaf *Box) (Node, error) {
+func (n *HashCollisionNode) assoc(env *Env, shift uint, hash uint32, key any, val any, addedLeaf *Box) (Node, error) {
 	if hash == n.hash {
 		idx := n.findIndex(env, key)
 		if idx != -1 {
@@ -506,7 +503,7 @@ func (n *HashCollisionNode) assoc(env *Env, shift uint, hash uint32, key Object,
 	}).assoc(env, shift, hash, key, val, addedLeaf)
 }
 
-func (n *HashCollisionNode) without(env *Env, shift uint, hash uint32, key Object) Node {
+func (n *HashCollisionNode) without(env *Env, shift uint, hash uint32, key any) Node {
 	idx := n.findIndex(env, key)
 	if idx == -1 {
 		return n
@@ -521,14 +518,14 @@ func (n *HashCollisionNode) without(env *Env, shift uint, hash uint32, key Objec
 	}
 }
 
-func (n *HashCollisionNode) find(env *Env, shift uint, hash uint32, key Object) *Pair {
+func (n *HashCollisionNode) find(env *Env, shift uint, hash uint32, key any) *Pair {
 	idx := n.findIndex(env, key)
 	if idx == -1 {
 		return nil
 	}
 	return &Pair{
-		Key:   n.array[idx].(Object),
-		Value: n.array[idx+1].(Object),
+		Key:   n.array[idx],
+		Value: n.array[idx+1],
 	}
 }
 
@@ -538,8 +535,8 @@ func (n *HashCollisionNode) findEqu(shift uint, hash uint32, key Equ) *Pair {
 		return nil
 	}
 	return &Pair{
-		Key:   n.array[idx].(Object),
-		Value: n.array[idx+1].(Object),
+		Key:   n.array[idx],
+		Value: n.array[idx+1],
 	}
 }
 
@@ -584,7 +581,7 @@ func cloneAndSetNode(array []Node, i int, a Node) []Node {
 	return res
 }
 
-func createNode(env *Env, shift uint, key1 Object, val1 Object, key2hash uint32, key2 Object, val2 Object) (Node, error) {
+func createNode(env *Env, shift uint, key1 any, val1 any, key2hash uint32, key2 any, val2 any) (Node, error) {
 	key1hash, err := HashValue(env, key1)
 	if err != nil {
 		return nil, err
@@ -626,7 +623,7 @@ func (b *BitmapIndexedNode) iter() MapIterator {
 	}
 }
 
-func (b *BitmapIndexedNode) assoc(env *Env, shift uint, hash uint32, key Object, val Object, addedLeaf *Box) (Node, error) {
+func (b *BitmapIndexedNode) assoc(env *Env, shift uint, hash uint32, key any, val any, addedLeaf *Box) (Node, error) {
 	bit := bitpos(hash, shift)
 	idx := b.index(bit)
 	if b.bitmap&bit != 0 {
@@ -655,7 +652,7 @@ func (b *BitmapIndexedNode) assoc(env *Env, shift uint, hash uint32, key Object,
 			}, nil
 		}
 		addedLeaf.val = addedLeaf
-		nn, err := createNode(env, shift+5, keyOrNull.(Object), valOrNode.(Object), hash, key, val)
+		nn, err := createNode(env, shift+5, keyOrNull, valOrNode, hash, key, val)
 		if err != nil {
 			return nil, err
 		}
@@ -681,11 +678,11 @@ func (b *BitmapIndexedNode) assoc(env *Env, shift uint, hash uint32, key Object,
 					if b.array[j] == nil {
 						nodes[i] = b.array[j+1].(Node)
 					} else {
-						h, err := HashValue(env, b.array[j].(Object))
+						h, err := HashValue(env, b.array[j])
 						if err != nil {
 							return nil, err
 						}
-						nodes[i], err = emptyIndexedNode.assoc(env, shift+5, h, b.array[j].(Object), b.array[j+1].(Object), addedLeaf)
+						nodes[i], err = emptyIndexedNode.assoc(env, shift+5, h, b.array[j], b.array[j+1], addedLeaf)
 						if err != nil {
 							return nil, err
 						}
@@ -716,7 +713,7 @@ func (b *BitmapIndexedNode) assoc(env *Env, shift uint, hash uint32, key Object,
 	}
 }
 
-func (b *BitmapIndexedNode) without(env *Env, shift uint, hash uint32, key Object) Node {
+func (b *BitmapIndexedNode) without(env *Env, shift uint, hash uint32, key any) Node {
 	bit := bitpos(hash, shift)
 	if (b.bitmap & bit) == 0 {
 		return b
@@ -752,7 +749,7 @@ func (b *BitmapIndexedNode) without(env *Env, shift uint, hash uint32, key Objec
 	return b
 }
 
-func (b *BitmapIndexedNode) find(env *Env, shift uint, hash uint32, key Object) *Pair {
+func (b *BitmapIndexedNode) find(env *Env, shift uint, hash uint32, key any) *Pair {
 	bit := bitpos(hash, shift)
 	if (b.bitmap & bit) == 0 {
 		return nil
@@ -765,8 +762,8 @@ func (b *BitmapIndexedNode) find(env *Env, shift uint, hash uint32, key Object) 
 	}
 	if Equals(env, key, keyOrNull) {
 		return &Pair{
-			Key:   keyOrNull.(Object),
-			Value: valOrNode.(Object),
+			Key:   keyOrNull,
+			Value: valOrNode,
 		}
 	}
 	return nil
@@ -783,11 +780,11 @@ func (b *BitmapIndexedNode) findEqu(shift uint, hash uint32, key Equ) *Pair {
 	if keyOrNull == nil {
 		return valOrNode.(Node).findEqu(shift+5, hash, key)
 	}
-	obj, ok := keyOrNull.(Object)
-	if ok && key.Is(obj) {
+	obj := keyOrNull
+	if key.Is(obj) {
 		return &Pair{
-			Key:   keyOrNull.(Object),
-			Value: valOrNode.(Object),
+			Key:   keyOrNull,
+			Value: valOrNode,
 		}
 	}
 	return nil
@@ -797,7 +794,7 @@ func (b *BitmapIndexedNode) nodeSeq() Seq {
 	return newNodeSeq(b.array, 0, nil)
 }
 
-func (m *HashMap) WithMeta(env *Env, meta Map) (Object, error) {
+func (m *HashMap) WithMeta(env *Env, meta Map) (any, error) {
 	res := *m
 	v, err := SafeMerge(env, res.meta, meta)
 	if err != nil {
@@ -837,7 +834,7 @@ func (m *HashMap) Count() int {
 	return m.count
 }
 
-func (m *HashMap) containsKey(env *Env, key Object) bool {
+func (m *HashMap) containsKey(env *Env, key any) bool {
 	if m.root != nil {
 		h, err := HashValue(env, key)
 		if err != nil {
@@ -850,7 +847,7 @@ func (m *HashMap) containsKey(env *Env, key Object) bool {
 	}
 }
 
-func (m *HashMap) Assoc(env *Env, key, val Object) (Associative, error) {
+func (m *HashMap) Assoc(env *Env, key, val any) (Associative, error) {
 	addedLeaf := &Box{}
 	var newroot, t Node
 	if m.root == nil {
@@ -881,7 +878,7 @@ func (m *HashMap) Assoc(env *Env, key, val Object) (Associative, error) {
 	return res, nil
 }
 
-func (m *HashMap) EntryAt(env *Env, key Object) (*Vector, error) {
+func (m *HashMap) EntryAt(env *Env, key any) (*Vector, error) {
 	if m.root != nil {
 		h, err := HashValue(env, key)
 		if err != nil {
@@ -895,7 +892,7 @@ func (m *HashMap) EntryAt(env *Env, key Object) (*Vector, error) {
 	return nil, nil
 }
 
-func (m *HashMap) Get(env *Env, key Object) (bool, Object, error) {
+func (m *HashMap) Get(env *Env, key any) (bool, any, error) {
 	if m.root != nil {
 		h, err := HashValue(env, key)
 		if err != nil {
@@ -908,7 +905,7 @@ func (m *HashMap) Get(env *Env, key Object) (bool, Object, error) {
 	return false, nil, nil
 }
 
-func (m *HashMap) GetEqu(key Equ) (bool, Object) {
+func (m *HashMap) GetEqu(key Equ) (bool, any) {
 	if m.root != nil {
 		if res := m.root.findEqu(0, key.IsHash(), key); res != nil {
 			return true, res.Value
@@ -917,7 +914,7 @@ func (m *HashMap) GetEqu(key Equ) (bool, Object) {
 	return false, nil
 }
 
-func (m *HashMap) Conj(env *Env, obj Object) (Conjable, error) {
+func (m *HashMap) Conj(env *Env, obj any) (Conjable, error) {
 	return mapConj(env, m, obj)
 }
 
@@ -931,7 +928,7 @@ func (m *HashMap) Iter() MapIterator {
 func (m *HashMap) Keys() Seq {
 	return &MappingSeq{
 		seq: m.Seq(),
-		fn: func(env *Env, obj Object) (Object, error) {
+		fn: func(env *Env, obj any) (any, error) {
 			var v *Vector
 			if err := Cast(env, obj, &v); err != nil {
 				return nil, err
@@ -944,7 +941,7 @@ func (m *HashMap) Keys() Seq {
 func (m *HashMap) Vals() Seq {
 	return &MappingSeq{
 		seq: m.Seq(),
-		fn: func(env *Env, obj Object) (Object, error) {
+		fn: func(env *Env, obj any) (any, error) {
 			var v *Vector
 			if err := Cast(env, obj, &v); err != nil {
 				return nil, err
@@ -978,7 +975,7 @@ func (m *HashMap) Merge(env *Env, other Map) (Map, error) {
 	return mm, nil
 }
 
-func (m *HashMap) Without(env *Env, key Object) (Map, error) {
+func (m *HashMap) Without(env *Env, key any) (Map, error) {
 	if m.root == nil {
 		return m, nil
 	}
@@ -1000,13 +997,13 @@ func (m *HashMap) Without(env *Env, key Object) (Map, error) {
 	return res, nil
 }
 
-func (m *HashMap) Call(env *Env, args []Object) (Object, error) {
+func (m *HashMap) Call(env *Env, args []any) (any, error) {
 	return callMap(env, m, args)
 }
 
 var _ Callable = (*HashMap)(nil)
 
-func NewHashMap(env *Env, keyvals ...Object) (*HashMap, error) {
+func NewHashMap(env *Env, keyvals ...any) (*HashMap, error) {
 	var res Associative = EmptyHashMap
 	var err error
 	for i := 0; i < len(keyvals); i += 2 {

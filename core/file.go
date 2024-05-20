@@ -10,7 +10,7 @@ type (
 	}
 )
 
-var _ Object = &File{}
+var _ any = &File{}
 
 func (f *File) ToString(env *Env, escape bool) (string, error) {
 	return "#object[File]", nil
@@ -32,7 +32,7 @@ func (f *File) Hash(env *Env) (uint32, error) {
 	return HashPtr(f), nil
 }
 
-func (f *File) WithInfo(info *ObjectInfo) Object {
+func (f *File) WithInfo(info *ObjectInfo) any {
 	return f
 }
 
@@ -40,6 +40,6 @@ func MakeFile(f *os.File) *File {
 	return &File{f}
 }
 
-func ExtractFile(env *Env, args []Object, index int) (*File, error) {
+func ExtractFile(env *Env, args []any, index int) (*File, error) {
 	return EnsureFile(env, args, index)
 }

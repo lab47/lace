@@ -11,7 +11,7 @@ type (
 	}
 )
 
-var _ Object = &Buffer{}
+var _ any = &Buffer{}
 
 func MakeBuffer(b *bytes.Buffer) *Buffer {
 	res := &Buffer{b, 0}
@@ -39,6 +39,6 @@ func (b *Buffer) Hash(env *Env) (uint32, error) {
 	return b.hash, nil
 }
 
-func (b *Buffer) WithInfo(info *ObjectInfo) Object {
+func (b *Buffer) WithInfo(info *ObjectInfo) any {
 	return b
 }

@@ -95,11 +95,11 @@ func init() {
 
 type marshalState struct {
 	env   *core.Env
-	refs  map[core.Object]int
-	frefs map[string]core.Object
+	refs  map[any]int
+	frefs map[string]any
 }
 
-func (m *marshalState) newFref(val core.Object) ForeignRef {
+func (m *marshalState) newFref(val any) ForeignRef {
 	u, err := ulid.New(ulid.Now(), ulid.DefaultEntropy())
 	if err != nil {
 		panic(err)
@@ -112,7 +112,7 @@ func (m *marshalState) newFref(val core.Object) ForeignRef {
 	return ForeignRef{Ref: str}
 }
 
-func (m *marshalState) newRef(val core.Object) Ref {
+func (m *marshalState) newRef(val any) Ref {
 	id := len(m.refs)
 
 	m.refs[val] = id
@@ -205,7 +205,7 @@ func (m *marshalState) encodeMap(ma core.Map) ([]byte, error) {
 	return m.encode(col)
 }
 
-func (m *marshalState) Marshal(obj core.Object) ([]byte, error) {
+func (m *marshalState) Marshal(obj any) ([]byte, error) {
 	if idx, ok := m.refs[obj]; ok {
 		return m.encode(Ref{Index: idx})
 	}
@@ -263,10 +263,10 @@ func (m *marshalState) Marshal(obj core.Object) ([]byte, error) {
 
 var ErrUnsupported = errors.New("value can not be marshaled")
 
-func Marshal(obj core.Object) ([]byte, error) {
+func Marshal(obj any) ([]byte, error) {
 	var ms marshalState
-	ms.refs = make(map[core.Object]int)
-	ms.frefs = make(map[string]core.Object)
+	ms.refs = make(map[any]int)
+	ms.frefs = make(map[string]any)
 
 	return ms.Marshal(obj)
 }

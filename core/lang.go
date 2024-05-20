@@ -2,7 +2,6 @@ package core
 
 import (
 	"bufio"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -14,7 +13,7 @@ import (
 // Create a new lace List from the given arguments
 //
 //lace:export List
-func MakeList(env *Env, args []Object) (Object, error) {
+func MakeList(env *Env, args []any) (any, error) {
 	l := NewListFrom(args...)
 
 	show(env, "list", l)
@@ -22,18 +21,17 @@ func MakeList(env *Env, args []Object) (Object, error) {
 	return l, nil
 }
 
-var cnt = 0
-
-func show(env *Env, prefix string, obj Object) {
-	return
-	os, _ := ToString(env, obj)
-	fmt.Printf("%s: %s\n", prefix, os)
+func show(env *Env, prefix string, obj any) {
+	/*
+		os, _ := ToString(env, obj)
+		fmt.Printf("%s: %s\n", prefix, os)
+	*/
 }
 
 // Add an element to a Seq value, returning a new Seq
 //
 //lace:export
-func Cons(env *Env, val Object, seq Seqable) (Object, error) {
+func Cons(env *Env, val any, seq Seqable) (any, error) {
 	s := seq.Seq()
 
 	show(env, "cons<-", val)
@@ -43,7 +41,6 @@ func Cons(env *Env, val Object, seq Seqable) (Object, error) {
 	//os, _ := val.ToString(env, true)
 
 	//fmt.Printf("%d cons %s %s\n", cnt, os, ss)
-	cnt++
 
 	return s.Cons(val), nil
 }
@@ -51,7 +48,7 @@ func Cons(env *Env, val Object, seq Seqable) (Object, error) {
 // Return the first element in a Seq
 //
 //lace:export
-func First(env *Env, s Seqable) (Object, error) {
+func First(env *Env, s Seqable) (any, error) {
 	q := s.Seq()
 	show(env, "first", q)
 	return q.First(env)
@@ -60,7 +57,7 @@ func First(env *Env, s Seqable) (Object, error) {
 // Return elements other than the first one in a Seq
 //
 //lace:export
-func Next(env *Env, s Seqable) (Object, error) {
+func Next(env *Env, s Seqable) (any, error) {
 	q := s.Seq()
 	show(env, "next", q)
 
@@ -82,7 +79,7 @@ func Next(env *Env, s Seqable) (Object, error) {
 // Return all elements of a seq except for the first one.
 //
 //lace:export
-func Rest(env *Env, s Seqable) (Object, error) {
+func Rest(env *Env, s Seqable) (any, error) {
 	q := s.Seq()
 	show(env, "rest", q)
 
@@ -92,7 +89,7 @@ func Rest(env *Env, s Seqable) (Object, error) {
 // Create a new Sequence by combine the value with the collection.
 //
 //lace:export
-func Conj(env *Env, col Object, val Object) (Object, error) {
+func Conj(env *Env, col any, val any) (any, error) {
 	show(env, "conj", col)
 	show(env, "conj<-", val)
 
@@ -109,7 +106,7 @@ func Conj(env *Env, col Object, val Object) (Object, error) {
 // Convert the given value to a Seq
 //
 //lace:export Seq
-func ConvertToSeq(env *Env, s Seqable) (Object, error) {
+func ConvertToSeq(env *Env, s Seqable) (any, error) {
 	sq := s.Seq()
 	show(env, "seq", sq)
 	empty, err := sq.IsEmpty(env)
@@ -127,8 +124,8 @@ func ConvertToSeq(env *Env, s Seqable) (Object, error) {
 // Concatinate N sequences together
 //
 //lace:export
-func ConcatSimple(env *Env, args []Object) (Object, error) {
-	var data []Object
+func ConcatSimple(env *Env, args []any) (any, error) {
+	var data []any
 
 	for _, o := range args {
 		if s, ok := o.(Seqable); ok {
@@ -151,7 +148,7 @@ func ConcatSimple(env *Env, args []Object) (Object, error) {
 // Compare two values returning a boolean if they are equal or not
 //
 //lace:export Equals
-func EqualsValues(env *Env, a, b Object) (Object, error) {
+func EqualsValues(env *Env, a, b any) (any, error) {
 	return MakeBoolean(Equals(env, a, b)), nil
 }
 
@@ -159,7 +156,7 @@ func EqualsValues(env *Env, a, b Object) (Object, error) {
 // the original set.
 //
 //lace:export
-func PushBindings(env *Env, assoc Map) (Object, error) {
+func PushBindings(env *Env, assoc Map) (any, error) {
 	cur := env.CurrentVar
 	if cur == nil {
 		cur = EmptyArrayMap()
@@ -186,7 +183,7 @@ func PushBindings(env *Env, assoc Map) (Object, error) {
 // Reset the local var bindings to the given value.
 //
 //lace:export
-func SetBindings(env *Env, assoc Associative) (Object, error) {
+func SetBindings(env *Env, assoc Associative) (any, error) {
 	env.CurrentVar = assoc
 	return assoc, nil
 }
@@ -194,7 +191,7 @@ func SetBindings(env *Env, assoc Associative) (Object, error) {
 // Attempt to load a given lib from a given path.
 //
 //lace:export
-func LoadLibFromPath(env *Env, libnamev Symbol, pathnamev String) (Object, error) {
+func LoadLibFromPath(env *Env, libnamev Symbol, pathnamev String) (any, error) {
 	// Sometimes we load namespaces without telling the clojure code,
 	// so see if it's already loaded and if so, use it.
 
@@ -255,12 +252,12 @@ func LoadLibFromPath(env *Env, libnamev Symbol, pathnamev String) (Object, error
 // that can be used to retrieve the return value.
 //
 //lace:export
-func StartGoRoutine(parent *Env, callable Callable) (Object, error) {
+func StartGoRoutine(parent *Env, callable Callable) (any, error) {
 	ch := MakeChannel(make(chan FutureResult, 1))
 	env := parent.Child()
 	go func() {
 		var cerr Error
-		res, err := callable.Call(env, []Object{})
+		res, err := callable.Call(env, []any{})
 		if err != nil {
 			cerr = env.NewError(err.Error())
 		}

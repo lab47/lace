@@ -48,7 +48,7 @@ type (
 
 		CurrentVar     Associative
 		Context        context.Context
-		cycleDetection map[[2]Object]struct{}
+		cycleDetection map[[2]any]struct{}
 
 		Engine *Engine
 
@@ -66,7 +66,10 @@ func (env *Env) Child() *Env {
 		CurrentVar: NIL,
 	}
 
-	ret.SetContext(context.Background())
+	err := ret.SetContext(context.Background())
+	if err != nil {
+		panic(err)
+	}
 
 	return ret
 }
@@ -76,18 +79,18 @@ func (env *Env) enableCycleDetection() func() {
 		return func() {}
 	}
 
-	env.cycleDetection = make(map[[2]Object]struct{})
+	env.cycleDetection = make(map[[2]any]struct{})
 	return func() {
 		env.cycleDetection = nil
 	}
 }
 
-func (env *Env) cycling(a, b Object) bool {
+func (env *Env) cycling(a, b any) bool {
 	if env.cycleDetection == nil {
 		return false
 	}
 
-	key := [2]Object{a, b}
+	key := [2]any{a, b}
 
 	_, ok := env.cycleDetection[key]
 	if ok {
@@ -99,7 +102,7 @@ func (env *Env) cycling(a, b Object) bool {
 	return false
 }
 
-func (env *Env) FindInCurrentVars(vr *Var) (Object, bool, error) {
+func (env *Env) FindInCurrentVars(vr *Var) (any, bool, error) {
 	if env.CurrentVar == nil {
 		return nil, false, nil
 	}
@@ -165,13 +168,13 @@ func (env *Env) InitEnv(stdin io.Reader, stdout, stderr io.Writer, args []string
 	env.SetEnvArgs(args)
 }
 
-func (env *Env) SetStdIO(stdin, stdout, stderr Object) {
+func (env *Env) SetStdIO(stdin, stdout, stderr any) {
 	env.stdin.SetStatic(stdin)
 	env.stdout.SetStatic(stdout)
 	env.stderr.SetStatic(stderr)
 }
 
-func (env *Env) StdIO() (stdin, stdout, stderr Object) {
+func (env *Env) StdIO() (stdin, stdout, stderr any) {
 	return env.stdin.GetStatic(), env.stdout.GetStatic(), env.stderr.GetStatic()
 }
 
@@ -189,11 +192,11 @@ This runs after invariant initialization, which includes calling
 
 	NewEnv().
 */
-func (env *Env) SetFilename(obj Object) {
+func (env *Env) SetFilename(obj any) {
 	env.file.SetStatic(obj)
 }
 
-func (env *Env) IsStdIn(obj Object) bool {
+func (env *Env) IsStdIn(obj any) bool {
 	return env.stdin.GetStatic() == obj
 }
 
@@ -427,12 +430,15 @@ func (env *Env) ResolveSymbol(s Symbol) (Symbol, error) {
 	return AssembleSymbol(vr.ns.Name.Name(), vr.name.Name()), nil
 }
 
-func (env *Env) Eval(str string) (Object, error) {
+func (env *Env) Eval(str string) (any, error) {
 	reader := NewReader(strings.NewReader(str), "<expr>")
 	return ProcessReader(env, reader, "")
 }
 
-func (e *Env) SetContext(ctx context.Context) {
+func (e *Env) SetContext(ctx context.Context) error {
 	e.Context = ctx
-	e.ctx.SetValue(e, MakeReflectValue(ctx))
+	if v := e.ctx; v != nil {
+		return v.SetValue(e, MakeReflectValue(ctx))
+	}
+	return nil
 }

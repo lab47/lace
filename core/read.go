@@ -19,7 +19,7 @@ type (
 		filename string
 		msg      string
 	}
-	ReadFunc func(reader *Reader) Object
+	ReadFunc func(reader *Reader) any
 	pos      struct {
 		line   int
 		column int
@@ -91,7 +91,7 @@ func escapeString(str string) string {
 	return b.String()
 }
 
-func MakeReadError3(env *Env, reader *Reader, msg string, obj Object) ReadError {
+func MakeReadError3(env *Env, reader *Reader, msg string, obj any) ReadError {
 	if obj != nil {
 		s, err := ToString(env, obj)
 		if err != nil {
@@ -118,7 +118,7 @@ func MakeReadError(reader *Reader, msg string) ReadError {
 	}
 }
 
-func MakeReadObject(reader *Reader, obj Object) Object {
+func MakeReadObject(reader *Reader, obj any) any {
 	p := popPos(reader)
 	return SetInfo(obj, &ObjectInfo{Position: Position{
 		startColumn: p.column,
@@ -129,7 +129,7 @@ func MakeReadObject(reader *Reader, obj Object) Object {
 	}})
 }
 
-func DeriveReadObject(base Object, obj Object) Object {
+func DeriveReadObject(base any, obj any) any {
 	baseInfo := GetInfo(base)
 	if baseInfo != nil {
 		bi := *baseInfo
@@ -138,7 +138,7 @@ func DeriveReadObject(base Object, obj Object) Object {
 	return obj
 }
 
-func (err ReadError) Message() Object {
+func (err ReadError) Message() any {
 	return MakeString(err.msg)
 }
 
@@ -176,7 +176,7 @@ func peekExpectedDelimiter(reader *Reader) error {
 	return nil
 }
 
-func readSpecialCharacter(reader *Reader, ending string, r rune) (Object, error) {
+func readSpecialCharacter(reader *Reader, ending string, r rune) (any, error) {
 	if err := eatString(reader, ending); err != nil {
 		return nil, err
 	}
@@ -241,7 +241,7 @@ func eatWhitespace(env *Env, reader *Reader) error {
 	return nil
 }
 
-func readUnicodeCharacter(reader *Reader, length, base int) (Object, error) {
+func readUnicodeCharacter(reader *Reader, length, base int) (any, error) {
 	var b bytes.Buffer
 
 	n, err := reader.Get()
@@ -273,7 +273,7 @@ func readUnicodeCharacter(reader *Reader, length, base int) (Object, error) {
 	return MakeReadObject(reader, NewChar(rune(i))), nil
 }
 
-func readCharacter(reader *Reader) (Object, error) {
+func readCharacter(reader *Reader) (any, error) {
 	r, err := reader.Get()
 	if err != nil {
 		return nil, err
@@ -322,7 +322,7 @@ func readCharacter(reader *Reader) (Object, error) {
 	return MakeReadObject(reader, NewChar(r)), nil
 }
 
-func scanBigInt(str string, base int, err error, reader *Reader) (Object, error) {
+func scanBigInt(str string, base int, err error, reader *Reader) (any, error) {
 	var bi big.Int
 	if _, ok := bi.SetString(str, base); !ok {
 		return nil, err
@@ -331,7 +331,7 @@ func scanBigInt(str string, base int, err error, reader *Reader) (Object, error)
 	return MakeReadObject(reader, &res), nil
 }
 
-func scanRatio(str string, err error, reader *Reader) (Object, error) {
+func scanRatio(str string, err error, reader *Reader) (any, error) {
 	var rat big.Rat
 	if _, ok := rat.SetString(str); !ok {
 		return nil, err
@@ -343,7 +343,7 @@ func scanRatio(str string, err error, reader *Reader) (Object, error) {
 	return MakeReadObject(reader, r), nil
 }
 
-func scanBigFloat(str string, err error, reader *Reader) (Object, error) {
+func scanBigFloat(str string, err error, reader *Reader) (any, error) {
 	var bf big.Float
 	if _, ok := bf.SetPrec(256).SetString(str); !ok {
 		return nil, err
@@ -352,7 +352,7 @@ func scanBigFloat(str string, err error, reader *Reader) (Object, error) {
 	return MakeReadObject(reader, &res), nil
 }
 
-func scanInt(str string, base int, err error, reader *Reader) (Object, error) {
+func scanInt(str string, base int, err error, reader *Reader) (any, error) {
 	i, e := strconv.ParseInt(str, base, 0)
 	if e != nil {
 		return scanBigInt(str, base, err, reader)
@@ -361,7 +361,7 @@ func scanInt(str string, base int, err error, reader *Reader) (Object, error) {
 	return MakeReadObject(reader, MakeInt(int(i))), nil
 }
 
-func readNumber(reader *Reader) (Object, error) {
+func readNumber(reader *Reader) (any, error) {
 	var b bytes.Buffer
 	isDouble, isHex, isExp, isRatio, base, nonDigits := false, false, false, false, "", 0
 	d, err := reader.Get()
@@ -455,7 +455,7 @@ func isSymbolRune(r rune) bool {
 	return isSymbolInitial(r) || unicode.IsDigit(r) || r == '#' || r == '/' || r == '\''
 }
 
-func readSymbol(env *Env, reader *Reader, first rune) (Object, error) {
+func readSymbol(env *Env, reader *Reader, first rune) (any, error) {
 	var b bytes.Buffer
 	if first != ':' {
 		b.WriteRune(first)
@@ -517,7 +517,7 @@ func readSymbol(env *Env, reader *Reader, first rune) (Object, error) {
 	}
 }
 
-func readRegex(reader *Reader) (Object, error) {
+func readRegex(reader *Reader) (any, error) {
 	var b bytes.Buffer
 	r, err := reader.Get()
 	if err != nil {
@@ -576,7 +576,7 @@ func readUnicodeCharacterInString(reader *Reader, initial rune, length, base int
 	return rune(i), nil
 }
 
-func readString(reader *Reader) (Object, error) {
+func readString(reader *Reader) (any, error) {
 	var b bytes.Buffer
 	r, err := reader.Get()
 	if err != nil {
@@ -635,8 +635,8 @@ func readString(reader *Reader) (Object, error) {
 	return MakeReadObject(reader, MakeString(b.String())), nil
 }
 
-func readList(env *Env, reader *Reader) (Object, error) {
-	s := make([]Object, 0, 10)
+func readList(env *Env, reader *Reader) (any, error) {
+	s := make([]any, 0, 10)
 	err := eatWhitespace(env, reader)
 	if err != nil {
 		return nil, err
@@ -677,7 +677,7 @@ func readList(env *Env, reader *Reader) (Object, error) {
 	return res, nil
 }
 
-func readVector(env *Env, reader *Reader) (Object, error) {
+func readVector(env *Env, reader *Reader) (any, error) {
 	res := EmptyVector()
 	err := eatWhitespace(env, reader)
 	if err != nil {
@@ -720,7 +720,7 @@ func readVector(env *Env, reader *Reader) (Object, error) {
 	return MakeReadObject(reader, res), nil
 }
 
-func resolveKey(key Object, nsname string) Object {
+func resolveKey(key any, nsname string) any {
 	if nsname == "" {
 		return key
 	}
@@ -743,17 +743,17 @@ func resolveKey(key Object, nsname string) Object {
 	return key
 }
 
-func readMap(env *Env, reader *Reader) (Object, error) {
+func readMap(env *Env, reader *Reader) (any, error) {
 	return readMapWithNamespace(env, reader, "")
 }
 
-func readMapWithNamespace(env *Env, reader *Reader, nsname string) (Object, error) {
+func readMapWithNamespace(env *Env, reader *Reader, nsname string) (any, error) {
 	err := eatWhitespace(env, reader)
 	if err != nil {
 		return nil, err
 	}
 	r := reader.Peek()
-	objs := []Object{}
+	objs := []any{}
 	for r != '}' {
 		obj, multi, err := Read(env, reader)
 		if err != nil {
@@ -813,7 +813,7 @@ func readMapWithNamespace(env *Env, reader *Reader, nsname string) (Object, erro
 	return MakeReadObject(reader, m), nil
 }
 
-func readSet(env *Env, reader *Reader) (Object, error) {
+func readSet(env *Env, reader *Reader) (any, error) {
 	set := EmptySet()
 	err := eatWhitespace(env, reader)
 	if err != nil {
@@ -861,7 +861,7 @@ func readSet(env *Env, reader *Reader) (Object, error) {
 	return MakeReadObject(reader, set), nil
 }
 
-func makeQuote(obj Object, quote Symbol) Object {
+func makeQuote(obj any, quote Symbol) any {
 	res := NewListFrom(quote, obj)
 	return DeriveReadObject(obj, res)
 }
@@ -875,9 +875,9 @@ func readMeta(env *Env, reader *Reader) (*ArrayMap, error) {
 	case *ArrayMap:
 		return v, nil
 	case String, Symbol:
-		return &ArrayMap{arr: []Object{DeriveReadObject(obj, criticalKeywords.tag), obj}}, nil
+		return &ArrayMap{arr: []any{DeriveReadObject(obj, criticalKeywords.tag), obj}}, nil
 	case Keyword:
-		return &ArrayMap{arr: []Object{obj, DeriveReadObject(obj, Boolean(true))}}, nil
+		return &ArrayMap{arr: []any{obj, DeriveReadObject(obj, Boolean(true))}}, nil
 	default:
 		return nil, MakeReadError(reader, "Metadata must be Symbol, Keyword, String or Map")
 	}
@@ -897,7 +897,7 @@ func fillInMissingArgs(args map[int]Symbol) {
 	}
 }
 
-func makeFnForm(args map[int]Symbol, body Object) (Object, error) {
+func makeFnForm(args map[int]Symbol, body any) (any, error) {
 	fillInMissingArgs(args)
 
 	a := make([]Symbol, len(args))
@@ -949,7 +949,7 @@ func registerArg(r *Reader, index int) Symbol {
 	return r.args[index]
 }
 
-func readArgSymbol(env *Env, reader *Reader) (Object, error) {
+func readArgSymbol(env *Env, reader *Reader) (any, error) {
 	r := reader.Peek()
 	if isWhitespace(r) || isTerminatingMacro(r) {
 		return MakeReadObject(reader, registerArg(reader, 1)), nil
@@ -969,7 +969,7 @@ func readArgSymbol(env *Env, reader *Reader) (Object, error) {
 	}
 }
 
-func isSelfEvaluating(obj Object) bool {
+func isSelfEvaluating(obj any) bool {
 	if obj == EmptyList {
 		return true
 	}
@@ -981,7 +981,7 @@ func isSelfEvaluating(obj Object) bool {
 	}
 }
 
-func isCall(env *Env, obj Object, name Symbol) (bool, error) {
+func isCall(env *Env, obj any, name Symbol) (bool, error) {
 	switch seq := obj.(type) {
 	case Seq:
 		f, err := seq.First(env)
@@ -995,7 +995,7 @@ func isCall(env *Env, obj Object, name Symbol) (bool, error) {
 }
 
 func syntaxQuoteSeq(tenv *Env, seq Seq, env map[string]Symbol, reader *Reader) (*ArraySeq, error) {
-	res := make([]Object, 0)
+	res := make([]any, 0)
 	for iter := iter(seq); iter.HasNext(tenv); {
 		obj, err := iter.Next(tenv)
 		if err != nil {
@@ -1031,7 +1031,7 @@ func syntaxQuoteSeq(tenv *Env, seq Seq, env map[string]Symbol, reader *Reader) (
 	return &ArraySeq{arr: res}, nil
 }
 
-func syntaxQuoteColl(tenv *Env, seq Seq, env map[string]Symbol, reader *Reader, ctor Symbol, info *ObjectInfo) (Object, error) {
+func syntaxQuoteColl(tenv *Env, seq Seq, env map[string]Symbol, reader *Reader, ctor Symbol, info *ObjectInfo) (any, error) {
 	q, err := syntaxQuoteSeq(tenv, seq, env, reader)
 	if err != nil {
 		return nil, err
@@ -1039,14 +1039,14 @@ func syntaxQuoteColl(tenv *Env, seq Seq, env map[string]Symbol, reader *Reader, 
 
 	concat := q.Cons(criticalSymbols.concatS)
 	seqList := NewListFrom(criticalSymbols.seq, concat)
-	var res Object = seqList
+	var res any = seqList
 	if ctor != criticalSymbols.emptySymbol {
 		res = NewListFrom(ctor, seqList).Cons(criticalSymbols.apply)
 	}
 	return SetInfo(res, info), nil
 }
 
-func makeSyntaxQuote(tenv *Env, obj Object, env map[string]Symbol, reader *Reader) (Object, error) {
+func makeSyntaxQuote(tenv *Env, obj any, env map[string]Symbol, reader *Reader) (any, error) {
 	if isSelfEvaluating(obj) {
 		return obj, nil
 	}
@@ -1108,7 +1108,7 @@ func filename(f string) string {
 	return "<file>"
 }
 
-func handleNoReaderError(env *Env, reader *Reader, s Symbol) (Object, error) {
+func handleNoReaderError(env *Env, reader *Reader, s Symbol) (any, error) {
 	if LINTER_MODE {
 		if DIALECT != EDN {
 			printReadWarning(reader, "No reader function for tag "+s.String())
@@ -1118,7 +1118,7 @@ func handleNoReaderError(env *Env, reader *Reader, s Symbol) (Object, error) {
 	return nil, MakeReadError3(env, reader, "No reader function for tag", s)
 }
 
-func readTagged(env *Env, reader *Reader) (Object, error) {
+func readTagged(env *Env, reader *Reader) (any, error) {
 	obj, err := readFirst(env, reader)
 	if err != nil {
 		return nil, err
@@ -1146,13 +1146,13 @@ func readTagged(env *Env, reader *Reader) (Object, error) {
 		if err != nil {
 			return nil, err
 		}
-		return v.Call(env, []Object{o})
+		return v.Call(env, []any{o})
 	default:
 		return nil, MakeReadError(reader, "Reader tag must be a symbol")
 	}
 }
 
-func readConditional(env *Env, reader *Reader) (Object, bool, error) {
+func readConditional(env *Env, reader *Reader) (any, bool, error) {
 	isSplicing := false
 	if reader.Peek() == '@' {
 		_, err := reader.Get()
@@ -1221,7 +1221,7 @@ func readConditional(env *Env, reader *Reader) (Object, bool, error) {
 	return EmptyVector(), true, nil
 }
 
-func readNamespacedMap(env *Env, reader *Reader) (Object, error) {
+func readNamespacedMap(env *Env, reader *Reader) (any, error) {
 	r, err := reader.Get()
 	if err != nil {
 		return nil, err
@@ -1230,7 +1230,7 @@ func readNamespacedMap(env *Env, reader *Reader) (Object, error) {
 	if !auto {
 		reader.Unget()
 	}
-	var sym Object
+	var sym any
 	r, err = reader.Get()
 	if err != nil {
 		return nil, err
@@ -1303,7 +1303,7 @@ func readNamespacedMap(env *Env, reader *Reader) (Object, error) {
 	return readMapWithNamespace(env, reader, nsname)
 }
 
-func readDispatch(env *Env, reader *Reader) (Object, bool, error) {
+func readDispatch(env *Env, reader *Reader) (any, bool, error) {
 	r, err := reader.Get()
 	if err != nil {
 		return nil, false, err
@@ -1369,7 +1369,7 @@ func readDispatch(env *Env, reader *Reader) (Object, bool, error) {
 	return v, false, nil
 }
 
-func readWithMeta(env *Env, reader *Reader) (Object, error) {
+func readWithMeta(env *Env, reader *Reader) (any, error) {
 	meta, err := readMeta(env, reader)
 	if err != nil {
 		return nil, err
@@ -1390,7 +1390,7 @@ func readWithMeta(env *Env, reader *Reader) (Object, error) {
 	}
 }
 
-func readFirst(env *Env, reader *Reader) (Object, error) {
+func readFirst(env *Env, reader *Reader) (any, error) {
 	obj, multi, err := Read(env, reader)
 	if err != nil {
 		return nil, err
@@ -1408,7 +1408,7 @@ func readFirst(env *Env, reader *Reader) (Object, error) {
 	return v.at(0), nil
 }
 
-func Read(env *Env, reader *Reader) (Object, bool, error) {
+func Read(env *Env, reader *Reader) (any, bool, error) {
 	err := eatWhitespace(env, reader)
 	if err != nil {
 		return nil, false, err
@@ -1544,7 +1544,7 @@ func Read(env *Env, reader *Reader) (Object, bool, error) {
 	return nil, false, MakeReadError(reader, fmt.Sprintf("Unexpected %c", r))
 }
 
-func TryRead(env *Env, reader *Reader) (obj Object, err error) {
+func TryRead(env *Env, reader *Reader) (obj any, err error) {
 	for {
 		err := eatWhitespace(env, reader)
 		if err != nil {

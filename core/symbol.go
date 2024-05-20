@@ -9,11 +9,10 @@ type HeavySymbol struct {
 	MetaHolder
 	ns   string
 	name string
-	hash uint32
 }
 
 type Symbol interface {
-	Object
+	any
 	Equ
 	Meta
 	Comparable
@@ -122,7 +121,7 @@ func MakeSymbolWithMeta(nsname string, m Map) Symbol {
 	return &sym
 }
 
-func IsSymbol(obj Object) bool {
+func IsSymbol(obj any) bool {
 	switch obj.(type) {
 	case Symbol:
 		return true
@@ -131,7 +130,7 @@ func IsSymbol(obj Object) bool {
 	}
 }
 
-func (sym *HeavySymbol) WithMeta(env *Env, meta Map) (Object, error) {
+func (sym *HeavySymbol) WithMeta(env *Env, meta Map) (any, error) {
 	res := sym
 	m, err := SafeMerge(env, res.meta, meta)
 	if err != nil {
@@ -175,7 +174,7 @@ func (s *HeavySymbol) Equals(env *Env, other interface{}) bool {
 	}
 }
 
-func (s *HeavySymbol) Is(other Object) bool {
+func (s *HeavySymbol) Is(other any) bool {
 	switch other := other.(type) {
 	case Symbol:
 		return s.ns == other.Namespace() && s.name == other.Name()
@@ -196,7 +195,7 @@ func (s *HeavySymbol) IsHash() uint32 {
 	return hashSymbol(s.ns, s.name) + 0x9e3779b9
 }
 
-func (s *HeavySymbol) Compare(env *Env, other Object) (int, error) {
+func (s *HeavySymbol) Compare(env *Env, other any) (int, error) {
 	s2, err := AssertSymbol(env, other, "Cannot compare Symbol and "+TypeName(other))
 	if err != nil {
 		return 0, err
@@ -214,7 +213,7 @@ func (s *HeavySymbol) Compare(env *Env, other Object) (int, error) {
 	return strings.Compare(ks, k2s), nil
 }
 
-func (s *HeavySymbol) Call(env *Env, args []Object) (Object, error) {
+func (s *HeavySymbol) Call(env *Env, args []any) (any, error) {
 	return getMap(env, s, args)
 }
 
@@ -226,7 +225,7 @@ type LightSymbol struct {
 
 var _ Symbol = &LightSymbol{}
 
-func (sym *LightSymbol) WithMeta(env *Env, meta Map) (Object, error) {
+func (sym *LightSymbol) WithMeta(env *Env, meta Map) (any, error) {
 	res := &HeavySymbol{
 		ns:   sym.ns,
 		name: sym.name,
@@ -243,7 +242,7 @@ func (sym *LightSymbol) GetMeta() Map {
 	return nil
 }
 
-func (sym *LightSymbol) WithInfo(info *ObjectInfo) Object {
+func (sym *LightSymbol) WithInfo(info *ObjectInfo) any {
 	res := &HeavySymbol{
 		ns:   sym.ns,
 		name: sym.name,
@@ -291,7 +290,7 @@ func (s *LightSymbol) Equals(env *Env, other interface{}) bool {
 	}
 }
 
-func (s *LightSymbol) Is(other Object) bool {
+func (s *LightSymbol) Is(other any) bool {
 	switch other := other.(type) {
 	case Symbol:
 		return s.ns == other.Namespace() && s.name == other.Name()
@@ -312,7 +311,7 @@ func (s *LightSymbol) IsHash() uint32 {
 	return hashSymbol(s.ns, s.name) + 0x9e3779b9
 }
 
-func (s *LightSymbol) Compare(env *Env, other Object) (int, error) {
+func (s *LightSymbol) Compare(env *Env, other any) (int, error) {
 	s2, err := AssertSymbol(env, other, "Cannot compare Symbol and "+TypeName(other))
 	if err != nil {
 		return 0, err
@@ -330,7 +329,7 @@ func (s *LightSymbol) Compare(env *Env, other Object) (int, error) {
 	return strings.Compare(ks, k2s), nil
 }
 
-func (s *LightSymbol) Call(env *Env, args []Object) (Object, error) {
+func (s *LightSymbol) Call(env *Env, args []any) (any, error) {
 	return getMap(env, s, args)
 }
 
@@ -340,7 +339,7 @@ var _ Symbol = TinySymbol("")
 
 func (TinySymbol) symbolType() string { return "tiny" }
 
-func (sym TinySymbol) WithMeta(env *Env, meta Map) (Object, error) {
+func (sym TinySymbol) WithMeta(env *Env, meta Map) (any, error) {
 	res := &HeavySymbol{
 		ns:   "",
 		name: string(sym),
@@ -357,7 +356,7 @@ func (sym TinySymbol) GetMeta() Map {
 	return nil
 }
 
-func (sym TinySymbol) WithInfo(info *ObjectInfo) Object {
+func (sym TinySymbol) WithInfo(info *ObjectInfo) any {
 	res := &HeavySymbol{
 		ns:   "",
 		name: string(sym),
@@ -396,7 +395,7 @@ func (s TinySymbol) Equals(env *Env, other interface{}) bool {
 	}
 }
 
-func (s TinySymbol) Is(other Object) bool {
+func (s TinySymbol) Is(other any) bool {
 	switch other := other.(type) {
 	case Symbol:
 		return other.Namespace() == "" && string(s) == other.Name()
@@ -417,7 +416,7 @@ func (s TinySymbol) IsHash() uint32 {
 	return hashSymbol("", string(s)) + 0x9e3779b9
 }
 
-func (s TinySymbol) Compare(env *Env, other Object) (int, error) {
+func (s TinySymbol) Compare(env *Env, other any) (int, error) {
 	s2, err := AssertSymbol(env, other, "Cannot compare Symbol and "+TypeName(other))
 	if err != nil {
 		return 0, err
@@ -435,6 +434,6 @@ func (s TinySymbol) Compare(env *Env, other Object) (int, error) {
 	return strings.Compare(ks, k2s), nil
 }
 
-func (s TinySymbol) Call(env *Env, args []Object) (Object, error) {
+func (s TinySymbol) Call(env *Env, args []any) (any, error) {
 	return getMap(env, s, args)
 }

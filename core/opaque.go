@@ -10,7 +10,7 @@ type (
 	}
 )
 
-var _ Object = &Opaque[bool]{}
+var _ any = &Opaque[bool]{}
 
 func (f *Opaque[T]) ToString(env *Env, escape bool) (string, error) {
 	var t T
@@ -33,7 +33,7 @@ func (f *Opaque[T]) Hash(env *Env) (uint32, error) {
 	return HashPtr(f), nil
 }
 
-func (f *Opaque[T]) WithInfo(info *ObjectInfo) Object {
+func (f *Opaque[T]) WithInfo(info *ObjectInfo) any {
 	return f
 }
 
@@ -41,7 +41,7 @@ func MakeOpaque[T any](f T) *Opaque[T] {
 	return &Opaque[T]{f}
 }
 
-func ExtractOpaque[T any](env *Env, obj Object, dest *T) error {
+func ExtractOpaque[T any](env *Env, obj any, dest *T) error {
 	box, ok := obj.(*Opaque[T])
 	if !ok {
 		return env.NewError("expected typed opaque, was not")

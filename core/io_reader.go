@@ -11,7 +11,7 @@ type (
 	}
 )
 
-var _ Object = &IOReader{}
+var _ any = &IOReader{}
 
 func MakeIOReader(r io.Reader) *IOReader {
 	res := &IOReader{r, 0}
@@ -39,7 +39,7 @@ func (ior *IOReader) Hash(env *Env) (uint32, error) {
 	return ior.hash, nil
 }
 
-func (ior *IOReader) WithInfo(info *ObjectInfo) Object {
+func (ior *IOReader) WithInfo(info *ObjectInfo) any {
 	return ior
 }
 

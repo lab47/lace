@@ -1,7 +1,7 @@
 package core
 
 type Nil interface {
-	Object
+	any
 	Conjable
 	Counted
 	Gettable
@@ -21,7 +21,11 @@ type TinyNil struct{}
 
 func (x TinyNil) nilType() string { return "tiny" }
 
-func (x TinyNil) WithInfo(info *ObjectInfo) Object {
+func (x TinyNil) String() string {
+	return "nil"
+}
+
+func (x TinyNil) WithInfo(info *ObjectInfo) any {
 	return HeavyNil{info: info}
 }
 
@@ -42,7 +46,7 @@ func (n TinyNil) Equals(env *Env, other interface{}) bool {
 	}
 }
 
-func (n TinyNil) GetEqu(key Equ) (bool, Object) {
+func (n TinyNil) GetEqu(key Equ) (bool, any) {
 	return false, NIL
 }
 
@@ -58,7 +62,7 @@ func (n TinyNil) Seq() Seq {
 	return n
 }
 
-func (n TinyNil) First(env *Env) (Object, error) {
+func (n TinyNil) First(env *Env) (any, error) {
 	return NIL, nil
 }
 
@@ -70,15 +74,15 @@ func (n TinyNil) IsEmpty(env *Env) (bool, error) {
 	return true, nil
 }
 
-func (n TinyNil) Cons(obj Object) Seq {
+func (n TinyNil) Cons(obj any) Seq {
 	return NewListFrom(obj)
 }
 
-func (n TinyNil) Conj(env *Env, obj Object) (Conjable, error) {
+func (n TinyNil) Conj(env *Env, obj any) (Conjable, error) {
 	return NewListFrom(obj), nil
 }
 
-func (n TinyNil) Without(env *Env, key Object) (Map, error) {
+func (n TinyNil) Without(env *Env, key any) (Map, error) {
 	return n, nil
 }
 
@@ -94,19 +98,19 @@ func (n TinyNil) Merge(env *Env, other Map) (Map, error) {
 	return other, nil
 }
 
-func (n TinyNil) Assoc(env *Env, key, value Object) (Associative, error) {
+func (n TinyNil) Assoc(env *Env, key, value any) (Associative, error) {
 	return EmptyArrayMap().Assoc(env, key, value)
 }
 
-func (n TinyNil) EntryAt(env *Env, key Object) (*Vector, error) {
+func (n TinyNil) EntryAt(env *Env, key any) (*Vector, error) {
 	return nil, nil
 }
 
-func (n TinyNil) Get(env *Env, key Object) (bool, Object, error) {
+func (n TinyNil) Get(env *Env, key any) (bool, any, error) {
 	return false, NIL, nil
 }
 
-func (n TinyNil) Disjoin(env *Env, key Object) (Set, error) {
+func (n TinyNil) Disjoin(env *Env, key any) (Set, error) {
 	return n, nil
 }
 
@@ -132,7 +136,11 @@ type HeavyNil struct {
 
 func (HeavyNil) nilType() string { return "heavy" }
 
-func (x HeavyNil) WithInfo(info *ObjectInfo) Object {
+func (x HeavyNil) String() string {
+	return "nil"
+}
+
+func (x HeavyNil) WithInfo(info *ObjectInfo) any {
 	x.info = info
 	return x
 }
@@ -154,7 +162,7 @@ func (n HeavyNil) Equals(env *Env, other interface{}) bool {
 	}
 }
 
-func (n HeavyNil) GetEqu(key Equ) (bool, Object) {
+func (n HeavyNil) GetEqu(key Equ) (bool, any) {
 	return false, NIL
 }
 
@@ -170,7 +178,7 @@ func (n HeavyNil) Seq() Seq {
 	return n
 }
 
-func (n HeavyNil) First(env *Env) (Object, error) {
+func (n HeavyNil) First(env *Env) (any, error) {
 	return NIL, nil
 }
 
@@ -182,15 +190,15 @@ func (n HeavyNil) IsEmpty(env *Env) (bool, error) {
 	return true, nil
 }
 
-func (n HeavyNil) Cons(obj Object) Seq {
+func (n HeavyNil) Cons(obj any) Seq {
 	return NewListFrom(obj)
 }
 
-func (n HeavyNil) Conj(env *Env, obj Object) (Conjable, error) {
+func (n HeavyNil) Conj(env *Env, obj any) (Conjable, error) {
 	return NewListFrom(obj), nil
 }
 
-func (n HeavyNil) Without(env *Env, key Object) (Map, error) {
+func (n HeavyNil) Without(env *Env, key any) (Map, error) {
 	return n, nil
 }
 
@@ -206,19 +214,19 @@ func (n HeavyNil) Merge(env *Env, other Map) (Map, error) {
 	return other, nil
 }
 
-func (n HeavyNil) Assoc(env *Env, key, value Object) (Associative, error) {
+func (n HeavyNil) Assoc(env *Env, key, value any) (Associative, error) {
 	return EmptyArrayMap().Assoc(env, key, value)
 }
 
-func (n HeavyNil) EntryAt(env *Env, key Object) (*Vector, error) {
+func (n HeavyNil) EntryAt(env *Env, key any) (*Vector, error) {
 	return nil, nil
 }
 
-func (n HeavyNil) Get(env *Env, key Object) (bool, Object, error) {
+func (n HeavyNil) Get(env *Env, key any) (bool, any, error) {
 	return false, NIL, nil
 }
 
-func (n HeavyNil) Disjoin(env *Env, key Object) (Set, error) {
+func (n HeavyNil) Disjoin(env *Env, key any) (Set, error) {
 	return n, nil
 }
 

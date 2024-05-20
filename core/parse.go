@@ -12,13 +12,13 @@ import (
 
 type (
 	Expr interface {
-		Eval(genv *Env, env *LocalEnv) (Object, error)
+		Eval(genv *Env, env *LocalEnv) (any, error)
 		Pos() Position
 		Dump(includePosition bool) Map
 	}
 	LiteralExpr struct {
 		Position
-		obj         Object
+		obj         any
 		isSurrogate bool
 	}
 	VectorExpr struct {
@@ -56,7 +56,7 @@ type (
 	MacroCallExpr struct {
 		Position
 		macro Callable
-		args  []Object
+		args  []any
 		name  string
 	}
 	RecurExpr struct {
@@ -86,7 +86,7 @@ type (
 		Position
 		args       []Symbol
 		body       []Expr
-		taggedType Object
+		taggedType any
 	}
 	FnExpr struct {
 		Position
@@ -125,11 +125,11 @@ type (
 		vr *Var
 	}
 	ParseError struct {
-		obj Object
+		obj any
 		msg string
 	}
 	Callable interface {
-		Call(env *Env, args []Object) (Object, error)
+		Call(env *Env, args []any) (any, error)
 	}
 	Binding struct {
 		name   Symbol
@@ -143,7 +143,7 @@ type (
 		frame    int
 	}
 	LocalEnv struct {
-		bindings []Object
+		bindings []any
 		parent   *LocalEnv
 		frame    int
 	}
@@ -289,7 +289,7 @@ func (b *Bindings) ToMap(env *Env) (Map, error) {
 
 func (localEnv *LocalEnv) addEmptyFrame(capacity int) *LocalEnv {
 	res := LocalEnv{
-		bindings: make([]Object, 0, capacity),
+		bindings: make([]any, 0, capacity),
 		parent:   localEnv,
 	}
 	if localEnv != nil {
@@ -298,11 +298,11 @@ func (localEnv *LocalEnv) addEmptyFrame(capacity int) *LocalEnv {
 	return &res
 }
 
-func (localEnv *LocalEnv) addBinding(obj Object) {
+func (localEnv *LocalEnv) addBinding(obj any) {
 	localEnv.bindings = append(localEnv.bindings, obj)
 }
 
-func (localEnv *LocalEnv) addFrame(values []Object) *LocalEnv {
+func (localEnv *LocalEnv) addFrame(values []any) *LocalEnv {
 	res := LocalEnv{
 		bindings: values,
 		parent:   localEnv,
@@ -313,7 +313,7 @@ func (localEnv *LocalEnv) addFrame(values []Object) *LocalEnv {
 	return &res
 }
 
-func (localEnv *LocalEnv) replaceFrame(values []Object) *LocalEnv {
+func (localEnv *LocalEnv) replaceFrame(values []any) *LocalEnv {
 	res := LocalEnv{
 		bindings: values,
 		parent:   localEnv.parent,
@@ -497,7 +497,7 @@ func isEntryPointVar(vr *Var) bool {
 	return WARNINGS.entryPoints.Has(sym)
 }
 
-func NewLiteralExpr(obj Object) *LiteralExpr {
+func NewLiteralExpr(obj any) *LiteralExpr {
 	res := LiteralExpr{obj: obj}
 	info := GetInfo(obj)
 	if info != nil {
@@ -506,13 +506,13 @@ func NewLiteralExpr(obj Object) *LiteralExpr {
 	return &res
 }
 
-func NewSurrogateExpr(obj Object) *LiteralExpr {
+func NewSurrogateExpr(obj any) *LiteralExpr {
 	res := NewLiteralExpr(obj)
 	res.isSurrogate = true
 	return res
 }
 
-var _ Object = &ParseError{}
+var _ any = &ParseError{}
 
 func (err *ParseError) ToString(env *Env, escape bool) (string, error) {
 	return err.Error(), nil
@@ -534,11 +534,11 @@ func (err *ParseError) Hash(env *Env) (uint32, error) {
 	return HashPtr(err), nil
 }
 
-func (err *ParseError) WithInfo(info *ObjectInfo) Object {
+func (err *ParseError) WithInfo(info *ObjectInfo) any {
 	return err
 }
 
-func (err *ParseError) Message() Object {
+func (err *ParseError) Message() any {
 	return MakeString(err.msg)
 }
 
@@ -635,7 +635,7 @@ func parseSet(s *MapSet, pos Position, ctx *ParseContext) (Expr, error) {
 	return res, nil
 }
 
-func checkForm(env *Env, obj Object, min int, max int) (int, error) {
+func checkForm(env *Env, obj any, min int, max int) (int, error) {
 	var seq Seq
 	if err := Cast(env, obj, &seq); err != nil {
 		return 0, err
@@ -670,7 +670,7 @@ func checkForm(env *Env, obj Object, min int, max int) (int, error) {
 	return c, nil
 }
 
-func GetPosition(obj Object) Position {
+func GetPosition(obj any) Position {
 	info := GetInfo(obj)
 	if info != nil {
 		return info.Position
@@ -701,7 +701,7 @@ func isCreatedByMacro(env *Env, formSeq Seq) bool {
 	return info != nil && info.Pos().filename == STR.coreFilename
 }
 
-func parseDef(obj Object, ctx *ParseContext, isForLinter bool) (*DefExpr, error) {
+func parseDef(obj any, ctx *ParseContext, isForLinter bool) (*DefExpr, error) {
 	count, err := checkForm(ctx.Env, obj, 2, 4)
 	if err != nil {
 		return nil, err
@@ -847,7 +847,7 @@ func parseBody(seq Seq, ctx *ParseContext) ([]Expr, error) {
 	return res, nil
 }
 
-func parseParams(env *Env, params Object) ([]Symbol, bool, error) {
+func parseParams(env *Env, params any) ([]Symbol, bool, error) {
 	res := make([]Symbol, 0)
 	var v *Vector
 	if err := Cast(env, params, &v); err != nil {
@@ -935,7 +935,7 @@ func addArity(fn *FnExpr, sig Seq, ctx *ParseContext) error {
 		return err
 	}
 
-	var meta Object
+	var meta any
 	if err := Cast(ctx.Env, params, &meta); err != nil {
 		return err
 	}
@@ -992,7 +992,7 @@ func addArity(fn *FnExpr, sig Seq, ctx *ParseContext) error {
 	return nil
 }
 
-func wrapWithMeta(fnExpr *FnExpr, obj Object, ctx *ParseContext) (Expr, error) {
+func wrapWithMeta(fnExpr *FnExpr, obj any, ctx *ParseContext) (Expr, error) {
 	var metao Meta
 	if err := Cast(ctx.Env, obj, &metao); err != nil {
 		return nil, err
@@ -1019,7 +1019,7 @@ func wrapWithMeta(fnExpr *FnExpr, obj Object, ctx *ParseContext) (Expr, error) {
 //
 //	([a] a 3)
 //	([a & b] a b))
-func parseFn(obj Object, ctx *ParseContext) (Expr, error) {
+func parseFn(obj any, ctx *ParseContext) (Expr, error) {
 	var seq Seq
 	if err := Cast(ctx.Env, obj, &seq); err != nil {
 		return nil, err
@@ -1127,7 +1127,7 @@ func parseFn(obj Object, ctx *ParseContext) (Expr, error) {
 	return wrapWithMeta(res, obj, ctx)
 }
 
-func isCatch(env *Env, obj Object) bool {
+func isCatch(env *Env, obj any) bool {
 	seq, ok := obj.(Seq)
 	if !ok {
 		return false
@@ -1141,7 +1141,7 @@ func isCatch(env *Env, obj Object) bool {
 	return criticalSymbols.catch.Is(v)
 }
 
-func isFinally(env *Env, obj Object) bool {
+func isFinally(env *Env, obj any) bool {
 	seq, ok := obj.(Seq)
 	if !ok {
 		return false
@@ -1155,7 +1155,7 @@ func isFinally(env *Env, obj Object) bool {
 	return criticalSymbols.finally.Is(v)
 }
 
-func resolveType(obj Object, ctx *ParseContext) (*Type, error) {
+func resolveType(obj any, ctx *ParseContext) (*Type, error) {
 	excType, err := Parse(obj, ctx)
 	if err != nil {
 		return nil, err
@@ -1178,7 +1178,7 @@ func resolveType(obj Object, ctx *ParseContext) (*Type, error) {
 	return nil, &ParseError{obj: obj, msg: "Unable to resolve type: " + s}
 }
 
-func parseCatch(obj Object, ctx *ParseContext) (*CatchExpr, error) {
+func parseCatch(obj any, ctx *ParseContext) (*CatchExpr, error) {
 	var seqo Seq
 	if err := Cast(ctx.Env, obj, &seqo); err != nil {
 		return nil, err
@@ -1260,7 +1260,7 @@ func parseFinally(body Seq, ctx *ParseContext) ([]Expr, error) {
 	return parseBody(body, ctx)
 }
 
-func parseTry(obj Object, ctx *ParseContext) (*TryExpr, error) {
+func parseTry(obj any, ctx *ParseContext) (*TryExpr, error) {
 	const (
 		Regular = iota
 		Catch   = iota
@@ -1352,11 +1352,11 @@ func parseTry(obj Object, ctx *ParseContext) (*TryExpr, error) {
 	return res, nil
 }
 
-func parseLet(obj Object, ctx *ParseContext) (*LetExpr, error) {
+func parseLet(obj any, ctx *ParseContext) (*LetExpr, error) {
 	return parseLetLoop(obj, "let", ctx)
 }
 
-func parseLoop(obj Object, ctx *ParseContext) (*LoopExpr, error) {
+func parseLoop(obj any, ctx *ParseContext) (*LoopExpr, error) {
 	e, err := parseLetLoop(obj, "loop", ctx)
 	if err != nil {
 		return nil, err
@@ -1364,7 +1364,7 @@ func parseLoop(obj Object, ctx *ParseContext) (*LoopExpr, error) {
 	return (*LoopExpr)(e), nil
 }
 
-func parseLetfn(obj Object, ctx *ParseContext) (*LoopExpr, error) {
+func parseLetfn(obj any, ctx *ParseContext) (*LoopExpr, error) {
 	e, err := parseLetLoop(obj, "letfn", ctx)
 	if err != nil {
 		return nil, err
@@ -1372,7 +1372,7 @@ func parseLetfn(obj Object, ctx *ParseContext) (*LoopExpr, error) {
 	return (*LoopExpr)(e), nil
 }
 
-func isSkipUnused(obj Object) bool {
+func isSkipUnused(obj any) bool {
 	if m := GetMeta(obj); m != nil {
 		if ok, v := m.GetEqu(criticalKeywords.skipUnused); ok {
 			return ToBool(v)
@@ -1381,7 +1381,7 @@ func isSkipUnused(obj Object) bool {
 	return false
 }
 
-func parseLetLoop(obj Object, formName string, ctx *ParseContext) (*LetExpr, error) {
+func parseLetLoop(obj any, formName string, ctx *ParseContext) (*LetExpr, error) {
 	res := &LetExpr{
 		Position: GetPosition(obj),
 	}
@@ -1518,7 +1518,7 @@ func parseLetLoop(obj Object, formName string, ctx *ParseContext) (*LetExpr, err
 	return res, nil
 }
 
-func parseRecur(obj Object, ctx *ParseContext) (*RecurExpr, error) {
+func parseRecur(obj any, ctx *ParseContext) (*RecurExpr, error) {
 	if ctx.noRecurAllowed {
 		return nil, &ParseError{obj: obj, msg: "Cannot recur across try"}
 	}
@@ -1551,7 +1551,7 @@ func parseRecur(obj Object, ctx *ParseContext) (*RecurExpr, error) {
 	}, nil
 }
 
-func resolveMacro(obj Object, ctx *ParseContext) *Var {
+func resolveMacro(obj any, ctx *ParseContext) *Var {
 	switch sym := obj.(type) {
 	case Symbol:
 		if ctx.GetLocalBinding(sym) != nil {
@@ -1571,12 +1571,12 @@ func resolveMacro(obj Object, ctx *ParseContext) *Var {
 	}
 }
 
-func fixInfo(env *Env, obj Object, info *ObjectInfo) (Object, error) {
+func fixInfo(env *Env, obj any, info *ObjectInfo) (any, error) {
 	switch s := obj.(type) {
 	case Nil:
 		return obj, nil
 	case Seq:
-		objs := make([]Object, 0, 8)
+		objs := make([]any, 0, 8)
 		for {
 			empty, err := s.IsEmpty(env)
 			if err != nil {
@@ -1651,7 +1651,7 @@ func fixInfo(env *Env, obj Object, info *ObjectInfo) (Object, error) {
 	}
 }
 
-func macroexpand1(env *Env, seq Seq, ctx *ParseContext) (Object, error) {
+func macroexpand1(env *Env, seq Seq, ctx *ParseContext) (any, error) {
 	op, err := seq.First(env)
 	if err != nil {
 		return nil, err
@@ -1694,11 +1694,7 @@ func macroexpand1(env *Env, seq Seq, ctx *ParseContext) (Object, error) {
 	}
 }
 
-func reportNotAFunction(pos Position, name string) {
-	printParseWarning(pos, name+" is not a function")
-}
-
-func getTaggedType(obj Object) *Type {
+func getTaggedType(obj any) *Type {
 	if m := GetMeta(obj); m != nil {
 		if ok, typeName := m.GetEqu(criticalKeywords.tag); ok {
 			if typeSym, ok := typeName.(Symbol); ok {
@@ -1707,18 +1703,6 @@ func getTaggedType(obj Object) *Type {
 				}
 			}
 		}
-	}
-	return nil
-}
-
-func selectArity(expr *FnExpr, passedArgsCount int) *FnArityExpr {
-	for _, arity := range expr.arities {
-		if len(arity.args) == passedArgsCount {
-			return &arity
-		}
-	}
-	if expr.variadic != nil && passedArgsCount >= len(expr.variadic.args)-1 {
-		return expr.variadic
 	}
 	return nil
 }
@@ -1739,7 +1723,7 @@ func setMacroMeta(env *Env, vr *Var) error {
 	return err
 }
 
-func parseSetMacro(env *Env, obj Object, ctx *ParseContext) (Expr, error) {
+func parseSetMacro(env *Env, obj any, ctx *ParseContext) (Expr, error) {
 	var seq Seq
 	if err := Cast(env, obj, &seq); err != nil {
 		return nil, err
@@ -1819,51 +1803,7 @@ func isUnknownCallable(env *Env, expr Expr) (bool, Seq) {
 	return false, nil
 }
 
-func areAllLiteralExprs(exprs []Expr) bool {
-	for _, expr := range exprs {
-		if _, ok := expr.(*LiteralExpr); !ok {
-			return false
-		}
-	}
-	return true
-}
-
-func getRequireVar(ctx *ParseContext) *Var {
-	if REQUIRE_VAR == nil {
-		REQUIRE_VAR = ctx.Env.CoreNamespace.Resolve("require")
-	}
-	return REQUIRE_VAR
-}
-
-func getReferVar(ctx *ParseContext) *Var {
-	if REFER_VAR == nil {
-		REFER_VAR = ctx.Env.CoreNamespace.Resolve("refer")
-	}
-	return REFER_VAR
-}
-
-func getAliasVar(ctx *ParseContext) *Var {
-	if ALIAS_VAR == nil {
-		ALIAS_VAR = ctx.Env.CoreNamespace.Resolve("alias")
-	}
-	return ALIAS_VAR
-}
-
-func getCreateNsVar(ctx *ParseContext) *Var {
-	if CREATE_NS_VAR == nil {
-		CREATE_NS_VAR = ctx.Env.CoreNamespace.Resolve("create-ns")
-	}
-	return CREATE_NS_VAR
-}
-
-func getInNsVar(ctx *ParseContext) *Var {
-	if IN_NS_VAR == nil {
-		IN_NS_VAR = ctx.Env.CoreNamespace.Resolve("in-ns")
-	}
-	return IN_NS_VAR
-}
-
-func parseList(env *Env, obj Object, ctx *ParseContext) (Expr, error) {
+func parseList(env *Env, obj any, ctx *ParseContext) (Expr, error) {
 	var seq Seq
 	if err := Cast(env, obj, &seq); err != nil {
 		return nil, err
@@ -2177,7 +2117,7 @@ func isJavaSymbol(sym Symbol) bool {
 	return fullClassNameRe.MatchString(s)
 }
 
-func MakeVarRefExpr(vr *Var, obj Object) *VarRefExpr {
+func MakeVarRefExpr(vr *Var, obj any) *VarRefExpr {
 	vr.isUsed = true
 	vr.isGloballyUsed = true
 	vr.ns.isUsed = true
@@ -2188,7 +2128,7 @@ func MakeVarRefExpr(vr *Var, obj Object) *VarRefExpr {
 	}
 }
 
-func parseSymbol(obj Object, ctx *ParseContext) (Expr, error) {
+func parseSymbol(obj any, ctx *ParseContext) (Expr, error) {
 	var sym Symbol
 	if err := Cast(ctx.Env, obj, &sym); err != nil {
 		return nil, err
@@ -2257,7 +2197,7 @@ func parseSymbol(obj Object, ctx *ParseContext) (Expr, error) {
 	return MakeVarRefExpr(vr, obj), nil
 }
 
-func Parse(obj Object, ctx *ParseContext) (Expr, error) {
+func Parse(obj any, ctx *ParseContext) (Expr, error) {
 	pos := GetPosition(obj)
 	var res Expr
 	var err error
@@ -2312,7 +2252,7 @@ func Parse(obj Object, ctx *ParseContext) (Expr, error) {
 	return res, nil
 }
 
-func TryParse(obj Object, ctx *ParseContext) (expr Expr, err error) {
+func TryParse(obj any, ctx *ParseContext) (expr Expr, err error) {
 	expr, err = Parse(obj, ctx)
 	if err != nil {
 		PROBLEM_COUNT++

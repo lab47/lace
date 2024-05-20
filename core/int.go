@@ -43,7 +43,7 @@ func (i Int) GetInfo() *ObjectInfo {
 	return nil
 }
 
-func (i Int) WithInfo(info *ObjectInfo) Object {
+func (i Int) WithInfo(info *ObjectInfo) any {
 	var bi BigInt
 	bi.info = info
 	bi.b.SetInt64(int64(i))
@@ -73,7 +73,7 @@ func (i Int) Hash(env *Env) (uint32, error) {
 	return h.Sum32(), nil
 }
 
-func (i Int) Compare(env *Env, other Object) (int, error) {
+func (i Int) Compare(env *Env, other any) (int, error) {
 	n, err := AssertNumber(env, other, "Cannot compare Int and "+TypeName(other))
 	if err != nil {
 		return 0, err
@@ -118,7 +118,7 @@ func (bi *BigInt) Hash(env *Env) (uint32, error) {
 	return hashGobEncoder(&bi.b)
 }
 
-func (bi *BigInt) Compare(env *Env, other Object) (int, error) {
+func (bi *BigInt) Compare(env *Env, other any) (int, error) {
 	n, err := AssertNumber(env, other, "Cannot compare BigInt and "+TypeName(other))
 	if err != nil {
 		return 0, err

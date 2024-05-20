@@ -397,7 +397,7 @@ func (r *BusRPC) Request() *Request {
 	return r.req
 }
 
-func (r *BusRPC) Respond(val core.Object) error {
+func (r *BusRPC) Respond(val any) error {
 	if r.req.NoResponse {
 		return nil
 	}

@@ -21,62 +21,60 @@ import (
 
 // interfaces
 type (
-	Object interface {
-	}
 	Equality interface {
 		Equals(env *Env, other interface{}) bool
 	}
 	Conjable interface {
-		Object
-		Conj(env *Env, obj Object) (Conjable, error)
+		any
+		Conj(env *Env, obj any) (Conjable, error)
 	}
 	Counted interface {
 		Count() int
 	}
 	Error interface {
 		error
-		Object
-		Message() Object
+		any
+		Message() any
 	}
 	Meta interface {
 		GetMeta() Map
-		WithMeta(*Env, Map) (Object, error)
+		WithMeta(*Env, Map) (any, error)
 	}
 	Ref interface {
-		AlterMeta(env *Env, fn *Fn, args []Object) (Map, error)
+		AlterMeta(env *Env, fn *Fn, args []any) (Map, error)
 		ResetMeta(m Map) Map
 	}
 	Sequential interface {
 		sequential()
 	}
 	Comparable interface {
-		Compare(env *Env, other Object) (int, error)
+		Compare(env *Env, other any) (int, error)
 	}
 	Comparator interface {
-		Compare(env *Env, a, b Object) (int, error)
+		Compare(env *Env, a, b any) (int, error)
 	}
 	Indexed interface {
-		Nth(env *Env, i int) (Object, error)
-		TryNth(env *Env, i int, d Object) (Object, error)
+		Nth(env *Env, i int) (any, error)
+		TryNth(env *Env, i int, d any) (any, error)
 	}
 	IndexCounted interface {
 		Indexed
 		Counted
 	}
 	Stack interface {
-		Object
-		Peek(env *Env) (Object, error)
+		any
+		Peek(env *Env) (any, error)
 		Pop(env *Env) (Stack, error)
 	}
 	Gettable interface {
-		Get(env *Env, key Object) (bool, Object, error)
+		Get(env *Env, key any) (bool, any, error)
 	}
 	Associative interface {
-		Object
+		any
 		Conjable
 		Gettable
-		EntryAt(env *Env, key Object) (*Vector, error)
-		Assoc(env *Env, key, val Object) (Associative, error)
+		EntryAt(env *Env, key any) (*Vector, error)
+		Assoc(env *Env, key, val any) (Associative, error)
 	}
 	Reversible interface {
 		Rseq() Seq
@@ -92,19 +90,19 @@ type (
 		Pprint(env *Env, writer io.Writer, indent int) (int, error)
 	}
 	Collection interface {
-		Object
+		any
 		Counted
 		Seqable
 		Empty() Collection
 	}
 	Deref interface {
-		Deref(env *Env) (Object, error)
+		Deref(env *Env) (any, error)
 	}
 	Native interface {
 		Native() interface{}
 	}
 	KVReduce interface {
-		kvreduce(env *Env, c Callable, init Object) (Object, error)
+		kvreduce(env *Env, c Callable, init any) (any, error)
 	}
 	Pending interface {
 		IsRealized() bool
@@ -122,7 +120,7 @@ type (
 	}
 	Atom struct {
 		MetaHolder
-		value Object
+		value any
 	}
 	Type struct {
 		MetaHolder
@@ -159,14 +157,14 @@ type (
 		InfoHolder
 		T time.Time
 	}
-	RecurBindings []Object
+	RecurBindings []any
 	Delay         struct {
 		fn    Callable
-		value Object
+		value any
 	}
 	SortableSlice struct {
 		env *Env
-		s   []Object
+		s   []any
 		cmp Comparator
 		err error
 	}
@@ -248,7 +246,7 @@ type (
 
 // interface checks
 var (
-	_ Object = Time{}
+	_ any = Time{}
 
 	_ Conjable = &HashMap{}
 	_ Conjable = &Vector{}
@@ -373,15 +371,15 @@ var (
 
 type HasInfo interface {
 	GetInfo() *ObjectInfo
-	WithInfo(info *ObjectInfo) Object
+	WithInfo(info *ObjectInfo) any
 }
 
 type ReadObject interface {
-	Object
+	any
 	HasInfo
 }
 
-func SetInfo(obj Object, info *ObjectInfo) Object {
+func SetInfo(obj any, info *ObjectInfo) any {
 	if hi, ok := obj.(HasInfo); ok {
 		return hi.WithInfo(info)
 	}
@@ -389,7 +387,7 @@ func SetInfo(obj Object, info *ObjectInfo) Object {
 	return obj
 }
 
-func GetInfo(obj Object) *ObjectInfo {
+func GetInfo(obj any) *ObjectInfo {
 	if hi, ok := obj.(HasInfo); ok {
 		return hi.GetInfo()
 	}
@@ -397,7 +395,7 @@ func GetInfo(obj Object) *ObjectInfo {
 	return nil
 }
 
-func GetMeta(obj Object) Map {
+func GetMeta(obj any) Map {
 	if m, ok := obj.(interface{ GetMeta() Map }); ok {
 		return m.GetMeta()
 	}
@@ -469,7 +467,7 @@ func ReturnArityMinMax(env *Env, n, min, max int) error {
 	return env.NewError(fmt.Sprintf("Wrong number of args (%d); expects %s", n, rangeString(min, max)))
 }
 
-func CheckArity(env *Env, args []Object, min int, max int) error {
+func CheckArity(env *Env, args []any, min int, max int) error {
 	n := len(args)
 	if n < min || n > max {
 		return ReturnArityMinMax(env, n, min, max)
@@ -477,7 +475,7 @@ func CheckArity(env *Env, args []Object, min int, max int) error {
 	return nil
 }
 
-func getMap(env *Env, k Object, args []Object) (Object, error) {
+func getMap(env *Env, k any, args []any) (any, error) {
 	if err := CheckArity(env, args, 1, 2); err != nil {
 		return nil, err
 	}
@@ -580,11 +578,11 @@ func (a *Atom) Hash(env *Env) (uint32, error) {
 	return HashPtr(a), nil
 }
 
-func (a *Atom) WithInfo(info *ObjectInfo) Object {
+func (a *Atom) WithInfo(info *ObjectInfo) any {
 	return a
 }
 
-func (a *Atom) WithMeta(env *Env, meta Map) (Object, error) {
+func (a *Atom) WithMeta(env *Env, meta Map) (any, error) {
 	res := *a
 	m, err := SafeMerge(env, res.meta, meta)
 	if err != nil {
@@ -599,11 +597,11 @@ func (a *Atom) ResetMeta(newMeta Map) Map {
 	return a.meta
 }
 
-func (a *Atom) AlterMeta(env *Env, fn *Fn, args []Object) (Map, error) {
+func (a *Atom) AlterMeta(env *Env, fn *Fn, args []any) (Map, error) {
 	return AlterMeta(env, &a.MetaHolder, fn, args)
 }
 
-func (a *Atom) Deref(env *Env) (Object, error) {
+func (a *Atom) Deref(env *Env) (any, error) {
 	return a.value, nil
 }
 
@@ -627,13 +625,13 @@ func (d *Delay) Hash(env *Env) (uint32, error) {
 	return HashPtr(d), nil
 }
 
-func (d *Delay) WithInfo(info *ObjectInfo) Object {
+func (d *Delay) WithInfo(info *ObjectInfo) any {
 	return d
 }
 
-func (d *Delay) Force(env *Env) (Object, error) {
+func (d *Delay) Force(env *Env) (any, error) {
 	if d.value == nil {
-		val, err := d.fn.Call(env, []Object{})
+		val, err := d.fn.Call(env, []any{})
 		if err != nil {
 			return nil, err
 		}
@@ -642,7 +640,7 @@ func (d *Delay) Force(env *Env) (Object, error) {
 	return d.value, nil
 }
 
-func (d *Delay) Deref(env *Env) (Object, error) {
+func (d *Delay) Deref(env *Env) (any, error) {
 	return d.Force(env)
 }
 
@@ -694,8 +692,8 @@ func (rb RecurBindings) Hash(env *Env) (uint32, error) {
 	return 0, nil
 }
 
-func compare(env *Env, c Callable, a, b Object) (int, error) {
-	val, err := c.Call(env, []Object{a, b})
+func compare(env *Env, c Callable, a, b any) (int, error) {
+	val, err := c.Call(env, []any{a, b})
 	if err != nil {
 		return 0, err
 	}
@@ -706,7 +704,7 @@ func compare(env *Env, c Callable, a, b Object) (int, error) {
 			return -1, nil
 		}
 
-		v, err := c.Call(env, []Object{b, a})
+		v, err := c.Call(env, []any{b, a})
 		if err != nil {
 			return 0, err
 		}
@@ -746,18 +744,19 @@ func (m *MetaHolder) ClearMeta() {
 	m.meta = nil
 }
 
-func ClearMeta(obj Object) {
+func ClearMeta(obj any) {
 	if cm, ok := obj.(interface{ ClearMeta() }); ok {
 		cm.ClearMeta()
 	}
 }
 
-func AlterMeta(env *Env, m *MetaHolder, fn *Fn, args []Object) (Map, error) {
+func AlterMeta(env *Env, m *MetaHolder, fn *Fn, args []any) (Map, error) {
 	meta := m.meta
 	if meta == nil {
 		meta = NIL
 	}
-	fargs := append([]Object{meta}, args...)
+
+	fargs := append([]any{meta}, args...)
 
 	v, err := fn.Call(env, fargs)
 	if err != nil {
@@ -793,7 +792,7 @@ func (rat *Ratio) Hash(env *Env) (uint32, error) {
 	return hashGobEncoder(&rat.r)
 }
 
-func (rat *Ratio) Compare(env *Env, other Object) (int, error) {
+func (rat *Ratio) Compare(env *Env, other any) (int, error) {
 	n, err := AssertNumber(env, other, "Cannot compare Ratio and "+TypeName(other))
 	if err != nil {
 		return 0, err
@@ -822,7 +821,7 @@ func (bf *BigFloat) Hash(env *Env) (uint32, error) {
 	return hashGobEncoder(&bf.b)
 }
 
-func (bf *BigFloat) Compare(env *Env, other Object) (int, error) {
+func (bf *BigFloat) Compare(env *Env, other any) (int, error) {
 	n, err := AssertNumber(env, other, "Cannot compare BigFloat and "+TypeName(other))
 	if err != nil {
 		return 0, err
@@ -867,7 +866,7 @@ func (d Double) Hash(env *Env) (uint32, error) {
 	return h.Sum32(), nil
 }
 
-func (d Double) Compare(env *Env, other Object) (int, error) {
+func (d Double) Compare(env *Env, other any) (int, error) {
 	n, err := AssertNumber(env, other, "Cannot compare Double and "+TypeName(other))
 	if err != nil {
 		return 0, err
@@ -908,7 +907,7 @@ func (b Boolean) Hash(env *Env) (uint32, error) {
 	return h.Sum32(), nil
 }
 
-func (b Boolean) Compare(env *Env, other Object) (int, error) {
+func (b Boolean) Compare(env *Env, other any) (int, error) {
 	b2, err := AssertBoolean(env, other, "Cannot compare Boolean and "+TypeName(other))
 	if err != nil {
 		return 0, err
@@ -947,7 +946,7 @@ func (t Time) Hash(env *Env) (uint32, error) {
 	return hashGobEncoder(t.T)
 }
 
-func (t Time) Compare(env *Env, other Object) (int, error) {
+func (t Time) Compare(env *Env, other any) (int, error) {
 	t2, err := AssertTime(env, other, "Cannot compare Time and "+TypeName(other))
 	if err != nil {
 		return 0, err
@@ -1001,7 +1000,7 @@ func MakeStringVector(ss []string) *Vector {
 	return res
 }
 
-func IsVector(obj Object) bool {
+func IsVector(obj any) bool {
 	switch obj.(type) {
 	case *Vector:
 		return true
@@ -1010,7 +1009,7 @@ func IsVector(obj Object) bool {
 	}
 }
 
-func IsSeq(obj Object) bool {
+func IsSeq(obj any) bool {
 	switch obj.(type) {
 	case Seq:
 		return true
@@ -1019,11 +1018,11 @@ func IsSeq(obj Object) bool {
 	}
 }
 
-func (x *Type) WithInfo(info *ObjectInfo) Object {
+func (x *Type) WithInfo(info *ObjectInfo) any {
 	return x
 }
 
-func (x RecurBindings) WithInfo(info *ObjectInfo) Object {
+func (x RecurBindings) WithInfo(info *ObjectInfo) any {
 	return x
 }
 
@@ -1038,7 +1037,7 @@ func IsEqualOrImplements(abstractType HasReflectType, concreteType HasReflectTyp
 	}
 }
 
-func IsInstance(env *Env, t *Type, obj Object) bool {
+func IsInstance(env *Env, t *Type, obj any) bool {
 	if Equals(env, obj, NIL) {
 		return false
 	}
@@ -1070,7 +1069,7 @@ func init() {
 	specialSymbols[criticalSymbols.finally.Name()] = struct{}{}
 }
 
-func IsSpecialSymbol(obj Object) bool {
+func IsSpecialSymbol(obj any) bool {
 	switch obj := obj.(type) {
 	case Symbol:
 		if obj.Namespace() != "" {

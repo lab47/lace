@@ -2,7 +2,7 @@ package core
 
 import "fmt"
 
-func ExtractTagFromMeta(obj Object) (Symbol, bool) {
+func ExtractTagFromMeta(obj any) (Symbol, bool) {
 	if m := GetMeta(obj); m != nil {
 		if ok, typeName := m.GetEqu(criticalKeywords.tag); ok {
 			if typeSym, ok := typeName.(Symbol); ok {
@@ -14,7 +14,7 @@ func ExtractTagFromMeta(obj Object) (Symbol, bool) {
 	return nil, false
 }
 
-func (env *Env) ResolveTypeFroMeta(obj Object) Object {
+func (env *Env) ResolveTypeFroMeta(obj any) any {
 	sym, ok := ExtractTagFromMeta(obj)
 	if !ok {
 		return nil
@@ -23,7 +23,7 @@ func (env *Env) ResolveTypeFroMeta(obj Object) Object {
 	return env.ResolveType(sym)
 }
 
-func (env *Env) ResolveType(sym Symbol) Object {
+func (env *Env) ResolveType(sym Symbol) any {
 	if sym.Namespace() == "" {
 		if vr := env.LangNamespace.Resolve(sym.Name()); vr != nil {
 			obj := vr.Resolve(env)

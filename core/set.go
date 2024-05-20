@@ -11,12 +11,12 @@ type (
 		Conjable
 		Gettable
 		Has(key Equ) bool
-		Disjoin(env *Env, key Object) (Set, error)
+		Disjoin(env *Env, key any) (Set, error)
 		SetIter() SetIter
 	}
 	SetIter interface {
 		HasNext(*Env) bool
-		Next(*Env) (Object, error)
+		Next(*Env) (any, error)
 	}
 	MapSet struct {
 		InfoHolder
@@ -29,7 +29,7 @@ type (
 	}
 )
 
-func (v *MapSet) WithMeta(env *Env, meta Map) (Object, error) {
+func (v *MapSet) WithMeta(env *Env, meta Map) (any, error) {
 	res := *v
 	m, err := SafeMerge(env, res.meta, meta)
 	if err != nil {
@@ -40,7 +40,7 @@ func (v *MapSet) WithMeta(env *Env, meta Map) (Object, error) {
 	return &res, nil
 }
 
-func (set *MapSet) Disjoin(env *Env, key Object) (Set, error) {
+func (set *MapSet) Disjoin(env *Env, key any) (Set, error) {
 	nm, err := set.m.Without(env, key)
 	if err != nil {
 		return nil, err
@@ -48,7 +48,7 @@ func (set *MapSet) Disjoin(env *Env, key Object) (Set, error) {
 	return &MapSet{m: nm}, nil
 }
 
-func (set *MapSet) Add(env *Env, obj Object) (bool, error) {
+func (set *MapSet) Add(env *Env, obj any) (bool, error) {
 	switch m := set.m.(type) {
 	case *ArrayMap:
 		return m.Add(env, obj, Boolean(true)), nil
@@ -67,7 +67,7 @@ func (set *MapSet) Add(env *Env, obj Object) (bool, error) {
 	}
 }
 
-func (set *MapSet) Conj(env *Env, obj Object) (Conjable, error) {
+func (set *MapSet) Conj(env *Env, obj any) (Conjable, error) {
 	v, err := set.m.Assoc(env, obj, Boolean(true))
 	if err != nil {
 		return nil, err
@@ -111,7 +111,7 @@ func (iter *EmptySetIterator) HasNext(env *Env) bool {
 	return false
 }
 
-func (iter *EmptySetIterator) Next(env *Env) (Object, error) {
+func (iter *EmptySetIterator) Next(env *Env) (any, error) {
 	panic(newIteratorError())
 }
 
@@ -128,7 +128,7 @@ func (i *MapSetIter) HasNext(env *Env) bool {
 	return i.s.HasNext(env)
 }
 
-func (i *MapSetIter) Next(env *Env) (Object, error) {
+func (i *MapSetIter) Next(env *Env) (any, error) {
 	k, err := i.s.Next(env)
 	if err != nil {
 		return nil, err
@@ -146,7 +146,7 @@ func (set *MapSet) Equals(env *Env, other interface{}) bool {
 	}
 }
 
-func (set *MapSet) Get(env *Env, key Object) (bool, Object, error) {
+func (set *MapSet) Get(env *Env, key any) (bool, any, error) {
 	ok, _, err := set.m.Get(env, key)
 	if err != nil {
 		return false, nil, err
@@ -180,7 +180,7 @@ func (set *MapSet) Count() int {
 	return set.m.Count()
 }
 
-func (set *MapSet) Call(env *Env, args []Object) (Object, error) {
+func (set *MapSet) Call(env *Env, args []any) (any, error) {
 	if err := CheckArity(env, args, 1, 1); err != nil {
 		return nil, err
 	}

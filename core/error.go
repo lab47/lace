@@ -25,8 +25,8 @@ type ExInfo struct {
 }
 
 var (
-	_ Object = (*ExInfo)(nil)
-	_ error  = (*ExInfo)(nil)
+	_ any   = (*ExInfo)(nil)
+	_ error = (*ExInfo)(nil)
 )
 
 func (exInfo *ExInfo) ToString(env *Env, escape bool) (string, error) {
@@ -45,7 +45,7 @@ func (exInfo *ExInfo) Hash(env *Env) (uint32, error) {
 	return HashPtr(exInfo), nil
 }
 
-func (exInfo *ExInfo) Message() Object {
+func (exInfo *ExInfo) Message() any {
 	if ok, res := exInfo.GetEqu(criticalKeywords.message); ok {
 		return res
 	}
@@ -107,7 +107,7 @@ func (err *EvalError) Is(target error) bool {
 	return ok
 }
 
-var _ Object = &EvalError{}
+var _ any = &EvalError{}
 
 func (err *EvalError) ToString(env *Env, escape bool) (string, error) {
 	return err.Error(), nil
@@ -129,11 +129,11 @@ func (err *EvalError) Hash(env *Env) (uint32, error) {
 	return err.hash, nil
 }
 
-func (err *EvalError) WithInfo(info *ObjectInfo) Object {
+func (err *EvalError) WithInfo(info *ObjectInfo) any {
 	return err
 }
 
-func (err *EvalError) Message() Object {
+func (err *EvalError) Message() any {
 	return MakeString(err.err.Error())
 }
 
@@ -164,27 +164,27 @@ func SError(env *Env, cat, str string, args ...any) error {
 		args = append(args, NIL)
 	}
 
-	var bits []Object
+	var bits []any
 
 	for i := 0; i < len(args); i += 2 {
-		var ko Object
+		var ko any
 		switch sv := args[i].(type) {
 		case string:
 			ko = MakeString(sv)
-		case Object:
+		case any:
 			ko = sv
 		default:
 			continue
 		}
 
-		var vo Object
+		var vo any
 
 		switch sv := args[i+1].(type) {
 		case string:
 			vo = MakeString(sv)
 		case int:
 			vo = MakeInt(sv)
-		case Object:
+		case any:
 			vo = sv
 		default:
 			vo = MakeString(fmt.Sprint(sv))
@@ -255,7 +255,7 @@ func NewEvalError(env *Env, str string) *EvalError {
 	return env.populateStackTrace(err)
 }
 
-func (e *EvalError) AddData(env *Env, obj Object) {
+func (e *EvalError) AddData(env *Env, obj any) {
 	if e.Map == nil {
 		m, err := NewArrayMap(MakeKeyword("data"), obj)
 		if err == nil {
@@ -320,7 +320,7 @@ func DisplayError(env *Env, err error) {
 
 type VMStacktrace struct {
 	upper      error
-	StackTrace Object
+	StackTrace any
 	pcs        []uintptr
 	treeStack  []Expr
 }
@@ -379,7 +379,7 @@ type outputFrame struct {
 	lace bool
 }
 
-func (vs *VMStacktrace) renderFrame(env *Env, ele Object) outputFrame {
+func (vs *VMStacktrace) renderFrame(env *Env, ele any) outputFrame {
 	var str string
 
 	switch sv := ele.(type) {
@@ -447,10 +447,6 @@ func (vs *VMStacktrace) renderFrame(env *Env, ele Object) outputFrame {
 }
 
 const bcName = "github.com/lab47/lace/core.(*Engine).RunBC"
-
-func isModPath(path string) bool {
-	return strings.Contains(path, "pkg/mod")
-}
 
 func extractMod(path string) string {
 	idx := strings.Index(path, "pkg/mod/")
@@ -655,7 +651,7 @@ func StubNewError(msg string) *EvalError {
 	}
 }
 
-func StubNewArgTypeError(index int, obj Object, expectedType string) *EvalError {
+func StubNewArgTypeError(index int, obj any, expectedType string) *EvalError {
 	return StubNewError(fmt.Sprintf("Arg[%d] of <<func_name>> must have type %s, got %s", index, expectedType, TypeName(obj)))
 }
 
@@ -663,7 +659,7 @@ func (e *Env) NewError(msg string, args ...any) *EvalError {
 	return WrapError(e, fmt.Errorf(msg, args...))
 }
 
-func TypeError[T any](env *Env, obj Object) *EvalError {
+func TypeError[T any](env *Env, obj any) *EvalError {
 	ts := reflect.TypeFor[T]().String()
 	ee := env.NewError(fmt.Sprintf("object must have type %s, got %s", ts, TypeName(obj)))
 	return env.populateStackTrace(ee)
@@ -674,7 +670,7 @@ type TCContext struct {
 	Index   int
 }
 
-func (e *Env) NewArgTypeError(index int, obj Object, expectedType string) *EvalError {
+func (e *Env) NewArgTypeError(index int, obj any, expectedType string) *EvalError {
 	if index >= 0 {
 		return e.NewError(fmt.Sprintf("Arg[%d] must have type %s, got %s", index, expectedType, TypeName(obj)))
 	} else {
@@ -682,7 +678,7 @@ func (e *Env) NewArgTypeError(index int, obj Object, expectedType string) *EvalE
 	}
 }
 
-func (e *Env) TypeError(ctx TCContext, obj Object, expectedType string) *EvalError {
+func (e *Env) TypeError(ctx TCContext, obj any, expectedType string) *EvalError {
 	if ctx.Context != "" {
 		if ctx.Index >= 0 {
 			return e.NewError(fmt.Sprintf("%s[%d] must have type %s, got %s", ctx.Context, ctx.Index, expectedType, TypeName(obj)))

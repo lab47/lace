@@ -24,7 +24,7 @@ func writeIndent(w io.Writer, n int) error {
 	return nil
 }
 
-func pprintObject(env *Env, obj Object, indent int, w io.Writer) (int, error) {
+func pprintObject(env *Env, obj any, indent int, w io.Writer) (int, error) {
 	switch obj := obj.(type) {
 	case Pprinter:
 		return obj.Pprint(env, w, indent)
@@ -48,7 +48,7 @@ func FileInfoMap(env *Env, name string, info os.FileInfo) Map {
 	return m
 }
 
-func ToBool(obj Object) bool {
+func ToBool(obj any) bool {
 	switch obj := obj.(type) {
 	case Nil:
 		return false
@@ -59,7 +59,7 @@ func ToBool(obj Object) bool {
 	}
 }
 
-func ToNative(env *Env, obj Object) (any, error) {
+func ToNative(env *Env, obj any) (any, error) {
 	switch sv := obj.(type) {
 	case Nil:
 		return nil, nil

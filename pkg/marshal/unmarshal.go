@@ -11,22 +11,22 @@ import (
 
 type unmarshalState struct {
 	env   *core.Env
-	refs  map[int]core.Object
-	frefs map[string]core.Object
+	refs  map[int]any
+	frefs map[string]any
 }
 
-func Unmarshal(env *core.Env, data []byte) (core.Object, error) {
+func Unmarshal(env *core.Env, data []byte) (any, error) {
 	var ms unmarshalState
 
 	ms.env = env
-	ms.refs = make(map[int]core.Object)
+	ms.refs = make(map[int]any)
 
 	return ms.unmarshal(data)
 }
 
-func (s *unmarshalState) unmarshalCol(col Collection) (core.Object, error) {
+func (s *unmarshalState) unmarshalCol(col Collection) (any, error) {
 	var (
-		elems []core.Object
+		elems []any
 		err   error
 	)
 
@@ -39,7 +39,7 @@ func (s *unmarshalState) unmarshalCol(col Collection) (core.Object, error) {
 		elems = append(elems, obj)
 	}
 
-	var ret core.Object
+	var ret any
 
 	switch col.Type {
 	case "list":
@@ -68,7 +68,7 @@ func (s *unmarshalState) unmarshalCol(col Collection) (core.Object, error) {
 	return ret, nil
 }
 
-func (s *unmarshalState) unmarshal(data []byte) (core.Object, error) {
+func (s *unmarshalState) unmarshal(data []byte) (any, error) {
 	var out any
 
 	err := decoder.Unmarshal(data, &out)

@@ -31,7 +31,7 @@ func (r *ReflectValue) checkStruct(env *Env) error {
 	return nil
 }
 
-func (r *ReflectValue) Assoc(env *Env, key Object, value Object) (Associative, error) {
+func (r *ReflectValue) Assoc(env *Env, key any, value any) (Associative, error) {
 	if err := r.checkStruct(env); err != nil {
 		return nil, err
 	}
@@ -90,7 +90,7 @@ func (r *ReflectValue) Assoc(env *Env, key Object, value Object) (Associative, e
 	return nv, nil
 }
 
-func (r *ReflectValue) Set(env *Env, key, value Object) error {
+func (r *ReflectValue) Set(env *Env, key, value any) error {
 	if err := r.checkStruct(env); err != nil {
 		return err
 	}
@@ -142,7 +142,7 @@ func (r *ReflectValue) Set(env *Env, key, value Object) error {
 	return nil
 }
 
-func (r *ReflectValue) Conj(env *Env, obj Object) (Conjable, error) {
+func (r *ReflectValue) Conj(env *Env, obj any) (Conjable, error) {
 	if err := r.checkStruct(env); err != nil {
 		return nil, err
 	}
@@ -158,7 +158,7 @@ func (r *ReflectValue) Count() int {
 	return val.NumField()
 }
 
-func (r *ReflectValue) EntryAt(env *Env, key Object) (*Vector, error) {
+func (r *ReflectValue) EntryAt(env *Env, key any) (*Vector, error) {
 	if err := r.checkStruct(env); err != nil {
 		return nil, err
 	}
@@ -193,7 +193,7 @@ func (r *ReflectValue) EntryAt(env *Env, key Object) (*Vector, error) {
 	return NewVectorFrom(key, rval), nil
 }
 
-func (r *ReflectValue) Get(env *Env, key Object) (bool, Object, error) {
+func (r *ReflectValue) Get(env *Env, key any) (bool, any, error) {
 	if err := r.checkStruct(env); err != nil {
 		return false, nil, err
 	}
@@ -228,7 +228,7 @@ func (r *ReflectValue) Get(env *Env, key Object) (bool, Object, error) {
 	return true, rval, nil
 }
 
-func (r *ReflectValue) GetEqu(key Equ) (bool, Object) {
+func (r *ReflectValue) GetEqu(key Equ) (bool, any) {
 	if !r.isStruct() {
 		return false, nil
 	}
@@ -303,7 +303,7 @@ func (r *ReflectValue) Keys() Seq {
 
 	t := reflect.Indirect(r.val).Type()
 
-	var ret []Object
+	var ret []any
 
 	for i := 0; i < t.NumField(); i++ {
 		ret = append(ret, MakeKeyword(t.Field(i).Name))
@@ -319,7 +319,7 @@ func (r *ReflectValue) Vals() Seq {
 
 	v := reflect.Indirect(r.val)
 
-	var ret []Object
+	var ret []any
 
 	for i := 0; i < v.NumField(); i++ {
 		f := v.Field(i)
@@ -357,7 +357,7 @@ func (r *ReflectValue) Merge(env *Env, other Map) (Map, error) {
 	return res, nil
 }
 
-func (r *ReflectValue) Without(env *Env, key Object) (Map, error) {
+func (r *ReflectValue) Without(env *Env, key any) (Map, error) {
 	if err := r.checkStruct(env); err != nil {
 		return nil, err
 	}
@@ -413,7 +413,7 @@ func (seq *reflectStructSeq) Pprint(env *Env, w io.Writer, indent int) (int, err
 	return pprintSeq(env, seq, w, indent)
 }
 
-func (seq *reflectStructSeq) WithMeta(env *Env, meta Map) (Object, error) {
+func (seq *reflectStructSeq) WithMeta(env *Env, meta Map) (any, error) {
 	res := *seq
 	m, err := SafeMerge(env, res.meta, meta)
 	if err != nil {
@@ -435,7 +435,7 @@ func (seq *reflectStructSeq) Seq() Seq {
 	return seq
 }
 
-func (seq *reflectStructSeq) First(env *Env) (Object, error) {
+func (seq *reflectStructSeq) First(env *Env) (any, error) {
 	t := seq.m.val.Type()
 
 	if seq.index >= t.NumField() {
@@ -466,6 +466,6 @@ func (seq *reflectStructSeq) IsEmpty(env *Env) (bool, error) {
 	return seq.index >= t.NumField(), nil
 }
 
-func (seq *reflectStructSeq) Cons(obj Object) Seq {
+func (seq *reflectStructSeq) Cons(obj any) Seq {
 	return &ConsSeq{first: obj, rest: seq}
 }

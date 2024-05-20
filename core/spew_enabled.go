@@ -1,13 +1,15 @@
+//go:build go_spew
 // +build go_spew
 
 package core
 
 import (
 	"fmt"
+
 	"github.com/jcburley/go-spew/spew"
 )
 
-var procGoSpew = func(args []Object) (res Object) {
+var procGoSpew = func(args []any) (res any) {
 	res = MakeBoolean(false)
 	CheckArity(args, 1, 2)
 	defer func() {

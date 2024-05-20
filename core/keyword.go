@@ -3,7 +3,7 @@ package core
 import "strings"
 
 type Keyword interface {
-	Object
+	any
 	Equ
 	Comparable
 	Callable
@@ -48,7 +48,7 @@ type HeavyKeyword struct {
 
 func (*HeavyKeyword) keywordType() string { return "heavy" }
 
-func (k *HeavyKeyword) WithInfo(info *ObjectInfo) Object {
+func (k *HeavyKeyword) WithInfo(info *ObjectInfo) any {
 	k.info = info
 	return k
 }
@@ -94,7 +94,7 @@ func (k *HeavyKeyword) Equals(env *Env, other interface{}) bool {
 	}
 }
 
-func (k *HeavyKeyword) Is(other Object) bool {
+func (k *HeavyKeyword) Is(other any) bool {
 	switch other := other.(type) {
 	case Keyword:
 		return k.ns == other.Namespace() && k.name == other.Name()
@@ -115,7 +115,7 @@ func (k *HeavyKeyword) IsHash() uint32 {
 	return hashSymbol(k.ns, k.name) ^ KeywordHashMask
 }
 
-func (k *HeavyKeyword) Compare(env *Env, other Object) (int, error) {
+func (k *HeavyKeyword) Compare(env *Env, other any) (int, error) {
 	k2, err := AssertKeyword(env, other, "Cannot compare Keyword and "+TypeName(other))
 	if err != nil {
 		return 0, err
@@ -132,7 +132,7 @@ func (k *HeavyKeyword) Compare(env *Env, other Object) (int, error) {
 	return strings.Compare(ks, k2s), nil
 }
 
-func (k *HeavyKeyword) Call(env *Env, args []Object) (Object, error) {
+func (k *HeavyKeyword) Call(env *Env, args []any) (any, error) {
 	return getMap(env, k, args)
 }
 
@@ -146,7 +146,7 @@ func (TinyKeyword) GetInfo() *ObjectInfo {
 	return nil
 }
 
-func (k TinyKeyword) WithInfo(info *ObjectInfo) Object {
+func (k TinyKeyword) WithInfo(info *ObjectInfo) any {
 	hk := &HeavyKeyword{
 		name: string(k),
 	}
@@ -183,7 +183,7 @@ func (k TinyKeyword) Equals(env *Env, other interface{}) bool {
 	}
 }
 
-func (k TinyKeyword) Is(other Object) bool {
+func (k TinyKeyword) Is(other any) bool {
 	switch other := other.(type) {
 	case Keyword:
 		return other.Namespace() == "" && string(k) == other.Name()
@@ -204,7 +204,7 @@ func (k TinyKeyword) IsHash() uint32 {
 	return hashSymbol("", string(k)) ^ KeywordHashMask
 }
 
-func (k TinyKeyword) Compare(env *Env, other Object) (int, error) {
+func (k TinyKeyword) Compare(env *Env, other any) (int, error) {
 	k2, err := AssertKeyword(env, other, "Cannot compare Keyword and "+TypeName(other))
 	if err != nil {
 		return 0, err
@@ -221,7 +221,7 @@ func (k TinyKeyword) Compare(env *Env, other Object) (int, error) {
 	return strings.Compare(ks, k2s), nil
 }
 
-func (k TinyKeyword) Call(env *Env, args []Object) (Object, error) {
+func (k TinyKeyword) Call(env *Env, args []any) (any, error) {
 	return getMap(env, k, args)
 }
 

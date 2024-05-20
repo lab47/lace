@@ -43,8 +43,6 @@ func (c *ConvRegistry) convArg(at reflect.Type) (inConv, bool) {
 	switch at {
 	case reflect.TypeFor[*Env]():
 		return convertEnvIn, false
-	case reflect.TypeFor[Object]():
-		return convertObjectIn, true
 	case reflect.TypeFor[Seqable]():
 		return convertSeqableIn, true
 	case reflect.TypeFor[Map]():
@@ -87,10 +85,8 @@ func (c *ConvRegistry) convArg(at reflect.Type) (inConv, bool) {
 		return convertReflectValueInAny, true
 	case reflect.TypeFor[*ReflectValue]():
 		return convertReflectValueInDirect, true
-	case reflect.TypeFor[any]():
-		return convertAnyIn, true
 	default:
-		return func(e *Env, i int, o Object) (reflect.Value, error) {
+		return func(e *Env, i int, o any) (reflect.Value, error) {
 			return convertReflectValueIn(e, i, o, at)
 		}, true
 	}
@@ -98,8 +94,6 @@ func (c *ConvRegistry) convArg(at reflect.Type) (inConv, bool) {
 
 func (c *ConvRegistry) convRet(at reflect.Type) outConv {
 	switch at {
-	case reflect.TypeFor[Object]():
-		return convertObjectOut
 	case reflect.TypeFor[string]():
 		return convertStringOut
 	case reflect.TypeFor[[]byte]():
@@ -129,10 +123,10 @@ func (c *ConvRegistry) convRet(at reflect.Type) outConv {
 	}
 }
 
-var nilObject = reflect.Zero(reflect.TypeFor[Object]())
+var nilObject = reflect.Zero(reflect.TypeFor[any]())
 
-type inConv func(*Env, int, Object) (reflect.Value, error)
-type outConv func(reflect.Value) (Object, error)
+type inConv func(*Env, int, any) (reflect.Value, error)
+type outConv func(reflect.Value) (any, error)
 
 type conversionSet struct {
 	ft reflect.Type
@@ -150,7 +144,7 @@ func (c *ConvRegistry) wrapFunc(fnVal reflect.Value, cs *conversionSet) reflect.
 	// Optimization for a normal (ie, fewer than 10) number of args to avoid heap escape of the
 	// input to .Call
 	if cs.ft.NumIn() <= 10 {
-		return reflect.ValueOf(ProcFn(func(env *Env, objArgs []Object) (Object, error) {
+		return reflect.ValueOf(ProcFn(func(env *Env, objArgs []any) (any, error) {
 			if len(objArgs) != cs.arity {
 				return nil, ErrorArityMinMax(env, len(objArgs), cs.arity, cs.arity)
 			}
@@ -160,7 +154,7 @@ func (c *ConvRegistry) wrapFunc(fnVal reflect.Value, cs *conversionSet) reflect.
 			var dest [10]reflect.Value
 
 			for destIdx, inIdx := range cs.arityMap {
-				var a Object
+				var a any
 
 				if inIdx >= 0 {
 					a = objArgs[inIdx]
@@ -195,7 +189,7 @@ func (c *ConvRegistry) wrapFunc(fnVal reflect.Value, cs *conversionSet) reflect.
 				}
 				return obj, nil
 			default:
-				var objects []Object
+				var objects []any
 
 				for i, rv := range ret {
 					if i == cs.errorPos {
@@ -212,7 +206,7 @@ func (c *ConvRegistry) wrapFunc(fnVal reflect.Value, cs *conversionSet) reflect.
 			}
 		}))
 	} else {
-		return reflect.ValueOf(ProcFn(func(env *Env, objArgs []Object) (Object, error) {
+		return reflect.ValueOf(ProcFn(func(env *Env, objArgs []any) (any, error) {
 			if len(objArgs) != cs.arity {
 				return nil, ErrorArityMinMax(env, len(objArgs), cs.arity, cs.arity)
 			}
@@ -222,7 +216,7 @@ func (c *ConvRegistry) wrapFunc(fnVal reflect.Value, cs *conversionSet) reflect.
 			dest := make([]reflect.Value, cs.ft.NumIn())
 
 			for destIdx, inIdx := range cs.arityMap {
-				var a Object
+				var a any
 
 				if inIdx >= 0 {
 					a = objArgs[inIdx]
@@ -257,7 +251,7 @@ func (c *ConvRegistry) wrapFunc(fnVal reflect.Value, cs *conversionSet) reflect.
 				}
 				return obj, nil
 			default:
-				var objects []Object
+				var objects []any
 
 				for i, rv := range ret {
 					if i == cs.errorPos {
@@ -343,7 +337,7 @@ func (c *ConvRegistry) buildProc(v reflect.Value) (ProcFn, *conversionSet, error
 	vt := v.Type()
 
 	if vt == rawFunc {
-		vc := v.Interface().(func(*Env, []Object) (Object, error))
+		vc := v.Interface().(func(*Env, []any) (any, error))
 		return vc, nil, nil
 	}
 
@@ -355,7 +349,7 @@ func (c *ConvRegistry) buildProc(v reflect.Value) (ProcFn, *conversionSet, error
 }
 
 // from string to String
-func convertStringOut(s reflect.Value) (Object, error) {
+func convertStringOut(s reflect.Value) (any, error) {
 	gs, ok := s.Interface().(string)
 	if !ok {
 		return nil, OutConvError("wrong type, expecting string")
@@ -365,7 +359,7 @@ func convertStringOut(s reflect.Value) (Object, error) {
 }
 
 // from []byte to String
-func convertBytesOut(s reflect.Value) (Object, error) {
+func convertBytesOut(s reflect.Value) (any, error) {
 	_, ok := s.Interface().([]byte)
 	if !ok {
 		return nil, OutConvError("wrong type, expecting string")
@@ -375,7 +369,7 @@ func convertBytesOut(s reflect.Value) (Object, error) {
 }
 
 // from *regexp.Regexp to *Regex
-func convertRegexpOut(s reflect.Value) (Object, error) {
+func convertRegexpOut(s reflect.Value) (any, error) {
 	gs, ok := s.Interface().(*regexp.Regexp)
 	if !ok {
 		return nil, OutConvError("wrong type, expecting string")
@@ -390,18 +384,15 @@ func (s OutConvError) Error() string {
 	return string(s)
 }
 
-// from Object to Object
-func convertObjectOut(s reflect.Value) (Object, error) {
-	gs, ok := s.Interface().(Object)
-	if !ok {
-		return nil, OutConvError("wrong type, expecting Object")
-	}
-
-	return gs, nil
+// from Object to any
+/*
+func convertObjectOut(s reflect.Value) (any, error) {
+	return s.Interface(), nil
 }
+*/
 
 // from bool to Boolean
-func convertBoolOut(s reflect.Value) (Object, error) {
+func convertBoolOut(s reflect.Value) (any, error) {
 	gb, ok := s.Interface().(bool)
 	if !ok {
 		return nil, OutConvError("wrong type, expecting string")
@@ -410,12 +401,12 @@ func convertBoolOut(s reflect.Value) (Object, error) {
 	return MakeBoolean(gb), nil
 }
 
-func convertBoolIn(env *Env, index int, o Object) (reflect.Value, error) {
+func convertBoolIn(env *Env, index int, o any) (reflect.Value, error) {
 	return reflect.ValueOf(ToBool(o)), nil
 }
 
 // from reflect.Type to ReflectType
-func convertGoReflectTypeOut(s reflect.Value) (Object, error) {
+func convertGoReflectTypeOut(s reflect.Value) (any, error) {
 	gb, ok := s.Interface().(reflect.Type)
 	if !ok {
 		return nil, OutConvError("wrong type, expecting reflect.Type")
@@ -425,7 +416,7 @@ func convertGoReflectTypeOut(s reflect.Value) (Object, error) {
 }
 
 // from String to string
-func convertStringIn(env *Env, index int, o Object) (reflect.Value, error) {
+func convertStringIn(env *Env, index int, o any) (reflect.Value, error) {
 	switch sv := o.(type) {
 	case String:
 		return reflect.ValueOf(sv.S()), nil
@@ -439,7 +430,7 @@ func convertStringIn(env *Env, index int, o Object) (reflect.Value, error) {
 }
 
 // from Symbol to Symbol
-func convertSymbolIn(env *Env, index int, o Object) (reflect.Value, error) {
+func convertSymbolIn(env *Env, index int, o any) (reflect.Value, error) {
 	ls, ok := o.(Symbol)
 	if !ok {
 		return reflect.Value{}, env.NewArgTypeError(index, o, "Symbol")
@@ -449,7 +440,7 @@ func convertSymbolIn(env *Env, index int, o Object) (reflect.Value, error) {
 }
 
 // from Symbol to Symbol
-func convertKeywordIn(env *Env, index int, o Object) (reflect.Value, error) {
+func convertKeywordIn(env *Env, index int, o any) (reflect.Value, error) {
 	ls, ok := o.(Keyword)
 	if !ok {
 		return reflect.Value{}, env.NewArgTypeError(index, o, "Symbol")
@@ -459,7 +450,7 @@ func convertKeywordIn(env *Env, index int, o Object) (reflect.Value, error) {
 }
 
 // from String to []byte
-func convertBytesIn(env *Env, index int, o Object) (reflect.Value, error) {
+func convertBytesIn(env *Env, index int, o any) (reflect.Value, error) {
 	ls, ok := o.(String)
 	if !ok {
 		if rv, ok := o.(*ReflectValue); ok {
@@ -475,7 +466,7 @@ func convertBytesIn(env *Env, index int, o Object) (reflect.Value, error) {
 }
 
 // from Int to int
-func convertIntIn(env *Env, index int, o Object) (reflect.Value, error) {
+func convertIntIn(env *Env, index int, o any) (reflect.Value, error) {
 	ls, ok := o.(Number)
 	if !ok {
 		return reflect.Value{}, env.NewArgTypeError(index, o, "Int")
@@ -485,7 +476,7 @@ func convertIntIn(env *Env, index int, o Object) (reflect.Value, error) {
 }
 
 // from Int to int
-func convertIntIn8(env *Env, index int, o Object) (reflect.Value, error) {
+func convertIntIn8(env *Env, index int, o any) (reflect.Value, error) {
 	ls, ok := o.(Number)
 	if !ok {
 		return reflect.Value{}, env.NewArgTypeError(index, o, "Int")
@@ -495,7 +486,7 @@ func convertIntIn8(env *Env, index int, o Object) (reflect.Value, error) {
 }
 
 // from Int to int
-func convertIntIn16(env *Env, index int, o Object) (reflect.Value, error) {
+func convertIntIn16(env *Env, index int, o any) (reflect.Value, error) {
 	ls, ok := o.(Number)
 	if !ok {
 		return reflect.Value{}, env.NewArgTypeError(index, o, "Int")
@@ -505,7 +496,7 @@ func convertIntIn16(env *Env, index int, o Object) (reflect.Value, error) {
 }
 
 // from Int to int
-func convertIntIn32(env *Env, index int, o Object) (reflect.Value, error) {
+func convertIntIn32(env *Env, index int, o any) (reflect.Value, error) {
 	ls, ok := o.(Number)
 	if !ok {
 		return reflect.Value{}, env.NewArgTypeError(index, o, "Int")
@@ -515,7 +506,7 @@ func convertIntIn32(env *Env, index int, o Object) (reflect.Value, error) {
 }
 
 // from Int to int
-func convertIntIn64(env *Env, index int, o Object) (reflect.Value, error) {
+func convertIntIn64(env *Env, index int, o any) (reflect.Value, error) {
 	ls, ok := o.(Number)
 	if !ok {
 		return reflect.Value{}, env.NewArgTypeError(index, o, "Int")
@@ -525,7 +516,7 @@ func convertIntIn64(env *Env, index int, o Object) (reflect.Value, error) {
 }
 
 // from Int to int
-func convertUintIn(env *Env, index int, o Object) (reflect.Value, error) {
+func convertUintIn(env *Env, index int, o any) (reflect.Value, error) {
 	ls, ok := o.(Number)
 	if !ok {
 		return reflect.Value{}, env.NewArgTypeError(index, o, "Int")
@@ -535,7 +526,7 @@ func convertUintIn(env *Env, index int, o Object) (reflect.Value, error) {
 }
 
 // from Int to int
-func convertUintIn8(env *Env, index int, o Object) (reflect.Value, error) {
+func convertUintIn8(env *Env, index int, o any) (reflect.Value, error) {
 	ls, ok := o.(Number)
 	if !ok {
 		return reflect.Value{}, env.NewArgTypeError(index, o, "Int")
@@ -545,7 +536,7 @@ func convertUintIn8(env *Env, index int, o Object) (reflect.Value, error) {
 }
 
 // from Int to int
-func convertUintIn16(env *Env, index int, o Object) (reflect.Value, error) {
+func convertUintIn16(env *Env, index int, o any) (reflect.Value, error) {
 	ls, ok := o.(Number)
 	if !ok {
 		return reflect.Value{}, env.NewArgTypeError(index, o, "Int")
@@ -555,7 +546,7 @@ func convertUintIn16(env *Env, index int, o Object) (reflect.Value, error) {
 }
 
 // from Int to int
-func convertUintIn32(env *Env, index int, o Object) (reflect.Value, error) {
+func convertUintIn32(env *Env, index int, o any) (reflect.Value, error) {
 	ls, ok := o.(Number)
 	if !ok {
 		return reflect.Value{}, env.NewArgTypeError(index, o, "Int")
@@ -565,7 +556,7 @@ func convertUintIn32(env *Env, index int, o Object) (reflect.Value, error) {
 }
 
 // from Int to int
-func convertUintIn64(env *Env, index int, o Object) (reflect.Value, error) {
+func convertUintIn64(env *Env, index int, o any) (reflect.Value, error) {
 	ls, ok := o.(Number)
 	if !ok {
 		return reflect.Value{}, env.NewArgTypeError(index, o, "Int")
@@ -575,17 +566,19 @@ func convertUintIn64(env *Env, index int, o Object) (reflect.Value, error) {
 }
 
 // from Object to Object
-func convertObjectIn(env *Env, index int, o Object) (reflect.Value, error) {
+/*
+func convertObjectIn(_ *Env, _ int, o any) (reflect.Value, error) {
 	return reflect.ValueOf(o), nil
 }
+*/
 
 // from Env* to Env*
-func convertEnvIn(env *Env, index int, o Object) (reflect.Value, error) {
+func convertEnvIn(env *Env, index int, o any) (reflect.Value, error) {
 	return reflect.ValueOf(env), nil
 }
 
 // from Seqable to Seqable
-func convertSeqableIn(env *Env, index int, o Object) (reflect.Value, error) {
+func convertSeqableIn(env *Env, index int, o any) (reflect.Value, error) {
 	ls, ok := o.(Seqable)
 	if !ok {
 		return reflect.Value{}, env.NewArgTypeError(index, o, "Seqable")
@@ -595,7 +588,7 @@ func convertSeqableIn(env *Env, index int, o Object) (reflect.Value, error) {
 }
 
 // from Map to Map
-func convertMapIn(env *Env, index int, o Object) (reflect.Value, error) {
+func convertMapIn(env *Env, index int, o any) (reflect.Value, error) {
 	ls, ok := o.(Map)
 	if !ok {
 		return reflect.Value{}, env.NewArgTypeError(index, o, "Map")
@@ -605,7 +598,7 @@ func convertMapIn(env *Env, index int, o Object) (reflect.Value, error) {
 }
 
 // from ReflectValue to *type
-func convertReflectTypeIn(env *Env, index int, o Object) (reflect.Value, error) {
+func convertReflectTypeIn(env *Env, index int, o any) (reflect.Value, error) {
 	ls, ok := o.(*ReflectType)
 	if !ok {
 		return reflect.Value{}, env.NewArgTypeError(index, o, "ReflectType")
@@ -615,7 +608,7 @@ func convertReflectTypeIn(env *Env, index int, o Object) (reflect.Value, error) 
 }
 
 // from ReflectValue to *type
-func convertReflectValueInDirect(env *Env, index int, o Object) (reflect.Value, error) {
+func convertReflectValueInDirect(env *Env, index int, o any) (reflect.Value, error) {
 	ls, ok := o.(*ReflectValue)
 	if !ok {
 		return reflect.Value{}, env.NewArgTypeError(index, o, "ReflectValue")
@@ -625,7 +618,7 @@ func convertReflectValueInDirect(env *Env, index int, o Object) (reflect.Value, 
 }
 
 // from ReflectValue to *type
-func convertReflectValueInAny(env *Env, index int, o Object) (reflect.Value, error) {
+func convertReflectValueInAny(env *Env, index int, o any) (reflect.Value, error) {
 	ls, ok := o.(*ReflectValue)
 	if !ok {
 		return reflect.Value{}, env.NewArgTypeError(index, o, "ReflectValue")
@@ -635,7 +628,7 @@ func convertReflectValueInAny(env *Env, index int, o Object) (reflect.Value, err
 }
 
 // from ReflectValue to *type
-func convertReflectValueIn(env *Env, index int, o Object, at reflect.Type) (reflect.Value, error) {
+func convertReflectValueIn(env *Env, index int, o any, at reflect.Type) (reflect.Value, error) {
 	ls, ok := o.(*ReflectValue)
 	if !ok {
 		ov := reflect.ValueOf(o)
@@ -668,23 +661,20 @@ func convertReflectValueIn(env *Env, index int, o Object, at reflect.Type) (refl
 }
 
 // from any to Object|ReflectValue
-func convertReflectValueOut(s reflect.Value) (Object, error) {
+func convertReflectValueOut(s reflect.Value) (any, error) {
 	o := s.Interface()
-	if sv, ok := o.(Object); ok {
-		return sv, nil
-	}
 
-	switch sv := s.Interface().(type) {
+	switch sv := o.(type) {
 	case reflect.Value:
 		return WrapReflectValue(sv), nil
 	case *ReflectValue:
 		return sv, nil
 	default:
-		return WrapReflectValue(s), nil
+		return s, nil
 	}
 }
 
-func convertCallableIn(env *Env, index int, o Object) (reflect.Value, error) {
+func convertCallableIn(env *Env, index int, o any) (reflect.Value, error) {
 	ls, ok := o.(Callable)
 	if !ok {
 		return reflect.Value{}, env.NewArgTypeError(index, o, "Seqable")
@@ -693,7 +683,7 @@ func convertCallableIn(env *Env, index int, o Object) (reflect.Value, error) {
 	return reflect.ValueOf(ls), nil
 }
 
-func convertFromInt(rv reflect.Value) (Object, error) {
+func convertFromInt(rv reflect.Value) (any, error) {
 	i := rv.Int()
 
 	if i > math.MaxInt {
@@ -703,7 +693,7 @@ func convertFromInt(rv reflect.Value) (Object, error) {
 	return MakeInt(int(i)), nil
 }
 
-func convertFromUInt(rv reflect.Value) (Object, error) {
+func convertFromUInt(rv reflect.Value) (any, error) {
 	i := rv.Uint()
 
 	if i > math.MaxUint {
@@ -713,7 +703,7 @@ func convertFromUInt(rv reflect.Value) (Object, error) {
 	return MakeInt(int(i)), nil
 }
 
-var rawFunc = reflect.TypeFor[func(*Env, []Object) (Object, error)]()
+var rawFunc = reflect.TypeFor[func(*Env, []any) (any, error)]()
 
 func (c *ConvRegistry) makeFuncConvertIn(env *Env, target Callable, ft reflect.Type) reflect.Value {
 	var (
@@ -727,7 +717,7 @@ func (c *ConvRegistry) makeFuncConvertIn(env *Env, target Callable, ft reflect.T
 	}
 
 	var (
-		errIdx    int = -1
+		errIdx    = -1
 		zeroRet   []reflect.Value
 		retIdx    int
 		retValues int
@@ -748,15 +738,15 @@ func (c *ConvRegistry) makeFuncConvertIn(env *Env, target Callable, ft reflect.T
 	}
 
 	trampoline := reflect.MakeFunc(ft, func(args []reflect.Value) (results []reflect.Value) {
-		var objs []Object
+		var objs []any
 
 		var (
 			err  error
 			sequ Seqable
 			ok   bool
 			seq  Seq
-			ret  Object
-			obj  Object
+			ret  any
+			obj  any
 		)
 
 		rets := make([]reflect.Value, ft.NumOut())

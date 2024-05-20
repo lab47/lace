@@ -39,7 +39,7 @@ func (fn *Fn) Equals(env *Env, other interface{}) bool {
 	}
 }
 
-func (fn *Fn) WithMeta(env *Env, meta Map) (Object, error) {
+func (fn *Fn) WithMeta(env *Env, meta Map) (any, error) {
 	res := *fn
 	m, err := SafeMerge(env, res.meta, meta)
 	if err != nil {
@@ -57,7 +57,7 @@ func (fn *Fn) Hash(env *Env) (uint32, error) {
 	return HashPtr(fn), nil
 }
 
-func (fn *Fn) Call(env *Env, args []Object) (Object, error) {
+func (fn *Fn) Call(env *Env, args []any) (any, error) {
 	obj, err := env.Engine.RunWithArgs(env, fn, args)
 	if err != nil {
 		return nil, err
@@ -66,7 +66,7 @@ func (fn *Fn) Call(env *Env, args []Object) (Object, error) {
 	return obj, nil
 }
 
-func (fn *Fn) Compare(env *Env, a, b Object) (int, error) {
+func (fn *Fn) Compare(env *Env, a, b any) (int, error) {
 	return compare(env, fn, a, b)
 }
 

@@ -72,7 +72,7 @@ func Setup(env *core.Env) error {
 		Doc:   "Splits string on \\n or \\r\\n. Returns vector of the splits.",
 		Added: "1.0",
 		Args:  []string{"s"},
-		Fn: func(s string) (core.Object, error) {
+		Fn: func(s string) (any, error) {
 			return split(s, newLine, 0)
 		},
 	})
@@ -215,7 +215,7 @@ func Setup(env *core.Env) error {
 		Fns: []core.ArityFn{
 			{
 				Args: []string{"s", "value"},
-				Fn: func(s string, val core.Object) (core.Object, error) {
+				Fn: func(s string, val any) (any, error) {
 					return indexOf(s, val, 0)
 				},
 			},
@@ -233,7 +233,7 @@ func Setup(env *core.Env) error {
 		Fns: []core.ArityFn{
 			{
 				Args: []string{"s", "value"},
-				Fn: func(s string, val core.Object) (core.Object, error) {
+				Fn: func(s string, val any) (any, error) {
 					return lastIndexOf(s, val, 0)
 				},
 			},
@@ -323,7 +323,7 @@ func padLeft(s, pad string, n int) (string, error) {
 	return s, nil
 }
 
-func split(s string, r *regexp.Regexp, n int) (core.Object, error) {
+func split(s string, r *regexp.Regexp, n int) (any, error) {
 	indexes := r.FindAllStringIndex(s, n-1)
 	lastStart := 0
 	result := core.EmptyVector()
@@ -339,11 +339,11 @@ func split(s string, r *regexp.Regexp, n int) (core.Object, error) {
 	return result, err
 }
 
-func splitOnStringOrRegex2(s string, sep core.Object) (core.Object, error) {
+func splitOnStringOrRegex2(s string, sep any) (any, error) {
 	return splitOnStringOrRegex3(s, sep, 0)
 }
 
-func splitOnStringOrRegex3(s string, sep core.Object, n int) (core.Object, error) {
+func splitOnStringOrRegex3(s string, sep any, n int) (any, error) {
 	switch sep := sep.(type) {
 	case core.String:
 		v := strings.Split(s, sep.S())
@@ -398,7 +398,7 @@ func join(env *core.Env, sep string, seqable core.Seqable) (string, error) {
 	return b.String(), nil
 }
 
-func isBlank(env *core.Env, s core.Object) (bool, error) {
+func isBlank(env *core.Env, s any) (bool, error) {
 	if core.Equals(env, s, core.NIL) {
 		return true, nil
 	}
@@ -424,7 +424,7 @@ func capitalize(s string) (string, error) {
 func escape(env *core.Env, s string, cmap core.Callable) (string, error) {
 	var b bytes.Buffer
 	for _, r := range s {
-		obj, err := cmap.Call(env, []core.Object{core.NewChar(r)})
+		obj, err := cmap.Call(env, []any{core.NewChar(r)})
 		if err != nil {
 			return "", err
 		}
@@ -441,7 +441,7 @@ func escape(env *core.Env, s string, cmap core.Callable) (string, error) {
 	return b.String(), nil
 }
 
-func indexOf(s string, value core.Object, from int) (core.Object, error) {
+func indexOf(s string, value any, from int) (any, error) {
 	var res int
 	if from != 0 {
 		s = string([]rune(s)[from:])
@@ -460,7 +460,7 @@ func indexOf(s string, value core.Object, from int) (core.Object, error) {
 	return core.MakeInt(utf8.RuneCountInString(s[:res]) + from), nil
 }
 
-func lastIndexOf(s string, value core.Object, from int) (core.Object, error) {
+func lastIndexOf(s string, value any, from int) (any, error) {
 	var res int
 	if from != 0 {
 		s = string([]rune(s)[:from])
@@ -479,7 +479,7 @@ func lastIndexOf(s string, value core.Object, from int) (core.Object, error) {
 	return core.MakeInt(utf8.RuneCountInString(s[:res])), nil
 }
 
-func replace(s string, match core.Object, repl string) (string, error) {
+func replace(s string, match any, repl string) (string, error) {
 	switch match := match.(type) {
 	case core.String:
 		return strings.Replace(s, match.S(), repl, -1), nil
@@ -490,7 +490,7 @@ func replace(s string, match core.Object, repl string) (string, error) {
 	}
 }
 
-func replaceFirst(s string, match core.Object, repl string) (string, error) {
+func replaceFirst(s string, match any, repl string) (string, error) {
 	switch match := match.(type) {
 	case core.String:
 		return strings.Replace(s, match.S(), repl, 1), nil

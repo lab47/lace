@@ -7,7 +7,7 @@ import (
 
 type (
 	Number interface {
-		Object
+		any
 		Int() Int
 		Double() Double
 		BigInt() *big.Int
@@ -98,7 +98,7 @@ func (ops RatioOps) Combine(other Ops) Ops {
 	}
 }
 
-func GetOps(obj Object) Ops {
+func GetOps(obj any) Ops {
 	switch obj.(type) {
 	case Double:
 		return DOUBLE_OPS

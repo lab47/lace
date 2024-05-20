@@ -2,7 +2,7 @@ package core
 
 type (
 	FutureResult struct {
-		value Object
+		value any
 		err   Error
 	}
 	Channel struct {
@@ -12,9 +12,9 @@ type (
 	}
 )
 
-var _ Object = &Channel{}
+var _ any = &Channel{}
 
-func MakeFutureResult(value Object, err Error) FutureResult {
+func MakeFutureResult(value any, err Error) FutureResult {
 	return FutureResult{value: value, err: err}
 }
 
@@ -38,7 +38,7 @@ func (ch *Channel) Hash(env *Env) (uint32, error) {
 	return ch.hash, nil
 }
 
-func (ch *Channel) WithInfo(info *ObjectInfo) Object {
+func (ch *Channel) WithInfo(info *ObjectInfo) any {
 	return ch
 }
 
@@ -48,7 +48,7 @@ func MakeChannel(ch chan FutureResult) *Channel {
 	return res
 }
 
-func ExtractChannel(env *Env, args []Object, index int) (*Channel, error) {
+func ExtractChannel(env *Env, args []any, index int) (*Channel, error) {
 	return EnsureChannel(env, args, index)
 }
 

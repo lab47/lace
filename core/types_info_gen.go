@@ -2,126 +2,126 @@
 
 package core
 
-func (x *List) WithInfo(info *ObjectInfo) Object {
+func (x *List) WithInfo(info *ObjectInfo) any {
 	x.info = info
 	return x
 }
 
-func (x *ArrayMapSeq) WithInfo(info *ObjectInfo) Object {
+func (x *ArrayMapSeq) WithInfo(info *ObjectInfo) any {
 	x.info = info
 	return x
 }
 
-func (x *ArrayMap) WithInfo(info *ObjectInfo) Object {
+func (x *ArrayMap) WithInfo(info *ObjectInfo) any {
 	x.info = info
 	return x
 }
 
-func (x *HashMap) WithInfo(info *ObjectInfo) Object {
+func (x *HashMap) WithInfo(info *ObjectInfo) any {
 	x.info = info
 	return x
 }
 
-func (x *ExInfo) WithInfo(info *ObjectInfo) Object {
+func (x *ExInfo) WithInfo(info *ObjectInfo) any {
 	x.info = info
 	return x
 }
 
-func (x *Fn) WithInfo(info *ObjectInfo) Object {
+func (x *Fn) WithInfo(info *ObjectInfo) any {
 	x.info = info
 	return x
 }
 
-func (x *Var) WithInfo(info *ObjectInfo) Object {
+func (x *Var) WithInfo(info *ObjectInfo) any {
 	x.info = info
 	return x
 }
 
-func (x *Ratio) WithInfo(info *ObjectInfo) Object {
+func (x *Ratio) WithInfo(info *ObjectInfo) any {
 	x.info = info
 	return x
 }
 
-func (x *BigInt) WithInfo(info *ObjectInfo) Object {
+func (x *BigInt) WithInfo(info *ObjectInfo) any {
 	x.info = info
 	return x
 }
 
-func (x *BigFloat) WithInfo(info *ObjectInfo) Object {
+func (x *BigFloat) WithInfo(info *ObjectInfo) any {
 	x.info = info
 	return x
 }
 
-func (x Double) WithInfo(info *ObjectInfo) Object {
+func (x Double) WithInfo(info *ObjectInfo) any {
 	x.info = info
 	return x
 }
 
-func (x Boolean) WithInfo(info *ObjectInfo) Object {
+func (x Boolean) WithInfo(info *ObjectInfo) any {
 	return x
 }
 
-func (x Time) WithInfo(info *ObjectInfo) Object {
+func (x Time) WithInfo(info *ObjectInfo) any {
 	x.info = info
 	return x
 }
 
-func (x *Regex) WithInfo(info *ObjectInfo) Object {
+func (x *Regex) WithInfo(info *ObjectInfo) any {
 	x.info = info
 	return x
 }
 
-func (x *HeavySymbol) WithInfo(info *ObjectInfo) Object {
+func (x *HeavySymbol) WithInfo(info *ObjectInfo) any {
 	x.info = info
 	return x
 }
 
-func (x *LazySeq) WithInfo(info *ObjectInfo) Object {
+func (x *LazySeq) WithInfo(info *ObjectInfo) any {
 	x.info = info
 	return x
 }
 
-func (x *MappingSeq) WithInfo(info *ObjectInfo) Object {
+func (x *MappingSeq) WithInfo(info *ObjectInfo) any {
 	x.info = info
 	return x
 }
 
-func (x *ArraySeq) WithInfo(info *ObjectInfo) Object {
+func (x *ArraySeq) WithInfo(info *ObjectInfo) any {
 	x.info = info
 	return x
 }
 
-func (x *ConsSeq) WithInfo(info *ObjectInfo) Object {
+func (x *ConsSeq) WithInfo(info *ObjectInfo) any {
 	x.info = info
 	return x
 }
 
-func (x *NodeSeq) WithInfo(info *ObjectInfo) Object {
+func (x *NodeSeq) WithInfo(info *ObjectInfo) any {
 	x.info = info
 	return x
 }
 
-func (x *ArrayNodeSeq) WithInfo(info *ObjectInfo) Object {
+func (x *ArrayNodeSeq) WithInfo(info *ObjectInfo) any {
 	x.info = info
 	return x
 }
 
-func (x *MapSet) WithInfo(info *ObjectInfo) Object {
+func (x *MapSet) WithInfo(info *ObjectInfo) any {
 	x.info = info
 	return x
 }
 
-func (x *Vector) WithInfo(info *ObjectInfo) Object {
+func (x *Vector) WithInfo(info *ObjectInfo) any {
 	x.info = info
 	return x
 }
 
-func (x *VectorSeq) WithInfo(info *ObjectInfo) Object {
+func (x *VectorSeq) WithInfo(info *ObjectInfo) any {
 	x.info = info
 	return x
 }
 
-func (x *VectorRSeq) WithInfo(info *ObjectInfo) Object {
+func (x *VectorRSeq) WithInfo(info *ObjectInfo) any {
 	x.info = info
 	return x
 }

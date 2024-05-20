@@ -4,7 +4,7 @@ const MAX_RUNE = int(^uint32(0) >> 1)
 const MIN_RUNE = -MAX_RUNE - 1
 
 type Char interface {
-	Object
+	any
 	Comparable
 
 	Ch() rune
@@ -27,7 +27,7 @@ func (x *HeavyChar) Ch() rune {
 	return x.ch
 }
 
-func (x *HeavyChar) WithInfo(info *ObjectInfo) Object {
+func (x *HeavyChar) WithInfo(info *ObjectInfo) any {
 	x.info = info
 	return x
 }
@@ -62,7 +62,7 @@ func (c *HeavyChar) Hash(env *Env) (uint32, error) {
 	return h.Sum32(), nil
 }
 
-func (c *HeavyChar) Compare(env *Env, other Object) (int, error) {
+func (c *HeavyChar) Compare(env *Env, other any) (int, error) {
 	c2, err := AssertChar(env, other, "Cannot compare Char and "+TypeName(other))
 	if err != nil {
 		return 0, err
@@ -84,7 +84,7 @@ func (x TinyChar) Ch() rune {
 	return rune(x)
 }
 
-func (x TinyChar) WithInfo(info *ObjectInfo) Object {
+func (x TinyChar) WithInfo(info *ObjectInfo) any {
 	r := &HeavyChar{ch: rune(x)}
 	r.info = info
 	return r
@@ -120,7 +120,7 @@ func (c TinyChar) Hash(env *Env) (uint32, error) {
 	return h.Sum32(), nil
 }
 
-func (c TinyChar) Compare(env *Env, other Object) (int, error) {
+func (c TinyChar) Compare(env *Env, other any) (int, error) {
 	c2, err := AssertChar(env, other, "Cannot compare Char and "+TypeName(other))
 	if err != nil {
 		return 0, err

@@ -11,7 +11,7 @@ type (
 	}
 )
 
-var _ Object = &IOWriter{}
+var _ any = &IOWriter{}
 
 func MakeIOWriter(w io.Writer) *IOWriter {
 	res := &IOWriter{w, 0}
@@ -39,7 +39,7 @@ func (iow *IOWriter) Hash(env *Env) (uint32, error) {
 	return iow.hash, nil
 }
 
-func (iow *IOWriter) WithInfo(info *ObjectInfo) Object {
+func (iow *IOWriter) WithInfo(info *ObjectInfo) any {
 	return iow
 }
 

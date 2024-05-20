@@ -4,7 +4,6 @@ package gen_common
 // both gen_data and gen_code pull in this package.
 import (
 	_ "github.com/lab47/lace/std-ng/string"
-	_ "github.com/lab47/lace/std/html"
 )
 
 type FileInfo struct {
@@ -51,10 +50,6 @@ var CoreSourceFiles []FileInfo = []FileInfo{
 	{
 		Name:     "<lace.tools.cli>",
 		Filename: "tools_cli.clj",
-	},
-	{
-		Name:     "<lace.hiccup>",
-		Filename: "hiccup.clj",
 	},
 	{
 		Name:     "<lace.pprint>",

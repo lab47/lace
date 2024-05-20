@@ -12,7 +12,7 @@ type (
 	}
 )
 
-var _ Object = &BufferedReader{}
+var _ any = &BufferedReader{}
 
 func MakeBufferedReader(rd io.Reader) *BufferedReader {
 	res := &BufferedReader{bufio.NewReader(rd), 0}
@@ -40,6 +40,6 @@ func (br *BufferedReader) Hash(env *Env) (uint32, error) {
 	return br.hash, nil
 }
 
-func (br *BufferedReader) WithInfo(info *ObjectInfo) Object {
+func (br *BufferedReader) WithInfo(info *ObjectInfo) any {
 	return br
 }

@@ -7,7 +7,7 @@ import (
 )
 
 type String interface {
-	Object
+	any
 	IndexCounted
 	Seqable
 
@@ -19,7 +19,7 @@ type GoString string
 
 var _ String = GoString("")
 
-func (s GoString) WithInfo(info *ObjectInfo) Object {
+func (s GoString) WithInfo(info *ObjectInfo) any {
 	return s
 }
 
@@ -74,14 +74,14 @@ func (s GoString) Count() int {
 }
 
 func (s GoString) Seq() Seq {
-	runes := make([]Object, 0, len(s))
+	runes := make([]any, 0, len(s))
 	for _, r := range s {
 		runes = append(runes, NewChar(r))
 	}
 	return &ArraySeq{arr: runes}
 }
 
-func (s GoString) Nth(env *Env, i int) (Object, error) {
+func (s GoString) Nth(env *Env, i int) (any, error) {
 	if i < 0 {
 		return nil, env.NewError(fmt.Sprintf("Negative index: %d", i))
 	}
@@ -97,7 +97,7 @@ func (s GoString) Nth(env *Env, i int) (Object, error) {
 	return nil, env.NewError(fmt.Sprintf("Index %d exceeds string's length %d", i, j+1))
 }
 
-func (s GoString) TryNth(env *Env, i int, d Object) (Object, error) {
+func (s GoString) TryNth(env *Env, i int, d any) (any, error) {
 	if i < 0 {
 		return d, nil
 	}
@@ -109,7 +109,7 @@ func (s GoString) TryNth(env *Env, i int, d Object) (Object, error) {
 	return d, nil
 }
 
-func (s GoString) Compare(env *Env, other Object) (int, error) {
+func (s GoString) Compare(env *Env, other any) (int, error) {
 	s2, err := AssertString(env, other, "Cannot compare String and "+TypeName(other))
 	if err != nil {
 		return 0, err
@@ -182,14 +182,14 @@ func (s *Rope) Count() int {
 
 func (s *Rope) Seq() Seq {
 	x := s.S()
-	runes := make([]Object, 0, len(x))
+	runes := make([]any, 0, len(x))
 	for _, r := range x {
 		runes = append(runes, NewChar(r))
 	}
 	return &ArraySeq{arr: runes}
 }
 
-func (s *Rope) Nth(env *Env, i int) (Object, error) {
+func (s *Rope) Nth(env *Env, i int) (any, error) {
 	if i < 0 {
 		return nil, env.NewError(fmt.Sprintf("Negative index: %d", i))
 	}
@@ -205,7 +205,7 @@ func (s *Rope) Nth(env *Env, i int) (Object, error) {
 	return nil, env.NewError(fmt.Sprintf("Index %d exceeds string's length %d", i, j+1))
 }
 
-func (s *Rope) TryNth(env *Env, i int, d Object) (Object, error) {
+func (s *Rope) TryNth(env *Env, i int, d any) (any, error) {
 	if i < 0 {
 		return d, nil
 	}
@@ -217,7 +217,7 @@ func (s *Rope) TryNth(env *Env, i int, d Object) (Object, error) {
 	return d, nil
 }
 
-func (s *Rope) Compare(env *Env, other Object) (int, error) {
+func (s *Rope) Compare(env *Env, other any) (int, error) {
 	s2, err := AssertString(env, other, "Cannot compare String and "+TypeName(other))
 	if err != nil {
 		return 0, err
@@ -231,7 +231,7 @@ var emptyString = GoString("")
 // Combine many values into a single string.
 //
 //lace:export
-func CombineToString(env *Env, args []Object) (Object, error) {
+func CombineToString(env *Env, args []any) (any, error) {
 	if len(args) == 0 {
 		return emptyString, nil
 	}

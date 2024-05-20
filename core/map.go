@@ -11,12 +11,12 @@ type (
 		Associative
 		Seqable
 		Counted
-		Without(env *Env, key Object) (Map, error)
+		Without(env *Env, key any) (Map, error)
 		Keys() Seq
 		Vals() Seq
 		Merge(env *Env, m Map) (Map, error)
 		Iter() MapIterator
-		GetEqu(key Equ) (bool, Object)
+		GetEqu(key Equ) (bool, any)
 	}
 	MapIterator interface {
 		HasNext() bool
@@ -25,8 +25,8 @@ type (
 	EmptyMapIterator struct {
 	}
 	Pair struct {
-		Key   Object
-		Value Object
+		Key   any
+		Value any
 	}
 )
 
@@ -42,7 +42,7 @@ func (iter *EmptyMapIterator) Next() *Pair {
 	panic(newIteratorError())
 }
 
-func mapConj(env *Env, m Map, obj Object) (Conjable, error) {
+func mapConj(env *Env, m Map, obj any) (Conjable, error) {
 	switch obj := obj.(type) {
 	case *Vector:
 		if obj.count != 2 {
@@ -125,7 +125,7 @@ func mapToString(env *Env, m Map, escape bool) (string, error) {
 	return b.String(), nil
 }
 
-func callMap(env *Env, m Map, args []Object) (Object, error) {
+func callMap(env *Env, m Map, args []any) (any, error) {
 	if err := CheckArity(env, args, 1, 2); err != nil {
 		return nil, err
 	}

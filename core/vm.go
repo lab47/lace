@@ -32,7 +32,7 @@ type InstructionData interface {
 }
 
 type LiteralData struct {
-	obj Object
+	obj any
 }
 
 func (v *LiteralData) insData() {}
@@ -425,6 +425,7 @@ func (c *Compiler) Export(show bool) *Code {
 	}
 }
 
+/*
 func printBindings(fn *fnFrame) {
 	i := 0
 	for ; fn != nil; fn = fn.parent {
@@ -436,6 +437,7 @@ func printBindings(fn *fnFrame) {
 		}
 	}
 }
+*/
 
 func (c *Compiler) Process(env *Env, expr Expr) error {
 	c.updatePos(expr.Pos())
@@ -1045,7 +1047,7 @@ func (c *Compiler) patchToHere(pos int32) {
 }
 
 type Upval struct {
-	Obj Object
+	Obj any
 }
 
 type fnClosure struct {

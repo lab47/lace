@@ -2,7 +2,7 @@ package core
 
 import "fmt"
 
-func CallVar(env *Env, varName string, args ...Object) (Object, error) {
+func CallVar(env *Env, varName string, args ...any) (any, error) {
 	sym := MakeSymbol(varName)
 
 	nsName := sym.Namespace()
@@ -37,6 +37,6 @@ func CallVar(env *Env, varName string, args ...Object) (Object, error) {
 	return obj, err
 }
 
-func Load(env *Env, libname string) (Object, error) {
+func Load(env *Env, libname string) (any, error) {
 	return CallVar(env, "lace.core/load", MakeSymbol(libname))
 }

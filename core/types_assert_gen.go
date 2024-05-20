@@ -6,7 +6,7 @@ import (
 	"reflect"
 )
 
-func AssertComparable(env *Env, obj Object, msg string) (Comparable, error) {
+func AssertComparable(env *Env, obj any, msg string) (Comparable, error) {
 	switch c := obj.(type) {
 	case Comparable:
 		return c, nil
@@ -19,7 +19,7 @@ func AssertComparable(env *Env, obj Object, msg string) (Comparable, error) {
 	}
 }
 
-func EnsureComparable(env *Env, args []Object, index int) (Comparable, error) {
+func EnsureComparable(env *Env, args []any, index int) (Comparable, error) {
 	if len(args) <= index {
 		var t Comparable
 		return t, ErrorArity(env, index)
@@ -34,7 +34,7 @@ func EnsureComparable(env *Env, args []Object, index int) (Comparable, error) {
 	}
 }
 
-func AssertVector(env *Env, obj Object, msg string) (*Vector, error) {
+func AssertVector(env *Env, obj any, msg string) (*Vector, error) {
 	switch c := obj.(type) {
 	case *Vector:
 		return c, nil
@@ -47,7 +47,7 @@ func AssertVector(env *Env, obj Object, msg string) (*Vector, error) {
 	}
 }
 
-func EnsureVector(env *Env, args []Object, index int) (*Vector, error) {
+func EnsureVector(env *Env, args []any, index int) (*Vector, error) {
 	if len(args) <= index {
 		var t *Vector
 		return t, ErrorArity(env, index)
@@ -62,7 +62,7 @@ func EnsureVector(env *Env, args []Object, index int) (*Vector, error) {
 	}
 }
 
-func AssertChar(env *Env, obj Object, msg string) (Char, error) {
+func AssertChar(env *Env, obj any, msg string) (Char, error) {
 	switch c := obj.(type) {
 	case Char:
 		return c, nil
@@ -75,7 +75,7 @@ func AssertChar(env *Env, obj Object, msg string) (Char, error) {
 	}
 }
 
-func EnsureChar(env *Env, args []Object, index int) (Char, error) {
+func EnsureChar(env *Env, args []any, index int) (Char, error) {
 	if len(args) <= index {
 		var t Char
 		return t, ErrorArity(env, index)
@@ -90,7 +90,7 @@ func EnsureChar(env *Env, args []Object, index int) (Char, error) {
 	}
 }
 
-func AssertString(env *Env, obj Object, msg string) (String, error) {
+func AssertString(env *Env, obj any, msg string) (String, error) {
 	switch c := obj.(type) {
 	case String:
 		return c, nil
@@ -103,7 +103,7 @@ func AssertString(env *Env, obj Object, msg string) (String, error) {
 	}
 }
 
-func EnsureString(env *Env, args []Object, index int) (String, error) {
+func EnsureString(env *Env, args []any, index int) (String, error) {
 	if len(args) <= index {
 		var t String
 		return t, ErrorArity(env, index)
@@ -118,7 +118,7 @@ func EnsureString(env *Env, args []Object, index int) (String, error) {
 	}
 }
 
-func AssertSymbol(env *Env, obj Object, msg string) (Symbol, error) {
+func AssertSymbol(env *Env, obj any, msg string) (Symbol, error) {
 	switch c := obj.(type) {
 	case Symbol:
 		return c, nil
@@ -131,7 +131,7 @@ func AssertSymbol(env *Env, obj Object, msg string) (Symbol, error) {
 	}
 }
 
-func EnsureSymbol(env *Env, args []Object, index int) (Symbol, error) {
+func EnsureSymbol(env *Env, args []any, index int) (Symbol, error) {
 	if len(args) <= index {
 		var t Symbol
 		return t, ErrorArity(env, index)
@@ -146,7 +146,7 @@ func EnsureSymbol(env *Env, args []Object, index int) (Symbol, error) {
 	}
 }
 
-func AssertKeyword(env *Env, obj Object, msg string) (Keyword, error) {
+func AssertKeyword(env *Env, obj any, msg string) (Keyword, error) {
 	switch c := obj.(type) {
 	case Keyword:
 		return c, nil
@@ -159,7 +159,7 @@ func AssertKeyword(env *Env, obj Object, msg string) (Keyword, error) {
 	}
 }
 
-func EnsureKeyword(env *Env, args []Object, index int) (Keyword, error) {
+func EnsureKeyword(env *Env, args []any, index int) (Keyword, error) {
 	if len(args) <= index {
 		var t Keyword
 		return t, ErrorArity(env, index)
@@ -174,7 +174,7 @@ func EnsureKeyword(env *Env, args []Object, index int) (Keyword, error) {
 	}
 }
 
-func AssertRegex(env *Env, obj Object, msg string) (*Regex, error) {
+func AssertRegex(env *Env, obj any, msg string) (*Regex, error) {
 	switch c := obj.(type) {
 	case *Regex:
 		return c, nil
@@ -187,7 +187,7 @@ func AssertRegex(env *Env, obj Object, msg string) (*Regex, error) {
 	}
 }
 
-func EnsureRegex(env *Env, args []Object, index int) (*Regex, error) {
+func EnsureRegex(env *Env, args []any, index int) (*Regex, error) {
 	if len(args) <= index {
 		var t *Regex
 		return t, ErrorArity(env, index)
@@ -202,7 +202,7 @@ func EnsureRegex(env *Env, args []Object, index int) (*Regex, error) {
 	}
 }
 
-func AssertBoolean(env *Env, obj Object, msg string) (Boolean, error) {
+func AssertBoolean(env *Env, obj any, msg string) (Boolean, error) {
 	switch c := obj.(type) {
 	case Boolean:
 		return c, nil
@@ -215,7 +215,7 @@ func AssertBoolean(env *Env, obj Object, msg string) (Boolean, error) {
 	}
 }
 
-func EnsureBoolean(env *Env, args []Object, index int) (Boolean, error) {
+func EnsureBoolean(env *Env, args []any, index int) (Boolean, error) {
 	if len(args) <= index {
 		var t Boolean
 		return t, ErrorArity(env, index)
@@ -230,7 +230,7 @@ func EnsureBoolean(env *Env, args []Object, index int) (Boolean, error) {
 	}
 }
 
-func AssertTime(env *Env, obj Object, msg string) (Time, error) {
+func AssertTime(env *Env, obj any, msg string) (Time, error) {
 	switch c := obj.(type) {
 	case Time:
 		return c, nil
@@ -243,7 +243,7 @@ func AssertTime(env *Env, obj Object, msg string) (Time, error) {
 	}
 }
 
-func EnsureTime(env *Env, args []Object, index int) (Time, error) {
+func EnsureTime(env *Env, args []any, index int) (Time, error) {
 	if len(args) <= index {
 		var t Time
 		return t, ErrorArity(env, index)
@@ -258,7 +258,7 @@ func EnsureTime(env *Env, args []Object, index int) (Time, error) {
 	}
 }
 
-func AssertNumber(env *Env, obj Object, msg string) (Number, error) {
+func AssertNumber(env *Env, obj any, msg string) (Number, error) {
 	switch c := obj.(type) {
 	case Number:
 		return c, nil
@@ -284,7 +284,7 @@ func AssertNumber(env *Env, obj Object, msg string) (Number, error) {
 	}
 }
 
-func EnsureNumber(env *Env, args []Object, index int) (Number, error) {
+func EnsureNumber(env *Env, args []any, index int) (Number, error) {
 	if len(args) <= index {
 		var t Number
 		return t, ErrorArity(env, index)
@@ -299,7 +299,7 @@ func EnsureNumber(env *Env, args []Object, index int) (Number, error) {
 	}
 }
 
-func AssertSeqable(env *Env, obj Object, msg string) (Seqable, error) {
+func AssertSeqable(env *Env, obj any, msg string) (Seqable, error) {
 	switch c := obj.(type) {
 	case Seqable:
 		return c, nil
@@ -312,7 +312,7 @@ func AssertSeqable(env *Env, obj Object, msg string) (Seqable, error) {
 	}
 }
 
-func EnsureSeqable(env *Env, args []Object, index int) (Seqable, error) {
+func EnsureSeqable(env *Env, args []any, index int) (Seqable, error) {
 	if len(args) <= index {
 		var t Seqable
 		return t, ErrorArity(env, index)
@@ -327,7 +327,7 @@ func EnsureSeqable(env *Env, args []Object, index int) (Seqable, error) {
 	}
 }
 
-func AssertCallable(env *Env, obj Object, msg string) (Callable, error) {
+func AssertCallable(env *Env, obj any, msg string) (Callable, error) {
 	switch c := obj.(type) {
 	case Callable:
 		return c, nil
@@ -340,7 +340,7 @@ func AssertCallable(env *Env, obj Object, msg string) (Callable, error) {
 	}
 }
 
-func EnsureCallable(env *Env, args []Object, index int) (Callable, error) {
+func EnsureCallable(env *Env, args []any, index int) (Callable, error) {
 	if len(args) <= index {
 		var t Callable
 		return t, ErrorArity(env, index)
@@ -355,7 +355,7 @@ func EnsureCallable(env *Env, args []Object, index int) (Callable, error) {
 	}
 }
 
-func AssertType(env *Env, obj Object, msg string) (*Type, error) {
+func AssertType(env *Env, obj any, msg string) (*Type, error) {
 	switch c := obj.(type) {
 	case *Type:
 		return c, nil
@@ -368,7 +368,7 @@ func AssertType(env *Env, obj Object, msg string) (*Type, error) {
 	}
 }
 
-func EnsureType(env *Env, args []Object, index int) (*Type, error) {
+func EnsureType(env *Env, args []any, index int) (*Type, error) {
 	if len(args) <= index {
 		var t *Type
 		return t, ErrorArity(env, index)
@@ -383,7 +383,7 @@ func EnsureType(env *Env, args []Object, index int) (*Type, error) {
 	}
 }
 
-func AssertMeta(env *Env, obj Object, msg string) (Meta, error) {
+func AssertMeta(env *Env, obj any, msg string) (Meta, error) {
 	switch c := obj.(type) {
 	case Meta:
 		return c, nil
@@ -396,7 +396,7 @@ func AssertMeta(env *Env, obj Object, msg string) (Meta, error) {
 	}
 }
 
-func EnsureMeta(env *Env, args []Object, index int) (Meta, error) {
+func EnsureMeta(env *Env, args []any, index int) (Meta, error) {
 	if len(args) <= index {
 		var t Meta
 		return t, ErrorArity(env, index)
@@ -411,7 +411,7 @@ func EnsureMeta(env *Env, args []Object, index int) (Meta, error) {
 	}
 }
 
-func AssertInt(env *Env, obj Object, msg string) (Int, error) {
+func AssertInt(env *Env, obj any, msg string) (Int, error) {
 	switch c := obj.(type) {
 	case Int:
 		return c, nil
@@ -424,7 +424,7 @@ func AssertInt(env *Env, obj Object, msg string) (Int, error) {
 	}
 }
 
-func EnsureInt(env *Env, args []Object, index int) (Int, error) {
+func EnsureInt(env *Env, args []any, index int) (Int, error) {
 	if len(args) <= index {
 		var t Int
 		return t, ErrorArity(env, index)
@@ -439,7 +439,7 @@ func EnsureInt(env *Env, args []Object, index int) (Int, error) {
 	}
 }
 
-func AssertDouble(env *Env, obj Object, msg string) (Double, error) {
+func AssertDouble(env *Env, obj any, msg string) (Double, error) {
 	switch c := obj.(type) {
 	case Double:
 		return c, nil
@@ -452,7 +452,7 @@ func AssertDouble(env *Env, obj Object, msg string) (Double, error) {
 	}
 }
 
-func EnsureDouble(env *Env, args []Object, index int) (Double, error) {
+func EnsureDouble(env *Env, args []any, index int) (Double, error) {
 	if len(args) <= index {
 		var t Double
 		return t, ErrorArity(env, index)
@@ -467,7 +467,7 @@ func EnsureDouble(env *Env, args []Object, index int) (Double, error) {
 	}
 }
 
-func AssertStack(env *Env, obj Object, msg string) (Stack, error) {
+func AssertStack(env *Env, obj any, msg string) (Stack, error) {
 	switch c := obj.(type) {
 	case Stack:
 		return c, nil
@@ -480,7 +480,7 @@ func AssertStack(env *Env, obj Object, msg string) (Stack, error) {
 	}
 }
 
-func EnsureStack(env *Env, args []Object, index int) (Stack, error) {
+func EnsureStack(env *Env, args []any, index int) (Stack, error) {
 	if len(args) <= index {
 		var t Stack
 		return t, ErrorArity(env, index)
@@ -495,7 +495,7 @@ func EnsureStack(env *Env, args []Object, index int) (Stack, error) {
 	}
 }
 
-func AssertMap(env *Env, obj Object, msg string) (Map, error) {
+func AssertMap(env *Env, obj any, msg string) (Map, error) {
 	switch c := obj.(type) {
 	case Map:
 		return c, nil
@@ -508,7 +508,7 @@ func AssertMap(env *Env, obj Object, msg string) (Map, error) {
 	}
 }
 
-func EnsureMap(env *Env, args []Object, index int) (Map, error) {
+func EnsureMap(env *Env, args []any, index int) (Map, error) {
 	if len(args) <= index {
 		var t Map
 		return t, ErrorArity(env, index)
@@ -523,7 +523,7 @@ func EnsureMap(env *Env, args []Object, index int) (Map, error) {
 	}
 }
 
-func AssertSet(env *Env, obj Object, msg string) (Set, error) {
+func AssertSet(env *Env, obj any, msg string) (Set, error) {
 	switch c := obj.(type) {
 	case Set:
 		return c, nil
@@ -536,7 +536,7 @@ func AssertSet(env *Env, obj Object, msg string) (Set, error) {
 	}
 }
 
-func EnsureSet(env *Env, args []Object, index int) (Set, error) {
+func EnsureSet(env *Env, args []any, index int) (Set, error) {
 	if len(args) <= index {
 		var t Set
 		return t, ErrorArity(env, index)
@@ -551,7 +551,7 @@ func EnsureSet(env *Env, args []Object, index int) (Set, error) {
 	}
 }
 
-func AssertAssociative(env *Env, obj Object, msg string) (Associative, error) {
+func AssertAssociative(env *Env, obj any, msg string) (Associative, error) {
 	switch c := obj.(type) {
 	case Associative:
 		return c, nil
@@ -564,7 +564,7 @@ func AssertAssociative(env *Env, obj Object, msg string) (Associative, error) {
 	}
 }
 
-func EnsureAssociative(env *Env, args []Object, index int) (Associative, error) {
+func EnsureAssociative(env *Env, args []any, index int) (Associative, error) {
 	if len(args) <= index {
 		var t Associative
 		return t, ErrorArity(env, index)
@@ -579,7 +579,7 @@ func EnsureAssociative(env *Env, args []Object, index int) (Associative, error) 
 	}
 }
 
-func AssertReversible(env *Env, obj Object, msg string) (Reversible, error) {
+func AssertReversible(env *Env, obj any, msg string) (Reversible, error) {
 	switch c := obj.(type) {
 	case Reversible:
 		return c, nil
@@ -592,7 +592,7 @@ func AssertReversible(env *Env, obj Object, msg string) (Reversible, error) {
 	}
 }
 
-func EnsureReversible(env *Env, args []Object, index int) (Reversible, error) {
+func EnsureReversible(env *Env, args []any, index int) (Reversible, error) {
 	if len(args) <= index {
 		var t Reversible
 		return t, ErrorArity(env, index)
@@ -607,7 +607,7 @@ func EnsureReversible(env *Env, args []Object, index int) (Reversible, error) {
 	}
 }
 
-func AssertNamed(env *Env, obj Object, msg string) (Named, error) {
+func AssertNamed(env *Env, obj any, msg string) (Named, error) {
 	switch c := obj.(type) {
 	case Named:
 		return c, nil
@@ -620,7 +620,7 @@ func AssertNamed(env *Env, obj Object, msg string) (Named, error) {
 	}
 }
 
-func EnsureNamed(env *Env, args []Object, index int) (Named, error) {
+func EnsureNamed(env *Env, args []any, index int) (Named, error) {
 	if len(args) <= index {
 		var t Named
 		return t, ErrorArity(env, index)
@@ -635,7 +635,7 @@ func EnsureNamed(env *Env, args []Object, index int) (Named, error) {
 	}
 }
 
-func AssertComparator(env *Env, obj Object, msg string) (Comparator, error) {
+func AssertComparator(env *Env, obj any, msg string) (Comparator, error) {
 	switch c := obj.(type) {
 	case Comparator:
 		return c, nil
@@ -648,7 +648,7 @@ func AssertComparator(env *Env, obj Object, msg string) (Comparator, error) {
 	}
 }
 
-func EnsureComparator(env *Env, args []Object, index int) (Comparator, error) {
+func EnsureComparator(env *Env, args []any, index int) (Comparator, error) {
 	if len(args) <= index {
 		var t Comparator
 		return t, ErrorArity(env, index)
@@ -663,7 +663,7 @@ func EnsureComparator(env *Env, args []Object, index int) (Comparator, error) {
 	}
 }
 
-func AssertRatio(env *Env, obj Object, msg string) (*Ratio, error) {
+func AssertRatio(env *Env, obj any, msg string) (*Ratio, error) {
 	switch c := obj.(type) {
 	case *Ratio:
 		return c, nil
@@ -676,7 +676,7 @@ func AssertRatio(env *Env, obj Object, msg string) (*Ratio, error) {
 	}
 }
 
-func EnsureRatio(env *Env, args []Object, index int) (*Ratio, error) {
+func EnsureRatio(env *Env, args []any, index int) (*Ratio, error) {
 	if len(args) <= index {
 		var t *Ratio
 		return t, ErrorArity(env, index)
@@ -691,7 +691,7 @@ func EnsureRatio(env *Env, args []Object, index int) (*Ratio, error) {
 	}
 }
 
-func AssertNamespace(env *Env, obj Object, msg string) (*Namespace, error) {
+func AssertNamespace(env *Env, obj any, msg string) (*Namespace, error) {
 	switch c := obj.(type) {
 	case *Namespace:
 		return c, nil
@@ -704,7 +704,7 @@ func AssertNamespace(env *Env, obj Object, msg string) (*Namespace, error) {
 	}
 }
 
-func EnsureNamespace(env *Env, args []Object, index int) (*Namespace, error) {
+func EnsureNamespace(env *Env, args []any, index int) (*Namespace, error) {
 	if len(args) <= index {
 		var t *Namespace
 		return t, ErrorArity(env, index)
@@ -719,7 +719,7 @@ func EnsureNamespace(env *Env, args []Object, index int) (*Namespace, error) {
 	}
 }
 
-func AssertVar(env *Env, obj Object, msg string) (*Var, error) {
+func AssertVar(env *Env, obj any, msg string) (*Var, error) {
 	switch c := obj.(type) {
 	case *Var:
 		return c, nil
@@ -732,7 +732,7 @@ func AssertVar(env *Env, obj Object, msg string) (*Var, error) {
 	}
 }
 
-func EnsureVar(env *Env, args []Object, index int) (*Var, error) {
+func EnsureVar(env *Env, args []any, index int) (*Var, error) {
 	if len(args) <= index {
 		var t *Var
 		return t, ErrorArity(env, index)
@@ -747,7 +747,7 @@ func EnsureVar(env *Env, args []Object, index int) (*Var, error) {
 	}
 }
 
-func AssertError(env *Env, obj Object, msg string) (Error, error) {
+func AssertError(env *Env, obj any, msg string) (Error, error) {
 	switch c := obj.(type) {
 	case Error:
 		return c, nil
@@ -760,7 +760,7 @@ func AssertError(env *Env, obj Object, msg string) (Error, error) {
 	}
 }
 
-func EnsureError(env *Env, args []Object, index int) (Error, error) {
+func EnsureError(env *Env, args []any, index int) (Error, error) {
 	if len(args) <= index {
 		var t Error
 		return t, ErrorArity(env, index)
@@ -775,7 +775,7 @@ func EnsureError(env *Env, args []Object, index int) (Error, error) {
 	}
 }
 
-func AssertFn(env *Env, obj Object, msg string) (*Fn, error) {
+func AssertFn(env *Env, obj any, msg string) (*Fn, error) {
 	switch c := obj.(type) {
 	case *Fn:
 		return c, nil
@@ -788,7 +788,7 @@ func AssertFn(env *Env, obj Object, msg string) (*Fn, error) {
 	}
 }
 
-func EnsureFn(env *Env, args []Object, index int) (*Fn, error) {
+func EnsureFn(env *Env, args []any, index int) (*Fn, error) {
 	if len(args) <= index {
 		var t *Fn
 		return t, ErrorArity(env, index)
@@ -803,7 +803,7 @@ func EnsureFn(env *Env, args []Object, index int) (*Fn, error) {
 	}
 }
 
-func AssertDeref(env *Env, obj Object, msg string) (Deref, error) {
+func AssertDeref(env *Env, obj any, msg string) (Deref, error) {
 	switch c := obj.(type) {
 	case Deref:
 		return c, nil
@@ -816,7 +816,7 @@ func AssertDeref(env *Env, obj Object, msg string) (Deref, error) {
 	}
 }
 
-func EnsureDeref(env *Env, args []Object, index int) (Deref, error) {
+func EnsureDeref(env *Env, args []any, index int) (Deref, error) {
 	if len(args) <= index {
 		var t Deref
 		return t, ErrorArity(env, index)
@@ -835,7 +835,7 @@ func EnsureDeref(env *Env, args []Object, index int) (Deref, error) {
 	return v, env.NewArgTypeError(index, args[index], "Deref")
 }
 
-func AssertAtom(env *Env, obj Object, msg string) (*Atom, error) {
+func AssertAtom(env *Env, obj any, msg string) (*Atom, error) {
 	switch c := obj.(type) {
 	case *Atom:
 		return c, nil
@@ -848,7 +848,7 @@ func AssertAtom(env *Env, obj Object, msg string) (*Atom, error) {
 	}
 }
 
-func EnsureAtom(env *Env, args []Object, index int) (*Atom, error) {
+func EnsureAtom(env *Env, args []any, index int) (*Atom, error) {
 	if len(args) <= index {
 		var t *Atom
 		return t, ErrorArity(env, index)
@@ -863,7 +863,7 @@ func EnsureAtom(env *Env, args []Object, index int) (*Atom, error) {
 	}
 }
 
-func AssertRef(env *Env, obj Object, msg string) (Ref, error) {
+func AssertRef(env *Env, obj any, msg string) (Ref, error) {
 	switch c := obj.(type) {
 	case Ref:
 		return c, nil
@@ -876,7 +876,7 @@ func AssertRef(env *Env, obj Object, msg string) (Ref, error) {
 	}
 }
 
-func EnsureRef(env *Env, args []Object, index int) (Ref, error) {
+func EnsureRef(env *Env, args []any, index int) (Ref, error) {
 	if len(args) <= index {
 		var t Ref
 		return t, ErrorArity(env, index)
@@ -891,7 +891,7 @@ func EnsureRef(env *Env, args []Object, index int) (Ref, error) {
 	}
 }
 
-func AssertKVReduce(env *Env, obj Object, msg string) (KVReduce, error) {
+func AssertKVReduce(env *Env, obj any, msg string) (KVReduce, error) {
 	switch c := obj.(type) {
 	case KVReduce:
 		return c, nil
@@ -904,7 +904,7 @@ func AssertKVReduce(env *Env, obj Object, msg string) (KVReduce, error) {
 	}
 }
 
-func EnsureKVReduce(env *Env, args []Object, index int) (KVReduce, error) {
+func EnsureKVReduce(env *Env, args []any, index int) (KVReduce, error) {
 	if len(args) <= index {
 		var t KVReduce
 		return t, ErrorArity(env, index)
@@ -919,7 +919,7 @@ func EnsureKVReduce(env *Env, args []Object, index int) (KVReduce, error) {
 	}
 }
 
-func AssertPending(env *Env, obj Object, msg string) (Pending, error) {
+func AssertPending(env *Env, obj any, msg string) (Pending, error) {
 	switch c := obj.(type) {
 	case Pending:
 		return c, nil
@@ -932,7 +932,7 @@ func AssertPending(env *Env, obj Object, msg string) (Pending, error) {
 	}
 }
 
-func EnsurePending(env *Env, args []Object, index int) (Pending, error) {
+func EnsurePending(env *Env, args []any, index int) (Pending, error) {
 	if len(args) <= index {
 		var t Pending
 		return t, ErrorArity(env, index)
@@ -947,7 +947,7 @@ func EnsurePending(env *Env, args []Object, index int) (Pending, error) {
 	}
 }
 
-func AssertFile(env *Env, obj Object, msg string) (*File, error) {
+func AssertFile(env *Env, obj any, msg string) (*File, error) {
 	switch c := obj.(type) {
 	case *File:
 		return c, nil
@@ -960,7 +960,7 @@ func AssertFile(env *Env, obj Object, msg string) (*File, error) {
 	}
 }
 
-func EnsureFile(env *Env, args []Object, index int) (*File, error) {
+func EnsureFile(env *Env, args []any, index int) (*File, error) {
 	if len(args) <= index {
 		var t *File
 		return t, ErrorArity(env, index)
@@ -975,7 +975,7 @@ func EnsureFile(env *Env, args []Object, index int) (*File, error) {
 	}
 }
 
-func Assertio_Reader(env *Env, obj Object, msg string) (io.Reader, error) {
+func Assertio_Reader(env *Env, obj any, msg string) (io.Reader, error) {
 	switch c := obj.(type) {
 	case io.Reader:
 		return c, nil
@@ -988,7 +988,7 @@ func Assertio_Reader(env *Env, obj Object, msg string) (io.Reader, error) {
 	}
 }
 
-func Ensureio_Reader(env *Env, args []Object, index int) (io.Reader, error) {
+func Ensureio_Reader(env *Env, args []any, index int) (io.Reader, error) {
 	if len(args) <= index {
 		var t io.Reader
 		return t, ErrorArity(env, index)
@@ -1003,7 +1003,7 @@ func Ensureio_Reader(env *Env, args []Object, index int) (io.Reader, error) {
 	}
 }
 
-func Assertio_Writer(env *Env, obj Object, msg string) (io.Writer, error) {
+func Assertio_Writer(env *Env, obj any, msg string) (io.Writer, error) {
 	switch c := obj.(type) {
 	case io.Writer:
 		return c, nil
@@ -1016,7 +1016,7 @@ func Assertio_Writer(env *Env, obj Object, msg string) (io.Writer, error) {
 	}
 }
 
-func Ensureio_Writer(env *Env, args []Object, index int) (io.Writer, error) {
+func Ensureio_Writer(env *Env, args []any, index int) (io.Writer, error) {
 	if len(args) <= index {
 		var t io.Writer
 		return t, ErrorArity(env, index)
@@ -1031,7 +1031,7 @@ func Ensureio_Writer(env *Env, args []Object, index int) (io.Writer, error) {
 	}
 }
 
-func AssertStringReader(env *Env, obj Object, msg string) (StringReader, error) {
+func AssertStringReader(env *Env, obj any, msg string) (StringReader, error) {
 	switch c := obj.(type) {
 	case StringReader:
 		return c, nil
@@ -1044,7 +1044,7 @@ func AssertStringReader(env *Env, obj Object, msg string) (StringReader, error) 
 	}
 }
 
-func EnsureStringReader(env *Env, args []Object, index int) (StringReader, error) {
+func EnsureStringReader(env *Env, args []any, index int) (StringReader, error) {
 	if len(args) <= index {
 		var t StringReader
 		return t, ErrorArity(env, index)
@@ -1059,7 +1059,7 @@ func EnsureStringReader(env *Env, args []Object, index int) (StringReader, error
 	}
 }
 
-func Assertio_RuneReader(env *Env, obj Object, msg string) (io.RuneReader, error) {
+func Assertio_RuneReader(env *Env, obj any, msg string) (io.RuneReader, error) {
 	switch c := obj.(type) {
 	case io.RuneReader:
 		return c, nil
@@ -1072,7 +1072,7 @@ func Assertio_RuneReader(env *Env, obj Object, msg string) (io.RuneReader, error
 	}
 }
 
-func Ensureio_RuneReader(env *Env, args []Object, index int) (io.RuneReader, error) {
+func Ensureio_RuneReader(env *Env, args []any, index int) (io.RuneReader, error) {
 	if len(args) <= index {
 		var t io.RuneReader
 		return t, ErrorArity(env, index)
@@ -1087,7 +1087,7 @@ func Ensureio_RuneReader(env *Env, args []Object, index int) (io.RuneReader, err
 	}
 }
 
-func AssertChannel(env *Env, obj Object, msg string) (*Channel, error) {
+func AssertChannel(env *Env, obj any, msg string) (*Channel, error) {
 	switch c := obj.(type) {
 	case *Channel:
 		return c, nil
@@ -1100,7 +1100,7 @@ func AssertChannel(env *Env, obj Object, msg string) (*Channel, error) {
 	}
 }
 
-func EnsureChannel(env *Env, args []Object, index int) (*Channel, error) {
+func EnsureChannel(env *Env, args []any, index int) (*Channel, error) {
 	if len(args) <= index {
 		var t *Channel
 		return t, ErrorArity(env, index)

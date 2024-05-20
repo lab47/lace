@@ -228,7 +228,7 @@ type CodeLiteral struct {
 	Double  *CodeDouble    `json:"double,omitempty" cbor:"15,keyasint,omitempty"`
 }
 
-func (cl *CodeLiteral) Set(env *Env, lit Object) error {
+func (cl *CodeLiteral) Set(env *Env, lit any) error {
 	switch o := lit.(type) {
 	case Boolean:
 		cl.Bool = &CodeBoolean{Bool: ToBool(o)}
@@ -352,7 +352,7 @@ func (cl *CodeLiteral) Set(env *Env, lit Object) error {
 	return nil
 }
 
-func (lit *CodeLiteral) AsValue(env *Env) (Object, error) {
+func (lit *CodeLiteral) AsValue(env *Env) (any, error) {
 	switch {
 	case lit.Bool != nil:
 		return MakeBoolean(lit.Bool.Bool), nil
@@ -418,7 +418,7 @@ func (lit *CodeLiteral) AsValue(env *Env) (Object, error) {
 
 		return ret, nil
 	case lit.Seq != nil:
-		var objs []Object
+		var objs []any
 
 		for _, cl := range lit.Seq.Elements {
 			obj, err := cl.AsValue(env)
@@ -436,7 +436,7 @@ func (lit *CodeLiteral) AsValue(env *Env) (Object, error) {
 
 		return NewListFrom(objs...), nil
 	case lit.Vector != nil:
-		var objs []Object
+		var objs []any
 
 		for _, cl := range lit.Vector.Elements {
 			obj, err := cl.AsValue(env)

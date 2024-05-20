@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"strings"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/lab47/lace/core/insn"
@@ -21,7 +20,7 @@ type CodeData struct {
 	varNames    []Symbol
 	defVars     []*Var
 	defVarNames []Symbol
-	literals    []Object
+	literals    []any
 	codes       []*Code
 	methods     []MethodSite
 
@@ -56,7 +55,7 @@ func (e *BytecodeEncoder) addDefVar(vr *Var) uint {
 	return idx
 }
 
-func (e *BytecodeEncoder) addLiteral(obj Object) uint {
+func (e *BytecodeEncoder) addLiteral(obj any) uint {
 	idx := uint(len(e.literals))
 	e.literals = append(e.literals, obj)
 
@@ -119,13 +118,13 @@ func (e *BytecodeEncoder) Encode(i *Instruction) error {
 
 type EngineFrame struct {
 	Ip        int
-	Stack     []Object
+	Stack     []any
 	SP        int32
 	Code      *Fn
-	Bindings  []Object
-	Upvals    []Object
+	Bindings  []any
+	Upvals    []any
 	Arity     int32
-	Args      []Object
+	Args      []any
 	FrameSize int
 
 	Handlers []handler
@@ -186,11 +185,12 @@ func (f *FrameRope) frameTop() *EngineFrame {
 
 type Engine struct {
 	frope      FrameRope
-	allocstack []Object
+	allocstack []any
 	stackTop   int
 }
 
-func (e *Engine) printStack(env *Env) {
+/*
+func (e *Engine) printStack(_ *Env) {
 	var parts []string
 
 	for _, o := range e.allocstack {
@@ -199,14 +199,15 @@ func (e *Engine) printStack(env *Env) {
 
 	fmt.Println("[ " + strings.Join(parts, ", ") + " ]")
 }
+*/
 
-func (f *EngineFrame) stackPush(obj Object) {
+func (f *EngineFrame) stackPush(obj any) {
 	f.SP++
 	f.Stack[f.SP] = obj
 	//f.Stack = append(f.Stack, obj)
 }
 
-func (f *EngineFrame) stackPop() Object {
+func (f *EngineFrame) stackPop() any {
 	if f.SP < 0 {
 		panic("stack underflow")
 	}
@@ -228,7 +229,7 @@ func (f *EngineFrame) stackPop() Object {
 	*/
 }
 
-func (f *EngineFrame) stackTop() Object {
+func (f *EngineFrame) stackTop() any {
 	if f.SP < 0 {
 		panic("stack underflow")
 	}
@@ -241,7 +242,7 @@ func (f *EngineFrame) stackTop() Object {
 	*/
 }
 
-func (f *EngineFrame) stackPopN(cnt int) []Object {
+func (f *EngineFrame) stackPopN(cnt int) []any {
 	start := int(f.SP) - (cnt - 1)
 	if start < 0 {
 		panic(fmt.Sprintf("bad top slice request %d (total: %d)", cnt, len(f.Stack)))
@@ -282,16 +283,12 @@ func (e *Engine) printStack(env *Env) {
 }
 */
 
-func newEngineFrame() any {
-	return &EngineFrame{}
-}
-
 const defStackSize = 8000
 
 var ErrStackOverflow = errors.New("stack overflow, not enough stack room")
 
-func (e *Engine) pushFrame(fn *Fn, args []Object) (*EngineFrame, error) {
-	var stack []Object
+func (e *Engine) pushFrame(fn *Fn, args []any) (*EngineFrame, error) {
+	var stack []any
 
 	remaining := len(e.allocstack) - e.stackTop
 
@@ -354,14 +351,14 @@ func (e *Engine) frameTop() (*EngineFrame, error) {
 
 func NewEngine() *Engine {
 	eng := &Engine{
-		allocstack: make([]Object, defStackSize),
+		allocstack: make([]any, defStackSize),
 	}
 	eng.frope.init()
 
 	return eng
 }
 
-func EngineRun(env *Env, fn *Fn) (Object, error) {
+func EngineRun(env *Env, fn *Fn) (any, error) {
 	e := env.Engine
 	if e == nil {
 		e = NewEngine()
@@ -376,7 +373,7 @@ func EngineRun(env *Env, fn *Fn) (Object, error) {
 	return e.RunBC(env, fn)
 }
 
-func (e *Engine) RunWithArgs(env *Env, fn *Fn, args []Object) (Object, error) {
+func (e *Engine) RunWithArgs(env *Env, fn *Fn, args []any) (any, error) {
 	_, err := e.pushFrame(fn, args)
 	if err != nil {
 		return nil, err
@@ -385,7 +382,7 @@ func (e *Engine) RunWithArgs(env *Env, fn *Fn, args []Object) (Object, error) {
 }
 
 func (e *Engine) unwind(oerr error) (int, error) {
-	obj, ok := oerr.(Object)
+	obj, ok := oerr.(any)
 	if !ok {
 		return 0, oerr
 	}
@@ -440,8 +437,8 @@ func (e *Engine) printBacktrace(last int) {
 	}
 }
 
-func (e *Engine) makeStackTrace() Object {
-	var vals []Object
+func (e *Engine) makeStackTrace() any {
+	var vals []any
 
 	frames := e.frames()
 	for i := len(frames) - 1; i >= 0; i-- {
@@ -475,33 +472,7 @@ func (e *Engine) makeStackTrace() Object {
 	return NewListFrom(vals...)
 }
 
-func (e *Engine) assembleBacktrace() []string {
-	var ret []string
-
-	frames := e.frames()
-	for _, fr := range frames {
-		ret = append(ret,
-			fmt.Sprintf("%s:%d (ip: %d)", fr.Code.code.filename, fr.Code.code.lineForIp(fr.Ip), fr.Ip),
-		)
-	}
-
-	return ret
-}
-
-func (e *Engine) call(env *Env, callable Callable, objArgs []Object) (Object, error) {
-	if fn, ok := callable.(*Fn); ok {
-		_, err := e.pushFrame(fn, objArgs)
-		if err != nil {
-			return nil, err
-		}
-
-		return e.RunBC(env, fn)
-	}
-
-	return callable.Call(env, objArgs)
-}
-
-func (e *Engine) methodCall(env *Env, methName string, obj Object, objArgs []Object) (Object, error) {
+func (e *Engine) methodCall(env *Env, methName string, obj any, objArgs []any) (any, error) {
 	var rv reflect.Value
 
 	if orv, ok := obj.(*ReflectValue); ok {
@@ -528,7 +499,7 @@ func (e *Engine) methodCall(env *Env, methName string, obj Object, objArgs []Obj
 
 const debugBC = false
 
-func (e *Engine) RunBC(env *Env, fn *Fn) (Object, error) {
+func (e *Engine) RunBC(env *Env, fn *Fn) (any, error) {
 	c := fn.code.data
 
 	frame, err := e.frameTop()
