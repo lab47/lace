@@ -414,6 +414,10 @@ func tprint(w io.Writer, pkgName string, files []*ast.File, format string, match
 			doc := ts.Doc
 			name := ts.Name.Name
 
+			if !ast.IsExported(name) {
+				continue
+			}
+
 			if !doesMatch(name, doc, match) {
 				continue
 			}
