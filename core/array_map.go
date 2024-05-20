@@ -125,7 +125,7 @@ func (v *ArrayMap) WithMeta(env *Env, meta Map) (Object, error) {
 
 func (m *ArrayMap) indexOf(env *Env, key Object) int {
 	for i := 0; i < len(m.arr); i += 2 {
-		if m.arr[i].Equals(env, key) {
+		if Equals(env, m.arr[i], key) {
 			return i
 		}
 	}
@@ -259,7 +259,7 @@ func (m *ArrayMap) Without(env *Env, key Object) (Map, error) {
 	result := ArrayMap{arr: make([]Object, len(m.arr), cap(m.arr))}
 	var i, j int
 	for i, j = 0, 0; i < len(m.arr); i += 2 {
-		if m.arr[i].Equals(env, key) {
+		if Equals(env, m.arr[i], key) {
 			continue
 		}
 		result.arr[j] = m.arr[i]

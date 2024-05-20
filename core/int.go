@@ -6,11 +6,17 @@ import (
 	"strconv"
 )
 
+// The Common integer type (can be Int or BigInt)
+//
+//lace:export
 type Integer interface {
 	integerType() string
 	I64() int64
 }
 
+// The host int value
+//
+//lace:export
 type Int int
 
 var _ Integer = Int(0)
@@ -49,9 +55,11 @@ func (i Int) Equals(env *Env, other interface{}) bool {
 	return equalsNumbers(i, other)
 }
 
+/*
 func (i Int) GetType() *Type {
 	return TYPE.Int
 }
+*/
 
 func (i Int) Native() interface{} {
 	return i.Int()
@@ -66,12 +74,7 @@ func (i Int) Hash(env *Env) (uint32, error) {
 }
 
 func (i Int) Compare(env *Env, other Object) (int, error) {
-	os, err := other.GetType().ToString(env, false)
-	if err != nil {
-		return 0, err
-	}
-
-	n, err := AssertNumber(env, other, "Cannot compare Int and "+os)
+	n, err := AssertNumber(env, other, "Cannot compare Int and "+TypeName(other))
 	if err != nil {
 		return 0, err
 	}
@@ -116,11 +119,7 @@ func (bi *BigInt) Hash(env *Env) (uint32, error) {
 }
 
 func (bi *BigInt) Compare(env *Env, other Object) (int, error) {
-	os, err := other.GetType().ToString(env, false)
-	if err != nil {
-		return 0, err
-	}
-	n, err := AssertNumber(env, other, "Cannot compare BigInt and "+os)
+	n, err := AssertNumber(env, other, "Cannot compare BigInt and "+TypeName(other))
 	if err != nil {
 		return 0, err
 	}

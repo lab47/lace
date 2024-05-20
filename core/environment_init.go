@@ -128,6 +128,8 @@ func NewEnv() (*Env, error) {
 		return nil, err
 	}
 
+	res.LangNamespace = res.EnsureNamespace(MakeSymbol("lace.lang"))
+
 	builtinNS := []string{"lace.core"}
 
 	for _, name := range builtinNS {

@@ -88,7 +88,7 @@ func (set *MapSet) ToString(env *Env, escape bool) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		s, err := v.ToString(env, escape)
+		s, err := ToString(env, v)
 		if err != nil {
 			return "", err
 		}
@@ -140,7 +140,7 @@ func (i *MapSetIter) Next(env *Env) (Object, error) {
 func (set *MapSet) Equals(env *Env, other interface{}) bool {
 	switch otherSet := other.(type) {
 	case *MapSet:
-		return set.m.Equals(env, otherSet.m)
+		return Equals(env, set.m, otherSet.m)
 	default:
 		return false
 	}

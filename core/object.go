@@ -22,10 +22,6 @@ import (
 // interfaces
 type (
 	Object interface {
-		Equality
-		ToString(env *Env, escape bool) (string, error)
-		GetType() *Type
-		Hash(env *Env) (uint32, error)
 	}
 	Equality interface {
 		Equals(env *Env, other interface{}) bool
@@ -390,7 +386,7 @@ func SetInfo(obj Object, info *ObjectInfo) Object {
 		return hi.WithInfo(info)
 	}
 
-	return &InfoWrapper[Object]{val: obj}
+	return obj
 }
 
 func GetInfo(obj Object) *ObjectInfo {
@@ -561,7 +557,7 @@ func equalsNumbers(x Number, y interface{}) bool {
 }
 
 func (a *Atom) ToString(env *Env, escape bool) (string, error) {
-	v, err := a.value.ToString(env, escape)
+	v, err := ToString(env, a.value)
 	if err != nil {
 		return "", err
 	}
@@ -746,7 +742,7 @@ func (m MetaHolder) GetMeta() Map {
 	return m.meta
 }
 
-func (m MetaHolder) ClearMeta() {
+func (m *MetaHolder) ClearMeta() {
 	m.meta = nil
 }
 
@@ -798,11 +794,7 @@ func (rat *Ratio) Hash(env *Env) (uint32, error) {
 }
 
 func (rat *Ratio) Compare(env *Env, other Object) (int, error) {
-	os, err := other.GetType().ToString(env, false)
-	if err != nil {
-		return 0, err
-	}
-	n, err := AssertNumber(env, other, "Cannot compare Ratio and "+os)
+	n, err := AssertNumber(env, other, "Cannot compare Ratio and "+TypeName(other))
 	if err != nil {
 		return 0, err
 	}
@@ -831,11 +823,7 @@ func (bf *BigFloat) Hash(env *Env) (uint32, error) {
 }
 
 func (bf *BigFloat) Compare(env *Env, other Object) (int, error) {
-	os, err := other.GetType().ToString(env, false)
-	if err != nil {
-		return 0, err
-	}
-	n, err := AssertNumber(env, other, "Cannot compare BigFloat and "+os)
+	n, err := AssertNumber(env, other, "Cannot compare BigFloat and "+TypeName(other))
 	if err != nil {
 		return 0, err
 	}
@@ -880,12 +868,7 @@ func (d Double) Hash(env *Env) (uint32, error) {
 }
 
 func (d Double) Compare(env *Env, other Object) (int, error) {
-	os, err := other.GetType().ToString(env, false)
-	if err != nil {
-		return 0, err
-	}
-
-	n, err := AssertNumber(env, other, "Cannot compare Double and "+os)
+	n, err := AssertNumber(env, other, "Cannot compare Double and "+TypeName(other))
 	if err != nil {
 		return 0, err
 	}
@@ -926,12 +909,7 @@ func (b Boolean) Hash(env *Env) (uint32, error) {
 }
 
 func (b Boolean) Compare(env *Env, other Object) (int, error) {
-	os, err := other.GetType().ToString(env, false)
-	if err != nil {
-		return 0, err
-	}
-
-	b2, err := AssertBoolean(env, other, "Cannot compare Boolean and "+os)
+	b2, err := AssertBoolean(env, other, "Cannot compare Boolean and "+TypeName(other))
 	if err != nil {
 		return 0, err
 	}
@@ -970,12 +948,7 @@ func (t Time) Hash(env *Env) (uint32, error) {
 }
 
 func (t Time) Compare(env *Env, other Object) (int, error) {
-	os, err := other.GetType().ToString(env, false)
-	if err != nil {
-		return 0, err
-	}
-
-	t2, err := AssertTime(env, other, "Cannot compare Time and "+os)
+	t2, err := AssertTime(env, other, "Cannot compare Time and "+TypeName(other))
 	if err != nil {
 		return 0, err
 	}
@@ -1054,19 +1027,26 @@ func (x RecurBindings) WithInfo(info *ObjectInfo) Object {
 	return x
 }
 
-func IsEqualOrImplements(abstractType *Type, concreteType *Type) bool {
-	if abstractType.reflectType.Kind() == reflect.Interface {
-		return concreteType.reflectType.Implements(abstractType.reflectType)
+func IsEqualOrImplements(abstractType HasReflectType, concreteType HasReflectType) bool {
+	at := abstractType.ReflectType()
+	ct := concreteType.ReflectType()
+
+	if at.Kind() == reflect.Interface {
+		return ct.Implements(at)
 	} else {
-		return concreteType.reflectType == abstractType.reflectType
+		return ct == at
 	}
 }
 
 func IsInstance(env *Env, t *Type, obj Object) bool {
-	if obj.Equals(env, NIL) {
+	if Equals(env, obj, NIL) {
 		return false
 	}
-	return IsEqualOrImplements(t, obj.GetType())
+	if hrt, ok := GetType(obj).(HasReflectType); ok {
+		return IsEqualOrImplements(t, hrt)
+	}
+
+	return false
 }
 
 var specialSymbols = make(map[string]struct{})

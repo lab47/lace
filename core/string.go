@@ -28,13 +28,17 @@ func (s GoString) S() string {
 }
 
 func (s GoString) ToString(env *Env, escape bool) (string, error) {
-	if escape {
+	printReadably := ToBool(env.printReadably.GetStatic())
+	if printReadably || escape {
 		return escapeString(s.S()), nil
 	}
 	return s.S(), nil
 }
 
 func MakeString(s string) String {
+	if s == ":private" {
+		panic("no")
+	}
 	return GoString(s)
 }
 
@@ -106,11 +110,7 @@ func (s GoString) TryNth(env *Env, i int, d Object) (Object, error) {
 }
 
 func (s GoString) Compare(env *Env, other Object) (int, error) {
-	os, err := other.GetType().ToString(env, false)
-	if err != nil {
-		return 0, err
-	}
-	s2, err := AssertString(env, other, "Cannot compare String and "+os)
+	s2, err := AssertString(env, other, "Cannot compare String and "+TypeName(other))
 	if err != nil {
 		return 0, err
 	}
@@ -148,7 +148,8 @@ func (s *Rope) AppendTo(str String) String {
 }
 
 func (s *Rope) ToString(env *Env, escape bool) (string, error) {
-	if escape {
+	printReadably := ToBool(env.printReadably.GetStatic())
+	if printReadably || escape {
 		return escapeString(s.S()), nil
 	}
 	return s.S(), nil
@@ -161,10 +162,6 @@ func (s *Rope) Equals(env *Env, other interface{}) bool {
 	default:
 		return false
 	}
-}
-
-func (s *Rope) GetType() *Type {
-	return TYPE.String
 }
 
 func (s *Rope) Native() interface{} {
@@ -221,11 +218,7 @@ func (s *Rope) TryNth(env *Env, i int, d Object) (Object, error) {
 }
 
 func (s *Rope) Compare(env *Env, other Object) (int, error) {
-	os, err := other.GetType().ToString(env, false)
-	if err != nil {
-		return 0, err
-	}
-	s2, err := AssertString(env, other, "Cannot compare String and "+os)
+	s2, err := AssertString(env, other, "Cannot compare String and "+TypeName(other))
 	if err != nil {
 		return 0, err
 	}
@@ -257,7 +250,7 @@ func CombineToString(env *Env, args []Object) (Object, error) {
 			case *Regex:
 				segments = append(segments, sv.R.String())
 			default:
-				s, err := obj.ToString(env, true)
+				s, err := ToString(env, obj)
 				if err != nil {
 					return nil, err
 				}

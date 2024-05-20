@@ -24,6 +24,7 @@ type (
 		mu            sync.Mutex
 		Namespaces    map[string]*Namespace
 		CoreNamespace *Namespace
+		LangNamespace *Namespace
 		stdout        *Var
 		stdin         *Var
 		stderr        *Var

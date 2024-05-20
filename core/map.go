@@ -79,7 +79,7 @@ func mapEquals(env *Env, m Map, other interface{}) bool {
 			if err != nil {
 				return false
 			}
-			if !success || !value.Equals(env, p.Value) {
+			if !success || !Equals(env, value, p.Value) {
 				return false
 			}
 		}
@@ -101,12 +101,12 @@ func mapToString(env *Env, m Map, escape bool) (string, error) {
 	if m.Count() > 0 {
 		for iter := m.Iter(); ; {
 			p := iter.Next()
-			ks, err := p.Key.ToString(env, escape)
+			ks, err := ToString(env, p.Key)
 			if err != nil {
 				return "", err
 			}
 
-			vs, err := p.Value.ToString(env, escape)
+			vs, err := ToString(env, p.Value)
 			if err != nil {
 				return "", err
 			}

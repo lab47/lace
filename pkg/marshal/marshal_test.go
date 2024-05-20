@@ -56,13 +56,13 @@ func TestMarshal(t *testing.T) {
 				obj, err := Unmarshal(&e, b)
 				r.NoError(err)
 
-				ostr, err := d.ToString(&e, true)
+				ostr, err := core.ToString(&e, d)
 				r.NoError(err)
 
-				str, err := obj.ToString(&e, true)
+				str, err := core.ToString(&e, obj)
 				r.NoError(err)
 
-				r.True(obj.Equals(&e, d), "didn't round trip: %s != %s", ostr, str)
+				r.True(core.Equals(&e, obj, d), "didn't round trip: %s != %s", ostr, str)
 			})
 		}
 
@@ -82,13 +82,13 @@ func TestMarshal(t *testing.T) {
 		obj, err := Unmarshal(&e, b)
 		r.NoError(err)
 
-		ostr, err := d.ToString(&e, true)
+		ostr, err := core.ToString(&e, d)
 		r.NoError(err)
 
-		str, err := obj.ToString(&e, true)
+		str, err := core.ToString(&e, obj)
 		r.NoError(err)
 
-		r.True(obj.Equals(&e, d), "didn't round trip: %s != %s", ostr, str)
+		r.True(core.Equals(&e, obj, d), "didn't round trip: %s != %s", ostr, str)
 	})
 
 	t.Run("maintains identity", func(t *testing.T) {
@@ -131,12 +131,12 @@ func TestMarshal(t *testing.T) {
 		// Check identity across the unmarshalling
 		r.True(l1 == l2)
 
-		ostr, err := d.ToString(&e, true)
+		ostr, err := core.ToString(&e, d)
 		r.NoError(err)
 
-		str, err := obj.ToString(&e, true)
+		str, err := core.ToString(&e, obj)
 		r.NoError(err)
 
-		r.True(obj.Equals(&e, d), "didn't round trip: %s != %s", ostr, str)
+		r.True(core.Equals(&e, obj, d), "didn't round trip: %s != %s", ostr, str)
 	})
 }

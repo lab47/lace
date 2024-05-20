@@ -369,7 +369,7 @@ func (r *ReflectValue) Without(env *Env, key Object) (Map, error) {
 	for iter := r.Iter(); iter.HasNext(); {
 		p := iter.Next()
 
-		if p.Key.Equals(env, key) {
+		if Equals(env, p.Key, key) {
 			continue
 		}
 

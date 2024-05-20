@@ -17,6 +17,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/pkg/errors"
 )
 
@@ -71,7 +72,7 @@ func ExtractKeyword(env *Env, args []Object, index int) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return k.ToString(env, false)
+	return ToString(env, k)
 }
 
 func ExtractStringable(env *Env, args []Object, index int) (string, error) {
@@ -195,7 +196,7 @@ var procWithMeta = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	if args[1].Equals(env, NIL) {
+	if Equals(env, args[1], NIL) {
 		return args[0], nil
 	}
 	mm, err := EnsureMap(env, args, 1)
@@ -420,7 +421,7 @@ var procBitNot = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 
-	x, err := AssertInt(env, args[0], "Bit operation not supported for "+args[0].GetType().Name())
+	x, err := AssertInt(env, args[0], "Bit operation not supported for "+TypeName(args[0]))
 	if err != nil {
 		return nil, err
 	}
@@ -432,11 +433,11 @@ func AssertInts(env *Env, args []Object) (Int, Int, error) {
 		return 0, 0, err
 	}
 
-	x, err := AssertInt(env, args[0], "Bit operation not supported for "+args[0].GetType().Name())
+	x, err := AssertInt(env, args[0], "Bit operation not supported for "+TypeName(args[0]))
 	if err != nil {
 		return 0, 0, err
 	}
-	y, err := AssertInt(env, args[1], "Bit operation not supported for "+args[1].GetType().Name())
+	y, err := AssertInt(env, args[1], "Bit operation not supported for "+TypeName(args[1]))
 	if err != nil {
 		return 0, 0, err
 	}
@@ -950,7 +951,7 @@ func toNative(env *Env, obj Object) (interface{}, error) {
 	case Native:
 		return obj.Native(), nil
 	default:
-		return obj.ToString(env, false)
+		return ToString(env, obj)
 	}
 }
 
@@ -1046,7 +1047,7 @@ var procConj = func(env *Env, args []Object) (Object, error) {
 	case Seq:
 		return c.Cons(args[1]), nil
 	default:
-		return nil, env.NewError("conj's first argument must be a collection, got " + c.GetType().Name())
+		return nil, env.NewError("conj's first argument must be a collection, got " + TypeName(c))
 	}
 }
 
@@ -1099,7 +1100,7 @@ var procEquals = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 
-	return Boolean(args[0].Equals(env, args[1])), nil
+	return Boolean(Equals(env, args[0], args[1])), nil
 }
 
 var procCount = func(env *Env, args []Object) (Object, error) {
@@ -1111,7 +1112,7 @@ var procCount = func(env *Env, args []Object) (Object, error) {
 	case Counted:
 		return MakeInt(obj.Count()), nil
 	default:
-		s, err := AssertSeqable(env, obj, "count not supported on this type: "+obj.GetType().Name())
+		s, err := AssertSeqable(env, obj, "count not supported on this type: "+TypeName(obj))
 		if err != nil {
 			return nil, err
 		}
@@ -1152,7 +1153,7 @@ var procSubvec = func(env *Env, args []Object) (Object, error) {
 }
 
 func mustStr(env *Env, obj Object) string {
-	str, err := obj.ToString(env, false)
+	str, err := ToString(env, obj)
 	if err != nil {
 		return fmt.Sprintf("%T(%p)", obj, obj)
 	}
@@ -1169,12 +1170,27 @@ var procCast = func(env *Env, args []Object) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	argType := GetType(args[1])
+
+	if t == argType {
+		return t, nil
+	}
+
+	art, ok := argType.(HasReflectType)
+	if !ok {
+		return nil, env.NewError("Cannot cast " + TypeName(args[1]) + " to " + mustStr(env, t))
+	}
+
+	rt := art.ReflectType()
+
 	if t.reflectType.Kind() == reflect.Interface &&
-		args[1].GetType().reflectType.Implements(t.reflectType) ||
-		args[1].GetType().reflectType == t.reflectType {
+		rt.Implements(t.reflectType) ||
+		rt == t.reflectType {
 		return args[1], nil
 	}
-	return nil, env.NewError("Cannot cast " + args[1].GetType().Name() + " to " + mustStr(env, t))
+
+	return nil, env.NewError("Cannot cast " + TypeName(args[1]) + " to " + mustStr(env, t))
 }
 
 var procVec = func(env *Env, args []Object) (Object, error) {
@@ -1210,11 +1226,8 @@ var procHashSet = func(env *Env, args []Object) (Object, error) {
 var procStr = func(env *Env, args []Object) (Object, error) {
 	var buffer bytes.Buffer
 	for _, obj := range args {
-		if !obj.Equals(env, NIL) {
-			t := obj.GetType()
-			// TODO: this is a hack. Rethink escape parameter in ToString
-			escaped := (t == TYPE.String) || (t == TYPE.Char) || (t == TYPE.Regex)
-			s, err := obj.ToString(env, !escaped)
+		if !Equals(env, obj, NIL) {
+			s, err := ToString(env, obj)
 			if err != nil {
 				return nil, err
 			}
@@ -1238,7 +1251,7 @@ var procSymbol = func(env *Env, args []Object) (Object, error) {
 	}
 
 	var ns string
-	if !args[0].Equals(env, NIL) {
+	if !Equals(env, args[0], NIL) {
 		se, err := EnsureString(env, args, 0)
 		if err != nil {
 			return nil, err
@@ -1269,7 +1282,7 @@ var procKeyword = func(env *Env, args []Object) (Object, error) {
 	}
 
 	var ns string
-	if !args[0].Equals(env, NIL) {
+	if !Equals(env, args[0], NIL) {
 		s, err := EnsureString(env, args, 0)
 		if err != nil {
 			return nil, err
@@ -1378,7 +1391,7 @@ var procCompare = func(env *Env, args []Object) (Object, error) {
 	}
 
 	k1, k2 := args[0], args[1]
-	if k1.Equals(env, k2) {
+	if Equals(env, k1, k2) {
 		return MakeInt(0), nil
 	}
 	switch k2.(type) {
@@ -1395,7 +1408,7 @@ var procCompare = func(env *Env, args []Object) (Object, error) {
 		}
 		return MakeInt(cmp), nil
 	}
-	return nil, env.NewError(fmt.Sprintf("%s (type: %s) is not a Comparable", mustStr(env, k1), k1.GetType().Name()))
+	return nil, env.NewError(fmt.Sprintf("%s (type: %s) is not a Comparable", mustStr(env, k1), TypeName(k1)))
 }
 
 var procInt = func(env *Env, args []Object) (Object, error) {
@@ -1409,7 +1422,7 @@ var procInt = func(env *Env, args []Object) (Object, error) {
 	case Number:
 		return obj.Int(), nil
 	default:
-		return nil, env.NewError(fmt.Sprintf("Cannot cast %s (type: %s) to Int", mustStr(env, obj), obj.GetType().Name()))
+		return nil, env.NewError(fmt.Sprintf("Cannot cast %s (type: %s) to Int", mustStr(env, obj), TypeName(obj)))
 	}
 }
 
@@ -1418,7 +1431,7 @@ var procNumber = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 
-	return AssertNumber(env, args[0], fmt.Sprintf("Cannot cast %s (type: %s) to Number", mustStr(env, args[0]), args[0].GetType().Name()))
+	return AssertNumber(env, args[0], fmt.Sprintf("Cannot cast %s (type: %s) to Number", mustStr(env, args[0]), TypeName(args[0])))
 }
 
 var procDouble = func(env *Env, args []Object) (Object, error) {
@@ -1426,7 +1439,7 @@ var procDouble = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 
-	n, err := AssertNumber(env, args[0], fmt.Sprintf("Cannot cast %s (type: %s) to Double", mustStr(env, args[0]), args[0].GetType().Name()))
+	n, err := AssertNumber(env, args[0], fmt.Sprintf("Cannot cast %s (type: %s) to Double", mustStr(env, args[0]), TypeName(args[0])))
 	if err != nil {
 		return nil, err
 	}
@@ -1448,7 +1461,7 @@ var procChar = func(env *Env, args []Object) (Object, error) {
 		}
 		return NewChar(rune(i)), nil
 	default:
-		return nil, env.NewError(fmt.Sprintf("Cannot cast %s (type: %s) to Char", mustStr(env, c), c.GetType().Name()))
+		return nil, env.NewError(fmt.Sprintf("Cannot cast %s (type: %s) to Char", mustStr(env, c), TypeName(c)))
 	}
 }
 
@@ -1499,7 +1512,7 @@ var procBigInt = func(env *Env, args []Object) (Object, error) {
 		}
 		return nil, env.NewError("Invalid number format " + n.S())
 	default:
-		return nil, env.NewError(fmt.Sprintf("Cannot cast %s (type: %s) to BigInt", mustStr(env, n), n.GetType().Name()))
+		return nil, env.NewError(fmt.Sprintf("Cannot cast %s (type: %s) to BigInt", mustStr(env, n), TypeName(n)))
 	}
 }
 
@@ -1518,7 +1531,7 @@ var procBigFloat = func(env *Env, args []Object) (Object, error) {
 		}
 		return nil, env.NewError("Invalid number format " + n.S())
 	default:
-		return nil, env.NewError(fmt.Sprintf("Cannot cast %s (type: %s) to BigFloat", mustStr(env, n), n.GetType().Name()))
+		return nil, env.NewError(fmt.Sprintf("Cannot cast %s (type: %s) to BigFloat", mustStr(env, n), TypeName(n)))
 	}
 }
 
@@ -1551,7 +1564,7 @@ var procNth = func(env *Env, args []Object) (Object, error) {
 			return SeqNth(env, coll.Seq(), n)
 		}
 	}
-	return nil, env.NewError("nth not supported on this type: " + args[0].GetType().Name())
+	return nil, env.NewError("nth not supported on this type: " + TypeName(args[0]))
 }
 
 var procLt = func(env *Env, args []Object) (Object, error) {
@@ -1762,7 +1775,7 @@ var procContains = func(env *Env, args []Object) (Object, error) {
 		}
 		return Boolean(false), nil
 	}
-	return nil, env.NewError("contains? not supported on type " + args[0].GetType().Name())
+	return nil, env.NewError("contains? not supported on type " + TypeName(args[0]))
 }
 
 var procGet = func(env *Env, args []Object) (Object, error) {
@@ -1954,7 +1967,7 @@ var procType = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 
-	return args[0].GetType(), nil
+	return GetType(args[0]), nil
 }
 
 var procPprint = func(env *Env, args []Object) (Object, error) {
@@ -1976,6 +1989,10 @@ var procPprint = func(env *Env, args []Object) (Object, error) {
 }
 
 func PrintObject(env *Env, obj Object, w io.Writer) {
+	if _, ok := obj.(Char); ok {
+		s, _ := ToString(env, obj)
+		spew.Dump(obj, s)
+	}
 	printReadably := ToBool(env.printReadably.GetStatic())
 	switch obj := obj.(type) {
 	case Pprinter:
@@ -1983,7 +2000,7 @@ func PrintObject(env *Env, obj Object, w io.Writer) {
 	case Printer:
 		obj.Print(w, printReadably)
 	default:
-		s, err := obj.ToString(env, printReadably)
+		s, err := ToString(env, obj)
 		if err != nil {
 			s = fmt.Sprintf("%T(%p)", obj, obj)
 		}
@@ -2579,7 +2596,7 @@ var procHash = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 
-	h, err := args[0].Hash(env)
+	h, err := HashValue(env, args[0])
 	if err != nil {
 		return nil, err
 	}
@@ -2638,7 +2655,7 @@ var procLoadLibFromPath = func(env *Env, args []Object) (Object, error) {
 	pathname := pathnamev.S()
 
 	cp := env.classPath.GetStatic()
-	cpvec, err := AssertVector(env, cp, "*classpath* must be a Vector, not a "+cp.GetType().Name())
+	cpvec, err := AssertVector(env, cp, "*classpath* must be a Vector, not a "+TypeName(cp))
 	if err != nil {
 		return nil, err
 	}
@@ -2649,7 +2666,7 @@ var procLoadLibFromPath = func(env *Env, args []Object) (Object, error) {
 	var filename string
 	for i := 0; i < count; i++ {
 		elem := cpvec.at(i)
-		cpelem, err := AssertString(env, elem, "*classpath* must contain only Strings, not a "+elem.GetType().Name()+" (at element "+strconv.Itoa(i)+")")
+		cpelem, err := AssertString(env, elem, "*classpath* must contain only Strings, not a "+TypeName(elem)+" (at element "+strconv.Itoa(i)+")")
 		if err != nil {
 			return nil, err
 		}
@@ -2749,7 +2766,7 @@ func libExternalPath(env *Env, sym Symbol) (path string, ok bool, err error) {
 			return "", false, err
 		}
 
-		sourceKey, err = n.ToString(env, false)
+		sourceKey, err = ToString(env, n)
 		if err != nil {
 			return "", false, err
 		}
@@ -2773,7 +2790,7 @@ func libExternalPath(env *Env, sym Symbol) (path string, ok bool, err error) {
 		if !ok {
 			return "", false, env.NewError("Key :url not found in ns-sources for: " + sourceKey)
 		} else {
-			s, err := url.ToString(env, false)
+			s, err := ToString(env, url)
 			if err != nil {
 				return "", false, err
 			}
@@ -2921,7 +2938,7 @@ var procSend = func(env *Env, args []Object) (Object, error) {
 		return nil, err
 	}
 	v := args[1]
-	if v.Equals(env, NIL) {
+	if Equals(env, v, NIL) {
 		return nil, env.NewError("Can't put nil on channel")
 	}
 	if ch.isClosed {
@@ -3389,7 +3406,7 @@ func knownMacrosToMap(env *Env, km Object) (Map, error) {
 			}
 			res.Add(env, obj.at(0), obj.at(1))
 		default:
-			return nil, errors.New(":known-macros item must be a symbol or a vector, got " + obj.GetType().Name())
+			return nil, errors.New(":known-macros item must be a symbol or a vector, got " + TypeName(obj))
 		}
 		s, err = s.Rest(env)
 		if err != nil {
@@ -3423,7 +3440,7 @@ func ReadConfig(env *Env, filename string, workingDir string) error {
 	}
 	configMap, ok := config.(Map)
 	if !ok {
-		printConfigError(configFileName, "config root object must be a map, got "+config.GetType().Name())
+		printConfigError(configFileName, "config root object must be a map, got "+TypeName(config))
 		return nil
 	}
 	ok, ignoredUnusedNamespaces := configMap.GetEqu(MakeKeyword("ignored-unused-namespaces"))
@@ -3435,7 +3452,7 @@ func ReadConfig(env *Env, filename string, workingDir string) error {
 				return err
 			}
 		} else {
-			printConfigError(configFileName, ":ignored-unused-namespaces value must be a vector, got "+ignoredUnusedNamespaces.GetType().Name())
+			printConfigError(configFileName, ":ignored-unused-namespaces value must be a vector, got "+TypeName(ignoredUnusedNamespaces))
 			return nil
 		}
 	}
@@ -3465,7 +3482,7 @@ func ReadConfig(env *Env, filename string, workingDir string) error {
 						return err
 					}
 
-					printConfigError(configFileName, ":ignored-file-regexes elements must be regexes, got "+f.GetType().Name())
+					printConfigError(configFileName, ":ignored-file-regexes elements must be regexes, got "+TypeName(f))
 					return nil
 				}
 				WARNINGS.IgnoredFileRegexes = append(WARNINGS.IgnoredFileRegexes, regex.R)
@@ -3475,7 +3492,7 @@ func ReadConfig(env *Env, filename string, workingDir string) error {
 				}
 			}
 		} else {
-			printConfigError(configFileName, ":ignored-file-regexes value must be a vector, got "+ignoredFileRegexes.GetType().Name())
+			printConfigError(configFileName, ":ignored-file-regexes value must be a vector, got "+TypeName(ignoredFileRegexes))
 			return nil
 		}
 	}
@@ -3488,21 +3505,21 @@ func ReadConfig(env *Env, filename string, workingDir string) error {
 				return err
 			}
 		} else {
-			printConfigError(configFileName, ":entry-points value must be a vector, got "+entryPoints.GetType().Name())
+			printConfigError(configFileName, ":entry-points value must be a vector, got "+TypeName(entryPoints))
 			return nil
 		}
 	}
 	ok, knownNamespaces := configMap.GetEqu(MakeKeyword("known-namespaces"))
 	if ok {
 		if _, ok1 := knownNamespaces.(Seqable); !ok1 {
-			printConfigError(configFileName, ":known-namespaces value must be a vector, got "+knownNamespaces.GetType().Name())
+			printConfigError(configFileName, ":known-namespaces value must be a vector, got "+TypeName(knownNamespaces))
 			return nil
 		}
 	}
 	ok, knownTags := configMap.GetEqu(MakeKeyword("known-tags"))
 	if ok {
 		if _, ok1 := knownTags.(Seqable); !ok1 {
-			printConfigError(configFileName, ":known-tags value must be a vector, got "+knownTags.GetType().Name())
+			printConfigError(configFileName, ":known-tags value must be a vector, got "+TypeName(knownTags))
 			return nil
 		}
 	}
@@ -3510,7 +3527,7 @@ func ReadConfig(env *Env, filename string, workingDir string) error {
 	if ok {
 		_, ok1 := knownMacros.(Seqable)
 		if !ok1 {
-			printConfigError(configFileName, ":known-macros value must be a vector, got "+knownMacros.GetType().Name())
+			printConfigError(configFileName, ":known-macros value must be a vector, got "+TypeName(knownMacros))
 			return nil
 		}
 		m, err := knownMacrosToMap(env, knownMacros)
@@ -3530,7 +3547,7 @@ func ReadConfig(env *Env, filename string, workingDir string) error {
 	if ok {
 		m, ok := rules.(Map)
 		if !ok {
-			printConfigError(configFileName, ":rules value must be a map, got "+rules.GetType().Name())
+			printConfigError(configFileName, ":rules value must be a map, got "+TypeName(rules))
 			return nil
 		}
 		if ok, v := m.GetEqu(criticalKeywords.ifWithoutElse); ok {

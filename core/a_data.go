@@ -4,17 +4,17 @@ package core
 
 func init() {
 	coreNamespaces = []string{
-		"lace.time",
+		"lace.walk",
+		"lace.set",
+		"lace.tools.cli",
+		"lace.pprint",
 		"lace.core",
 		"lace.reflect",
 		"lace.repl",
-		"lace.walk",
 		"lace.template",
-		"lace.tools.cli",
-		"lace.hiccup",
 		"lace.test",
-		"lace.set",
-		"lace.pprint",
+		"lace.hiccup",
 		"lace.better-cond",
+		"lace.time",
 	}
 }

@@ -106,7 +106,7 @@ func execute(env *Env, name string, opts Map) (Object, error) {
 			case String:
 				stdin = strings.NewReader(s.S())
 			default:
-				return nil, env.NewError("stdin option must be either an IOReader or a string, got " + stdinObj.GetType().Name())
+				return nil, env.NewError("stdin option must be either an IOReader or a string, got " + TypeName(stdinObj))
 			}
 		}
 	}
@@ -118,7 +118,7 @@ func execute(env *Env, name string, opts Map) (Object, error) {
 		case io.Writer:
 			stdout = s
 		default:
-			return nil, env.NewError("stdout option must be an IOWriter, got " + stdoutObj.GetType().Name())
+			return nil, env.NewError("stdout option must be an IOWriter, got " + TypeName(stdoutObj))
 		}
 	}
 	if ok, stderrObj := opts.GetEqu(MakeKeyword("stderr")); ok {
@@ -129,7 +129,7 @@ func execute(env *Env, name string, opts Map) (Object, error) {
 		case io.Writer:
 			stderr = s
 		default:
-			return nil, env.NewError("stderr option must be an IOWriter, got " + stderrObj.GetType().Name())
+			return nil, env.NewError("stderr option must be an IOWriter, got " + TypeName(stderrObj))
 		}
 	}
 	return sh(dir, stdin, stdout, stderr, name, args)

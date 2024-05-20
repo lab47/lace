@@ -21,11 +21,15 @@ type ReflectType struct {
 var _ Object = &ReflectType{}
 
 func (r *ReflectType) Equals(env *Env, other any) bool {
-	if ov, ok := other.(*ReflectType); ok {
-		return ov.typ == r.typ
+	if ov, ok := other.(HasReflectType); ok {
+		return ov.ReflectType() == r.typ
 	}
 
 	return false
+}
+
+func (r *ReflectType) ReflectType() reflect.Type {
+	return r.typ
 }
 
 func (r *ReflectType) GetType() *Type {
@@ -33,7 +37,17 @@ func (r *ReflectType) GetType() *Type {
 }
 
 func (r *ReflectType) ToString(env *Env, escape bool) (string, error) {
-	return fmt.Sprintf("#reflect.Type[%s]", r.typ), nil
+	t := r.typ.Elem()
+	for t.Kind() == reflect.Pointer {
+		t = t.Elem()
+	}
+
+	pkg := t.PkgPath()
+	if pkg == "github.com/lab47/lace/core" {
+		return t.Name(), nil
+	}
+
+	return fmt.Sprintf("%s.%s", pkg, t.Name()), nil
 }
 
 func (r *ReflectType) Hash(env *Env) (uint32, error) {

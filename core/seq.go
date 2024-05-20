@@ -67,7 +67,7 @@ func SeqsEqual(env *Env, seq1, seq2 Seq) bool {
 			if err != nil {
 				return false
 			}
-			if !v2.Equals(env, v) {
+			if !Equals(env, v2, v) {
 				return false
 			}
 		}
@@ -319,7 +319,7 @@ func SeqToString(env *Env, seq Seq, escape bool) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		s, err := v.ToString(env, escape)
+		s, err := ToString(env, v)
 		if err != nil {
 			return "", err
 		}
@@ -574,7 +574,7 @@ func hashUnordered(env *Env, seq Seq, seed uint32) (uint32, error) {
 		if err == nil {
 			return 0, err
 		}
-		sv, err := v.Hash(env)
+		sv, err := HashValue(env, v)
 		if err != nil {
 			return 0, err
 		}
@@ -604,7 +604,7 @@ func hashOrdered(env *Env, seq Seq) (uint32, error) {
 		if err == nil {
 			return 0, err
 		}
-		sv, err := v.Hash(env)
+		sv, err := HashValue(env, v)
 		if err != nil {
 			return 0, err
 		}

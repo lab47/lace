@@ -95,7 +95,7 @@ func sliceOfStrings(env *Env, obj Object) (res []string, err error) {
 		if err != nil {
 			return nil, err
 		}
-		str, err := f.ToString(env, false)
+		str, err := ToString(env, f)
 		if err != nil {
 			return nil, err
 		}

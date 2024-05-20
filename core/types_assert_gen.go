@@ -12,7 +12,7 @@ func AssertComparable(env *Env, obj Object, msg string) (Comparable, error) {
 		return c, nil
 	default:
 		if msg == "" {
-			msg = fmt.Sprintf("Expected %s, got %s", "Comparable", obj.GetType().Name())
+			msg = fmt.Sprintf("Expected %s, got %s", "Comparable", TypeName(obj))
 		}
 		var v Comparable
 		return v, env.NewError(msg)
@@ -40,7 +40,7 @@ func AssertVector(env *Env, obj Object, msg string) (*Vector, error) {
 		return c, nil
 	default:
 		if msg == "" {
-			msg = fmt.Sprintf("Expected %s, got %s", "Vector", obj.GetType().Name())
+			msg = fmt.Sprintf("Expected %s, got %s", "Vector", TypeName(obj))
 		}
 		var v *Vector
 		return v, env.NewError(msg)
@@ -68,7 +68,7 @@ func AssertChar(env *Env, obj Object, msg string) (Char, error) {
 		return c, nil
 	default:
 		if msg == "" {
-			msg = fmt.Sprintf("Expected %s, got %s", "Char", obj.GetType().Name())
+			msg = fmt.Sprintf("Expected %s, got %s", "Char", TypeName(obj))
 		}
 		var v Char
 		return v, env.NewError(msg)
@@ -96,7 +96,7 @@ func AssertString(env *Env, obj Object, msg string) (String, error) {
 		return c, nil
 	default:
 		if msg == "" {
-			msg = fmt.Sprintf("Expected %s, got %s", "String", obj.GetType().Name())
+			msg = fmt.Sprintf("Expected %s, got %s", "String", TypeName(obj))
 		}
 		var v String
 		return v, env.NewError(msg)
@@ -124,7 +124,7 @@ func AssertSymbol(env *Env, obj Object, msg string) (Symbol, error) {
 		return c, nil
 	default:
 		if msg == "" {
-			msg = fmt.Sprintf("Expected %s, got %s", "Symbol", obj.GetType().Name())
+			msg = fmt.Sprintf("Expected %s, got %s", "Symbol", TypeName(obj))
 		}
 		var v Symbol
 		return v, env.NewError(msg)
@@ -152,7 +152,7 @@ func AssertKeyword(env *Env, obj Object, msg string) (Keyword, error) {
 		return c, nil
 	default:
 		if msg == "" {
-			msg = fmt.Sprintf("Expected %s, got %s", "Keyword", obj.GetType().Name())
+			msg = fmt.Sprintf("Expected %s, got %s", "Keyword", TypeName(obj))
 		}
 		var v Keyword
 		return v, env.NewError(msg)
@@ -180,7 +180,7 @@ func AssertRegex(env *Env, obj Object, msg string) (*Regex, error) {
 		return c, nil
 	default:
 		if msg == "" {
-			msg = fmt.Sprintf("Expected %s, got %s", "Regex", obj.GetType().Name())
+			msg = fmt.Sprintf("Expected %s, got %s", "Regex", TypeName(obj))
 		}
 		var v *Regex
 		return v, env.NewError(msg)
@@ -208,7 +208,7 @@ func AssertBoolean(env *Env, obj Object, msg string) (Boolean, error) {
 		return c, nil
 	default:
 		if msg == "" {
-			msg = fmt.Sprintf("Expected %s, got %s", "Boolean", obj.GetType().Name())
+			msg = fmt.Sprintf("Expected %s, got %s", "Boolean", TypeName(obj))
 		}
 		var v Boolean
 		return v, env.NewError(msg)
@@ -236,7 +236,7 @@ func AssertTime(env *Env, obj Object, msg string) (Time, error) {
 		return c, nil
 	default:
 		if msg == "" {
-			msg = fmt.Sprintf("Expected %s, got %s", "Time", obj.GetType().Name())
+			msg = fmt.Sprintf("Expected %s, got %s", "Time", TypeName(obj))
 		}
 		var v Time
 		return v, env.NewError(msg)
@@ -270,14 +270,14 @@ func AssertNumber(env *Env, obj Object, msg string) (Number, error) {
 			return MakeInt(int(c.val.Uint())), nil
 		default:
 			if msg == "" {
-				msg = fmt.Sprintf("Expected %s, got %s", "Number", obj.GetType().Name())
+				msg = fmt.Sprintf("Expected %s, got %s", "Number", TypeName(obj))
 			}
 			var v Number
 			return v, env.NewError(msg)
 		}
 	default:
 		if msg == "" {
-			msg = fmt.Sprintf("Expected %s, got %s", "Number", obj.GetType().Name())
+			msg = fmt.Sprintf("Expected %s, got %s", "Number", TypeName(obj))
 		}
 		var v Number
 		return v, env.NewError(msg)
@@ -305,7 +305,7 @@ func AssertSeqable(env *Env, obj Object, msg string) (Seqable, error) {
 		return c, nil
 	default:
 		if msg == "" {
-			msg = fmt.Sprintf("Expected %s, got %s", "Seqable", obj.GetType().Name())
+			msg = fmt.Sprintf("Expected %s, got %s", "Seqable", TypeName(obj))
 		}
 		var v Seqable
 		return v, env.NewError(msg)
@@ -333,7 +333,7 @@ func AssertCallable(env *Env, obj Object, msg string) (Callable, error) {
 		return c, nil
 	default:
 		if msg == "" {
-			msg = fmt.Sprintf("Expected %s, got %s", "Callable", obj.GetType().Name())
+			msg = fmt.Sprintf("Expected %s, got %s", "Callable", TypeName(obj))
 		}
 		var v Callable
 		return v, env.NewError(msg)
@@ -361,7 +361,7 @@ func AssertType(env *Env, obj Object, msg string) (*Type, error) {
 		return c, nil
 	default:
 		if msg == "" {
-			msg = fmt.Sprintf("Expected %s, got %s", "Type", obj.GetType().Name())
+			msg = fmt.Sprintf("Expected %s, got %s", "Type", TypeName(obj))
 		}
 		var v *Type
 		return v, env.NewError(msg)
@@ -389,7 +389,7 @@ func AssertMeta(env *Env, obj Object, msg string) (Meta, error) {
 		return c, nil
 	default:
 		if msg == "" {
-			msg = fmt.Sprintf("Expected %s, got %s", "Meta", obj.GetType().Name())
+			msg = fmt.Sprintf("Expected %s, got %s", "Meta", TypeName(obj))
 		}
 		var v Meta
 		return v, env.NewError(msg)
@@ -417,7 +417,7 @@ func AssertInt(env *Env, obj Object, msg string) (Int, error) {
 		return c, nil
 	default:
 		if msg == "" {
-			msg = fmt.Sprintf("Expected %s, got %s", "Int", obj.GetType().Name())
+			msg = fmt.Sprintf("Expected %s, got %s", "Int", TypeName(obj))
 		}
 		var v Int
 		return v, env.NewError(msg)
@@ -445,7 +445,7 @@ func AssertDouble(env *Env, obj Object, msg string) (Double, error) {
 		return c, nil
 	default:
 		if msg == "" {
-			msg = fmt.Sprintf("Expected %s, got %s", "Double", obj.GetType().Name())
+			msg = fmt.Sprintf("Expected %s, got %s", "Double", TypeName(obj))
 		}
 		var v Double
 		return v, env.NewError(msg)
@@ -473,7 +473,7 @@ func AssertStack(env *Env, obj Object, msg string) (Stack, error) {
 		return c, nil
 	default:
 		if msg == "" {
-			msg = fmt.Sprintf("Expected %s, got %s", "Stack", obj.GetType().Name())
+			msg = fmt.Sprintf("Expected %s, got %s", "Stack", TypeName(obj))
 		}
 		var v Stack
 		return v, env.NewError(msg)
@@ -501,7 +501,7 @@ func AssertMap(env *Env, obj Object, msg string) (Map, error) {
 		return c, nil
 	default:
 		if msg == "" {
-			msg = fmt.Sprintf("Expected %s, got %s", "Map", obj.GetType().Name())
+			msg = fmt.Sprintf("Expected %s, got %s", "Map", TypeName(obj))
 		}
 		var v Map
 		return v, env.NewError(msg)
@@ -529,7 +529,7 @@ func AssertSet(env *Env, obj Object, msg string) (Set, error) {
 		return c, nil
 	default:
 		if msg == "" {
-			msg = fmt.Sprintf("Expected %s, got %s", "Set", obj.GetType().Name())
+			msg = fmt.Sprintf("Expected %s, got %s", "Set", TypeName(obj))
 		}
 		var v Set
 		return v, env.NewError(msg)
@@ -557,7 +557,7 @@ func AssertAssociative(env *Env, obj Object, msg string) (Associative, error) {
 		return c, nil
 	default:
 		if msg == "" {
-			msg = fmt.Sprintf("Expected %s, got %s", "Associative", obj.GetType().Name())
+			msg = fmt.Sprintf("Expected %s, got %s", "Associative", TypeName(obj))
 		}
 		var v Associative
 		return v, env.NewError(msg)
@@ -585,7 +585,7 @@ func AssertReversible(env *Env, obj Object, msg string) (Reversible, error) {
 		return c, nil
 	default:
 		if msg == "" {
-			msg = fmt.Sprintf("Expected %s, got %s", "Reversible", obj.GetType().Name())
+			msg = fmt.Sprintf("Expected %s, got %s", "Reversible", TypeName(obj))
 		}
 		var v Reversible
 		return v, env.NewError(msg)
@@ -613,7 +613,7 @@ func AssertNamed(env *Env, obj Object, msg string) (Named, error) {
 		return c, nil
 	default:
 		if msg == "" {
-			msg = fmt.Sprintf("Expected %s, got %s", "Named", obj.GetType().Name())
+			msg = fmt.Sprintf("Expected %s, got %s", "Named", TypeName(obj))
 		}
 		var v Named
 		return v, env.NewError(msg)
@@ -641,7 +641,7 @@ func AssertComparator(env *Env, obj Object, msg string) (Comparator, error) {
 		return c, nil
 	default:
 		if msg == "" {
-			msg = fmt.Sprintf("Expected %s, got %s", "Comparator", obj.GetType().Name())
+			msg = fmt.Sprintf("Expected %s, got %s", "Comparator", TypeName(obj))
 		}
 		var v Comparator
 		return v, env.NewError(msg)
@@ -669,7 +669,7 @@ func AssertRatio(env *Env, obj Object, msg string) (*Ratio, error) {
 		return c, nil
 	default:
 		if msg == "" {
-			msg = fmt.Sprintf("Expected %s, got %s", "Ratio", obj.GetType().Name())
+			msg = fmt.Sprintf("Expected %s, got %s", "Ratio", TypeName(obj))
 		}
 		var v *Ratio
 		return v, env.NewError(msg)
@@ -697,7 +697,7 @@ func AssertNamespace(env *Env, obj Object, msg string) (*Namespace, error) {
 		return c, nil
 	default:
 		if msg == "" {
-			msg = fmt.Sprintf("Expected %s, got %s", "Namespace", obj.GetType().Name())
+			msg = fmt.Sprintf("Expected %s, got %s", "Namespace", TypeName(obj))
 		}
 		var v *Namespace
 		return v, env.NewError(msg)
@@ -725,7 +725,7 @@ func AssertVar(env *Env, obj Object, msg string) (*Var, error) {
 		return c, nil
 	default:
 		if msg == "" {
-			msg = fmt.Sprintf("Expected %s, got %s", "Var", obj.GetType().Name())
+			msg = fmt.Sprintf("Expected %s, got %s", "Var", TypeName(obj))
 		}
 		var v *Var
 		return v, env.NewError(msg)
@@ -753,7 +753,7 @@ func AssertError(env *Env, obj Object, msg string) (Error, error) {
 		return c, nil
 	default:
 		if msg == "" {
-			msg = fmt.Sprintf("Expected %s, got %s", "Error", obj.GetType().Name())
+			msg = fmt.Sprintf("Expected %s, got %s", "Error", TypeName(obj))
 		}
 		var v Error
 		return v, env.NewError(msg)
@@ -781,7 +781,7 @@ func AssertFn(env *Env, obj Object, msg string) (*Fn, error) {
 		return c, nil
 	default:
 		if msg == "" {
-			msg = fmt.Sprintf("Expected %s, got %s", "Fn", obj.GetType().Name())
+			msg = fmt.Sprintf("Expected %s, got %s", "Fn", TypeName(obj))
 		}
 		var v *Fn
 		return v, env.NewError(msg)
@@ -809,7 +809,7 @@ func AssertDeref(env *Env, obj Object, msg string) (Deref, error) {
 		return c, nil
 	default:
 		if msg == "" {
-			msg = fmt.Sprintf("Expected %s, got %s", "Deref", obj.GetType().Name())
+			msg = fmt.Sprintf("Expected %s, got %s", "Deref", TypeName(obj))
 		}
 		var v Deref
 		return v, env.NewError(msg)
@@ -841,7 +841,7 @@ func AssertAtom(env *Env, obj Object, msg string) (*Atom, error) {
 		return c, nil
 	default:
 		if msg == "" {
-			msg = fmt.Sprintf("Expected %s, got %s", "Atom", obj.GetType().Name())
+			msg = fmt.Sprintf("Expected %s, got %s", "Atom", TypeName(obj))
 		}
 		var v *Atom
 		return v, env.NewError(msg)
@@ -869,7 +869,7 @@ func AssertRef(env *Env, obj Object, msg string) (Ref, error) {
 		return c, nil
 	default:
 		if msg == "" {
-			msg = fmt.Sprintf("Expected %s, got %s", "Ref", obj.GetType().Name())
+			msg = fmt.Sprintf("Expected %s, got %s", "Ref", TypeName(obj))
 		}
 		var v Ref
 		return v, env.NewError(msg)
@@ -897,7 +897,7 @@ func AssertKVReduce(env *Env, obj Object, msg string) (KVReduce, error) {
 		return c, nil
 	default:
 		if msg == "" {
-			msg = fmt.Sprintf("Expected %s, got %s", "KVReduce", obj.GetType().Name())
+			msg = fmt.Sprintf("Expected %s, got %s", "KVReduce", TypeName(obj))
 		}
 		var v KVReduce
 		return v, env.NewError(msg)
@@ -925,7 +925,7 @@ func AssertPending(env *Env, obj Object, msg string) (Pending, error) {
 		return c, nil
 	default:
 		if msg == "" {
-			msg = fmt.Sprintf("Expected %s, got %s", "Pending", obj.GetType().Name())
+			msg = fmt.Sprintf("Expected %s, got %s", "Pending", TypeName(obj))
 		}
 		var v Pending
 		return v, env.NewError(msg)
@@ -953,7 +953,7 @@ func AssertFile(env *Env, obj Object, msg string) (*File, error) {
 		return c, nil
 	default:
 		if msg == "" {
-			msg = fmt.Sprintf("Expected %s, got %s", "File", obj.GetType().Name())
+			msg = fmt.Sprintf("Expected %s, got %s", "File", TypeName(obj))
 		}
 		var v *File
 		return v, env.NewError(msg)
@@ -981,7 +981,7 @@ func Assertio_Reader(env *Env, obj Object, msg string) (io.Reader, error) {
 		return c, nil
 	default:
 		if msg == "" {
-			msg = fmt.Sprintf("Expected %s, got %s", "io.Reader", obj.GetType().Name())
+			msg = fmt.Sprintf("Expected %s, got %s", "io.Reader", TypeName(obj))
 		}
 		var v io.Reader
 		return v, env.NewError(msg)
@@ -1009,7 +1009,7 @@ func Assertio_Writer(env *Env, obj Object, msg string) (io.Writer, error) {
 		return c, nil
 	default:
 		if msg == "" {
-			msg = fmt.Sprintf("Expected %s, got %s", "io.Writer", obj.GetType().Name())
+			msg = fmt.Sprintf("Expected %s, got %s", "io.Writer", TypeName(obj))
 		}
 		var v io.Writer
 		return v, env.NewError(msg)
@@ -1037,7 +1037,7 @@ func AssertStringReader(env *Env, obj Object, msg string) (StringReader, error) 
 		return c, nil
 	default:
 		if msg == "" {
-			msg = fmt.Sprintf("Expected %s, got %s", "StringReader", obj.GetType().Name())
+			msg = fmt.Sprintf("Expected %s, got %s", "StringReader", TypeName(obj))
 		}
 		var v StringReader
 		return v, env.NewError(msg)
@@ -1065,7 +1065,7 @@ func Assertio_RuneReader(env *Env, obj Object, msg string) (io.RuneReader, error
 		return c, nil
 	default:
 		if msg == "" {
-			msg = fmt.Sprintf("Expected %s, got %s", "io.RuneReader", obj.GetType().Name())
+			msg = fmt.Sprintf("Expected %s, got %s", "io.RuneReader", TypeName(obj))
 		}
 		var v io.RuneReader
 		return v, env.NewError(msg)
@@ -1093,7 +1093,7 @@ func AssertChannel(env *Env, obj Object, msg string) (*Channel, error) {
 		return c, nil
 	default:
 		if msg == "" {
-			msg = fmt.Sprintf("Expected %s, got %s", "Channel", obj.GetType().Name())
+			msg = fmt.Sprintf("Expected %s, got %s", "Channel", TypeName(obj))
 		}
 		var v *Channel
 		return v, env.NewError(msg)

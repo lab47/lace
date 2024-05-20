@@ -378,7 +378,7 @@ func join(env *core.Env, sep string, seqable core.Seqable) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		s, err := f.ToString(env, false)
+		s, err := core.ToString(env, f)
 		if err != nil {
 			return "", err
 		}
@@ -399,7 +399,7 @@ func join(env *core.Env, sep string, seqable core.Seqable) (string, error) {
 }
 
 func isBlank(env *core.Env, s core.Object) (bool, error) {
-	if s.Equals(env, core.NIL) {
+	if core.Equals(env, s, core.NIL) {
 		return true, nil
 	}
 	str, err := core.AssertString(env, s, "")
@@ -428,8 +428,8 @@ func escape(env *core.Env, s string, cmap core.Callable) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		if !obj.Equals(env, core.NIL) {
-			s, err := obj.ToString(env, false)
+		if !core.Equals(env, obj, core.NIL) {
+			s, err := core.ToString(env, obj)
 			if err != nil {
 				return "", err
 			}

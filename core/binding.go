@@ -6,10 +6,28 @@ import (
 	"github.com/lab47/lace/pkg/pkgreflect"
 )
 
+type IntegerImpl struct {
+	I64Fn         func() int64
+	integerTypeFn func() string
+}
+
+func (s *IntegerImpl) I64() int64 {
+	return s.I64Fn()
+}
+func (s *IntegerImpl) integerType() string {
+	return s.integerTypeFn()
+}
+
 func init() {
+	Int_methods := map[string]pkgreflect.Func{}
+	Integer_methods := map[string]pkgreflect.Func{}
 	pkgreflect.AddPackage("lace.lang", &pkgreflect.Package{
-		Doc:   "+build !gen_data",
-		Types: map[string]pkgreflect.Type{},
+		Doc: "",
+		Types: map[string]pkgreflect.Type{
+			"Int":         {Doc: "The host int value", Value: reflect.TypeOf((*Int)(nil)).Elem(), Methods: Int_methods},
+			"Integer":     {Doc: "The Common integer type (can be Int or BigInt)", Value: reflect.TypeOf((*Integer)(nil)).Elem(), Methods: Integer_methods},
+			"IntegerImpl": {Doc: `Struct version of interface Integer for implementation`, Value: reflect.TypeFor[IntegerImpl]()},
+		},
 
 		Functions: map[string]pkgreflect.FuncValue{
 			"CombineToString": {Doc: "Combine many values into a single string.", Args: []pkgreflect.Arg{{Name: "args", Tag: "[]Object"}}, Tag: "any", Value: reflect.ValueOf(WrapToProc2_2(CombineToString))},
@@ -20,7 +38,7 @@ func init() {
 
 			"Cons": {Doc: "Add an element to a Seq value, returning a new Seq", Args: []pkgreflect.Arg{{Name: "val", Tag: "Object"}, {Name: "seq", Tag: "Seqable"}}, Tag: "any", Value: reflect.ValueOf(WrapToProc3_2(Cons))},
 
-			"Equals": {Doc: "Compare two values returning a boolean if they are equal or not", Args: []pkgreflect.Arg{{Name: "a", Tag: "Object"}, {Name: "b", Tag: "Object"}}, Tag: "any", Value: reflect.ValueOf(WrapToProc3_2(Equals))},
+			"Equals": {Doc: "Compare two values returning a boolean if they are equal or not", Args: []pkgreflect.Arg{{Name: "a", Tag: "Object"}, {Name: "b", Tag: "Object"}}, Tag: "any", Value: reflect.ValueOf(WrapToProc3_2(EqualsValues))},
 
 			"First": {Doc: "Return the first element in a Seq", Args: []pkgreflect.Arg{{Name: "s", Tag: "Seqable"}}, Tag: "any", Value: reflect.ValueOf(WrapToProc2_2(First))},
 

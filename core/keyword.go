@@ -116,21 +116,16 @@ func (k *HeavyKeyword) IsHash() uint32 {
 }
 
 func (k *HeavyKeyword) Compare(env *Env, other Object) (int, error) {
-	os, err := other.GetType().ToString(env, false)
+	k2, err := AssertKeyword(env, other, "Cannot compare Keyword and "+TypeName(other))
 	if err != nil {
 		return 0, err
 	}
 
-	k2, err := AssertKeyword(env, other, "Cannot compare Keyword and "+os)
+	ks, err := ToString(env, k)
 	if err != nil {
 		return 0, err
 	}
-
-	ks, err := k.ToString(env, false)
-	if err != nil {
-		return 0, err
-	}
-	k2s, err := k2.ToString(env, false)
+	k2s, err := ToString(env, k2)
 	if err != nil {
 		return 0, err
 	}
@@ -191,7 +186,7 @@ func (k TinyKeyword) Equals(env *Env, other interface{}) bool {
 func (k TinyKeyword) Is(other Object) bool {
 	switch other := other.(type) {
 	case Keyword:
-		return "" == other.Namespace() && string(k) == other.Name()
+		return other.Namespace() == "" && string(k) == other.Name()
 	default:
 		return false
 	}
@@ -210,21 +205,16 @@ func (k TinyKeyword) IsHash() uint32 {
 }
 
 func (k TinyKeyword) Compare(env *Env, other Object) (int, error) {
-	os, err := other.GetType().ToString(env, false)
+	k2, err := AssertKeyword(env, other, "Cannot compare Keyword and "+TypeName(other))
 	if err != nil {
 		return 0, err
 	}
 
-	k2, err := AssertKeyword(env, other, "Cannot compare Keyword and "+os)
+	ks, err := ToString(env, k)
 	if err != nil {
 		return 0, err
 	}
-
-	ks, err := k.ToString(env, false)
-	if err != nil {
-		return 0, err
-	}
-	k2s, err := k2.ToString(env, false)
+	k2s, err := ToString(env, k2)
 	if err != nil {
 		return 0, err
 	}

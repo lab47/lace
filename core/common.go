@@ -29,11 +29,11 @@ func pprintObject(env *Env, obj Object, indent int, w io.Writer) (int, error) {
 	case Pprinter:
 		return obj.Pprint(env, w, indent)
 	default:
-		s, err := obj.ToString(env, true)
+		s, err := ToString(env, obj)
 		if err != nil {
 			return 0, err
 		}
-		fmt.Fprint(w, s)
+		fmt.Fprint(w, escapeString(s))
 		return indent + len(s), nil
 	}
 }
@@ -70,6 +70,6 @@ func ToNative(env *Env, obj Object) (any, error) {
 	case String:
 		return sv.S(), nil
 	default:
-		return obj.ToString(env, false)
+		return ToString(env, obj)
 	}
 }

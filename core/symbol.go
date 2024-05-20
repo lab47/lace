@@ -197,22 +197,17 @@ func (s *HeavySymbol) IsHash() uint32 {
 }
 
 func (s *HeavySymbol) Compare(env *Env, other Object) (int, error) {
-	os, err := other.GetType().ToString(env, false)
+	s2, err := AssertSymbol(env, other, "Cannot compare Symbol and "+TypeName(other))
 	if err != nil {
 		return 0, err
 	}
 
-	s2, err := AssertSymbol(env, other, "Cannot compare Symbol and "+os)
+	ks, err := ToString(env, s)
 	if err != nil {
 		return 0, err
 	}
 
-	ks, err := s.ToString(env, false)
-	if err != nil {
-		return 0, err
-	}
-
-	k2s, err := s2.ToString(env, false)
+	k2s, err := ToString(env, s2)
 	if err != nil {
 		return 0, err
 	}
@@ -318,22 +313,17 @@ func (s *LightSymbol) IsHash() uint32 {
 }
 
 func (s *LightSymbol) Compare(env *Env, other Object) (int, error) {
-	os, err := other.GetType().ToString(env, false)
+	s2, err := AssertSymbol(env, other, "Cannot compare Symbol and "+TypeName(other))
 	if err != nil {
 		return 0, err
 	}
 
-	s2, err := AssertSymbol(env, other, "Cannot compare Symbol and "+os)
+	ks, err := ToString(env, s)
 	if err != nil {
 		return 0, err
 	}
 
-	ks, err := s.ToString(env, false)
-	if err != nil {
-		return 0, err
-	}
-
-	k2s, err := s2.ToString(env, false)
+	k2s, err := ToString(env, s2)
 	if err != nil {
 		return 0, err
 	}
@@ -428,22 +418,17 @@ func (s TinySymbol) IsHash() uint32 {
 }
 
 func (s TinySymbol) Compare(env *Env, other Object) (int, error) {
-	os, err := other.GetType().ToString(env, false)
+	s2, err := AssertSymbol(env, other, "Cannot compare Symbol and "+TypeName(other))
 	if err != nil {
 		return 0, err
 	}
 
-	s2, err := AssertSymbol(env, other, "Cannot compare Symbol and "+os)
+	ks, err := ToString(env, s)
 	if err != nil {
 		return 0, err
 	}
 
-	ks, err := s.ToString(env, false)
-	if err != nil {
-		return 0, err
-	}
-
-	k2s, err := s2.ToString(env, false)
+	k2s, err := ToString(env, s2)
 	if err != nil {
 		return 0, err
 	}

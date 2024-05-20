@@ -2,14 +2,17 @@ package pkgreflect
 
 import (
 	"bytes"
+	"cmp"
 	"fmt"
 	"go/ast"
 	"go/build"
 	"go/format"
+	"go/token"
 	"go/types"
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 
@@ -67,6 +70,32 @@ type Match struct {
 type GenOptions struct {
 	Specialized bool
 	InCore      bool
+}
+
+func typeSpecs(f *ast.File) []*ast.TypeSpec {
+	var ret []*ast.TypeSpec
+
+	for _, d := range f.Decls {
+		if gd, ok := d.(*ast.GenDecl); ok {
+			if gd.Tok == token.TYPE {
+				for _, spec := range gd.Specs {
+					if ts, ok := spec.(*ast.TypeSpec); ok {
+						if len(gd.Specs) == 1 {
+							ts.Doc = gd.Doc
+						}
+
+						ret = append(ret, ts)
+					}
+				}
+			}
+		}
+	}
+
+	slices.SortFunc(ret, func(a, b *ast.TypeSpec) int {
+		return cmp.Compare(a.Name.Name, b.Name.Name)
+	})
+
+	return ret
 }
 
 func Generate(name, laceName string, base, output, outputPkg string, match *Match, opts GenOptions) error {
@@ -147,92 +176,84 @@ func Generate(name, laceName string, base, output, outputPkg string, match *Matc
 	)
 
 	for _, f := range files {
-		var keys []string
-		for k := range f.Scope.Objects {
-			keys = append(keys, k)
-		}
+		tss := typeSpecs(f)
 
-		sort.Strings(keys)
+		for _, ts := range tss {
+			if !ast.IsExported(ts.Name.Name) {
+				continue
+			}
 
-		for _, k := range keys {
-			d := f.Scope.Objects[k]
-			if ts, ok := d.Decl.(*ast.TypeSpec); ok {
-				if !ast.IsExported(ts.Name.Name) {
-					continue
-				}
+			if !doesMatch(ts.Name.Name, ts.Doc, match) {
+				continue
+			}
 
-				if !doesMatch(d.Name, ts.Doc, match) {
-					continue
-				}
+			typesForMethods = append(typesForMethods, ts.Name.Name)
 
-				typesForMethods = append(typesForMethods, ts.Name.Name)
+			if it, ok := ts.Type.(*ast.InterfaceType); ok {
+				itt := info.Types[it].Type.(*types.Interface)
 
-				if it, ok := ts.Type.(*ast.InterfaceType); ok {
-					itt := info.Types[it].Type.(*types.Interface)
+				fmt.Fprintf(&buf, "type %sImpl struct {\n", ts.Name.Name)
+				synthStruct = append(synthStruct, ts.Name.Name+"Impl")
 
-					fmt.Fprintf(&buf, "type %sImpl struct {\n", ts.Name.Name)
-					synthStruct = append(synthStruct, ts.Name.Name+"Impl")
+				for i := 0; i < itt.NumMethods(); i++ {
+					fn := itt.Method(i)
+					sig := fn.Type().(*types.Signature)
+					var resStr string
+					if sig.Results().Len() != 0 {
+						var ary []string
 
-					for i := 0; i < itt.NumMethods(); i++ {
-						fn := itt.Method(i)
-						sig := fn.Type().(*types.Signature)
-						var resStr string
-						if sig.Results().Len() != 0 {
-							var ary []string
-
-							for i := 0; i < sig.Results().Len(); i++ {
-								vr := sig.Results().At(i)
-								ary = append(ary, codeName(vr.Type()))
-							}
-							resStr = "(" + strings.Join(ary, ", ") + ")"
+						for i := 0; i < sig.Results().Len(); i++ {
+							vr := sig.Results().At(i)
+							ary = append(ary, codeName(vr.Type()))
 						}
-
-						params := sig.Params()
-
-						var pStrs []string
-
-						for i := 0; i < params.Len(); i++ {
-							vr := params.At(i)
-							t := vr.Type()
-
-							pStrs = append(pStrs, codeName(t))
-						}
-						fmt.Fprintf(&buf, "  %sFn func(%s) %s\n", fn.Name(), strings.Join(pStrs, ", "), resStr)
+						resStr = "(" + strings.Join(ary, ", ") + ")"
 					}
-					fmt.Fprintf(&buf, "}\n")
 
-					for i := 0; i < itt.NumMethods(); i++ {
-						fn := itt.Method(i)
-						sig := fn.Type().(*types.Signature)
+					params := sig.Params()
 
-						var args []string
-						var cs []string
+					var pStrs []string
 
-						for j := 0; j < sig.Params().Len(); j++ {
-							e := sig.Params().At(j)
-							args = append(args, fmt.Sprintf("a%d %s", j, codeName(e.Type())))
-							cs = append(cs, fmt.Sprintf("a%d", j))
-						}
+					for i := 0; i < params.Len(); i++ {
+						vr := params.At(i)
+						t := vr.Type()
 
-						var resStr string
-						if sig.Results().Len() != 0 {
-							var ary []string
-
-							for i := 0; i < sig.Results().Len(); i++ {
-								vr := sig.Results().At(i)
-								ary = append(ary, codeName(vr.Type()))
-							}
-							resStr = "(" + strings.Join(ary, ", ") + ")"
-						}
-
-						fmt.Fprintf(&buf, "func (s *%sImpl) %s(%s) %s {\n", ts.Name.Name, fn.Name(), strings.Join(args, ", "), resStr)
-						if sig.Results().Len() == 0 {
-							fmt.Fprintf(&buf, "s.%sFn(%s)\n", fn.Name(), strings.Join(cs, ", "))
-						} else {
-							fmt.Fprintf(&buf, "return s.%sFn(%s)\n", fn.Name(), strings.Join(cs, ", "))
-						}
-						fmt.Fprintln(&buf, "}")
+						pStrs = append(pStrs, codeName(t))
 					}
+					fmt.Fprintf(&buf, "  %sFn func(%s) %s\n", fn.Name(), strings.Join(pStrs, ", "), resStr)
+				}
+				fmt.Fprintf(&buf, "}\n")
+
+				for i := 0; i < itt.NumMethods(); i++ {
+					fn := itt.Method(i)
+					sig := fn.Type().(*types.Signature)
+
+					var args []string
+					var cs []string
+
+					for j := 0; j < sig.Params().Len(); j++ {
+						e := sig.Params().At(j)
+						args = append(args, fmt.Sprintf("a%d %s", j, codeName(e.Type())))
+						cs = append(cs, fmt.Sprintf("a%d", j))
+					}
+
+					var resStr string
+					if sig.Results().Len() != 0 {
+						var ary []string
+
+						for i := 0; i < sig.Results().Len(); i++ {
+							vr := sig.Results().At(i)
+							ary = append(ary, codeName(vr.Type()))
+						}
+						resStr = "(" + strings.Join(ary, ", ") + ")"
+					}
+
+					fmt.Fprintf(&buf, "func (s *%sImpl) %s(%s) %s {\n", ts.Name.Name, fn.Name(), strings.Join(args, ", "), resStr)
+					if sig.Results().Len() == 0 {
+						fmt.Fprintf(&buf, "s.%sFn(%s)\n", fn.Name(), strings.Join(cs, ", "))
+					} else {
+						fmt.Fprintf(&buf, "return s.%sFn(%s)\n", fn.Name(), strings.Join(cs, ", "))
+					}
+					fmt.Fprintln(&buf, "}")
 				}
 			}
 		}
@@ -288,7 +309,7 @@ func Generate(name, laceName string, base, output, outputPkg string, match *Matc
 
 	// Types
 	fmt.Fprintln(&buf, "Types: map[string]pkgreflect.Type{")
-	print(&buf, pkgName, files, ast.Typ, "\t%q: {Doc: %q, Value: reflect.TypeOf((*%s%s)(nil)).Elem(), Methods: %[1]s_methods},\n", match)
+	tprint(&buf, pkgName, files, "\t%q: {Doc: %q, Value: reflect.TypeOf((*%s%s)(nil)).Elem(), Methods: %[1]s_methods},\n", match)
 	for _, ss := range synthStruct {
 		fmt.Fprintf(&buf, "\t%q: {Doc: `Struct version of interface %s for implementation`, Value: reflect.TypeFor[%[1]s]()},\n", ss, ss[:len(ss)-4])
 	}
@@ -380,6 +401,37 @@ func getDoc(object *ast.Object) *ast.CommentGroup {
 	}
 }
 
+func tprint(w io.Writer, pkgName string, files []*ast.File, format string, match *Match) {
+	type ent struct {
+		name, doc string
+	}
+
+	names := []ent{}
+	for _, f := range files {
+		tss := typeSpecs(f)
+
+		for _, ts := range tss {
+			doc := ts.Doc
+			name := ts.Name.Name
+
+			if !doesMatch(name, doc, match) {
+				continue
+			}
+
+			docStr := ""
+			if doc != nil {
+				docStr = strings.TrimSpace(doc.Text())
+			}
+
+			names = append(names, ent{name, docStr})
+		}
+	}
+
+	for _, name := range names {
+		fmt.Fprintf(w, format, name.name, name.doc, pkgName, name.name)
+	}
+}
+
 func print(w io.Writer, pkgName string, files []*ast.File, kind ast.ObjKind, format string, match *Match) {
 	type ent struct {
 		name, doc string
@@ -388,6 +440,10 @@ func print(w io.Writer, pkgName string, files []*ast.File, kind ast.ObjKind, for
 	names := []ent{}
 	for _, f := range files {
 		for name, object := range f.Scope.Objects {
+			if object.Kind != kind || !ast.IsExported(name) {
+				continue
+			}
+
 			doc := getDoc(object)
 
 			if !doesMatch(name, doc, match) {
@@ -399,9 +455,7 @@ func print(w io.Writer, pkgName string, files []*ast.File, kind ast.ObjKind, for
 				docStr = strings.TrimSpace(doc.Text())
 			}
 
-			if object.Kind == kind && ast.IsExported(name) {
-				names = append(names, ent{name, docStr})
-			}
+			names = append(names, ent{name, docStr})
 		}
 	}
 

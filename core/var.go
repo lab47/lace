@@ -105,12 +105,12 @@ func (v *Var) Resolve(env *Env) Object {
 
 func (v *Var) Call(env *Env, args []Object) (Object, error) {
 	vl := v.Resolve(env)
-	vs, err := v.ToString(env, false)
+	vs, err := ToString(env, v)
 	if err != nil {
 		return nil, err
 	}
 
-	vls, err := v.ToString(env, false)
+	vls, err := ToString(env, v)
 	if err != nil {
 		return nil, err
 	}

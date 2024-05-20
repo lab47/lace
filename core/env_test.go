@@ -16,6 +16,6 @@ func TestEnv(t *testing.T) {
 		obj, err := e.Eval("(+ 3 4)")
 		r.NoError(err)
 
-		r.True(obj.Equals(e, MakeInt(7)))
+		r.True(Equals(e, obj, MakeInt(7)))
 	})
 }

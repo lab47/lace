@@ -394,12 +394,12 @@ func findProject() string {
 		return ""
 	}
 
-	for dir != "" {
+	for dir != "/" {
 		if _, err := os.Stat(filepath.Join(dir, "lace.yml")); err == nil {
 			return dir
 		}
 
-		dir, _ = filepath.Split(dir)
+		dir = filepath.Dir(dir)
 	}
 
 	return ""

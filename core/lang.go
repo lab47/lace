@@ -26,7 +26,7 @@ var cnt = 0
 
 func show(env *Env, prefix string, obj Object) {
 	return
-	os, _ := obj.ToString(env, true)
+	os, _ := ToString(env, obj)
 	fmt.Printf("%s: %s\n", prefix, os)
 }
 
@@ -102,7 +102,7 @@ func Conj(env *Env, col Object, val Object) (Object, error) {
 	case Seq:
 		return c.Cons(val), nil
 	default:
-		return nil, env.NewError("conj's first argument must be a collection, got " + c.GetType().Name())
+		return nil, env.NewError("conj's first argument must be a collection, got " + TypeName(c))
 	}
 }
 
@@ -150,9 +150,9 @@ func ConcatSimple(env *Env, args []Object) (Object, error) {
 
 // Compare two values returning a boolean if they are equal or not
 //
-//lace:export
-func Equals(env *Env, a, b Object) (Object, error) {
-	return MakeBoolean(a.Equals(env, b)), nil
+//lace:export Equals
+func EqualsValues(env *Env, a, b Object) (Object, error) {
+	return MakeBoolean(Equals(env, a, b)), nil
 }
 
 // Add given bindings to the set of current Var bindings, returning
@@ -206,7 +206,7 @@ func LoadLibFromPath(env *Env, libnamev Symbol, pathnamev String) (Object, error
 	pathname := pathnamev.S()
 
 	cp := env.classPath.GetStatic()
-	cpvec, err := AssertVector(env, cp, "*classpath* must be a Vector, not a "+cp.GetType().Name())
+	cpvec, err := AssertVector(env, cp, "*classpath* must be a Vector, not a "+TypeName(cp))
 	if err != nil {
 		return nil, err
 	}
@@ -217,7 +217,7 @@ func LoadLibFromPath(env *Env, libnamev Symbol, pathnamev String) (Object, error
 	var filename string
 	for i := 0; i < count; i++ {
 		elem := cpvec.at(i)
-		cpelem, err := AssertString(env, elem, "*classpath* must contain only Strings, not a "+elem.GetType().Name()+" (at element "+strconv.Itoa(i)+")")
+		cpelem, err := AssertString(env, elem, "*classpath* must contain only Strings, not a "+TypeName(elem)+" (at element "+strconv.Itoa(i)+")")
 		if err != nil {
 			return nil, err
 		}

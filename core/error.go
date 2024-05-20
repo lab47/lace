@@ -68,10 +68,7 @@ func (exInfo *ExInfo) Error() string {
 			pos = GetPosition(form)
 		}
 		if ok, pr := dm.GetEqu(criticalKeywords._prefix); ok {
-			s, err := pr.ToString(nil, false)
-			if err == nil {
-				prefix = s
-			}
+			prefix = SimpleToString(pr)
 		}
 	}
 	_, msg := exInfo.GetEqu(criticalKeywords.message)
@@ -302,8 +299,8 @@ func DisplayError(env *Env, err error) {
 			for m.HasNext() {
 				p := m.Next()
 
-				key, _ := p.Key.ToString(env, false)
-				val, _ := p.Value.ToString(env, false)
+				key, _ := ToString(env, p.Key)
+				val, _ := ToString(env, p.Value)
 
 				keys = append(keys, key)
 				vals[key] = val
@@ -439,7 +436,7 @@ func (vs *VMStacktrace) renderFrame(env *Env, ele Object) outputFrame {
 
 	var err error
 	if str == "" {
-		str, err = ele.ToString(env, false)
+		str, err = ToString(env, ele)
 		if err != nil {
 			str = fmt.Sprintf("error decoding stacktrace: %s\n", err)
 		}
@@ -640,7 +637,7 @@ func (vs *VMStacktrace) PrintTo(env *Env, w io.Writer) {
 		return
 	}
 
-	str, err := vs.StackTrace.ToString(env, false)
+	str, err := ToString(env, vs.StackTrace)
 	if err == nil {
 		fmt.Fprintln(w, str)
 	}
@@ -659,7 +656,7 @@ func StubNewError(msg string) *EvalError {
 }
 
 func StubNewArgTypeError(index int, obj Object, expectedType string) *EvalError {
-	return StubNewError(fmt.Sprintf("Arg[%d] of <<func_name>> must have type %s, got %s", index, expectedType, obj.GetType().Name()))
+	return StubNewError(fmt.Sprintf("Arg[%d] of <<func_name>> must have type %s, got %s", index, expectedType, TypeName(obj)))
 }
 
 func (e *Env) NewError(msg string, args ...any) *EvalError {
@@ -668,7 +665,7 @@ func (e *Env) NewError(msg string, args ...any) *EvalError {
 
 func TypeError[T any](env *Env, obj Object) *EvalError {
 	ts := reflect.TypeFor[T]().String()
-	ee := env.NewError(fmt.Sprintf("object must have type %s, got %s", ts, obj.GetType().Name()))
+	ee := env.NewError(fmt.Sprintf("object must have type %s, got %s", ts, TypeName(obj)))
 	return env.populateStackTrace(ee)
 }
 
@@ -679,20 +676,20 @@ type TCContext struct {
 
 func (e *Env) NewArgTypeError(index int, obj Object, expectedType string) *EvalError {
 	if index >= 0 {
-		return e.NewError(fmt.Sprintf("Arg[%d] must have type %s, got %s", index, expectedType, obj.GetType().Name()))
+		return e.NewError(fmt.Sprintf("Arg[%d] must have type %s, got %s", index, expectedType, TypeName(obj)))
 	} else {
-		return e.NewError(fmt.Sprintf("Value must have type %s, got %s", expectedType, obj.GetType().Name()))
+		return e.NewError(fmt.Sprintf("Value must have type %s, got %s", expectedType, TypeName(obj)))
 	}
 }
 
 func (e *Env) TypeError(ctx TCContext, obj Object, expectedType string) *EvalError {
 	if ctx.Context != "" {
 		if ctx.Index >= 0 {
-			return e.NewError(fmt.Sprintf("%s[%d] must have type %s, got %s", ctx.Context, ctx.Index, expectedType, obj.GetType().Name()))
+			return e.NewError(fmt.Sprintf("%s[%d] must have type %s, got %s", ctx.Context, ctx.Index, expectedType, TypeName(obj)))
 		} else {
-			return e.NewError(fmt.Sprintf("%s must have type %s, got %s", ctx.Context, expectedType, obj.GetType().Name()))
+			return e.NewError(fmt.Sprintf("%s must have type %s, got %s", ctx.Context, expectedType, TypeName(obj)))
 		}
 	} else {
-		return e.NewError(fmt.Sprintf("Value must have type %s, got %s", expectedType, obj.GetType().Name()))
+		return e.NewError(fmt.Sprintf("Value must have type %s, got %s", expectedType, TypeName(obj)))
 	}
 }

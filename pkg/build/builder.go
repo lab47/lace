@@ -33,6 +33,8 @@ type Builder struct {
 	log logger.Logger
 	dir string
 	cfg *Config
+
+	goMod []byte
 }
 
 func LoadBuilder(log logger.Logger, dir string) (*Builder, error) {
@@ -48,7 +50,52 @@ func LoadBuilder(log logger.Logger, dir string) (*Builder, error) {
 		return nil, err
 	}
 
-	return &Builder{log: log, cfg: &cfg, dir: dir}, nil
+	b := &Builder{
+		log: log,
+		cfg: &cfg,
+		dir: dir,
+	}
+
+	err = b.setupGoMod()
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
+}
+
+func (b *Builder) setupGoMod() error {
+	dir := b.dir
+	var (
+		gomod []byte
+		err   error
+	)
+
+	for dir != "" {
+		gomod, err = os.ReadFile(filepath.Join(dir, "go.mod"))
+		if err == nil {
+			break
+		}
+
+		dir = filepath.Dir(dir)
+	}
+
+	if gomod == nil {
+		return b.writeGoMod()
+	}
+
+	b.goMod = gomod
+	return nil
+}
+
+func (b *Builder) writeGoMod() error {
+	c := exec.Command("go", "mod", "init", b.cfg.Name)
+	out, err := c.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("error initializing go mod: %s", string(out))
+	}
+
+	return nil
 }
 
 var fileCleanup = strings.NewReplacer(
@@ -64,6 +111,8 @@ func (b *Builder) buildId() string {
 	if err != nil {
 		panic(err)
 	}
+
+	h.Write(b.goMod)
 
 	return base58.Encode(h.Sum(nil))
 }
@@ -93,7 +142,7 @@ func (b *Builder) Run(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	defer os.RemoveAll(dir)
+	// defer os.RemoveAll(dir)
 
 	for _, imp := range b.cfg.GoImports {
 		name := imp.As
@@ -104,6 +153,15 @@ func (b *Builder) Run(ctx context.Context) (string, error) {
 		dest := filepath.Join(dir, fileCleanup.Replace(imp.Path)) + ".go"
 
 		b.log.Info("generating binding", "path", imp.Path, "name", name)
+		cmd := exec.CommandContext(ctx, "go", "get", imp.Path)
+		cmd.Dir = dir
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+
+		err = cmd.Run()
+		if err != nil {
+			return "", err
+		}
 		err = pkgreflect.Generate(imp.Path, name, b.dir, dest, "main", &pkgreflect.Match{}, pkgreflect.GenOptions{})
 		if err != nil {
 			return "", err
@@ -116,8 +174,19 @@ func (b *Builder) Run(ctx context.Context) (string, error) {
 		return "", err
 	}
 
+	b.log.Info("configuring dependencies")
+	cmd := exec.CommandContext(ctx, "go", "get")
+	cmd.Dir = dir
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	err = cmd.Run()
+	if err != nil {
+		return "", err
+	}
+
 	b.log.Info("compiling")
-	cmd := exec.CommandContext(ctx, "go", "build", "-o", exePath, ".")
+	cmd = exec.CommandContext(ctx, "go", "build", "-o", exePath, ".")
 	cmd.Dir = dir
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

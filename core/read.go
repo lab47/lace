@@ -93,9 +93,9 @@ func escapeString(str string) string {
 
 func MakeReadError3(env *Env, reader *Reader, msg string, obj Object) ReadError {
 	if obj != nil {
-		s, err := obj.ToString(env, false)
+		s, err := ToString(env, obj)
 		if err != nil {
-			s = fmt.Sprintf("%s(%p)", obj.GetType().Name(), obj)
+			s = fmt.Sprintf("%s(%p)", TypeName(obj), obj)
 		}
 
 		msg = msg + ": " + s
@@ -958,7 +958,7 @@ func readArgSymbol(env *Env, reader *Reader) (Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	if obj.Equals(env, criticalSymbols.amp) {
+	if Equals(env, obj, criticalSymbols.amp) {
 		return MakeReadObject(reader, registerArg(reader, -1)), nil
 	}
 	switch n := obj.(type) {
@@ -1200,7 +1200,7 @@ func readConditional(env *Env, reader *Reader) (Object, bool, error) {
 			if isSplicing {
 				s, ok := v.(Seqable)
 				if !ok {
-					msg := "Spliced form in reader conditional must be Seqable, got " + v.GetType().Name()
+					msg := "Spliced form in reader conditional must be Seqable, got " + TypeName(v)
 					if LINTER_MODE {
 						printReadError(reader, msg)
 						return EmptyVector(), true, nil

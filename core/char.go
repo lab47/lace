@@ -63,12 +63,7 @@ func (c *HeavyChar) Hash(env *Env) (uint32, error) {
 }
 
 func (c *HeavyChar) Compare(env *Env, other Object) (int, error) {
-	os, err := other.GetType().ToString(env, false)
-	if err != nil {
-		return 0, err
-	}
-
-	c2, err := AssertChar(env, other, "Cannot compare Char and "+os)
+	c2, err := AssertChar(env, other, "Cannot compare Char and "+TypeName(other))
 	if err != nil {
 		return 0, err
 	}
@@ -96,7 +91,7 @@ func (x TinyChar) WithInfo(info *ObjectInfo) Object {
 }
 
 func (c TinyChar) ToString(env *Env, escape bool) (string, error) {
-	if escape {
+	if escape || ToBool(env.printReadably.GetStatic()) {
 		return escapeRune(c.Ch()), nil
 	}
 	return string(c.Ch()), nil
@@ -126,12 +121,7 @@ func (c TinyChar) Hash(env *Env) (uint32, error) {
 }
 
 func (c TinyChar) Compare(env *Env, other Object) (int, error) {
-	os, err := other.GetType().ToString(env, false)
-	if err != nil {
-		return 0, err
-	}
-
-	c2, err := AssertChar(env, other, "Cannot compare Char and "+os)
+	c2, err := AssertChar(env, other, "Cannot compare Char and "+TypeName(other))
 	if err != nil {
 		return 0, err
 	}

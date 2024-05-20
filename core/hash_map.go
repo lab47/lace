@@ -446,7 +446,7 @@ func (n *ArrayNode) pack(idx uint) Node {
 
 func (n *HashCollisionNode) findIndex(env *Env, key Object) int {
 	for i := 0; i < 2*n.count; i += 2 {
-		if key.Equals(env, n.array[i]) {
+		if Equals(env, key, n.array[i]) {
 			return i
 		}
 	}
@@ -585,7 +585,7 @@ func cloneAndSetNode(array []Node, i int, a Node) []Node {
 }
 
 func createNode(env *Env, shift uint, key1 Object, val1 Object, key2hash uint32, key2 Object, val2 Object) (Node, error) {
-	key1hash, err := key1.Hash(env)
+	key1hash, err := HashValue(env, key1)
 	if err != nil {
 		return nil, err
 	}
@@ -645,7 +645,7 @@ func (b *BitmapIndexedNode) assoc(env *Env, shift uint, hash uint32, key Object,
 				array:  cloneAndSet(b.array, 2*idx+1, n),
 			}, nil
 		}
-		if key.Equals(env, keyOrNull) {
+		if Equals(env, key, keyOrNull) {
 			if val == valOrNode {
 				return b, nil
 			}
@@ -681,7 +681,7 @@ func (b *BitmapIndexedNode) assoc(env *Env, shift uint, hash uint32, key Object,
 					if b.array[j] == nil {
 						nodes[i] = b.array[j+1].(Node)
 					} else {
-						h, err := b.array[j].(Object).Hash(env)
+						h, err := HashValue(env, b.array[j].(Object))
 						if err != nil {
 							return nil, err
 						}
@@ -743,7 +743,7 @@ func (b *BitmapIndexedNode) without(env *Env, shift uint, hash uint32, key Objec
 			array:  removePair(b.array, idx),
 		}
 	}
-	if key.Equals(env, keyOrNull) {
+	if Equals(env, key, keyOrNull) {
 		return &BitmapIndexedNode{
 			bitmap: b.bitmap ^ bit,
 			array:  removePair(b.array, idx),
@@ -763,7 +763,7 @@ func (b *BitmapIndexedNode) find(env *Env, shift uint, hash uint32, key Object) 
 	if keyOrNull == nil {
 		return valOrNode.(Node).find(env, shift+5, hash, key)
 	}
-	if key.Equals(env, keyOrNull) {
+	if Equals(env, key, keyOrNull) {
 		return &Pair{
 			Key:   keyOrNull.(Object),
 			Value: valOrNode.(Object),
@@ -839,7 +839,7 @@ func (m *HashMap) Count() int {
 
 func (m *HashMap) containsKey(env *Env, key Object) bool {
 	if m.root != nil {
-		h, err := key.Hash(env)
+		h, err := HashValue(env, key)
 		if err != nil {
 			return false
 		}
@@ -858,7 +858,7 @@ func (m *HashMap) Assoc(env *Env, key, val Object) (Associative, error) {
 	} else {
 		t = m.root
 	}
-	h, err := key.Hash(env)
+	h, err := HashValue(env, key)
 	if err != nil {
 		return nil, err
 	}
@@ -883,7 +883,7 @@ func (m *HashMap) Assoc(env *Env, key, val Object) (Associative, error) {
 
 func (m *HashMap) EntryAt(env *Env, key Object) (*Vector, error) {
 	if m.root != nil {
-		h, err := key.Hash(env)
+		h, err := HashValue(env, key)
 		if err != nil {
 			return nil, err
 		}
@@ -897,7 +897,7 @@ func (m *HashMap) EntryAt(env *Env, key Object) (*Vector, error) {
 
 func (m *HashMap) Get(env *Env, key Object) (bool, Object, error) {
 	if m.root != nil {
-		h, err := key.Hash(env)
+		h, err := HashValue(env, key)
 		if err != nil {
 			return false, nil, err
 		}
@@ -983,7 +983,7 @@ func (m *HashMap) Without(env *Env, key Object) (Map, error) {
 		return m, nil
 	}
 
-	h, err := key.Hash(env)
+	h, err := HashValue(env, key)
 	if err != nil {
 		return nil, err
 	}

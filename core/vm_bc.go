@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/lab47/lace/core/insn"
 	"golang.org/x/exp/slices"
 )
@@ -269,7 +270,7 @@ func (e *Engine) printStack(env *Env) {
 	var strs []string
 
 	for _, o := range e.stack {
-		str, err := o.ToString(env, false)
+		str, err := ToString(env, o)
 		if err == nil {
 			strs = append(strs, str)
 		} else {
@@ -631,7 +632,7 @@ loop:
 				val := data[i+1]
 
 				if res.containsKey(env, key) {
-					s, err := key.ToString(env, false)
+					s, err := ToString(env, key)
 					if err != nil {
 						return nil, err
 					}
@@ -661,7 +662,7 @@ loop:
 					val := data[i+1]
 
 					if !res.Add(env, key, val) {
-						s, err := key.ToString(env, false)
+						s, err := ToString(env, key)
 						if err != nil {
 							return nil, err
 						}
@@ -686,7 +687,7 @@ loop:
 				}
 
 				if !ok {
-					s, err := ele.ToString(env, false)
+					s, err := ToString(env, ele)
 					if err != nil {
 						return nil, err
 					}
@@ -856,7 +857,8 @@ loop:
 			case Callable:
 				obj, err = sv.Call(env, args)
 			default:
-				err = Errorf(env, "value is not callable")
+				spew.Dump(args, obj)
+				err = Errorf(env, "value is not callable: %T", sv)
 			}
 
 			if err != nil {
@@ -926,7 +928,7 @@ loop:
 				frame.stackPush(obj)
 			default:
 				e.printBacktrace(1000)
-				s, err := callable.ToString(env, false)
+				s, err := ToString(env, callable)
 				if err != nil {
 					return nil, err
 				}

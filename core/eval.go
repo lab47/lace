@@ -70,7 +70,7 @@ func (expr *MapExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 				return nil, err
 			}
 			if res.containsKey(genv, key) {
-				s, err := key.ToString(genv, false)
+				s, err := ToString(genv, key)
 				if err != nil {
 					return nil, err
 				}
@@ -101,7 +101,7 @@ func (expr *MapExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 			return nil, err
 		}
 		if !res.Add(genv, key, v) {
-			s, err := key.ToString(genv, false)
+			s, err := ToString(genv, key)
 			if err != nil {
 				return nil, err
 			}
@@ -124,7 +124,7 @@ func (expr *SetExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 			return nil, err
 		}
 		if !ok {
-			s, err := el.ToString(genv, false)
+			s, err := ToString(genv, el)
 			if err != nil {
 				return nil, err
 			}
@@ -252,7 +252,7 @@ func (expr *CallExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 
 		return callable.Call(genv, args)
 	default:
-		s, err := callable.ToString(genv, false)
+		s, err := ToString(genv, callable)
 		if err != nil {
 			return nil, err
 		}
@@ -339,7 +339,7 @@ func (expr *ThrowExpr) Eval(genv *Env, env *LocalEnv) (Object, error) {
 	case Error:
 		return nil, sv
 	default:
-		s, err := e.ToString(genv, false)
+		s, err := ToString(genv, e)
 		if err != nil {
 			return nil, err
 		}

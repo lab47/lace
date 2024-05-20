@@ -124,14 +124,14 @@ func (v *Vector) ToString(env *Env, escape bool) (string, error) {
 	b.WriteRune('[')
 	if v.count > 0 {
 		for i := 0; i < v.count-1; i++ {
-			s, err := v.at(i).ToString(env, escape)
+			s, err := ToString(env, v.at(i))
 			if err != nil {
 				return "", err
 			}
 			b.WriteString(s)
 			b.WriteRune(' ')
 		}
-		s, err := v.at(v.count-1).ToString(env, escape)
+		s, err := ToString(env, v.at(v.count-1))
 		if err != nil {
 			return "", err
 		}
@@ -298,12 +298,7 @@ func (v *Vector) TryNth(env *Env, i int, d Object) (Object, error) {
 func (v *Vector) sequential() {}
 
 func (v *Vector) Compare(env *Env, other Object) (int, error) {
-	os, err := other.GetType().ToString(env, false)
-	if err != nil {
-		return 0, err
-	}
-
-	v2, err := AssertVector(env, other, "Cannot compare Vector and "+os)
+	v2, err := AssertVector(env, other, "Cannot compare Vector and "+TypeName(other))
 	if err != nil {
 		return 0, err
 	}

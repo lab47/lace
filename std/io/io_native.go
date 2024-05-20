@@ -23,7 +23,7 @@ func close(env *Env, f Object) (Nil, error) {
 		}
 		return NIL, nil
 	}
-	s, err := f.ToString(env, false)
+	s, err := ToString(env, f)
 	if err != nil {
 		return NIL, err
 	}

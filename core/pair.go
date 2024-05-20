@@ -27,13 +27,13 @@ func (p *NamedPair) ToString(env *Env, escape bool) (string, error) {
 	if p.Key == nil {
 		ks = "nil"
 	} else {
-		ks, err = p.Key.ToString(env, escape)
+		ks, err = ToString(env, p.Key)
 		if err != nil {
 			return "", err
 		}
 	}
 
-	vs, err := p.Value.ToString(env, escape)
+	vs, err := ToString(env, p.Value)
 	if err != nil {
 		return "", err
 	}
@@ -45,11 +45,11 @@ func (p *NamedPair) ToString(env *Env, escape bool) (string, error) {
 
 func (p *NamedPair) Equals(env *Env, other interface{}) bool {
 	if e, ok := other.(*NamedPair); ok {
-		if !p.Key.Equals(env, e.Key) {
+		if !Equals(env, p.Key, e.Key) {
 			return false
 		}
 
-		return p.Value.Equals(env, e.Value)
+		return Equals(env, p.Value, e.Value)
 	} else {
 		return false
 	}
@@ -64,12 +64,12 @@ func (p *NamedPair) GetType() *Type {
 }
 
 func (p *NamedPair) Hash(env *Env) (uint32, error) {
-	kh, err := p.Key.Hash(env)
+	kh, err := HashValue(env, p.Key)
 	if err != nil {
 		return 0, err
 	}
 
-	vh, err := p.Value.Hash(env)
+	vh, err := HashValue(env, p.Value)
 	if err != nil {
 		return 0, err
 	}

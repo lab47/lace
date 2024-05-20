@@ -52,7 +52,7 @@ func (env *Env) AllNamespaceValues() []Object {
 }
 
 func (ns *Namespace) ToString(env *Env, escape bool) (string, error) {
-	return ns.Name.ToString(env, escape)
+	return ToString(env, ns.Name)
 }
 
 func (ns *Namespace) Qual() string {
@@ -137,7 +137,7 @@ func (ns *Namespace) CoreP() bool {
 const nsHashMask uint32 = 0x90569f6f
 
 func NewNamespace(env *Env, sym Symbol) (*Namespace, error) {
-	h, err := sym.Hash(env)
+	h, err := HashValue(env, sym)
 	if err != nil {
 		return nil, err
 	}
@@ -196,7 +196,7 @@ func (ns *Namespace) Intern(env *Env, sym Symbol) (*Var, error) {
 		return newVar, nil
 	}
 	if existingVar.ns != ns {
-		if existingVar.ns.Name.Equals(env, criticalSymbols.lace_core) {
+		if Equals(env, existingVar.ns.Name, criticalSymbols.lace_core) {
 			newVar := &Var{
 				ns:   ns,
 				name: sym,
