@@ -25,7 +25,6 @@ type (
 		Equals(env *Env, other interface{}) bool
 	}
 	Conjable interface {
-		any
 		Conj(env *Env, obj any) (Conjable, error)
 	}
 	Counted interface {
@@ -33,7 +32,6 @@ type (
 	}
 	Error interface {
 		error
-		any
 		Message() any
 	}
 	Meta interface {
@@ -62,7 +60,6 @@ type (
 		Counted
 	}
 	Stack interface {
-		any
 		Peek(env *Env) (any, error)
 		Pop(env *Env) (Stack, error)
 	}
@@ -70,7 +67,6 @@ type (
 		Get(env *Env, key any) (bool, any, error)
 	}
 	Associative interface {
-		any
 		Conjable
 		Gettable
 		EntryAt(env *Env, key any) (*Vector, error)
@@ -90,7 +86,6 @@ type (
 		Pprint(env *Env, writer io.Writer, indent int) (int, error)
 	}
 	Collection interface {
-		any
 		Counted
 		Seqable
 		Empty() Collection
@@ -246,8 +241,6 @@ type (
 
 // interface checks
 var (
-	_ any = Time{}
-
 	_ Conjable = &HashMap{}
 	_ Conjable = &Vector{}
 	_ Conjable = NIL
@@ -375,7 +368,6 @@ type HasInfo interface {
 }
 
 type ReadObject interface {
-	any
 	HasInfo
 }
 
