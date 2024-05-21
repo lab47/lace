@@ -311,6 +311,12 @@ func runInProject(log logger.Logger, dir string, env *core.Env, args []string) {
 		os.Exit(1)
 	}
 
+	if args[0] == "--clean" {
+		log.Info("cleaning build artifacts")
+		b.Clean()
+		args = args[1:]
+	}
+
 	ctx := context.Background()
 	exe, err := b.Run(ctx)
 	if err != nil {

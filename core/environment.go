@@ -243,7 +243,7 @@ func (env *Env) ProtoNamespace(sym Symbol) (*Namespace, error) {
 func (env *Env) SetupNamespace(ns *Namespace) error {
 	sym := ns.Name
 
-	if _, ok := ns.LookupVar("defn"); !ok {
+	if _, ok := ns.LookupVar("*loaded-libs*"); !ok {
 		ns.ReferAll(env.CoreNamespace, true)
 	}
 

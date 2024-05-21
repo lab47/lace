@@ -472,8 +472,7 @@ func getMap(env *Env, k any, args []any) (any, error) {
 		return nil, err
 	}
 
-	switch m := args[0].(type) {
-	case Map:
+	if m, ok := AsMap(args[0]); ok {
 		ok, v, err := m.Get(env, k)
 		if err != nil {
 			return nil, err
@@ -482,7 +481,7 @@ func getMap(env *Env, k any, args []any) (any, error) {
 		if ok {
 			return v, nil
 		}
-	default:
+	} else {
 		return nil, env.NewArgTypeError(1, args[0], "Map")
 	}
 	if len(args) == 2 {

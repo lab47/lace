@@ -117,6 +117,11 @@ func (b *Builder) buildId() string {
 	return base58.Encode(h.Sum(nil))
 }
 
+func (b *Builder) Clean() {
+	artPath := filepath.Join(b.dir, "artifacts")
+	os.RemoveAll(artPath)
+}
+
 func (b *Builder) Run(ctx context.Context) (string, error) {
 	id := b.buildId()
 

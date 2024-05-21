@@ -482,9 +482,12 @@ func (e *Engine) makeStackTrace() any {
 func (e *Engine) methodCall(env *Env, methName string, obj any, objArgs []any) (any, error) {
 	var rv reflect.Value
 
-	if orv, ok := obj.(*ReflectValue); ok {
-		rv = orv.val
-	} else {
+	switch sv := obj.(type) {
+	case *ReflectValue:
+		rv = sv.val
+	case reflect.Value:
+		rv = sv
+	default:
 		rv = reflect.ValueOf(obj)
 	}
 

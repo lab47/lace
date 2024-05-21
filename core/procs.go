@@ -17,7 +17,6 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/pkg/errors"
 )
 
@@ -1783,9 +1782,8 @@ var procGet = func(env *Env, args []any) (any, error) {
 		return nil, err
 	}
 
-	switch c := args[0].(type) {
-	case Gettable:
-		ok, v, err := c.Get(env, args[1])
+	if gt, ok := AsGettable(args[0]); ok {
+		ok, v, err := gt.Get(env, args[1])
 		if err != nil {
 			return nil, err
 		}
@@ -1989,10 +1987,6 @@ var procPprint = func(env *Env, args []any) (any, error) {
 }
 
 func PrintObject(env *Env, obj any, w io.Writer) {
-	if _, ok := obj.(Char); ok {
-		s, _ := ToString(env, obj)
-		spew.Dump(obj, s)
-	}
 	printReadably := ToBool(env.printReadably.GetStatic())
 	switch obj := obj.(type) {
 	case Pprinter:

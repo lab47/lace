@@ -514,13 +514,12 @@ func EnsureMap(env *Env, args []any, index int) (Map, error) {
 		return t, ErrorArity(env, index)
 	}
 
-	switch c := args[index].(type) {
-	case Map:
-		return c, nil
-	default:
-		var v Map
-		return v, env.NewArgTypeError(index, c, "Map")
+	if m, ok := AsMap(args[index]); ok {
+		return m, nil
 	}
+
+	var v Map
+	return v, env.NewArgTypeError(index, args[index], "Map")
 }
 
 func AssertSet(env *Env, obj any, msg string) (Set, error) {
@@ -570,13 +569,12 @@ func EnsureAssociative(env *Env, args []any, index int) (Associative, error) {
 		return t, ErrorArity(env, index)
 	}
 
-	switch c := args[index].(type) {
-	case Associative:
+	if c, ok := AsAssociative(args[index]); ok {
 		return c, nil
-	default:
-		var v Associative
-		return v, env.NewArgTypeError(index, c, "Associative")
 	}
+
+	var v Associative
+	return v, env.NewArgTypeError(index, args[index], "Associative")
 }
 
 func AssertReversible(env *Env, obj any, msg string) (Reversible, error) {

@@ -69,6 +69,7 @@ func (r *ReflectType) WithInfo(i *ObjectInfo) any {
 
 func (r *ReflectType) Call(env *Env, args []any) (any, error) {
 	rv := reflect.New(r.typ)
+	return rv.Interface(), nil
 	return WrapReflectValue(rv), nil
 }
 
@@ -112,26 +113,8 @@ func (r *ReflectValue) Value() any {
 	return r.val.Interface()
 }
 
-var _ any = &ReflectValue{}
-
-func (r *ReflectValue) Equals(env *Env, other any) bool {
-	if ov, ok := other.(*ReflectValue); ok {
-		return ov.val == r.val
-	}
-
-	return false
-}
-
-func (r *ReflectValue) GetType() *Type {
-	return TYPE.ReflectValue
-}
-
-func structPut(env *Env, r *ReflectValue, name string, fval any) error {
-	val := r.val
-
-	for val.Kind() == reflect.Pointer {
-		val = val.Elem()
-	}
+func structSetInPlace(env *Env, val reflect.Value, name string, fval any) error {
+	val = reflect.Indirect(val)
 
 	if val.Kind() != reflect.Struct {
 		return env.NewError(fmt.Sprintf("value must be a struct, is a %T", val.Interface()))
@@ -172,12 +155,10 @@ func structPut(env *Env, r *ReflectValue, name string, fval any) error {
 	return nil
 }
 
-func structGet(env *Env, r *ReflectValue, name string) (any, error) {
-	val := r.val
+func structGet(env *Env, obj any, name string) (any, error) {
+	val := reflect.ValueOf(obj)
 
-	for val.Kind() == reflect.Pointer {
-		val = val.Elem()
-	}
+	val = reflect.Indirect(val)
 
 	if val.Kind() != reflect.Struct {
 		return nil, env.NewError(fmt.Sprintf("value must be a struct, is a %T", val.Interface()))
@@ -200,12 +181,8 @@ func structGet(env *Env, r *ReflectValue, name string) (any, error) {
 	return obj, nil
 }
 
-func structList(env *Env, r *ReflectValue) (any, error) {
-	val := r.val
-
-	for val.Kind() == reflect.Pointer {
-		val = val.Elem()
-	}
+func structList(env *Env, val reflect.Value) (any, error) {
+	val = reflect.Indirect(val)
 
 	if val.Kind() != reflect.Struct {
 		return nil, env.NewError(fmt.Sprintf("value must be a struct, is a %T", val.Interface()))
@@ -282,9 +259,7 @@ func structFromMap(env *Env, rt *ReflectType, m Map) (any, error) {
 	return MakeReflectValue(ret.Interface()), nil
 }
 
-func structToMap(env *Env, r *ReflectValue) (any, error) {
-	val := r.val
-
+func structToMap(env *Env, val reflect.Value) (any, error) {
 	for val.Kind() == reflect.Pointer || val.Kind() == reflect.Interface {
 		val = val.Elem()
 	}
@@ -324,39 +299,6 @@ func structToMap(env *Env, r *ReflectValue) (any, error) {
 	}
 
 	return ret, nil
-}
-
-func (r *ReflectValue) ToString(env *Env, escape bool) (string, error) {
-	t := r.val.Type()
-	for t.Kind() == reflect.Pointer {
-		t = t.Elem()
-	}
-
-	pkg := t.PkgPath()
-	name := t.Name()
-
-	if name == "" {
-		return fmt.Sprintf("#go.%s[%s]", t.Kind(), r.val.String()), nil
-	}
-
-	v := r.val
-
-	for v.Kind() == reflect.Interface {
-		v = v.Elem()
-	}
-
-	switch v.Kind() {
-	case reflect.Pointer:
-		return fmt.Sprintf("#%s.%s[%p]", pkg, name, v.Interface()), nil
-	default:
-		return fmt.Sprintf("#%s.%s[%s]", pkg, name, v.Interface()), nil
-	}
-}
-
-func (r *ReflectValue) Hash(env *Env) (uint32, error) {
-	h := getHash()
-	h.Write([]byte(r.val.String()))
-	return h.Sum32(), nil
 }
 
 func (r *ReflectValue) WithInfo(i *ObjectInfo) any {
@@ -435,10 +377,8 @@ func castObjectToRef(env *Env, typ reflect.Type, obj any) (any, error) {
 			return WrapReflectValue(v), nil
 		}
 	case reflect.String:
-		if rv, ok := obj.(*ReflectValue); ok {
-			if sv, ok := rv.val.Interface().([]byte); ok {
-				return MakeString(string(sv)), nil
-			}
+		if slice, ok := obj.([]byte); ok {
+			return MakeString(string(slice)), nil
 		}
 
 		if _, ok := obj.(String); ok {
@@ -747,10 +687,10 @@ func SetupPkgReflect(env *Env) ([]*Namespace, error) {
 	})
 
 	b.Defn(&DefnInfo{
-		Name:  "put",
+		Name:  "set!",
 		Doc:   "Set a field by name in the given value.",
 		Added: "1.0",
-		Fn:    structPut,
+		Fn:    structSetInPlace,
 	})
 
 	b.Defn(&DefnInfo{
