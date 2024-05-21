@@ -180,6 +180,16 @@ func MainIn(nsName string) {
 		os.Exit(1)
 	}
 
+	defer func() {
+		if err := recover(); err != nil {
+			if ce, ok := err.(error); ok {
+				core.DisplayError(env, ce)
+			} else {
+				panic(err)
+			}
+		}
+	}()
+
 	_, err = cl.Call(env, []any{})
 	if err != nil {
 		core.DisplayError(env, err)

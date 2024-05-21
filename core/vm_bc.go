@@ -340,7 +340,14 @@ func (e *Engine) pushFrame(fn *Fn, args []any) (*EngineFrame, error) {
 	return frame, nil
 }
 
-func (e *Engine) popFrame(fr *EngineFrame) {
+func (e *Engine) popFrame(env *Env, fr *EngineFrame) {
+	if v := recover(); v != nil {
+		if _, ok := v.(*EvalError); ok {
+			panic(v)
+		}
+
+		panic(env.NewError(fmt.Sprint(v)))
+	}
 	e.stackTop -= fr.FrameSize
 	e.frope.popFrame()
 }
@@ -515,7 +522,7 @@ func (e *Engine) RunBC(env *Env, fn *Fn) (any, error) {
 		defer fmt.Printf("==== exit frame %d =====\n", idx)
 	}
 
-	defer e.popFrame(frame)
+	defer e.popFrame(env, frame)
 
 loop:
 	for {
