@@ -3,6 +3,9 @@ package core
 import "io"
 
 type (
+	// A Map implementation that uses a simple array. Very efficient for small maps.
+	//
+	//lace:export
 	ArrayMap struct {
 		InfoHolder
 		MetaHolder
@@ -64,10 +67,6 @@ func (seq *ArrayMapSeq) WithMeta(env *Env, meta Map) (any, error) {
 	}
 	res.meta = m
 	return &res, nil
-}
-
-func (seq *ArrayMapSeq) GetType() *Type {
-	return TYPE.ArrayMapSeq
 }
 
 func (seq *ArrayMapSeq) Hash(env *Env) (uint32, error) {
@@ -328,10 +327,6 @@ func (m *ArrayMap) ToString(env *Env, escape bool) (string, error) {
 
 func (m *ArrayMap) Equals(env *Env, other interface{}) bool {
 	return mapEquals(env, m, other)
-}
-
-func (m *ArrayMap) GetType() *Type {
-	return TYPE.ArrayMap
 }
 
 func (m *ArrayMap) Hash(env *Env) (uint32, error) {

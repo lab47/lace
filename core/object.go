@@ -27,54 +27,106 @@ type (
 	Conjable interface {
 		Conj(env *Env, obj any) (Conjable, error)
 	}
+	// Values that can report how many they contain.
+	//
+	//lace:export
 	Counted interface {
 		Count() int
 	}
+
+	// When things how wrong, these show up.
+	//
+	//lace:export
 	Error interface {
 		error
 		Message() any
 	}
+
+	// When a value can contain additional information.
+	//
+	//lace:export
 	Meta interface {
 		GetMeta() Map
 		WithMeta(*Env, Map) (any, error)
 	}
+
+	// When a value can change it's metadata.
+	//
+	//lace:export
 	Ref interface {
 		AlterMeta(env *Env, fn *Fn, args []any) (Map, error)
 		ResetMeta(m Map) Map
 	}
+
+	// When a value is sequential.
+	//
+	//lace:export
 	Sequential interface {
 		sequential()
 	}
+
+	// When a value can report if it's less, same, or bigger than another value.
+	//
+	//lace:export
 	Comparable interface {
 		Compare(env *Env, other any) (int, error)
 	}
+
+	// When a value can report if two values are are less, same, or bigger than another value.
+	//
+	//lace:export
 	Comparator interface {
 		Compare(env *Env, a, b any) (int, error)
 	}
+
+	// When a collection can return a contained value an a fixed offset.
+	//
+	//lace:export
 	Indexed interface {
 		Nth(env *Env, i int) (any, error)
 		TryNth(env *Env, i int, d any) (any, error)
 	}
+
 	IndexCounted interface {
 		Indexed
 		Counted
 	}
+
+	// When a container can add and remove values efficiently without regard for position.
+	//
+	//lace:export
 	Stack interface {
 		Peek(env *Env) (any, error)
 		Pop(env *Env) (Stack, error)
 	}
+
+	// When a collection can return a value by it's key.
+	//
+	//lace:export
 	Gettable interface {
 		Get(env *Env, key any) (bool, any, error)
 	}
+
+	// When a collection can store and retrieve values by an associated key.
+	//
+	//lace:export
 	Associative interface {
 		Conjable
 		Gettable
 		EntryAt(env *Env, key any) (*Vector, error)
 		Assoc(env *Env, key, val any) (Associative, error)
 	}
+
+	// When a collection can return a sequence that returns values in reverse order.
+	//
+	//lace:export
 	Reversible interface {
 		Rseq() Seq
 	}
+
+	// When a value has a name.
+	//
+	//lace:export
 	Named interface {
 		Name() string
 		Namespace() string
@@ -85,20 +137,36 @@ type (
 	Pprinter interface {
 		Pprint(env *Env, writer io.Writer, indent int) (int, error)
 	}
+
+	// When a value has the standard collection interfaces.
+	//
+	//lace:export
 	Collection interface {
 		Counted
 		Seqable
 		Empty() Collection
 	}
+
+	// When a value can be dereference to return another value.
+	//
+	//lace:export
 	Deref interface {
 		Deref(env *Env) (any, error)
 	}
 	Native interface {
 		Native() interface{}
 	}
+
+	// When a value can orchestrate reducing itself value a callable.
+	//
+	//lace:export
 	KVReduce interface {
 		kvreduce(env *Env, c Callable, init any) (any, error)
 	}
+
+	// When a value can report if it has a pending operation.
+	//
+	//lace:export
 	Pending interface {
 		IsRealized() bool
 	}
@@ -113,14 +181,14 @@ type (
 		startColumn int
 		filename    string
 	}
+
+	// A value that contains space for a single other value that can be swapped
+	// in. Ie an atom is an atomic value.
+	//
+	//lace:export
 	Atom struct {
 		MetaHolder
 		value any
-	}
-	Type struct {
-		MetaHolder
-		name        string
-		reflectType reflect.Type
 	}
 	MetaHolder struct {
 		meta Map
@@ -131,29 +199,59 @@ type (
 	InfoHolder struct {
 		info *ObjectInfo
 	}
+
+	// A floating point value who's size is constraint to the host's
+	// largest floating point value.
+	//
+	//lace:export
 	Double struct {
 		InfoHolder
 		D float64
 	}
+
+	// A floating point value that can be any size, practically.
+	//
+	//lace:export
 	BigFloat struct {
 		InfoHolder
 		b big.Float
 	}
+
+	// A value that presents the division of two integers.
+	//
+	//lace:export
 	Ratio struct {
 		InfoHolder
 		r big.Rat
 	}
+
+	// It's true, or it's false. Never both.
+	//
+	//lace:export
 	Boolean bool
-	Regex   struct {
+
+	// A value that contains a pre-compiled regular expression.
+	//
+	//lace:export
+	Regex struct {
 		InfoHolder
 		R *regexp.Regexp
 	}
+
+	// A value that represents a point in time.
+	//
+	//lace:export
 	Time struct {
 		InfoHolder
 		T time.Time
 	}
 	RecurBindings []any
-	Delay         struct {
+
+	// A value that runs a function to produce a new value.
+	// Ie, it 'delays' running the function until the value is needed.
+	//
+	//lace:export
+	Delay struct {
 		fn    Callable
 		value any
 	}
@@ -162,80 +260,6 @@ type (
 		s   []any
 		cmp Comparator
 		err error
-	}
-	Types struct {
-		Associative    *Type
-		Callable       *Type
-		Collection     *Type
-		Comparable     *Type
-		Comparator     *Type
-		Counted        *Type
-		Deref          *Type
-		Channel        *Type
-		Error          *Type
-		Gettable       *Type
-		Indexed        *Type
-		IOReader       *Type
-		IOWriter       *Type
-		KVReduce       *Type
-		Map            *Type
-		Meta           *Type
-		Named          *Type
-		Number         *Type
-		Pending        *Type
-		Ref            *Type
-		Reversible     *Type
-		Seq            *Type
-		Seqable        *Type
-		Sequential     *Type
-		Set            *Type
-		Stack          *Type
-		ArrayMap       *Type
-		ArrayMapSeq    *Type
-		ArrayNodeSeq   *Type
-		ArraySeq       *Type
-		MapSet         *Type
-		Atom           *Type
-		BigFloat       *Type
-		BigInt         *Type
-		Boolean        *Type
-		Time           *Type
-		Buffer         *Type
-		Char           *Type
-		ConsSeq        *Type
-		Delay          *Type
-		Double         *Type
-		EvalError      *Type
-		ExInfo         *Type
-		Fn             *Type
-		File           *Type
-		BufferedReader *Type
-		HashMap        *Type
-		Int            *Type
-		Keyword        *Type
-		LazySeq        *Type
-		List           *Type
-		Opaque         *Type
-		MappingSeq     *Type
-		Namespace      *Type
-		Nil            *Type
-		ReflectType    *Type
-		ReflectValue   *Type
-		NodeSeq        *Type
-		ParseError     *Type
-		NamedPair      *Type
-		Proc           *Type
-		ProcFn         *Type
-		Ratio          *Type
-		RecurBindings  *Type
-		Regex          *Type
-		String         *Type
-		Symbol         *Type
-		Type           *Type
-		Var            *Type
-		Vector         *Type
-		VectorRSeq     *Type
-		VectorSeq      *Type
 	}
 )
 
@@ -472,7 +496,7 @@ func getMap(env *Env, k any, args []any) (any, error) {
 		return nil, err
 	}
 
-	if m, ok := AsMap(args[0]); ok {
+	if m, ok := args[0].(Map); ok {
 		ok, v, err := m.Get(env, k)
 		if err != nil {
 			return nil, err
@@ -561,10 +585,6 @@ func (a *Atom) GetInfo() *ObjectInfo {
 	return nil
 }
 
-func (a *Atom) GetType() *Type {
-	return TYPE.Atom
-}
-
 func (a *Atom) Hash(env *Env) (uint32, error) {
 	return HashPtr(a), nil
 }
@@ -608,10 +628,6 @@ func (d *Delay) GetInfo() *ObjectInfo {
 	return nil
 }
 
-func (d *Delay) GetType() *Type {
-	return TYPE.Delay
-}
-
 func (d *Delay) Hash(env *Env) (uint32, error) {
 	return HashPtr(d), nil
 }
@@ -639,30 +655,6 @@ func (d *Delay) IsRealized() bool {
 	return d.value != nil
 }
 
-func (t *Type) ToString(env *Env, escape bool) (string, error) {
-	return t.name, nil
-}
-
-func (t *Type) Name() string {
-	return t.name
-}
-
-func (t *Type) Equals(env *Env, other interface{}) bool {
-	return t == other
-}
-
-func (t *Type) GetInfo() *ObjectInfo {
-	return nil
-}
-
-func (t *Type) GetType() *Type {
-	return TYPE.Type
-}
-
-func (t *Type) Hash(env *Env) (uint32, error) {
-	return HashPtr(t), nil
-}
-
 func (rb RecurBindings) ToString(env *Env, escape bool) (string, error) {
 	return "#object[RecurBindings]", nil
 }
@@ -673,10 +665,6 @@ func (rb RecurBindings) Equals(env *Env, other interface{}) bool {
 
 func (rb RecurBindings) GetInfo() *ObjectInfo {
 	return nil
-}
-
-func (rb RecurBindings) GetType() *Type {
-	return TYPE.RecurBindings
 }
 
 func (rb RecurBindings) Hash(env *Env) (uint32, error) {
@@ -775,10 +763,6 @@ func (rat *Ratio) Equals(env *Env, other interface{}) bool {
 	return equalsNumbers(rat, other)
 }
 
-func (rat *Ratio) GetType() *Type {
-	return TYPE.Ratio
-}
-
 func (rat *Ratio) Hash(env *Env) (uint32, error) {
 	return hashGobEncoder(&rat.r)
 }
@@ -802,10 +786,6 @@ func (bf *BigFloat) ToString(env *Env, escape bool) (string, error) {
 
 func (bf *BigFloat) Equals(env *Env, other interface{}) bool {
 	return equalsNumbers(bf, other)
-}
-
-func (bf *BigFloat) GetType() *Type {
-	return TYPE.BigFloat
 }
 
 func (bf *BigFloat) Hash(env *Env) (uint32, error) {
@@ -841,10 +821,6 @@ func (d Double) Equals(env *Env, other interface{}) bool {
 	return equalsNumbers(d, other)
 }
 
-func (d Double) GetType() *Type {
-	return TYPE.Double
-}
-
 func (d Double) Native() interface{} {
 	return d.D
 }
@@ -876,10 +852,6 @@ func (b Boolean) Equals(env *Env, other interface{}) bool {
 	default:
 		return false
 	}
-}
-
-func (b Boolean) GetType() *Type {
-	return TYPE.Boolean
 }
 
 func (b Boolean) Native() interface{} {
@@ -923,10 +895,6 @@ func (t Time) Equals(env *Env, other interface{}) bool {
 	default:
 		return false
 	}
-}
-
-func (t Time) GetType() *Type {
-	return TYPE.Time
 }
 
 func (t Time) Native() interface{} {
@@ -975,14 +943,6 @@ func (rx *Regex) Equals(env *Env, other interface{}) bool {
 	}
 }
 
-func (rx *Regex) GetType() *Type {
-	return TYPE.Regex
-}
-
-func (rx *Regex) Hash(env *Env) (uint32, error) {
-	return HashPtr(rx), nil
-}
-
 func MakeStringVector(ss []string) *Vector {
 	res := EmptyVector()
 	for _, s := range ss {
@@ -1009,34 +969,28 @@ func IsSeq(obj any) bool {
 	}
 }
 
-func (x *Type) WithInfo(info *ObjectInfo) any {
-	return x
-}
-
 func (x RecurBindings) WithInfo(info *ObjectInfo) any {
 	return x
 }
 
-func IsEqualOrImplements(abstractType HasReflectType, concreteType HasReflectType) bool {
-	at := abstractType.ReflectType()
-	ct := concreteType.ReflectType()
-
+func IsEqualOrImplements(at reflect.Type, ct reflect.Type) bool {
 	if at.Kind() == reflect.Interface {
 		return ct.Implements(at)
 	} else {
+		for ct.Kind() == reflect.Pointer {
+			ct = ct.Elem()
+		}
+
 		return ct == at
 	}
 }
 
-func IsInstance(env *Env, t *Type, obj any) bool {
+func IsInstance(env *Env, t Type, obj any) bool {
 	if Equals(env, obj, NIL) {
 		return false
 	}
-	if hrt, ok := GetType(obj).(HasReflectType); ok {
-		return IsEqualOrImplements(t, hrt)
-	}
 
-	return false
+	return IsEqualOrImplements(t.rType, reflect.TypeOf(obj))
 }
 
 var specialSymbols = make(map[string]struct{})

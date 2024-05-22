@@ -7,6 +7,9 @@ import (
 )
 
 type (
+	// The Seq interface, provides a sequence of values.
+	//
+	//lace:export
 	Seq interface {
 		Seqable
 		any
@@ -15,6 +18,10 @@ type (
 		IsEmpty(env *Env) (bool, error)
 		Cons(obj any) Seq
 	}
+
+	// When a value can be converted into a Seq.
+	//
+	//lace:export
 	Seqable interface {
 		Seq() Seq
 	}
@@ -115,10 +122,6 @@ func (seq *MappingSeq) WithMeta(env *Env, meta Map) (any, error) {
 	return &res, nil
 }
 
-func (seq *MappingSeq) GetType() *Type {
-	return TYPE.MappingSeq
-}
-
 func (seq *MappingSeq) Hash(env *Env) (uint32, error) {
 	return hashOrdered(env, seq)
 }
@@ -200,10 +203,6 @@ func (seq *LazySeq) WithMeta(env *Env, meta Map) (any, error) {
 	return &res, nil
 }
 
-func (seq *LazySeq) GetType() *Type {
-	return TYPE.LazySeq
-}
-
 func (seq *LazySeq) Hash(env *Env) (uint32, error) {
 	return hashOrdered(env, seq)
 }
@@ -265,10 +264,6 @@ func (seq *ArraySeq) WithMeta(env *Env, meta Map) (any, error) {
 	}
 	res.meta = m
 	return &res, nil
-}
-
-func (seq *ArraySeq) GetType() *Type {
-	return TYPE.ArraySeq
 }
 
 func (seq *ArraySeq) Hash(env *Env) (uint32, error) {
@@ -356,10 +351,6 @@ func (seq *ConsSeq) ToString(env *Env, escape bool) (string, error) {
 
 func (seq *ConsSeq) Pprint(env *Env, w io.Writer, indent int) (int, error) {
 	return pprintSeq(env, seq, w, indent)
-}
-
-func (seq *ConsSeq) GetType() *Type {
-	return TYPE.ConsSeq
 }
 
 func (seq *ConsSeq) Hash(env *Env) (uint32, error) {

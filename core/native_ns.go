@@ -132,8 +132,6 @@ func toAny(env *Env, o any) (any, error) {
 		return sv.Name(), nil
 	case Boolean:
 		return bool(sv), nil
-	case *ReflectValue:
-		return sv.val, nil
 	case Map:
 		m := map[any]any{}
 		i := sv.Iter()
@@ -194,20 +192,6 @@ func toAny(env *Env, o any) (any, error) {
 	default:
 		return o, nil
 	}
-}
-
-// from any to any
-func convertAnyIn(env *Env, index int, o any) (reflect.Value, error) {
-	if rv, ok := o.(*ReflectValue); ok {
-		return rv.val, nil
-	}
-
-	a, err := toAny(env, o)
-	if err != nil {
-		return reflect.Value{}, err
-	}
-
-	return reflect.ValueOf(a), nil
 }
 
 func fromAny(env *Env, v any) (any, error) {
@@ -277,7 +261,7 @@ func fromAny(env *Env, v any) (any, error) {
 
 			return NewVectorFrom(objs...), nil
 		}
-		return &ReflectValue{val: reflect.ValueOf(v)}, nil
+		return v, nil
 	}
 }
 
@@ -351,7 +335,7 @@ func (b *NSBuilder) DefType(i *DefTypeInfo) *NSBuilder {
 		i.Doc, i.Added,
 	)
 
-	obj := &ReflectType{typ: i.Type}
+	obj := Type{rType: i.Type}
 
 	_, err := b.ns.InternVar(b.env, i.Name, obj, m)
 	if err != nil {
@@ -382,7 +366,7 @@ func (b *NSBuilder) DefVar(i *DefVarInfo) *NSBuilder {
 	case reflect.Bool:
 		obj = MakeBoolean(i.Value.Bool())
 	default:
-		obj = WrapReflectValue(i.Value)
+		obj = i.Value
 	}
 
 	_, err := b.ns.InternVar(b.env, i.Name, obj, m)

@@ -1,5 +1,8 @@
 package core
 
+// The nothing type.
+//
+//lace:export
 type Nil interface {
 	any
 	Conjable
@@ -48,10 +51,6 @@ func (n TinyNil) Equals(env *Env, other interface{}) bool {
 
 func (n TinyNil) GetEqu(key Equ) (bool, any) {
 	return false, NIL
-}
-
-func (n TinyNil) GetType() *Type {
-	return TYPE.Nil
 }
 
 func (n TinyNil) Hash(env *Env) (uint32, error) {
@@ -164,10 +163,6 @@ func (n HeavyNil) Equals(env *Env, other interface{}) bool {
 
 func (n HeavyNil) GetEqu(key Equ) (bool, any) {
 	return false, NIL
-}
-
-func (n HeavyNil) GetType() *Type {
-	return TYPE.Nil
 }
 
 func (n HeavyNil) Hash(env *Env) (uint32, error) {

@@ -16,7 +16,7 @@
     :doc "Creates a new list containing the items."
     :added "1.0"
     :tag List}
-  list lace.lang/List)
+  list lace.lang/MakeList)
 
 (def
   ^{:arglists '([x seq])
@@ -123,7 +123,7 @@
          empty, returns nil.  (seq nil) returns nil."
          :added "1.0"
          :tag Seq}
-  seq lace.lang/Seq)
+  seq lace.lang/ConvertToSeq)
 
 (def
   ^{:arglists '([c x])

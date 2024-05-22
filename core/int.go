@@ -55,12 +55,6 @@ func (i Int) Equals(env *Env, other interface{}) bool {
 	return equalsNumbers(i, other)
 }
 
-/*
-func (i Int) GetType() *Type {
-	return TYPE.Int
-}
-*/
-
 func (i Int) Native() interface{} {
 	return i.Int()
 }
@@ -81,6 +75,9 @@ func (i Int) Compare(env *Env, other any) (int, error) {
 	return CompareNumbers(i, n), nil
 }
 
+// An integer value that can be so large, it's hard to understand it.
+//
+//lace:export
 type BigInt struct {
 	InfoHolder
 	b big.Int
@@ -108,10 +105,6 @@ func (bi *BigInt) ToString(env *Env, escape bool) (string, error) {
 
 func (bi *BigInt) Equals(env *Env, other interface{}) bool {
 	return equalsNumbers(bi, other)
-}
-
-func (bi *BigInt) GetType() *Type {
-	return TYPE.BigInt
 }
 
 func (bi *BigInt) Hash(env *Env) (uint32, error) {

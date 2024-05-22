@@ -3,6 +3,9 @@ package core
 const MAX_RUNE = int(^uint32(0) >> 1)
 const MIN_RUNE = -MAX_RUNE - 1
 
+// A single unicode rune.
+//
+//lace:export
 type Char interface {
 	any
 	Comparable
@@ -46,10 +49,6 @@ func (c *HeavyChar) Equals(env *Env, other interface{}) bool {
 	default:
 		return false
 	}
-}
-
-func (c *HeavyChar) GetType() *Type {
-	return TYPE.Char
 }
 
 func (c *HeavyChar) Native() interface{} {
@@ -104,10 +103,6 @@ func (c TinyChar) Equals(env *Env, other interface{}) bool {
 	default:
 		return false
 	}
-}
-
-func (c TinyChar) GetType() *Type {
-	return TYPE.Char
 }
 
 func (c TinyChar) Native() interface{} {

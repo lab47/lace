@@ -33,7 +33,7 @@ func pprintObject(env *Env, obj any, indent int, w io.Writer) (int, error) {
 		if err != nil {
 			return 0, err
 		}
-		fmt.Fprint(w, escapeString(s))
+		fmt.Fprint(w, s)
 		return indent + len(s), nil
 	}
 }

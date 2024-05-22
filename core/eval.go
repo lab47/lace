@@ -257,14 +257,9 @@ func (expr *MethodExpr) Eval(genv *Env, env *LocalEnv) (any, error) {
 		return nil, err
 	}
 
-	var rv reflect.Value
 	methName := expr.method
 
-	if orv, ok := obj.(*ReflectValue); ok {
-		rv = orv.val
-	} else {
-		rv = reflect.ValueOf(obj)
-	}
+	rv := reflect.ValueOf(obj)
 
 	rt := rv.Type()
 

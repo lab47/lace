@@ -11,8 +11,11 @@ type HeavySymbol struct {
 	name string
 }
 
+// A value that represents a value stored elsewhere by name,
+// such as in a namespace or a local variable.
+//
+//lace:export
 type Symbol interface {
-	any
 	Equ
 	Meta
 	Comparable
@@ -26,6 +29,9 @@ type Symbol interface {
 
 func (h *HeavySymbol) symbolType() string { return "heavy" }
 func (h *LightSymbol) symbolType() string { return "light" }
+
+var _ Symbol = (*HeavySymbol)(nil)
+var _ Symbol = (*LightSymbol)(nil)
 
 func SymbolSetInfo(sym Symbol, info *ObjectInfo) Symbol {
 	if hs, ok := sym.(*HeavySymbol); ok {
@@ -183,10 +189,6 @@ func (s *HeavySymbol) Is(other any) bool {
 	}
 }
 
-func (s *HeavySymbol) GetType() *Type {
-	return TYPE.Symbol
-}
-
 func (s *HeavySymbol) Hash(env *Env) (uint32, error) {
 	return s.IsHash(), nil
 }
@@ -299,10 +301,6 @@ func (s *LightSymbol) Is(other any) bool {
 	}
 }
 
-func (s *LightSymbol) GetType() *Type {
-	return TYPE.Symbol
-}
-
 func (s *LightSymbol) Hash(env *Env) (uint32, error) {
 	return s.IsHash(), nil
 }
@@ -402,10 +400,6 @@ func (s TinySymbol) Is(other any) bool {
 	default:
 		return false
 	}
-}
-
-func (s TinySymbol) GetType() *Type {
-	return TYPE.Symbol
 }
 
 func (s TinySymbol) Hash(env *Env) (uint32, error) {

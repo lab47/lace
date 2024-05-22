@@ -2,6 +2,9 @@ package core
 
 import "fmt"
 
+// A value that contains code and can be called to run that code.
+//
+//lace:export
 type Fn struct {
 	InfoHolder
 	MetaHolder
@@ -47,10 +50,6 @@ func (fn *Fn) WithMeta(env *Env, meta Map) (any, error) {
 	}
 	res.meta = m
 	return &res, nil
-}
-
-func (fn *Fn) GetType() *Type {
-	return TYPE.Fn
 }
 
 func (fn *Fn) Hash(env *Env) (uint32, error) {

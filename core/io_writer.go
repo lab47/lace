@@ -23,26 +23,6 @@ func (iow *IOWriter) ToString(env *Env, escape bool) (string, error) {
 	return "#object[IOWriter]", nil
 }
 
-func (iow *IOWriter) Equals(env *Env, other interface{}) bool {
-	return iow == other
-}
-
-func (iow *IOWriter) GetInfo() *ObjectInfo {
-	return nil
-}
-
-func (iow *IOWriter) GetType() *Type {
-	return TYPE.IOWriter
-}
-
-func (iow *IOWriter) Hash(env *Env) (uint32, error) {
-	return iow.hash, nil
-}
-
-func (iow *IOWriter) WithInfo(info *ObjectInfo) any {
-	return iow
-}
-
 func (iow *IOWriter) Close(env *Env) error {
 	if c, ok := iow.Writer.(io.Closer); ok {
 		return c.Close()

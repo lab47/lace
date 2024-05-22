@@ -51,10 +51,6 @@ func (p Proc) WithInfo(*ObjectInfo) any {
 	return p
 }
 
-func (p Proc) GetType() *Type {
-	return TYPE.Proc
-}
-
 func (p Proc) Hash(env *Env) (uint32, error) {
 	return HashPtr(&p.Fn), nil
 }

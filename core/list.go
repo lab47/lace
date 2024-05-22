@@ -2,6 +2,9 @@ package core
 
 import "io"
 
+// The standard lisp persistent list.
+//
+//lace:export
 type List struct {
 	InfoHolder
 	MetaHolder
@@ -57,10 +60,6 @@ func (seq *List) Pprint(env *Env, w io.Writer, indent int) (int, error) {
 
 func (list *List) Equals(env *Env, other interface{}) bool {
 	return IsSeqEqual(env, list, other)
-}
-
-func (list *List) GetType() *Type {
-	return TYPE.List
 }
 
 func (list *List) Hash(env *Env) (uint32, error) {

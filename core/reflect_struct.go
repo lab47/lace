@@ -6,7 +6,13 @@ import (
 	"reflect"
 )
 
-func (r *ReflectValue) Clone() *ReflectValue {
+type StructMap struct {
+	val reflect.Value
+}
+
+var _ Map = StructMap{}
+
+func (r StructMap) Clone() StructMap {
 	val := reflect.Indirect(r.val)
 	t := val.Type()
 
@@ -14,29 +20,13 @@ func (r *ReflectValue) Clone() *ReflectValue {
 
 	nv.Set(val)
 
-	return &ReflectValue{
+	return StructMap{
 		val: nv,
 	}
 }
 
-func (r *ReflectValue) isStruct() bool {
-	return reflect.Indirect(r.val).Kind() == reflect.Struct
-}
-
-func (r *ReflectValue) checkStruct(env *Env) error {
-	if !r.isStruct() {
-		return env.TypeError(TCContext{Context: "using map functions"}, r, "Map")
-	}
-
-	return nil
-}
-
-func (r *ReflectValue) Assoc(env *Env, key any, value any) (Associative, error) {
-	if err := r.checkStruct(env); err != nil {
-		return nil, err
-	}
-
-	val := reflect.Indirect(r.val)
+func (r StructMap) Assoc(env *Env, key any, value any) (Associative, error) {
+	val := r.val
 
 	var name string
 
@@ -90,12 +80,8 @@ func (r *ReflectValue) Assoc(env *Env, key any, value any) (Associative, error) 
 	return nv, nil
 }
 
-func (r *ReflectValue) Set(env *Env, key, value any) error {
-	if err := r.checkStruct(env); err != nil {
-		return err
-	}
-
-	val := reflect.Indirect(r.val)
+func (r StructMap) Set(env *Env, key, value any) error {
+	val := r.val
 
 	var name string
 
@@ -142,28 +128,16 @@ func (r *ReflectValue) Set(env *Env, key, value any) error {
 	return nil
 }
 
-func (r *ReflectValue) Conj(env *Env, obj any) (Conjable, error) {
-	if err := r.checkStruct(env); err != nil {
-		return nil, err
-	}
-
+func (r StructMap) Conj(env *Env, obj any) (Conjable, error) {
 	return mapConj(env, r, obj)
 }
 
-func (r *ReflectValue) Count() int {
-	if !r.isStruct() {
-		return 0
-	}
-	val := reflect.Indirect(r.val)
-	return val.NumField()
+func (r StructMap) Count() int {
+	return r.val.NumField()
 }
 
-func (r *ReflectValue) EntryAt(env *Env, key any) (*Vector, error) {
-	if err := r.checkStruct(env); err != nil {
-		return nil, err
-	}
-
-	val := reflect.Indirect(r.val)
+func (r StructMap) EntryAt(env *Env, key any) (*Vector, error) {
+	val := r.val
 
 	var name string
 
@@ -193,12 +167,8 @@ func (r *ReflectValue) EntryAt(env *Env, key any) (*Vector, error) {
 	return NewVectorFrom(key, rval), nil
 }
 
-func (r *ReflectValue) Get(env *Env, key any) (bool, any, error) {
-	if err := r.checkStruct(env); err != nil {
-		return false, nil, err
-	}
-
-	val := reflect.Indirect(r.val)
+func (r StructMap) Get(env *Env, key any) (bool, any, error) {
+	val := r.val
 
 	var name string
 
@@ -228,12 +198,8 @@ func (r *ReflectValue) Get(env *Env, key any) (bool, any, error) {
 	return true, rval, nil
 }
 
-func (r *ReflectValue) GetEqu(key Equ) (bool, any) {
-	if !r.isStruct() {
-		return false, nil
-	}
-
-	val := reflect.Indirect(r.val)
+func (r StructMap) GetEqu(key Equ) (bool, any) {
+	val := r.val
 
 	var name string
 
@@ -266,12 +232,8 @@ type structIterator struct {
 	idx int
 }
 
-func (r *ReflectValue) Iter() MapIterator {
-	if !r.isStruct() {
-		return emptyMapIterator
-	}
-
-	v := reflect.Indirect(r.val)
+func (r StructMap) Iter() MapIterator {
+	v := r.val
 
 	si := &structIterator{
 		rv:  v,
@@ -291,17 +253,13 @@ func (r *structIterator) Next() *Pair {
 	fv := r.rv.Field(r.idx)
 
 	name := MakeKeyword(tf.Name)
-	val := MakeReflectValue(fv.Interface())
+	val := fv.Interface()
 
 	return &Pair{Key: name, Value: val}
 }
 
-func (r *ReflectValue) Keys() Seq {
-	if !r.isStruct() {
-		return NIL
-	}
-
-	t := reflect.Indirect(r.val).Type()
+func (r StructMap) Keys() Seq {
+	t := r.val.Type()
 
 	var ret []any
 
@@ -312,12 +270,8 @@ func (r *ReflectValue) Keys() Seq {
 	return &ArraySeq{arr: ret}
 }
 
-func (r *ReflectValue) Vals() Seq {
-	if !r.isStruct() {
-		return NIL
-	}
-
-	v := reflect.Indirect(r.val)
+func (r StructMap) Vals() Seq {
+	v := r.val
 
 	var ret []any
 
@@ -334,11 +288,7 @@ func (r *ReflectValue) Vals() Seq {
 	return &ArraySeq{arr: ret}
 }
 
-func (r *ReflectValue) Merge(env *Env, other Map) (Map, error) {
-	if err := r.checkStruct(env); err != nil {
-		return nil, err
-	}
-
+func (r StructMap) Merge(env *Env, other Map) (Map, error) {
 	if other.Count() == 0 {
 		return r, nil
 	}
@@ -357,11 +307,7 @@ func (r *ReflectValue) Merge(env *Env, other Map) (Map, error) {
 	return res, nil
 }
 
-func (r *ReflectValue) Without(env *Env, key any) (Map, error) {
-	if err := r.checkStruct(env); err != nil {
-		return nil, err
-	}
-
+func (r StructMap) Without(env *Env, key any) (Map, error) {
 	if r.Count() == 0 {
 		return r, nil
 	}
@@ -385,15 +331,11 @@ func (r *ReflectValue) Without(env *Env, key any) (Map, error) {
 type reflectStructSeq struct {
 	InfoHolder
 	MetaHolder
-	m     *ReflectValue
+	m     StructMap
 	index int
 }
 
-func (r *ReflectValue) Seq() Seq {
-	if !r.isStruct() {
-		return NIL
-	}
-
+func (r StructMap) Seq() Seq {
 	return &reflectStructSeq{
 		m: r,
 	}
@@ -423,10 +365,6 @@ func (seq *reflectStructSeq) WithMeta(env *Env, meta Map) (any, error) {
 	return &res, nil
 }
 
-func (seq *reflectStructSeq) GetType() *Type {
-	return TYPE.ArrayMapSeq
-}
-
 func (seq *reflectStructSeq) Hash(env *Env) (uint32, error) {
 	return hashOrdered(env, seq)
 }
@@ -446,7 +384,7 @@ func (seq *reflectStructSeq) First(env *Env) (any, error) {
 	fv := seq.m.val.Field(seq.index)
 
 	name := MakeKeyword(tf.Name)
-	val := MakeReflectValue(fv.Interface())
+	val := fv.Interface()
 
 	return NewVectorFrom(name, val), nil
 }

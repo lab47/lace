@@ -6,8 +6,6 @@ import (
 	"sort"
 	"strings"
 	"unicode"
-
-	"github.com/davecgh/go-spew/spew"
 )
 
 type (
@@ -110,7 +108,7 @@ type (
 	}
 	CatchExpr struct {
 		Position
-		excType   *Type
+		excType   Type
 		excSymbol Symbol
 		body      []Expr
 	}
@@ -128,6 +126,10 @@ type (
 		obj any
 		msg string
 	}
+
+	// When a value can be called and passed arguments, like a Function.
+	//
+	//lace:export
 	Callable interface {
 		Call(env *Env, args []any) (any, error)
 	}
@@ -526,10 +528,6 @@ func (err *ParseError) GetInfo() *ObjectInfo {
 	return nil
 }
 
-func (err *ParseError) GetType() *Type {
-	return TYPE.ParseError
-}
-
 func (err *ParseError) Hash(env *Env) (uint32, error) {
 	return HashPtr(err), nil
 }
@@ -678,7 +676,7 @@ func GetPosition(obj any) Position {
 	return Position{}
 }
 
-func updateVar(vr *Var, info *ObjectInfo, valueExpr Expr, sym Symbol) {
+func updateVar(env *Env, vr *Var, info *ObjectInfo, valueExpr Expr, sym Symbol) {
 	vr.WithInfo(info)
 	meta := GetMeta(sym)
 	if meta != nil {
@@ -688,7 +686,9 @@ func updateVar(vr *Var, info *ObjectInfo, valueExpr Expr, sym Symbol) {
 		if ok, p := meta.GetEqu(criticalKeywords.dynamic); ok {
 			vr.isDynamic = ToBool(p)
 		}
-		vr.taggedType = getTaggedType(sym)
+		if tagSym, ok := ExtractTagFromMeta(sym); ok {
+			vr.taggedType = env.ResolveType(tagSym)
+		}
 	}
 }
 
@@ -786,7 +786,7 @@ func parseDef(obj any, ctx *ParseContext, isForLinter bool) (*DefExpr, error) {
 				return nil, &ParseError{obj: docstring, msg: "Docstring must be a string"}
 			}
 		}
-		updateVar(vr, GetInfo(obj), res.value, sym)
+		updateVar(ctx.Env, vr, GetInfo(obj), res.value, sym)
 		if meta != nil {
 			res.meta, err = Parse(DeriveReadObject(obj, meta), ctx)
 			if err != nil {
@@ -1060,7 +1060,6 @@ func parseFn(obj any, ctx *ParseContext) (Expr, error) {
 		}
 
 		if ok {
-			spew.Dump(bodies)
 			return nil, &ParseError{obj: p, msg: "Parameter declaration missing"}
 		}
 
@@ -1155,27 +1154,24 @@ func isFinally(env *Env, obj any) bool {
 	return criticalSymbols.finally.Is(v)
 }
 
-func resolveType(obj any, ctx *ParseContext) (*Type, error) {
+func resolveType(obj any, ctx *ParseContext) (Type, error) {
 	excType, err := Parse(obj, ctx)
 	if err != nil {
-		return nil, err
+		return Type{}, err
 	}
 
 	switch excType := excType.(type) {
 	case *LiteralExpr:
 		switch t := excType.obj.(type) {
-		case *Type:
+		case Type:
 			return t, nil
 		}
 	}
-	if LINTER_MODE {
-		return TYPE.Error, nil
-	}
 	s, err := ToString(ctx.Env, obj)
 	if err != nil {
-		return nil, err
+		return Type{}, err
 	}
-	return nil, &ParseError{obj: obj, msg: "Unable to resolve type: " + s}
+	return Type{}, &ParseError{obj: obj, msg: "Unable to resolve type: " + s}
 }
 
 func parseCatch(obj any, ctx *ParseContext) (*CatchExpr, error) {
@@ -1694,19 +1690,6 @@ func macroexpand1(env *Env, seq Seq, ctx *ParseContext) (any, error) {
 	}
 }
 
-func getTaggedType(obj any) *Type {
-	if m := GetMeta(obj); m != nil {
-		if ok, typeName := m.GetEqu(criticalKeywords.tag); ok {
-			if typeSym, ok := typeName.(Symbol); ok {
-				if t := TYPES[typeSym.Name()]; t != nil {
-					return t
-				}
-			}
-		}
-	}
-	return nil
-}
-
 func setMacroMeta(env *Env, vr *Var) error {
 	var err error
 	var ass Associative
@@ -2146,11 +2129,14 @@ func parseSymbol(obj any, ctx *ParseContext) (Expr, error) {
 	if vr, ok := ctx.Env.Resolve(sym); ok {
 		return MakeVarRefExpr(vr, obj), nil
 	}
-	if sym.Namespace() == "" && TYPES[sym.Name()] != nil {
-		return &LiteralExpr{
-			Position: GetPosition(obj),
-			obj:      TYPES[sym.Name()],
-		}, nil
+	if sym.Namespace() == "" {
+		typ := ctx.Env.ResolveType(sym)
+		if typ != nil {
+			return &LiteralExpr{
+				Position: GetPosition(obj),
+				obj:      typ,
+			}, nil
+		}
 	}
 
 	if !LINTER_MODE {
@@ -2202,8 +2188,11 @@ func Parse(obj any, ctx *ParseContext) (Expr, error) {
 	var res Expr
 	var err error
 	canHaveMeta := false
+
+	//str, _ := ToString(ctx.Env, obj)
+	//fmt.Println(str)
 	switch v := obj.(type) {
-	case Int, String, Char, Double, *BigInt, *BigFloat, Boolean, Nil, *Ratio, Keyword, *Regex, *Type:
+	case Int, String, Char, Double, *BigInt, *BigFloat, Boolean, Nil, *Ratio, Keyword, *Regex, Type:
 		res = NewLiteralExpr(obj)
 	case *Vector:
 		canHaveMeta = true

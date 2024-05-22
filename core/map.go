@@ -7,6 +7,10 @@ import (
 )
 
 type (
+	// A collection that contains the full complement of functionality for
+	// dealing with having objects that are stored by association with a key.
+	//
+	//lace:export
 	Map interface {
 		Associative
 		Seqable

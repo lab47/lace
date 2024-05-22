@@ -10,31 +10,9 @@ type (
 	}
 )
 
-var _ any = &Opaque[bool]{}
-
 func (f *Opaque[T]) ToString(env *Env, escape bool) (string, error) {
 	var t T
 	return fmt.Sprintf("#object[Opaque[%T]]", t), nil
-}
-
-func (f *Opaque[T]) Equals(env *Env, other interface{}) bool {
-	return f == other
-}
-
-func (f *Opaque[T]) GetInfo() *ObjectInfo {
-	return nil
-}
-
-func (f *Opaque[T]) GetType() *Type {
-	return TYPE.Opaque
-}
-
-func (f *Opaque[T]) Hash(env *Env) (uint32, error) {
-	return HashPtr(f), nil
-}
-
-func (f *Opaque[T]) WithInfo(info *ObjectInfo) any {
-	return f
 }
 
 func MakeOpaque[T any](f T) *Opaque[T] {

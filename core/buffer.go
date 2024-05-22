@@ -31,10 +31,6 @@ func (b *Buffer) GetInfo() *ObjectInfo {
 	return nil
 }
 
-func (b *Buffer) GetType() *Type {
-	return TYPE.Buffer
-}
-
 func (b *Buffer) Hash(env *Env) (uint32, error) {
 	return b.hash, nil
 }

@@ -80,7 +80,7 @@ func (v *FnData) String() string {
 }
 
 type CheckTypeData struct {
-	Type *Type
+	Type Type
 }
 
 func (v *CheckTypeData) insData() {}

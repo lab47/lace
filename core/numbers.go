@@ -6,6 +6,11 @@ import (
 )
 
 type (
+	// A number is any kind of sequence of numerals. This includes normal,
+	// integers of any size, floating point values of any size, as well as
+	// ratios (like 1/3).
+	//
+	//lace:export
 	Number interface {
 		any
 		Int() Int

@@ -6,6 +6,9 @@ import (
 	"unicode/utf8"
 )
 
+// A sequence of bytes, usually containing utf-8.
+//
+//lace:export
 type String interface {
 	any
 	IndexCounted
@@ -49,10 +52,6 @@ func (s GoString) Equals(env *Env, other interface{}) bool {
 	default:
 		return false
 	}
-}
-
-func (s GoString) GetType() *Type {
-	return TYPE.String
 }
 
 func (s GoString) Native() interface{} {

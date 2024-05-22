@@ -4,6 +4,9 @@ import (
 	"sync"
 )
 
+// A value that holds another value and can be changed. Ie, a Var is a variable.
+//
+//lace:export
 type Var struct {
 	InfoHolder
 	MetaHolder
@@ -16,7 +19,7 @@ type Var struct {
 	isDynamic      bool
 	isUsed         bool
 	isGloballyUsed bool
-	taggedType     *Type
+	taggedType     any
 }
 
 func (v *Var) Name() string {
@@ -63,10 +66,6 @@ func (v *Var) ResetMeta(newMeta Map) Map {
 
 func (v *Var) AlterMeta(env *Env, fn *Fn, args []any) (Map, error) {
 	return AlterMeta(env, &v.MetaHolder, fn, args)
-}
-
-func (v *Var) GetType() *Type {
-	return TYPE.Var
 }
 
 func (v *Var) Hash(env *Env) (uint32, error) {

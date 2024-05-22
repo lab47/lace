@@ -7,18 +7,45 @@ import (
 	"github.com/lab47/reflectx"
 )
 
+// A value that describes a set of values.
+//
+//lace:export
+type Type struct {
+	rType reflect.Type
+}
+
+func (t Type) ToString(env *Env, escape bool) (string, error) {
+	return t.Name(), nil
+}
+
+func (tt Type) Name() string {
+	t := tt.rType
+
+	for t.Kind() == reflect.Pointer {
+		t = t.Elem()
+	}
+
+	pkg := t.PkgPath()
+	if pkg == "github.com/lab47/lace/core" {
+		return t.Name()
+	}
+
+	return fmt.Sprintf("%s.%s", pkg, t.Name())
+}
+
 type HasGetType interface {
-	GetType() *Type
+	GetType() Type
 }
 
 func TypeName(obj any) string {
-	if hgt, ok := obj.(HasGetType); ok {
-		return hgt.GetType().Name()
+	if obj == nil {
+		return "nil"
 	}
 
 	t := reflect.Indirect(reflect.ValueOf(obj)).Type()
-
-	return t.PkgPath() + "." + t.Name()
+	return Type{
+		rType: t,
+	}.Name()
 }
 
 func GetType(obj any) any {
@@ -26,8 +53,8 @@ func GetType(obj any) any {
 		return hgt.GetType()
 	}
 
-	return &ReflectType{
-		typ: reflect.TypeOf(obj),
+	return Type{
+		rType: reflect.TypeOf(obj),
 	}
 }
 
@@ -35,8 +62,8 @@ type HasReflectType interface {
 	ReflectType() reflect.Type
 }
 
-func (t *Type) ReflectType() reflect.Type {
-	return t.reflectType
+func (t Type) ReflectType() reflect.Type {
+	return t.rType
 }
 
 type HasHash interface {
@@ -80,13 +107,7 @@ func ToString(env *Env, obj any) (string, error) {
 		return hs.ToString(env, false)
 	}
 
-	var val reflect.Value
-
-	if rv, ok := obj.(*ReflectValue); ok {
-		val = rv.val
-	} else {
-		val = reflect.ValueOf(obj)
-	}
+	val := reflect.ValueOf(obj)
 
 	t := val.Type()
 	for t.Kind() == reflect.Pointer {
@@ -119,43 +140,4 @@ func SimpleToString(obj any) string {
 	default:
 		return fmt.Sprint(obj)
 	}
-}
-
-func AsMap(obj any) (Map, bool) {
-	if m, ok := obj.(Map); ok {
-		return m, true
-	}
-
-	rv := reflect.ValueOf(obj)
-	if reflect.Indirect(rv).Kind() == reflect.Struct {
-		return &ReflectValue{val: rv}, true
-	}
-
-	return nil, false
-}
-
-func AsGettable(obj any) (Gettable, bool) {
-	if m, ok := obj.(Gettable); ok {
-		return m, true
-	}
-
-	rv := reflect.ValueOf(obj)
-	if reflect.Indirect(rv).Kind() == reflect.Struct {
-		return &ReflectValue{val: rv}, true
-	}
-
-	return nil, false
-}
-
-func AsAssociative(obj any) (Associative, bool) {
-	if m, ok := obj.(Associative); ok {
-		return m, true
-	}
-
-	rv := reflect.ValueOf(obj)
-	if reflect.Indirect(rv).Kind() == reflect.Struct {
-		return &ReflectValue{val: rv}, true
-	}
-
-	return nil, false
 }

@@ -243,7 +243,7 @@ func (cl *CodeLiteral) Set(env *Env, lit any) error {
 		sym := AssembleSymbol(o.ns.Name.Name(), o.name.String())
 
 		cl.Var.Name.Set(sym)
-	case *Type:
+	case Type:
 		name := o.Name()
 
 		cl.Type = &CodeType{
@@ -378,7 +378,7 @@ func (lit *CodeLiteral) AsValue(env *Env) (any, error) {
 		return vr, nil
 	case lit.Type != nil:
 		name := lit.Type.Name
-		return TYPES[name], nil
+		return env.ResolveType(MakeSymbol(name)), nil
 	case lit.String != nil:
 		return MakeString(lit.String.String), nil
 	case lit.Keyword != nil:

@@ -178,8 +178,8 @@ var procMeta = func(env *Env, args []any) (any, error) {
 		if meta != nil {
 			return meta, nil
 		}
-	case *Type:
-		meta := obj.GetMeta()
+	case Type:
+		meta := GetMeta(obj)
 		if meta != nil {
 			return meta, nil
 		}
@@ -1078,7 +1078,8 @@ var procIsInstance = func(env *Env, args []any) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	return Boolean(IsInstance(env, t, args[1])), nil
+	ok := IsInstance(env, t, args[1])
+	return Boolean(ok), nil
 }
 
 var procAssoc = func(env *Env, args []any) (any, error) {
@@ -1183,9 +1184,9 @@ var procCast = func(env *Env, args []any) (any, error) {
 
 	rt := art.ReflectType()
 
-	if t.reflectType.Kind() == reflect.Interface &&
-		rt.Implements(t.reflectType) ||
-		rt == t.reflectType {
+	if t.rType.Kind() == reflect.Interface &&
+		rt.Implements(t.rType) ||
+		rt == t.rType {
 		return args[1], nil
 	}
 
@@ -1782,8 +1783,9 @@ var procGet = func(env *Env, args []any) (any, error) {
 		return nil, err
 	}
 
-	if gt, ok := AsGettable(args[0]); ok {
-		ok, v, err := gt.Get(env, args[1])
+	switch c := args[0].(type) {
+	case Gettable:
+		ok, v, err := c.Get(env, args[1])
 		if err != nil {
 			return nil, err
 		}
@@ -2435,8 +2437,11 @@ var procNsResolve = func(env *Env, args []any) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	if sym.Namespace() == "" && TYPES[sym.Name()] != nil {
-		return TYPES[sym.Name()], nil
+	if sym.Namespace() == "" {
+		t := env.ResolveType(sym)
+		if t != nil {
+			return t, nil
+		}
 	}
 	if vr, ok := env.ResolveIn(ns, sym); ok {
 		return vr, nil
@@ -2892,9 +2897,6 @@ var procTypes = func(env *Env, args []any) (any, error) {
 		return nil, err
 	}
 	res := EmptyArrayMap()
-	for k, v := range TYPES {
-		res.Add(env, MakeString(k), v)
-	}
 	return res, nil
 }
 

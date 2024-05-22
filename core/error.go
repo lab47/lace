@@ -37,10 +37,6 @@ func (exInfo *ExInfo) Equals(env *Env, other interface{}) bool {
 	return exInfo == other
 }
 
-func (exInfo *ExInfo) GetType() *Type {
-	return TYPE.ExInfo
-}
-
 func (exInfo *ExInfo) Hash(env *Env) (uint32, error) {
 	return HashPtr(exInfo), nil
 }
@@ -83,6 +79,9 @@ func (exInfo *ExInfo) Error() string {
 	return fmt.Sprintf("%s:%d:%d: %s: %s", pos.Filename(), pos.startLine, pos.startColumn, prefix, strMsg)
 }
 
+// The standard error thrown when evalution of a program encounters an error.
+//
+//lace:export
 type EvalError struct {
 	err  error
 	hash uint32
@@ -107,22 +106,8 @@ func (err *EvalError) Is(target error) bool {
 	return ok
 }
 
-var _ any = &EvalError{}
-
 func (err *EvalError) ToString(env *Env, escape bool) (string, error) {
 	return err.Error(), nil
-}
-
-func (err *EvalError) Equals(env *Env, other interface{}) bool {
-	return err == other
-}
-
-func (err *EvalError) GetInfo() *ObjectInfo {
-	return nil
-}
-
-func (err *EvalError) GetType() *Type {
-	return TYPE.EvalError
 }
 
 func (err *EvalError) Hash(env *Env) (uint32, error) {

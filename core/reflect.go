@@ -11,106 +11,18 @@ import (
 	"github.com/lab47/lace/pkg/pkgreflect"
 )
 
-type ReflectType struct {
-	InfoHolder
-	MetaHolder
-
-	typ reflect.Type
-}
-
-var _ any = &ReflectType{}
-
-func (r *ReflectType) Equals(env *Env, other any) bool {
-	if ov, ok := other.(HasReflectType); ok {
-		return ov.ReflectType() == r.typ
-	}
-
-	return false
-}
-
-func (r *ReflectType) ReflectType() reflect.Type {
-	return r.typ
-}
-
-func (r *ReflectType) GetType() *Type {
-	return TYPE.ReflectType
-}
-
-func (r *ReflectType) ToString(env *Env, escape bool) (string, error) {
-	t := r.typ
-
-	for t.Kind() == reflect.Interface {
-		t = t.Elem()
-	}
-
-	for t.Kind() == reflect.Pointer {
-		t = t.Elem()
-	}
-
-	pkg := t.PkgPath()
-	if pkg == "github.com/lab47/lace/core" {
-		return t.Name(), nil
-	}
-
-	return fmt.Sprintf("%s.%s", pkg, t.Name()), nil
-}
-
-func (r *ReflectType) Hash(env *Env) (uint32, error) {
-	h := getHash()
-	h.Write([]byte(r.typ.Name()))
-	return h.Sum32(), nil
-}
-
-func (r *ReflectType) WithInfo(i *ObjectInfo) any {
-	d := *r
-	d.info = i
-	return &d
-}
-
-func (r *ReflectType) Call(env *Env, args []any) (any, error) {
-	rv := reflect.New(r.typ)
+func (r *Type) Call(env *Env, args []any) (any, error) {
+	rv := reflect.New(r.rType)
 	return rv.Interface(), nil
-	return WrapReflectValue(rv), nil
-}
-
-type ReflectValue struct {
-	InfoHolder
-	MetaHolder
-
-	val reflect.Value
-}
-
-func WrapReflectValue(val reflect.Value) any {
-	return &ReflectValue{
-		val: val,
-	}
-}
-
-func MakeReflectValue(v any) any {
-	val := reflect.ValueOf(v)
-	return WrapReflectValue(val)
 }
 
 func CastReflect[T any](env *Env, obj any, v *T) error {
-	var rv *ReflectValue
-
-	err := Cast(env, obj, &rv)
-	if err != nil {
-		return err
+	if x, ok := obj.(T); ok {
+		*v = x
+		return nil
 	}
 
-	x, ok := rv.Value().(T)
-	if !ok {
-		return fmt.Errorf("not a reflect value containing a *%T", v)
-	}
-
-	*v = x
-
-	return nil
-}
-
-func (r *ReflectValue) Value() any {
-	return r.val.Interface()
+	return fmt.Errorf("not a reflect value containing a *%T", v)
 }
 
 func structSetInPlace(env *Env, val reflect.Value, name string, fval any) error {
@@ -199,12 +111,13 @@ func structList(env *Env, val reflect.Value) (any, error) {
 	return NewListFrom(ret...), nil
 }
 
-func structFromMap(env *Env, rt *ReflectType, m Map) (any, error) {
-	if rt.typ.Kind() != reflect.Struct {
+func structFromMap(env *Env, rt *Type, m Map) (any, error) {
+	t := rt.ReflectType()
+	if t.Kind() != reflect.Struct {
 		return nil, env.NewError("type is not a struct")
 	}
 
-	ret := reflect.New(rt.typ)
+	ret := reflect.New(t)
 
 	rv := ret.Elem()
 
@@ -256,7 +169,16 @@ func structFromMap(env *Env, rt *ReflectType, m Map) (any, error) {
 		field.Set(frv)
 	}
 
-	return MakeReflectValue(ret.Interface()), nil
+	return ret.Interface(), nil
+}
+
+func structAsMap(env *Env, val reflect.Value) (any, error) {
+	val = reflect.Indirect(val)
+	if val.Kind() != reflect.Struct {
+		return nil, env.NewError("Value is not a struct, is kind: %s", val.Kind())
+	}
+
+	return StructMap{val: val}, nil
 }
 
 func structToMap(env *Env, val reflect.Value) (any, error) {
@@ -301,12 +223,6 @@ func structToMap(env *Env, val reflect.Value) (any, error) {
 	return ret, nil
 }
 
-func (r *ReflectValue) WithInfo(i *ObjectInfo) any {
-	d := *r
-	d.info = i
-	return &d
-}
-
 type reifiedFunc struct {
 	pkgreflect.Func
 	Name Symbol
@@ -319,12 +235,7 @@ type reifiedType struct {
 }
 
 func listMethods(env *Env, obj any, reg map[reflect.Type]reifiedType) Seq {
-	rv, ok := obj.(*ReflectValue)
-	if !ok {
-		return NIL
-	}
-
-	t := rv.val.Type()
+	t := reflect.TypeOf(obj)
 
 	for t.Kind() == reflect.Pointer {
 		t = t.Elem()
@@ -353,7 +264,7 @@ func castObjectToRef(env *Env, typ reflect.Type, obj any) (any, error) {
 		v := reflect.New(typ).Elem()
 		v.SetInt(int64(num.Int().I()))
 
-		return WrapReflectValue(v), nil
+		return v, nil
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		num, err := AssertNumber(env, obj, "")
 		if err != nil {
@@ -363,7 +274,7 @@ func castObjectToRef(env *Env, typ reflect.Type, obj any) (any, error) {
 		v := reflect.New(typ).Elem()
 		v.SetInt(int64(num.Int().I()))
 
-		return WrapReflectValue(v), nil
+		return v, nil
 	case reflect.Slice:
 		if typ.Elem() == reflect.TypeFor[byte]() {
 			str, err := AssertString(env, obj, "")
@@ -374,22 +285,21 @@ func castObjectToRef(env *Env, typ reflect.Type, obj any) (any, error) {
 			v := reflect.MakeSlice(typ, 0, len(str.S()))
 			v = reflect.AppendSlice(v, reflect.ValueOf([]byte(str.S())))
 
-			return WrapReflectValue(v), nil
+			return v, nil
 		}
 	case reflect.String:
 		if slice, ok := obj.([]byte); ok {
-			return MakeString(string(slice)), nil
+			return string(slice), nil
 		}
 
-		if _, ok := obj.(String); ok {
-			return obj, nil
+		if s, ok := obj.(String); ok {
+			return s.S(), nil
 		}
 
 	case reflect.Interface:
-		if rv, ok := obj.(*ReflectValue); ok {
-			if rv.val.Type().AssignableTo(typ) {
-				return rv, nil
-			}
+		rt := reflect.TypeOf(obj)
+		if rt.AssignableTo(typ) {
+			return obj, nil
 		}
 	}
 
@@ -459,12 +369,12 @@ func makeStructType(env *Env, m Map) (reflect.Type, error) {
 			return nil, env.NewError("name must be symbol/keyword/string only")
 		}
 
-		vt, ok := p.Value.(*ReflectType)
+		vt, ok := p.Value.(*Type)
 		if !ok {
 			return nil, env.NewError("value must be a ReflectType")
 		}
 
-		f.Type = vt.typ
+		f.Type = vt.ReflectType()
 
 		fields = append(fields, f)
 	}
@@ -698,6 +608,13 @@ func SetupPkgReflect(env *Env) ([]*Namespace, error) {
 		Doc:   "List the fields in a struct value.",
 		Added: "1.0",
 		Fn:    structList,
+	})
+
+	b.Defn(&DefnInfo{
+		Name:  "as-map",
+		Doc:   "Allow the given struct to be accessed as a map.",
+		Added: "1.0",
+		Fn:    structAsMap,
 	})
 
 	b.Defn(&DefnInfo{

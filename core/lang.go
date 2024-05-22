@@ -12,7 +12,7 @@ import (
 
 // Create a new lace List from the given arguments
 //
-//lace:export List
+//lace:export MakeList
 func MakeList(env *Env, args []any) (any, error) {
 	l := NewListFrom(args...)
 
@@ -105,7 +105,7 @@ func Conj(env *Env, col any, val any) (any, error) {
 
 // Convert the given value to a Seq
 //
-//lace:export Seq
+//lace:export
 func ConvertToSeq(env *Env, s Seqable) (any, error) {
 	sq := s.Seq()
 	show(env, "seq", sq)

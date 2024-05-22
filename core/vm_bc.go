@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/lab47/lace/core/insn"
 	"golang.org/x/exp/slices"
 )
@@ -480,16 +479,7 @@ func (e *Engine) makeStackTrace() any {
 }
 
 func (e *Engine) methodCall(env *Env, methName string, obj any, objArgs []any) (any, error) {
-	var rv reflect.Value
-
-	switch sv := obj.(type) {
-	case *ReflectValue:
-		rv = sv.val
-	case reflect.Value:
-		rv = sv
-	default:
-		rv = reflect.ValueOf(obj)
-	}
+	rv := reflect.ValueOf(obj)
 
 	rt := rv.Type()
 
@@ -534,7 +524,7 @@ loop:
 		op, a := insn.Decode(c.insns[frame.Ip])
 
 		if debugBC {
-			fmt.Printf("% 2d|% 4d|% 4d| %s %d\n", idx, frame.Ip, fn.code.lineForIp(frame.Ip), OpCode(op), a)
+			fmt.Printf("% 3d|% 4d|% 4d| %s %d\n", idx, frame.Ip, fn.code.lineForIp(frame.Ip), OpCode(op), a)
 			//e.printStack(env)
 		}
 
@@ -838,7 +828,6 @@ loop:
 			case Callable:
 				obj, err = sv.Call(env, args)
 			default:
-				spew.Dump(args, obj)
 				err = Errorf(env, "value is not callable: %T", sv)
 			}
 
@@ -1016,7 +1005,7 @@ loop:
 		case CheckType:
 			obj := frame.stackPop()
 
-			if typ, ok := c.literals[a].(*Type); ok {
+			if typ, ok := c.literals[a].(Type); ok {
 				frame.stackPush(MakeBoolean(IsInstance(env, typ, obj)))
 			} else {
 				panic("nope")

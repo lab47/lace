@@ -30,10 +30,6 @@ func (ch *Channel) GetInfo() *ObjectInfo {
 	return nil
 }
 
-func (ch *Channel) GetType() *Type {
-	return TYPE.Channel
-}
-
 func (ch *Channel) Hash(env *Env) (uint32, error) {
 	return ch.hash, nil
 }

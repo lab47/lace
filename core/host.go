@@ -1,7 +1,5 @@
 package core
 
-import "fmt"
-
 func ExtractTagFromMeta(obj any) (Symbol, bool) {
 	if m := GetMeta(obj); m != nil {
 		if ok, typeName := m.GetEqu(criticalKeywords.tag); ok {
@@ -28,18 +26,10 @@ func (env *Env) ResolveType(sym Symbol) any {
 		if vr := env.LangNamespace.Resolve(sym.Name()); vr != nil {
 			obj := vr.Resolve(env)
 			switch obj.(type) {
-			case *Type:
-				fmt.Printf("Found in lace.lang: %s: %#v\n", sym.Name(), obj)
-				return obj
-			case *ReflectType:
-				fmt.Printf("Found in lace.lang: %s: %#v\n", sym.Name(), obj)
+			case Type:
 				return obj
 			}
 		}
-	}
-
-	if t := TYPES[sym.Name()]; t != nil {
-		return t
 	}
 
 	return nil

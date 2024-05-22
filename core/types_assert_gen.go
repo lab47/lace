@@ -259,22 +259,17 @@ func EnsureTime(env *Env, args []any, index int) (Time, error) {
 }
 
 func AssertNumber(env *Env, obj any, msg string) (Number, error) {
-	switch c := obj.(type) {
-	case Number:
+	if c, ok := obj.(Number); ok {
 		return c, nil
-	case *ReflectValue:
-		switch c.val.Kind() {
-		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			return MakeInt(int(c.val.Int())), nil
-		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-			return MakeInt(int(c.val.Uint())), nil
-		default:
-			if msg == "" {
-				msg = fmt.Sprintf("Expected %s, got %s", "Number", TypeName(obj))
-			}
-			var v Number
-			return v, env.NewError(msg)
-		}
+	}
+
+	val := reflect.ValueOf(obj)
+
+	switch val.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return MakeInt(int(val.Int())), nil
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return MakeInt(int(val.Uint())), nil
 	default:
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Number", TypeName(obj))
@@ -355,30 +350,30 @@ func EnsureCallable(env *Env, args []any, index int) (Callable, error) {
 	}
 }
 
-func AssertType(env *Env, obj any, msg string) (*Type, error) {
+func AssertType(env *Env, obj any, msg string) (Type, error) {
 	switch c := obj.(type) {
-	case *Type:
+	case Type:
 		return c, nil
 	default:
 		if msg == "" {
 			msg = fmt.Sprintf("Expected %s, got %s", "Type", TypeName(obj))
 		}
-		var v *Type
+		var v Type
 		return v, env.NewError(msg)
 	}
 }
 
-func EnsureType(env *Env, args []any, index int) (*Type, error) {
+func EnsureType(env *Env, args []any, index int) (Type, error) {
 	if len(args) <= index {
-		var t *Type
+		var t Type
 		return t, ErrorArity(env, index)
 	}
 
 	switch c := args[index].(type) {
-	case *Type:
+	case Type:
 		return c, nil
 	default:
-		var v *Type
+		var v Type
 		return v, env.NewArgTypeError(index, c, "Type")
 	}
 }
@@ -514,12 +509,13 @@ func EnsureMap(env *Env, args []any, index int) (Map, error) {
 		return t, ErrorArity(env, index)
 	}
 
-	if m, ok := AsMap(args[index]); ok {
-		return m, nil
+	switch c := args[index].(type) {
+	case Map:
+		return c, nil
+	default:
+		var v Map
+		return v, env.NewArgTypeError(index, c, "Map")
 	}
-
-	var v Map
-	return v, env.NewArgTypeError(index, args[index], "Map")
 }
 
 func AssertSet(env *Env, obj any, msg string) (Set, error) {
@@ -569,7 +565,7 @@ func EnsureAssociative(env *Env, args []any, index int) (Associative, error) {
 		return t, ErrorArity(env, index)
 	}
 
-	if c, ok := AsAssociative(args[index]); ok {
+	if c, ok := args[index].(Associative); ok {
 		return c, nil
 	}
 
@@ -823,10 +819,6 @@ func EnsureDeref(env *Env, args []any, index int) (Deref, error) {
 	switch c := args[index].(type) {
 	case Deref:
 		return c, nil
-	case *ReflectValue:
-		if d, ok := c.val.Interface().(Deref); ok {
-			return d, nil
-		}
 	}
 
 	var v Deref

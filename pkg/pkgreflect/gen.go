@@ -20,13 +20,13 @@ import (
 	"golang.org/x/tools/imports"
 )
 
-func codeName(t types.Type) string {
+func codeName(t types.Type, curpkg string) string {
 	switch sv := t.(type) {
 	case *types.Pointer:
-		return "*" + codeName(sv.Elem())
+		return "*" + codeName(sv.Elem(), curpkg)
 	case *types.Named:
 		n := sv.Obj()
-		if n.Pkg() == nil {
+		if n.Pkg() == nil || n.Pkg().Name() == curpkg {
 			return n.Name()
 		}
 
@@ -204,7 +204,7 @@ func Generate(name, laceName string, base, output, outputPkg string, match *Matc
 
 						for i := 0; i < sig.Results().Len(); i++ {
 							vr := sig.Results().At(i)
-							ary = append(ary, codeName(vr.Type()))
+							ary = append(ary, codeName(vr.Type(), outputPkg))
 						}
 						resStr = "(" + strings.Join(ary, ", ") + ")"
 					}
@@ -217,7 +217,7 @@ func Generate(name, laceName string, base, output, outputPkg string, match *Matc
 						vr := params.At(i)
 						t := vr.Type()
 
-						pStrs = append(pStrs, codeName(t))
+						pStrs = append(pStrs, codeName(t, outputPkg))
 					}
 					fmt.Fprintf(&buf, "  %sFn func(%s) %s\n", fn.Name(), strings.Join(pStrs, ", "), resStr)
 				}
@@ -232,7 +232,7 @@ func Generate(name, laceName string, base, output, outputPkg string, match *Matc
 
 					for j := 0; j < sig.Params().Len(); j++ {
 						e := sig.Params().At(j)
-						args = append(args, fmt.Sprintf("a%d %s", j, codeName(e.Type())))
+						args = append(args, fmt.Sprintf("a%d %s", j, codeName(e.Type(), outputPkg)))
 						cs = append(cs, fmt.Sprintf("a%d", j))
 					}
 
@@ -242,7 +242,7 @@ func Generate(name, laceName string, base, output, outputPkg string, match *Matc
 
 						for i := 0; i < sig.Results().Len(); i++ {
 							vr := sig.Results().At(i)
-							ary = append(ary, codeName(vr.Type()))
+							ary = append(ary, codeName(vr.Type(), outputPkg))
 						}
 						resStr = "(" + strings.Join(ary, ", ") + ")"
 					}

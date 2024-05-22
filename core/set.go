@@ -7,6 +7,9 @@ import (
 )
 
 type (
+	// A collection that can store unique values.
+	//
+	//lace:export
 	Set interface {
 		Conjable
 		Gettable
@@ -18,6 +21,10 @@ type (
 		HasNext(*Env) bool
 		Next(*Env) (any, error)
 	}
+
+	// A Set implementation that uses a Map.
+	//
+	//lace:export
 	MapSet struct {
 		InfoHolder
 		MetaHolder
@@ -162,10 +169,6 @@ func (set *MapSet) Get(env *Env, key any) (bool, any, error) {
 func (set *MapSet) Has(key Equ) bool {
 	ok, _ := set.m.GetEqu(key)
 	return ok
-}
-
-func (seq *MapSet) GetType() *Type {
-	return TYPE.MapSet
 }
 
 func (set *MapSet) Hash(env *Env) (uint32, error) {

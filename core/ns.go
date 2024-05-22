@@ -8,20 +8,22 @@ import (
 	"sync"
 )
 
-type (
-	Namespace struct {
-		MetaHolder
-		Name           Symbol
-		Lazy           func(env *Env, ns *Namespace)
-		mu             sync.Mutex
-		mappings       map[string]*Var
-		aliases        map[string]*Namespace
-		isUsed         bool
-		isGloballyUsed bool
-		hash           uint32
-		core           bool
-	}
-)
+// A namespace is a named collection and the foundation of clojure/lace.
+// A namespace holds vars and functions run in the context of a namespace.
+//
+//lace:export
+type Namespace struct {
+	MetaHolder
+	Name           Symbol
+	Lazy           func(env *Env, ns *Namespace)
+	mu             sync.Mutex
+	mappings       map[string]*Var
+	aliases        map[string]*Namespace
+	isUsed         bool
+	isGloballyUsed bool
+	hash           uint32
+	core           bool
+}
 
 func (env *Env) AllNamespaces() []string {
 	env.mu.Lock()
@@ -73,10 +75,6 @@ func (ns *Namespace) GetInfo() *ObjectInfo {
 
 func (ns *Namespace) WithInfo(info *ObjectInfo) any {
 	return ns
-}
-
-func (ns *Namespace) GetType() *Type {
-	return TYPE.Namespace
 }
 
 func (ns *Namespace) WithMeta(env *Env, meta Map) (any, error) {

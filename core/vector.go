@@ -7,6 +7,10 @@ import (
 )
 
 type (
+
+	// A collection that stores it's values at fixed integer offsets efficiently.
+	//
+	//lace:export
 	Vector struct {
 		InfoHolder
 		MetaHolder
@@ -148,10 +152,6 @@ func (v *Vector) Equals(env *Env, other interface{}) bool {
 	return IsSeqEqual(env, v.Seq(), other)
 }
 
-func (v *Vector) GetType() *Type {
-	return TYPE.Vector
-}
-
 func (v *Vector) Hash(env *Env) (uint32, error) {
 	return hashOrdered(env, v.Seq())
 }
@@ -180,10 +180,6 @@ func (vseq *VectorSeq) WithMeta(env *Env, meta Map) (any, error) {
 	}
 	res.meta = m
 	return &res, nil
-}
-
-func (vseq *VectorSeq) GetType() *Type {
-	return TYPE.VectorSeq
 }
 
 func (vseq *VectorSeq) Hash(env *Env) (uint32, error) {
@@ -238,10 +234,6 @@ func (vseq *VectorRSeq) WithMeta(env *Env, meta Map) (any, error) {
 	}
 	res.meta = m
 	return &res, nil
-}
-
-func (vseq *VectorRSeq) GetType() *Type {
-	return TYPE.VectorRSeq
 }
 
 func (vseq *VectorRSeq) Hash(env *Env) (uint32, error) {

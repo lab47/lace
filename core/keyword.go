@@ -2,8 +2,13 @@ package core
 
 import "strings"
 
+// A value that is just a name who's meaning is itself. It sounds meta,
+// I know. It's just a name, usually used as a key in a association.
+// Maybe you want to think of it as a short, compact, namespace'd string?
+// That's fine.
+//
+//lace:export
 type Keyword interface {
-	any
 	Equ
 	Comparable
 	Callable
@@ -103,10 +108,6 @@ func (k *HeavyKeyword) Is(other any) bool {
 	}
 }
 
-func (k *HeavyKeyword) GetType() *Type {
-	return TYPE.Keyword
-}
-
 func (k *HeavyKeyword) Hash(env *Env) (uint32, error) {
 	return hashSymbol(k.ns, k.name) ^ KeywordHashMask, nil
 }
@@ -190,10 +191,6 @@ func (k TinyKeyword) Is(other any) bool {
 	default:
 		return false
 	}
-}
-
-func (k TinyKeyword) GetType() *Type {
-	return TYPE.Keyword
 }
 
 func (k TinyKeyword) Hash(env *Env) (uint32, error) {

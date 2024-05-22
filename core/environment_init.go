@@ -75,7 +75,7 @@ func NewEnv() (*Env, error) {
 	}
 
 	vr.isDynamic = true
-	vr.SetStatic(MakeReflectValue(res.Context))
+	vr.SetStatic(res.Context)
 
 	res.ctx = vr
 

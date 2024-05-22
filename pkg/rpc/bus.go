@@ -26,10 +26,8 @@ func InitBusConnection(env *core.Env) (*BusConnection, error) {
 	var log logger.Logger
 
 	if defLog != nil {
-		var rv *core.ReflectValue
-
-		if err := core.Cast(env, defLog.GetStatic(), &rv); err == nil {
-			log, _ = rv.Value().(logger.Logger)
+		if err := core.Cast(env, defLog.GetStatic(), &log); err != nil {
+			return nil, err
 		}
 	}
 
@@ -41,10 +39,7 @@ func InitBusConnection(env *core.Env) (*BusConnection, error) {
 
 	vr := ns.Resolve("*connection*")
 	if vr != nil {
-		var conn *BusConnection
-
-		err := core.CastReflect(env, vr.GetStatic(), &conn)
-		if err == nil {
+		if conn, ok := vr.GetStatic().(*BusConnection); ok {
 			return conn, nil
 		}
 	}
@@ -66,14 +61,14 @@ func InitBusConnection(env *core.Env) (*BusConnection, error) {
 			return nil, err
 		}
 
-		ns.InternVar(env, "*bus*", core.MakeReflectValue(bus), nil)
+		ns.InternVar(env, "*bus*", bus, nil)
 
 		conn, err := bus.Connect(env.Context)
 		if err != nil {
 			return nil, err
 		}
 
-		ns.InternVar(env, "*connection*", core.MakeReflectValue(conn), nil)
+		ns.InternVar(env, "*connection*", conn, nil)
 		return conn, nil
 	}
 
@@ -91,7 +86,7 @@ func InitBusConnection(env *core.Env) (*BusConnection, error) {
 		seen: make(map[string]*busCap),
 	}
 
-	ns.InternVar(env, "*connection*", core.MakeReflectValue(bc), nil)
+	ns.InternVar(env, "*connection*", bc, nil)
 	return bc, nil
 }
 

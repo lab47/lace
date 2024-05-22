@@ -55,14 +55,6 @@ func (p *NamedPair) Equals(env *Env, other interface{}) bool {
 	}
 }
 
-func (p *NamedPair) GetInfo() *ObjectInfo {
-	return nil
-}
-
-func (p *NamedPair) GetType() *Type {
-	return TYPE.NamedPair
-}
-
 func (p *NamedPair) Hash(env *Env) (uint32, error) {
 	kh, err := HashValue(env, p.Key)
 	if err != nil {

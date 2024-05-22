@@ -401,7 +401,7 @@ func (env *Env) ResolveSymbol(s Symbol) (Symbol, error) {
 	if strings.ContainsRune(s.Name(), '.') {
 		return s, nil
 	}
-	if s.Namespace() == "" && TYPES[s.Name()] != nil {
+	if s.Namespace() == "" && env.ResolveType(s) != nil {
 		return s, nil
 	}
 	currentNs := env.CurrentNamespace()
@@ -438,7 +438,7 @@ func (env *Env) Eval(str string) (any, error) {
 func (e *Env) SetContext(ctx context.Context) error {
 	e.Context = ctx
 	if v := e.ctx; v != nil {
-		return v.SetValue(e, MakeReflectValue(ctx))
+		return v.SetValue(e, ctx)
 	}
 	return nil
 }

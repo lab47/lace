@@ -14,6 +14,10 @@ type (
 		nodeSeq() Seq
 		iter() MapIterator
 	}
+
+	// A Map implementation that can store a large number of values efficiently.
+	//
+	//lace:export
 	HashMap struct {
 		InfoHolder
 		MetaHolder
@@ -185,10 +189,6 @@ func (seq *ArrayNodeSeq) Pprint(env *Env, w io.Writer, indent int) (int, error) 
 	return pprintSeq(env, seq, w, indent)
 }
 
-func (s *ArrayNodeSeq) GetType() *Type {
-	return TYPE.ArrayNodeSeq
-}
-
 func (s *ArrayNodeSeq) Hash(env *Env) (uint32, error) {
 	return hashOrdered(env, s)
 }
@@ -284,10 +284,6 @@ func (s *NodeSeq) ToString(env *Env, escape bool) (string, error) {
 
 func (seq *NodeSeq) Pprint(env *Env, w io.Writer, indent int) (int, error) {
 	return pprintSeq(env, seq, w, indent)
-}
-
-func (s *NodeSeq) GetType() *Type {
-	return TYPE.NodeSeq
 }
 
 func (s *NodeSeq) Hash(env *Env) (uint32, error) {
@@ -810,10 +806,6 @@ func (m *HashMap) ToString(env *Env, escape bool) (string, error) {
 
 func (m *HashMap) Equals(env *Env, other interface{}) bool {
 	return mapEquals(env, m, other)
-}
-
-func (m *HashMap) GetType() *Type {
-	return TYPE.HashMap
 }
 
 func (m *HashMap) Hash(env *Env) (uint32, error) {
